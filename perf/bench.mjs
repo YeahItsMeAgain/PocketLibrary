@@ -217,7 +217,7 @@ async function run() {
           }
           const style = document.createElement("style");
           style.textContent =
-            ".shelf{content-visibility:visible!important;contain-intrinsic-size:none!important}" +
+            ".v4-shelf{content-visibility:visible!important;contain-intrinsic-size:none!important}" +
             ".spine.is-dimmed{filter:saturate(0.55)!important}";
           head.appendChild(style);
         };
@@ -397,7 +397,7 @@ async function run() {
     const dragProbe = await page.evaluate(async () => {
       window.__PERF__.phase = "drag";
       const wall = document.querySelector('[data-testid="library-wall"]');
-      const sections = [...wall.querySelectorAll("section.shelf[data-shelf-id]")];
+      const sections = [...wall.querySelectorAll("section[data-shelf-id]")];
       const t0 = performance.now();
       sections.forEach((section) => section.getBoundingClientRect());
       const sectionSweep = performance.now() - t0;
