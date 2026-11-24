@@ -18,7 +18,7 @@ pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
 pub use models::{
     AppInfo, Book, BookDetail, BookFormat, CoverSource, Label, LibraryState, LibraryStatus,
-    ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 

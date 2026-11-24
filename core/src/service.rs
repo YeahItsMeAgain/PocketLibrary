@@ -12,8 +12,8 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 use crate::error::{Error, Result};
 use crate::migrations;
 use crate::models::{
-    AppInfo, Book, BookDetail, BookFormat, CoverSource, Label, LibraryStatus, ReadingState,
-    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, BookFormat, CoverSource, Label, LibraryStatus, Placement,
+    ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 use crate::source::{FileSource, ScannedBook, collect_books};
 use crate::{APP_NAME, SCHEMA_VERSION, cover, identity, metadata};
@@ -216,6 +216,32 @@ impl Service {
         Ok(shelves)
     }
 
+    /// The configured capacity for every shelf. Defaults to 12.
+    pub fn shelf_capacity(&self) -> Result<i64> {
+        let conn = self.connection()?;
+        shelf_capacity(&conn)
+    }
+
+    /// Persist a new shelf capacity and apply it to every shelf.
+    ///
+    /// Shelves holding more books than the new capacity keep those books; they
+    /// simply have no room for another. New shelves inherit this capacity.
+    pub fn set_shelf_capacity(&self, capacity: i64) -> Result<i64> {
+        if capacity < 1 {
+            return Err(Error::InvalidCapacity);
+        }
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+        tx.execute(
+            "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+            params![SHELF_CAPACITY, capacity.to_string(), unix_timestamp()],
+        )?;
+        tx.execute("UPDATE shelves SET capacity = ?1", [capacity])?;
+        tx.commit()?;
+        Ok(capacity)
+    }
+
     fn setting(&self, key: &str) -> Result<Option<String>> {
         let conn = self.connection()?;
         read_setting(&conn, key)
@@ -355,6 +381,7 @@ impl Service {
         let capacity = shelf_capacity(&tx)?;
         let mut added = 0usize;
         let mut duplicates = 0usize;
+        let mut placements = Vec::new();
         let mut touched: HashSet<String> = HashSet::new();
 
         for hash in order {
@@ -409,7 +436,8 @@ impl Service {
                 },
             );
 
-            let (shelf_id, slot_index) = allocate_slot(&tx, &mut shelves, capacity)?;
+            let (shelf_id, slot_index, shelf_ordinal, appended_shelf) =
+                allocate_slot(&tx, &mut shelves, capacity)?;
             insert_book(
                 &tx,
                 NewBook {
@@ -423,10 +451,14 @@ impl Service {
                     added_at: now,
                 },
             )?;
-            existing.insert(
-                hash.clone(),
-                (tx.last_insert_rowid(), representative.scanned.path.clone()),
-            );
+            let book_id = tx.last_insert_rowid();
+            existing.insert(hash.clone(), (book_id, representative.scanned.path.clone()));
+            placements.push(Placement {
+                book_id,
+                shelf_id,
+                shelf_ordinal,
+                appended_shelf,
+            });
             touched.insert(hash.clone());
             added += 1;
         }
@@ -460,7 +492,59 @@ impl Service {
             removed,
             duplicates,
             skipped,
+            placements,
         })
+    }
+
+    /// Undo an automatic placement, removing the book record and the shelf
+    /// that was appended for it.
+    ///
+    /// This never touches the book file: a later rescan simply adds it again.
+    /// The undo is a no-op when the book has moved, is gone, or the shelf now
+    /// holds another book. Only a non-seed trailing shelf can be removed.
+    pub fn undo_placement(&self, book_id: i64, shelf_id: i64) -> Result<bool> {
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+
+        let current_shelf: Option<i64> = tx
+            .query_row(
+                "SELECT shelf_id FROM books WHERE id = ?1",
+                [book_id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if current_shelf != Some(shelf_id) {
+            return Ok(false);
+        }
+
+        let shelf: Option<(i64, i64)> = tx
+            .query_row(
+                "SELECT ordinal, capacity FROM shelves WHERE id = ?1",
+                [shelf_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .optional()?;
+        let Some((ordinal, _capacity)) = shelf else {
+            return Ok(false);
+        };
+        let books_on_shelf: i64 = tx.query_row(
+            "SELECT COUNT(*) FROM books WHERE shelf_id = ?1",
+            [shelf_id],
+            |row| row.get(0),
+        )?;
+        let last_ordinal: i64 = tx.query_row(
+            "SELECT COALESCE(MAX(ordinal), -1) FROM shelves",
+            [],
+            |row| row.get(0),
+        )?;
+        if books_on_shelf != 1 || ordinal == 0 || ordinal != last_ordinal {
+            return Ok(false);
+        }
+
+        tx.execute("DELETE FROM books WHERE id = ?1", [book_id])?;
+        tx.execute("DELETE FROM shelves WHERE id = ?1", [shelf_id])?;
+        tx.commit()?;
+        Ok(true)
     }
 
     /// A book's reading position, defaulting to unread when it has no row.
@@ -601,6 +685,7 @@ struct HashedFile {
 
 struct ShelfSlots {
     id: i64,
+    ordinal: i64,
     capacity: i64,
     used: HashSet<i64>,
 }
@@ -608,11 +693,13 @@ struct ShelfSlots {
 fn load_shelf_slots(conn: &Connection) -> Result<Vec<ShelfSlots>> {
     let mut shelves = Vec::new();
     {
-        let mut statement = conn.prepare("SELECT id, capacity FROM shelves ORDER BY ordinal")?;
+        let mut statement =
+            conn.prepare("SELECT id, ordinal, capacity FROM shelves ORDER BY ordinal")?;
         let rows = statement.query_map([], |row| {
             Ok(ShelfSlots {
                 id: row.get(0)?,
-                capacity: row.get(1)?,
+                ordinal: row.get(1)?,
+                capacity: row.get(2)?,
                 used: HashSet::new(),
             })
         })?;
@@ -653,7 +740,8 @@ fn allocate_slot(
     conn: &Connection,
     shelves: &mut Vec<ShelfSlots>,
     capacity: i64,
-) -> Result<(i64, i64)> {
+) -> Result<(i64, i64, i64, bool)> {
+    // Lowest shelf with room, in ordinal order.
     for shelf in shelves.iter_mut() {
         if (shelf.used.len() as i64) < shelf.capacity {
             let mut slot = 0;
@@ -661,10 +749,11 @@ fn allocate_slot(
                 slot += 1;
             }
             shelf.used.insert(slot);
-            return Ok((shelf.id, slot));
+            return Ok((shelf.id, slot, shelf.ordinal, false));
         }
     }
 
+    // Every shelf is full: append one and put the book at its first slot.
     let ordinal: i64 = conn.query_row(
         "SELECT COALESCE(MAX(ordinal), -1) + 1 FROM shelves",
         [],
@@ -677,10 +766,11 @@ fn allocate_slot(
     let id = conn.last_insert_rowid();
     shelves.push(ShelfSlots {
         id,
+        ordinal,
         capacity,
         used: HashSet::from([0]),
     });
-    Ok((id, 0))
+    Ok((id, 0, ordinal, true))
 }
 
 /// Everything needed to insert one newly discovered book.

@@ -25,6 +25,9 @@ pub enum Error {
 
     #[error("book {id} does not exist")]
     BookNotFound { id: i64 },
+
+    #[error("shelf capacity must be greater than zero")]
+    InvalidCapacity,
 }
 
 impl Error {
@@ -37,6 +40,7 @@ impl Error {
             Self::SourceUnavailable { .. } => "library_unavailable",
             Self::LockPoisoned => "lock",
             Self::BookNotFound { .. } => "book_not_found",
+            Self::InvalidCapacity => "invalid_capacity",
         }
     }
 
@@ -53,6 +57,7 @@ impl Error {
             }
             Self::LockPoisoned => "The library is busy. Please try again.",
             Self::BookNotFound { .. } => "That book could not be found.",
+            Self::InvalidCapacity => "Shelf capacity must be at least one book.",
         }
     }
 }

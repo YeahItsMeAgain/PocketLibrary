@@ -211,6 +211,17 @@ pub struct Shelf {
     pub capacity: i64,
 }
 
+/// Where one newly imported book landed, for the wall's undo notice.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Placement {
+    pub book_id: i64,
+    pub shelf_id: i64,
+    pub shelf_ordinal: i64,
+    /// True when this scan had to append the shelf to make room.
+    pub appended_shelf: bool,
+}
+
 /// A reusable coloured label.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -245,6 +256,8 @@ pub struct ScanReport {
     pub duplicates: usize,
     /// Files skipped because they could not be read or parsed.
     pub skipped: Vec<ScanIssue>,
+    /// Where this scan put each newly added book, in scan order.
+    pub placements: Vec<Placement>,
 }
 
 /// Whether a library folder is usable right now.
