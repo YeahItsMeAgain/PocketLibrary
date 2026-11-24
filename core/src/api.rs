@@ -56,11 +56,6 @@ impl Api {
         self.service.library_folder().map_err(ApiError::from)
     }
 
-    /// Forget the chosen folder without touching the Android grant.
-    pub fn clear_library_folder(&self) -> ApiResult<()> {
-        self.service.clear_library_folder().map_err(ApiError::from)
-    }
-
     /// Build the UI-facing folder state from a grant check.
     pub fn library_status(&self, grant_valid: bool) -> ApiResult<LibraryStatus> {
         self.service

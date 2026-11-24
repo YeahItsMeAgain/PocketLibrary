@@ -35,6 +35,21 @@ impl Error {
             Self::LockPoisoned => "lock",
         }
     }
+
+    /// Stable user-facing text. Details (which may contain paths) stay in logs.
+    fn user_message(&self) -> &'static str {
+        match self {
+            Self::Database(_) => "The library database could not be updated.",
+            Self::Io(_) => "A file operation failed.",
+            Self::UnsupportedSchema { .. } => {
+                "This library was created by a newer version of PocketLibrary."
+            }
+            Self::SourceUnavailable { .. } => {
+                "The library folder is unavailable. Reconnect it and try again."
+            }
+            Self::LockPoisoned => "The library is busy. Please try again.",
+        }
+    }
 }
 
 /// An error returned by the command API: a stable code plus a readable message.
@@ -47,9 +62,12 @@ pub struct ApiError {
 
 impl From<Error> for ApiError {
     fn from(error: Error) -> Self {
+        let code = error.code();
+        // Keep the detailed cause (SAF text, paths, SQL) in logs, never on the wire.
+        eprintln!("pocketlibrary error ({code}): {error}");
         Self {
-            code: error.code(),
-            message: error.to_string(),
+            code,
+            message: error.user_message().to_owned(),
         }
     }
 }

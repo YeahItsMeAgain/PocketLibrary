@@ -1,4 +1,6 @@
-use pocketlibrary_core::{APP_NAME, Api, Book, BookFormat, ReadingStatus, SCHEMA_VERSION};
+use pocketlibrary_core::{
+    APP_NAME, Api, ApiError, Book, BookFormat, Error, ReadingStatus, SCHEMA_VERSION,
+};
 use tempfile::TempDir;
 
 fn database_path() -> (TempDir, std::path::PathBuf) {
@@ -97,4 +99,19 @@ fn serialised_books_do_not_leak_filesystem_paths() {
         "coverPath must stay in the core model"
     );
     assert_eq!(object.get("id"), Some(&serde_json::json!(7)));
+}
+
+#[test]
+fn source_errors_hide_paths_from_the_serialised_wire_message() {
+    let error = Error::SourceUnavailable {
+        message: "could not list Private/secret.epub: /storage/emulated/0/Books".to_owned(),
+    };
+    let api_error = ApiError::from(error);
+
+    assert_eq!(api_error.code, "library_unavailable");
+    let json = serde_json::to_string(&api_error).expect("serialise error");
+    assert!(!json.contains("Private"));
+    assert!(!json.contains("secret.epub"));
+    assert!(!json.contains("/storage"));
+    assert!(api_error.message.contains("library folder is unavailable"));
 }
