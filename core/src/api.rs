@@ -7,8 +7,9 @@
 use std::path::Path;
 
 use crate::error::{ApiError, ApiResult, Result};
-use crate::models::{AppInfo, Book, Shelf};
+use crate::models::{AppInfo, Book, LibraryStatus, ScanReport, Shelf};
 use crate::service::Service;
+use crate::source::FileSource;
 
 /// Handle to the catalog command API.
 pub struct Api {
@@ -36,5 +37,34 @@ impl Api {
     /// Every shelf in ordinal order.
     pub fn list_shelves(&self) -> ApiResult<Vec<Shelf>> {
         self.service.list_shelves().map_err(ApiError::from)
+    }
+
+    /// Reconcile the catalog with the chosen library folder.
+    pub fn scan(&self, source: &dyn FileSource) -> ApiResult<ScanReport> {
+        self.service.scan(source).map_err(ApiError::from)
+    }
+
+    /// Remember the chosen library folder token and display name.
+    pub fn set_library_folder(&self, uri: &str, name: &str) -> ApiResult<()> {
+        self.service
+            .set_library_folder(uri, name)
+            .map_err(ApiError::from)
+    }
+
+    /// The persisted library folder token, if one was chosen.
+    pub fn library_folder(&self) -> ApiResult<Option<String>> {
+        self.service.library_folder().map_err(ApiError::from)
+    }
+
+    /// Forget the chosen folder without touching the Android grant.
+    pub fn clear_library_folder(&self) -> ApiResult<()> {
+        self.service.clear_library_folder().map_err(ApiError::from)
+    }
+
+    /// Build the UI-facing folder state from a grant check.
+    pub fn library_status(&self, grant_valid: bool) -> ApiResult<LibraryStatus> {
+        self.service
+            .library_status(grant_valid)
+            .map_err(ApiError::from)
     }
 }

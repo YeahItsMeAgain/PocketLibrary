@@ -1,20 +1,31 @@
 //! The catalog service: the only writer of the library database.
 
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use rusqlite::{Connection, Row};
+use rusqlite::{Connection, OptionalExtension, Row, params};
 
 use crate::error::{Error, Result};
 use crate::migrations;
-use crate::models::{AppInfo, Book, BookFormat, Shelf};
+use crate::models::{AppInfo, Book, BookFormat, LibraryStatus, ReadingStatus, ScanReport, Shelf};
+use crate::source::{FileSource, ScannedBook, collect_books};
 use crate::{APP_NAME, SCHEMA_VERSION};
 
 /// The one book projection, kept in one place so every query stays in sync.
-const BOOK_COLUMNS: &str = "id, content_hash, quick_key, path, format, title, authors,
-     series, language, description, publisher, published_date, identifier,
-     cover_path, added_at, shelf_id, slot_index";
+const BOOK_COLUMNS: &str =
+    "b.id, b.content_hash, b.quick_key, b.path, b.format, b.title, b.authors,
+     b.series, b.language, b.description, b.publisher, b.published_date, b.identifier,
+     b.cover_path, b.added_at, b.shelf_id, b.slot_index, COALESCE(r.status, 'unread')";
+
+const BOOK_SOURCE: &str = "FROM books b LEFT JOIN reading_state r ON r.book_id = b.id";
+
+const LIBRARY_FOLDER_URI: &str = "library_folder_uri";
+const LIBRARY_FOLDER_NAME: &str = "library_folder_name";
+const SHELF_CAPACITY: &str = "shelf_capacity";
+const DEFAULT_SHELF_CAPACITY: i64 = 12;
 
 /// Handle to an open library database.
 ///
@@ -79,8 +90,8 @@ impl Service {
         let conn = self.connection()?;
         let mut statement = conn.prepare(&format!(
             "SELECT {BOOK_COLUMNS}
-             FROM books
-             ORDER BY shelf_id IS NULL, shelf_id, slot_index, title COLLATE NOCASE, id"
+             {BOOK_SOURCE}
+             ORDER BY b.shelf_id IS NULL, b.shelf_id, b.slot_index, b.title COLLATE NOCASE, b.id"
         ))?;
 
         let books = statement
@@ -106,6 +117,243 @@ impl Service {
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(shelves)
     }
+
+    fn setting(&self, key: &str) -> Result<Option<String>> {
+        let conn = self.connection()?;
+        let value = conn
+            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| {
+                row.get(0)
+            })
+            .optional()?;
+        Ok(value)
+    }
+
+    fn put_setting(&self, key: &str, value: &str) -> Result<()> {
+        let conn = self.connection()?;
+        conn.execute(
+            "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, unixepoch())
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+
+    fn delete_setting(&self, key: &str) -> Result<()> {
+        let conn = self.connection()?;
+        conn.execute("DELETE FROM settings WHERE key = ?1", [key])?;
+        Ok(())
+    }
+
+    /// The persisted library folder token (a SAF tree URI inside the app).
+    pub fn library_folder(&self) -> Result<Option<String>> {
+        self.setting(LIBRARY_FOLDER_URI)
+    }
+
+    /// Remember the chosen library folder and its display name.
+    pub fn set_library_folder(&self, uri: &str, name: &str) -> Result<()> {
+        self.put_setting(LIBRARY_FOLDER_URI, uri)?;
+        self.put_setting(LIBRARY_FOLDER_NAME, name)
+    }
+
+    /// Forget the chosen folder, without revoking the Android grant.
+    pub fn clear_library_folder(&self) -> Result<()> {
+        self.delete_setting(LIBRARY_FOLDER_URI)?;
+        self.delete_setting(LIBRARY_FOLDER_NAME)
+    }
+
+    /// The folder name shown in the UI, if a folder has been chosen.
+    pub fn library_folder_name(&self) -> Result<Option<String>> {
+        self.setting(LIBRARY_FOLDER_NAME)
+    }
+
+    /// What the UI should show for the library folder right now.
+    pub fn library_status(&self, grant_valid: bool) -> Result<LibraryStatus> {
+        let folder_name = self.library_folder_name()?;
+        let state = if folder_name.is_none() {
+            crate::models::LibraryState::NeedsFolder
+        } else if grant_valid {
+            crate::models::LibraryState::Ready
+        } else {
+            crate::models::LibraryState::Disconnected
+        };
+        Ok(LibraryStatus { state, folder_name })
+    }
+
+    /// Walk `source` and reconcile the catalog with it.
+    ///
+    /// New files become books on the lowest shelf with room. Known books keep
+    /// their placement. Files that vanished are marked finished and their
+    /// records and spines are kept. Running this twice changes nothing.
+    pub fn scan(&self, source: &dyn FileSource) -> Result<ScanReport> {
+        let found = collect_books(source)?;
+        let now = unix_timestamp();
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+
+        let mut existing: HashMap<String, i64> = HashMap::new();
+        {
+            let mut statement = tx.prepare("SELECT id, path FROM books")?;
+            let rows = statement.query_map([], |row| {
+                Ok((row.get::<_, String>(1)?, row.get::<_, i64>(0)?))
+            })?;
+            for row in rows {
+                let (path, id) = row?;
+                existing.insert(path, id);
+            }
+        }
+
+        let mut shelves = load_shelf_slots(&tx)?;
+        let capacity = shelf_capacity(&tx)?;
+        let mut added = 0usize;
+
+        for book in &found {
+            if existing.contains_key(&book.path) {
+                continue;
+            }
+
+            let (shelf_id, slot_index) = allocate_slot(&tx, &mut shelves, capacity)?;
+            insert_book(&tx, book, shelf_id, slot_index, now)?;
+            added += 1;
+        }
+
+        let seen: HashSet<&str> = found.iter().map(|book| book.path.as_str()).collect();
+        let mut removed = 0usize;
+        for (path, id) in &existing {
+            if seen.contains(path.as_str()) {
+                continue;
+            }
+            tx.execute(
+                "INSERT INTO reading_state (book_id, status, status_source, progress, finished_at)
+                 VALUES (?1, 'finished', 'auto', 1, ?2)
+                 ON CONFLICT(book_id) DO UPDATE SET status = 'finished', finished_at = ?2",
+                params![id, now],
+            )?;
+            removed += 1;
+        }
+
+        tx.commit()?;
+
+        Ok(ScanReport {
+            total: existing.len() + added,
+            added,
+            removed,
+        })
+    }
+}
+
+struct ShelfSlots {
+    id: i64,
+    capacity: i64,
+    used: HashSet<i64>,
+}
+
+fn load_shelf_slots(conn: &Connection) -> Result<Vec<ShelfSlots>> {
+    let mut shelves = Vec::new();
+    {
+        let mut statement = conn.prepare("SELECT id, capacity FROM shelves ORDER BY ordinal")?;
+        let rows = statement.query_map([], |row| {
+            Ok(ShelfSlots {
+                id: row.get(0)?,
+                capacity: row.get(1)?,
+                used: HashSet::new(),
+            })
+        })?;
+        for row in rows {
+            shelves.push(row?);
+        }
+    }
+
+    let mut statement =
+        conn.prepare("SELECT shelf_id, slot_index FROM books WHERE shelf_id IS NOT NULL")?;
+    let rows = statement.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)))?;
+    for row in rows {
+        let (shelf_id, slot_index) = row?;
+        if let Some(shelf) = shelves.iter_mut().find(|shelf| shelf.id == shelf_id) {
+            shelf.used.insert(slot_index);
+        }
+    }
+    Ok(shelves)
+}
+
+fn shelf_capacity(conn: &Connection) -> Result<i64> {
+    let value: Option<String> = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = ?1",
+            [SHELF_CAPACITY],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(value
+        .and_then(|value| value.parse().ok())
+        .filter(|capacity| *capacity > 0)
+        .unwrap_or(DEFAULT_SHELF_CAPACITY))
+}
+
+fn allocate_slot(
+    conn: &Connection,
+    shelves: &mut Vec<ShelfSlots>,
+    capacity: i64,
+) -> Result<(i64, i64)> {
+    for shelf in shelves.iter_mut() {
+        if (shelf.used.len() as i64) < shelf.capacity {
+            let mut slot = 0;
+            while shelf.used.contains(&slot) {
+                slot += 1;
+            }
+            shelf.used.insert(slot);
+            return Ok((shelf.id, slot));
+        }
+    }
+
+    let ordinal: i64 = conn.query_row(
+        "SELECT COALESCE(MAX(ordinal), -1) + 1 FROM shelves",
+        [],
+        |row| row.get(0),
+    )?;
+    conn.execute(
+        "INSERT INTO shelves (ordinal, capacity) VALUES (?1, ?2)",
+        params![ordinal, capacity],
+    )?;
+    let id = conn.last_insert_rowid();
+    shelves.push(ShelfSlots {
+        id,
+        capacity,
+        used: HashSet::from([0]),
+    });
+    Ok((id, 0))
+}
+
+fn insert_book(
+    conn: &Connection,
+    book: &ScannedBook,
+    shelf_id: i64,
+    slot_index: i64,
+    added_at: i64,
+) -> Result<()> {
+    // Ticket 02 uses a stable, opaque path key so rescans are idempotent.
+    // Ticket 03 replaces this with the BLAKE3 content hash.
+    let placeholder_hash = blake3::hash(book.path.as_bytes()).to_hex().to_string();
+    conn.execute(
+        "INSERT INTO books (content_hash, path, format, title, authors, added_at, shelf_id, slot_index)
+         VALUES (?1, ?2, ?3, ?4, '[]', ?5, ?6, ?7)",
+        params![
+            placeholder_hash,
+            book.path,
+            book.format,
+            book.title,
+            added_at,
+            shelf_id,
+            slot_index
+        ],
+    )?;
+    Ok(())
+}
+
+fn unix_timestamp() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
@@ -132,5 +380,6 @@ fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
         added_at: row.get(14)?,
         shelf_id: row.get(15)?,
         slot_index: row.get(16)?,
+        reading_status: row.get::<_, ReadingStatus>(17)?,
     })
 }

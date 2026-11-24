@@ -17,6 +17,9 @@ pub enum Error {
     #[error("database schema version {found} is newer than this app supports ({supported})")]
     UnsupportedSchema { found: i64, supported: i64 },
 
+    #[error("library folder is unavailable: {message}")]
+    SourceUnavailable { message: String },
+
     #[error("catalog service lock was poisoned")]
     LockPoisoned,
 }
@@ -28,6 +31,7 @@ impl Error {
             Self::Database(_) => "database",
             Self::Io(_) => "io",
             Self::UnsupportedSchema { .. } => "unsupported_schema",
+            Self::SourceUnavailable { .. } => "library_unavailable",
             Self::LockPoisoned => "lock",
         }
     }

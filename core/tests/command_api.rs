@@ -1,4 +1,4 @@
-use pocketlibrary_core::{APP_NAME, Api, Book, BookFormat, SCHEMA_VERSION};
+use pocketlibrary_core::{APP_NAME, Api, Book, BookFormat, ReadingStatus, SCHEMA_VERSION};
 use tempfile::TempDir;
 
 fn database_path() -> (TempDir, std::path::PathBuf) {
@@ -82,6 +82,7 @@ fn serialised_books_do_not_leak_filesystem_paths() {
         added_at: 0,
         shelf_id: Some(1),
         slot_index: Some(0),
+        reading_status: ReadingStatus::Unread,
     };
 
     let json = serde_json::to_value(&book).expect("serialise book");

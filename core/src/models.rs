@@ -50,6 +50,39 @@ impl FromSql for BookFormat {
     }
 }
 
+/// The fixed reading-status axis. A vanished file becomes `finished`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ReadingStatus {
+    Unread,
+    Reading,
+    Finished,
+}
+
+impl ToSql for ReadingStatus {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        let value = match self {
+            Self::Unread => "unread",
+            Self::Reading => "reading",
+            Self::Finished => "finished",
+        };
+        Ok(ToSqlOutput::from(value))
+    }
+}
+
+impl FromSql for ReadingStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        match value.as_str()? {
+            "unread" => Ok(Self::Unread),
+            "reading" => Ok(Self::Reading),
+            "finished" => Ok(Self::Finished),
+            other => Err(FromSqlError::Other(
+                format!("unknown reading status: {other}").into(),
+            )),
+        }
+    }
+}
+
 /// One book in the library.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -75,6 +108,7 @@ pub struct Book {
     pub added_at: i64,
     pub shelf_id: Option<i64>,
     pub slot_index: Option<i64>,
+    pub reading_status: ReadingStatus,
 }
 
 /// A fixed shelf (furniture, not a query).
@@ -84,4 +118,37 @@ pub struct Shelf {
     pub id: i64,
     pub ordinal: i64,
     pub capacity: i64,
+}
+
+/// What one rescan changed, in user-visible terms.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanReport {
+    /// Books currently on the shelves (including finished ones).
+    pub total: usize,
+    /// Files that were not in the catalog before this scan.
+    pub added: usize,
+    /// Known books whose file is gone; they are now marked finished.
+    pub removed: usize,
+}
+
+/// Whether a library folder is usable right now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum LibraryState {
+    /// First run: no folder has ever been chosen.
+    NeedsFolder,
+    /// The persisted read/write grant is valid.
+    Ready,
+    /// A folder was chosen before, but the grant is gone or the folder moved.
+    Disconnected,
+}
+
+/// The folder state shown by onboarding, the wall and Settings.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryStatus {
+    pub state: LibraryState,
+    /// Display name only; the URI never crosses the wire.
+    pub folder_name: Option<String>,
 }
