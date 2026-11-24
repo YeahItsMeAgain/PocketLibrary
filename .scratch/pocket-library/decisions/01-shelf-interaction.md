@@ -23,3 +23,8 @@ Resolved 2026-11-24.
 - **No shelf management.** Shelves are furniture, not collections: no names, no rename, no reorder, no add/remove controls, no management plaque. They exist only as space for books the user placed. The only meaningful object is the book and where the user put it.
 - **Filters:** dim non-matching books, never move them. Clearing restores everything.
 - **Return:** opening and closing a book returns to the same shelf and scroll position.
+
+
+## Note (2026-11-24)
+
+Undo for an auto-appended shelf is deferred; the user does not want it now.

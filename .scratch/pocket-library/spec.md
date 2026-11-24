@@ -32,7 +32,7 @@ PocketLibrary is a sideloaded Android app that presents one Victorian reading ro
 17. As the reader, I want a clear "Read" or "Continue reading" button, so that starting a book is never a guess.
 18. As the reader, I want a clear "Back to shelf" control, so that leaving a book is obvious.
 19. As the reader, I want new books to land on the lowest shelf with room, so that placing them is predictable.
-20. As the reader, I want a new shelf appended automatically when the lowest one is full, with an undo, so that importing is never blocked.
+20. As the reader, I want a new shelf appended automatically when the lowest one is full, so that importing is never blocked.
 21. As the reader, I want to long-press a book to lift it, so that moving it is a deliberate physical act.
 22. As the reader, I want to drag a book along its shelf to reorder it, so that I control the arrangement.
 23. As the reader, I want to drag a book onto another shelf, with the wall scrolling at the edges, so that I can move books across the library.
@@ -151,7 +151,7 @@ Identity is the internal id, not the path. The BLAKE3 hash is unique and survive
 ### Shelves and placement
 
 - Shelves are fixed furniture with capacity, persisted, and never managed by the user: no naming, reordering, adding or deleting controls. They exist only as space for books the user placed.
-- A book stores its shelf and slot. New books go to the lowest shelf with room. If none has room, a shelf is appended and the book is placed there, with an undo notice.
+- A book stores its shelf and slot. New books go to the lowest shelf with room. If none has room, a shelf is appended and the book is placed there.
 - Drag is arithmetic on the model, not DOM measurement. Long-press lifts after ~380 ms; a short tap opens the book.
 - Filters dim non-matching books and never move them. Clearing restores everything. Return from a book restores the same shelf and scroll position.
 
@@ -220,7 +220,7 @@ Identity is the internal id, not the path. The BLAKE3 hash is unique and survive
 - **Primary seam: the command API.** Rust integration tests drive the same commands the UI calls, against a temporary library folder and a temporary SQLite database. The network is replaced by fakes at the provider trait.
 - **Secondary seam: the web Platform adapter.** Playwright runs the real UI at a 390x844 phone viewport with `invoke` mocked; it covers shelf rendering, drag/drop, drawer, detail and reader chrome. No component-level tests below this.
 - **Library/ingest tests:** empty folder, nested folders, ignored files, two identical files, a rename, a deleted file becoming finished, a malformed EPUB, a large PDF, and a scan rerun being idempotent.
-- **Catalog tests:** placing new books on the lowest shelf with room, auto-append when full, undo, reorder within a shelf, cross-shelf move, label attach/detach/delete, status transitions including manual override and a vanished file.
+- **Catalog tests:** placing new books on the lowest shelf with room, auto-append when full, reorder within a shelf, cross-shelf move, label attach/detach/delete, status transitions including manual override and a vanished file.
 - **Acquisition tests:** a fake Libgen HTTP server serving a search table, an ads page, a redirect and file bytes; client-side filters; mirror failover on 5xx/timeouts; truncated download detection; md5 pre-check and BLAKE3 post-check; queue persistence and resume.
 - **Reader tests:** open an EPUB, jump via TOC, add a bookmark, save and restore a position; a CFI that no longer resolves falls back to the text quote; a PDF opens, zooms and restores a page; a scripted EPUB is blocked by CSP.
 - **Backup tests:** export, wipe, import merge, matched/new counts, no overwrite of newer progress, replace path behind confirmation, corrupt archive rejected.
