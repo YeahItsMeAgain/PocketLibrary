@@ -28,8 +28,6 @@ pub struct SourceEntry {
     pub kind: SourceKind,
     /// Source-specific handle used to list a directory; ignored for files.
     pub handle: String,
-    pub len: u64,
-    pub modified: Option<i64>,
 }
 
 /// A directory tree that the scanner can walk.
@@ -84,17 +82,20 @@ fn title_for(name: &str) -> String {
 ///
 /// Hidden files and directories, and files with any other extension, are
 /// skipped. Results are sorted by relative path so shelf placement is stable
-/// across scans. A failure to list the root means the grant is no longer
-/// usable and is reported as `library_unavailable`.
+/// across scans.
+///
+/// Any failure to list a directory (including one below the root) aborts the
+/// whole scan and is reported as `library_unavailable`. Returning a partial tree
+/// would make the caller treat unlisted books as removed.
 pub(crate) fn collect_books(source: &dyn FileSource) -> Result<Vec<ScannedBook>> {
     let root = source
         .list(None)
         .map_err(|error| Error::SourceUnavailable {
-            message: error.to_string(),
+            message: format!("could not list the library root: {error}"),
         })?;
 
     let mut books = Vec::new();
-    walk(source, root, &mut books, 0);
+    walk(source, root, &mut books, 0)?;
     books.sort_by(|left, right| left.path.cmp(&right.path));
     Ok(books)
 }
@@ -104,10 +105,12 @@ fn walk(
     entries: Vec<SourceEntry>,
     books: &mut Vec<ScannedBook>,
     depth: usize,
-) {
+) -> Result<()> {
     // A damaged or hostile tree must not make the scan run forever.
     if depth > 64 {
-        return;
+        return Err(Error::SourceUnavailable {
+            message: "the library tree is nested more than 64 levels deep".to_owned(),
+        });
     }
 
     for entry in entries {
@@ -117,9 +120,13 @@ fn walk(
 
         match entry.kind {
             SourceKind::Directory => {
-                if let Ok(children) = source.list(Some(&entry.handle)) {
-                    walk(source, children, books, depth + 1);
-                }
+                let children =
+                    source
+                        .list(Some(&entry.handle))
+                        .map_err(|error| Error::SourceUnavailable {
+                            message: format!("could not list {}: {error}", entry.path),
+                        })?;
+                walk(source, children, books, depth + 1)?;
             }
             SourceKind::File => {
                 if let Some(format) = format_for(&entry.name) {
@@ -132,6 +139,8 @@ fn walk(
             }
         }
     }
+
+    Ok(())
 }
 
 #[cfg(test)]

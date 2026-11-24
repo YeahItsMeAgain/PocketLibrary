@@ -120,27 +120,16 @@ impl Service {
 
     fn setting(&self, key: &str) -> Result<Option<String>> {
         let conn = self.connection()?;
-        let value = conn
-            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| {
-                row.get(0)
-            })
-            .optional()?;
-        Ok(value)
+        read_setting(&conn, key)
     }
 
     fn put_setting(&self, key: &str, value: &str) -> Result<()> {
         let conn = self.connection()?;
         conn.execute(
-            "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, unixepoch())
+            "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-            params![key, value],
+            params![key, value, unix_timestamp()],
         )?;
-        Ok(())
-    }
-
-    fn delete_setting(&self, key: &str) -> Result<()> {
-        let conn = self.connection()?;
-        conn.execute("DELETE FROM settings WHERE key = ?1", [key])?;
         Ok(())
     }
 
@@ -153,12 +142,6 @@ impl Service {
     pub fn set_library_folder(&self, uri: &str, name: &str) -> Result<()> {
         self.put_setting(LIBRARY_FOLDER_URI, uri)?;
         self.put_setting(LIBRARY_FOLDER_NAME, name)
-    }
-
-    /// Forget the chosen folder, without revoking the Android grant.
-    pub fn clear_library_folder(&self) -> Result<()> {
-        self.delete_setting(LIBRARY_FOLDER_URI)?;
-        self.delete_setting(LIBRARY_FOLDER_NAME)
     }
 
     /// The folder name shown in the UI, if a folder has been chosen.
@@ -222,13 +205,19 @@ impl Service {
             if seen.contains(path.as_str()) {
                 continue;
             }
-            tx.execute(
+            // A finished book stays finished. For the first transition, update
+            // only the status so an in-progress read keeps its progress and
+            // manual/automatic source.
+            let changed = tx.execute(
                 "INSERT INTO reading_state (book_id, status, status_source, progress, finished_at)
                  VALUES (?1, 'finished', 'auto', 1, ?2)
-                 ON CONFLICT(book_id) DO UPDATE SET status = 'finished', finished_at = ?2",
+                 ON CONFLICT(book_id) DO UPDATE SET
+                     status = 'finished',
+                     finished_at = excluded.finished_at
+                 WHERE reading_state.status <> 'finished'",
                 params![id, now],
             )?;
-            removed += 1;
+            removed += changed;
         }
 
         tx.commit()?;
@@ -275,15 +264,17 @@ fn load_shelf_slots(conn: &Connection) -> Result<Vec<ShelfSlots>> {
     Ok(shelves)
 }
 
-fn shelf_capacity(conn: &Connection) -> Result<i64> {
-    let value: Option<String> = conn
-        .query_row(
-            "SELECT value FROM settings WHERE key = ?1",
-            [SHELF_CAPACITY],
-            |row| row.get(0),
-        )
+fn read_setting(conn: &Connection, key: &str) -> Result<Option<String>> {
+    let value = conn
+        .query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| {
+            row.get(0)
+        })
         .optional()?;
-    Ok(value
+    Ok(value)
+}
+
+fn shelf_capacity(conn: &Connection) -> Result<i64> {
+    Ok(read_setting(conn, SHELF_CAPACITY)?
         .and_then(|value| value.parse().ok())
         .filter(|capacity| *capacity > 0)
         .unwrap_or(DEFAULT_SHELF_CAPACITY))
