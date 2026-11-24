@@ -212,6 +212,16 @@ async fn rescan_library(app: AppHandle) -> Result<ScanReport, ApiError> {
 }
 
 #[tauri::command]
+fn move_book(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    shelf_id: i64,
+    slot_index: i64,
+) -> Result<(), ApiError> {
+    api.move_book(book_id, shelf_id, slot_index)
+}
+
+#[tauri::command]
 fn get_shelf_capacity(api: tauri::State<'_, Api>) -> Result<i64, ApiError> {
     api.shelf_capacity()
 }
@@ -248,6 +258,7 @@ pub fn run() {
             library_status,
             choose_library_folder,
             rescan_library,
+            move_book,
             get_shelf_capacity,
             set_shelf_capacity
         ])

@@ -71,6 +71,16 @@ impl Api {
             .map_err(ApiError::from)
     }
 
+    /// Move a book to a shelf and final slot index.
+    ///
+    /// The book keeps its identity, reading state, labels and progress; only
+    /// its shelf and slot change.
+    pub fn move_book(&self, book_id: i64, shelf_id: i64, slot_index: i64) -> ApiResult<()> {
+        self.service
+            .move_book(book_id, shelf_id, slot_index)
+            .map_err(ApiError::from)
+    }
+
     /// Remember the chosen library folder token and display name.
     pub fn set_library_folder(&self, uri: &str, name: &str) -> ApiResult<()> {
         self.service

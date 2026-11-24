@@ -28,6 +28,16 @@ pub enum Error {
 
     #[error("shelf capacity must be greater than zero")]
     InvalidCapacity,
+
+    #[error("book {book_id} cannot move to shelf {shelf_id} slot {slot_index}")]
+    InvalidTarget {
+        book_id: i64,
+        shelf_id: i64,
+        slot_index: i64,
+    },
+
+    #[error("shelf {id} has no room for another book")]
+    ShelfFull { id: i64 },
 }
 
 impl Error {
@@ -41,6 +51,8 @@ impl Error {
             Self::LockPoisoned => "lock",
             Self::BookNotFound { .. } => "book_not_found",
             Self::InvalidCapacity => "invalid_capacity",
+            Self::InvalidTarget { .. } => "invalid_target",
+            Self::ShelfFull { .. } => "shelf_full",
         }
     }
 
@@ -58,6 +70,8 @@ impl Error {
             Self::LockPoisoned => "The library is busy. Please try again.",
             Self::BookNotFound { .. } => "That book could not be found.",
             Self::InvalidCapacity => "Shelf capacity must be at least one book.",
+            Self::InvalidTarget { .. } => "That book cannot be placed there.",
+            Self::ShelfFull { .. } => "That shelf is already full.",
         }
     }
 }

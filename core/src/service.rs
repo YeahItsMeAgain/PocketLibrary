@@ -242,6 +242,87 @@ impl Service {
         Ok(capacity)
     }
 
+    /// Move a book to a shelf and final slot index.
+    ///
+    /// The target slot is the book's final position on that shelf. Moving a
+    /// book compacts the source shelf and shifts the target shelf so both stay
+    /// contiguous; a cross-shelf move needs one free slot on the target.
+    /// Only the book's placement changes: status, labels, progress and locator
+    /// stay untouched.
+    pub fn move_book(&self, book_id: i64, shelf_id: i64, slot_index: i64) -> Result<()> {
+        if slot_index < 0 {
+            return Err(Error::InvalidTarget {
+                book_id,
+                shelf_id,
+                slot_index,
+            });
+        }
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+
+        let source_shelf: Option<i64> = tx
+            .query_row(
+                "SELECT shelf_id FROM books WHERE id = ?1",
+                [book_id],
+                |row| row.get(0),
+            )
+            .optional()?
+            .ok_or(Error::BookNotFound { id: book_id })?;
+
+        let capacity: i64 = tx
+            .query_row(
+                "SELECT capacity FROM shelves WHERE id = ?1",
+                [shelf_id],
+                |row| row.get(0),
+            )
+            .optional()?
+            .ok_or(Error::InvalidTarget {
+                book_id,
+                shelf_id,
+                slot_index,
+            })?;
+
+        let same_shelf = source_shelf == Some(shelf_id);
+        let mut target_ids = ordered_book_ids(&tx, shelf_id)?;
+        if !same_shelf && target_ids.len() as i64 >= capacity {
+            return Err(Error::ShelfFull { id: shelf_id });
+        }
+
+        // Remove from the source list first so indices are final positions
+        // among the other books, which is what the UI computes from the gap.
+        if same_shelf {
+            if let Some(position) = target_ids.iter().position(|id| *id == book_id) {
+                target_ids.remove(position);
+            }
+        } else if let Some(source_id) = source_shelf {
+            // Park the moving book out of the source shelf's contiguous range
+            // before the remaining books close the gap behind it.
+            tx.execute(
+                "UPDATE books SET slot_index = ?1 WHERE id = ?2",
+                params![1_000_000_000 + book_id, book_id],
+            )?;
+            let mut source_ids = ordered_book_ids(&tx, source_id)?;
+            source_ids.retain(|id| *id != book_id);
+            reassign_slots(&tx, &source_ids, source_id)?;
+        }
+
+        let target_len = target_ids.len() as i64;
+        if slot_index > target_len {
+            return Err(Error::InvalidTarget {
+                book_id,
+                shelf_id,
+                slot_index,
+            });
+        }
+        let insert_at = slot_index as usize;
+        target_ids.insert(insert_at, book_id);
+
+        reassign_slots(&tx, &target_ids, shelf_id)?;
+
+        tx.commit()?;
+        Ok(())
+    }
+
     fn setting(&self, key: &str) -> Result<Option<String>> {
         let conn = self.connection()?;
         read_setting(&conn, key)
@@ -667,6 +748,36 @@ fn load_shelf_slots(conn: &Connection) -> Result<Vec<ShelfSlots>> {
         }
     }
     Ok(shelves)
+}
+
+fn ordered_book_ids(conn: &Connection, shelf_id: i64) -> Result<Vec<i64>> {
+    let mut statement = conn.prepare(
+        "SELECT id FROM books WHERE shelf_id = ?1 ORDER BY slot_index, title COLLATE NOCASE, id",
+    )?;
+    let ids = statement
+        .query_map([shelf_id], |row| row.get(0))?
+        .collect::<std::result::Result<Vec<i64>, _>>()?;
+    Ok(ids)
+}
+
+fn reassign_slots(conn: &Connection, ids: &[i64], shelf_id: i64) -> Result<()> {
+    // The table has UNIQUE(shelf_id, slot_index) and a slot >= 0 check. Park
+    // every affected book on a unique far-away slot before writing the final
+    // contiguous order, so a forward move cannot transiently collide with the
+    // slot it is passing.
+    for id in ids {
+        conn.execute(
+            "UPDATE books SET shelf_id = ?1, slot_index = ?2 WHERE id = ?3",
+            params![shelf_id, 1_000_000_000 + id, id],
+        )?;
+    }
+    for (slot, id) in ids.iter().enumerate() {
+        conn.execute(
+            "UPDATE books SET shelf_id = ?1, slot_index = ?2 WHERE id = ?3",
+            params![shelf_id, slot as i64, id],
+        )?;
+    }
+    Ok(())
 }
 
 fn read_setting(conn: &Connection, key: &str) -> Result<Option<String>> {
