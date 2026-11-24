@@ -266,6 +266,7 @@ export interface MockConfig {
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
 const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
 const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
+const MOCK_SAMPLE_PDF = "/test-assets/sample.pdf";
 
 interface StoredReading {
   status: ReadingStatus;
@@ -711,7 +712,9 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       if (!book) {
         throw { code: "book_not_found", message: "That book could not be found." };
       }
-      const url = config.bookFiles?.[bookId] ?? MOCK_SAMPLE_EPUB;
+      const url =
+        config.bookFiles?.[bookId] ??
+        (book.format === "pdf" ? MOCK_SAMPLE_PDF : MOCK_SAMPLE_EPUB);
       const response = await fetch(url);
       if (!response.ok) {
         throw { code: "read_book", message: "That book could not be read." };

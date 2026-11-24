@@ -39,13 +39,17 @@ impl<'a, R: tauri::Runtime> SafSource<'a, R> {
         }
     }
 
-    /// Find a logical library path by walking the SAF tree, then read its bytes.
+    /// Find a logical library path by walking the SAF tree.
     ///
     /// The catalog stores library-relative paths. SAF only exposes content-URI
     /// handles, so the shell resolves the path here and hands the bytes back to
     /// the reader; neither the path nor the URI crosses the command wire.
-    pub fn read_path(&self, target: &str) -> Result<Vec<u8>> {
-        fn walk(source: &SafSource<'_, impl tauri::Runtime>, dir: Option<&str>, target: &str) -> Result<Option<String>> {
+    fn find_handle(&self, target: &str) -> Result<Option<String>> {
+        fn walk(
+            source: &SafSource<'_, impl tauri::Runtime>,
+            dir: Option<&str>,
+            target: &str,
+        ) -> Result<Option<String>> {
             for entry in source.list(dir)? {
                 if entry.kind == SourceKind::File && entry.path == target {
                     return Ok(Some(entry.handle));
@@ -59,12 +63,44 @@ impl<'a, R: tauri::Runtime> SafSource<'a, R> {
             Ok(None)
         }
 
-        match walk(self, None, target)? {
+        walk(self, None, target)
+    }
+
+    pub fn read_path(&self, target: &str) -> Result<Vec<u8>> {
+        match self.find_handle(target)? {
             Some(handle) => self.read_file(&handle),
             None => Err(Error::SourceUnavailable {
                 message: format!("book path not found: {target}"),
             }),
         }
+    }
+
+    /// Read a whole book, refusing anything above `limit` bytes.
+    ///
+    /// The reader receives the entire file over IPC, so a very large PDF would
+    /// be copied twice (Rust buffer and WebView) before PDF.js sees it. Stop at
+    /// `limit + 1` while reading instead of letting the allocation grow until
+    /// the device runs out of memory; `None` means "too large".
+    pub fn read_path_limited(&self, target: &str, limit: u64) -> Result<Option<Vec<u8>>> {
+        let Some(handle) = self.find_handle(target)? else {
+            return Err(Error::SourceUnavailable {
+                message: format!("book path not found: {target}"),
+            });
+        };
+        let uri = self.uri_for(Some(&handle));
+        let file = self
+            .fs
+            .open_file_readable(&uri)
+            .map_err(|error| Error::SourceUnavailable {
+                message: error.to_string(),
+            })?;
+        let mut bytes = Vec::new();
+        file.take(limit.saturating_add(1))
+            .read_to_end(&mut bytes)
+            .map_err(|error| Error::SourceUnavailable {
+                message: error.to_string(),
+            })?;
+        Ok((bytes.len() as u64 <= limit).then_some(bytes))
     }
 }
 

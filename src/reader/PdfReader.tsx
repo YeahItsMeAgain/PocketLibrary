@@ -13,7 +13,6 @@ import {
   platform,
   type Book,
   type Bookmark,
-  type ReadingStatus,
 } from "../platform";
 import {
   openPdf,
@@ -75,6 +74,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
+  const destroyRef = useRef<(() => Promise<void>) | null>(null);
   const latestLocator = useRef<PdfLocator | null>(null);
   const persistTimer = useRef(0);
   const zoomRef = useRef(1);
@@ -100,7 +100,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   );
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [bookmarkNotice, setBookmarkNotice] = useState<string | null>(null);
-  const [externalNote, setExternalNote] = useState(false);
   const [pageInput, setPageInput] = useState("1");
   const [rendering, setRendering] = useState(true);
 
@@ -162,7 +161,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   // rejected before PDF.js takes ownership of the bytes.
   useEffect(() => {
     let cancelled = false;
-    const opened: { pdf: PDFDocumentProxy | null } = { pdf: null };
+    const opened: { destroy: (() => Promise<void>) | null } = { destroy: null };
 
     (async () => {
       try {
@@ -174,12 +173,14 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           );
           return;
         }
-        const pdf = await openPdf(bytes);
+        const opened_pdf = await openPdf(bytes);
         if (cancelled) {
-          void pdf.destroy();
+          void opened_pdf.destroy();
           return;
         }
-        opened.pdf = pdf;
+        const pdf = opened_pdf.doc;
+        opened.destroy = opened_pdf.destroy;
+        destroyRef.current = opened_pdf.destroy;
         pdfRef.current = pdf;
         setNumPages(pdf.numPages);
         totalRef.current = pdf.numPages;
@@ -211,8 +212,8 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
 
     return () => {
       cancelled = true;
-      const pdf = opened.pdf ?? pdfRef.current;
-      if (pdf) void pdf.destroy();
+      void opened.destroy?.();
+      destroyRef.current = null;
       pdfRef.current = null;
     };
   }, [book.id]);
@@ -485,9 +486,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           <div
             className="pdf-page"
             data-testid="pdf-page"
-            style={{
-              width: canvasRef.current?.style.width,
-            }}
           >
             <canvas ref={canvasRef} className="pdf-canvas" />
             <div
@@ -616,11 +614,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         </button>
       </footer>
 
-      {externalNote ? (
-        <p className="reader-toast" role="status" data-testid="reader-external-note">
-          Opening in another app is deferred in this build. Your page is saved.
-        </p>
-      ) : null}
       {bookmarkNotice ? (
         <p
           className="reader-toast"

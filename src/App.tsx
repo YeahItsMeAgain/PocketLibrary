@@ -26,6 +26,7 @@ import {
   type Shelf,
 } from "./platform";
 import EpubReader from "./reader/EpubReader";
+import PdfReader from "./reader/PdfReader";
 import { loadReaderSettings, saveReaderSettings } from "./reader/settings";
 import "./App.css";
 
@@ -239,7 +240,6 @@ function DetailPanel({
   const [reading, setReading] = useState<ReadingState | null>(null);
   const [availableLabels, setAvailableLabels] = useState<LabelUsage[]>([]);
   const [failed, setFailed] = useState(false);
-  const [readerNotice, setReaderNotice] = useState(false);
   const [statusMenu, setStatusMenu] = useState(false);
   const [labelMenu, setLabelMenu] = useState(false);
   const [labelNotice, setLabelNotice] = useState<string | null>(null);
@@ -258,7 +258,6 @@ function DetailPanel({
     setDetail(null);
     setReading(null);
     setFailed(false);
-    setReaderNotice(false);
     setStatusMenu(false);
     setLabelMenu(false);
     setLabelNotice(null);
@@ -625,10 +624,7 @@ function DetailPanel({
                   type="button"
                   className="primary-action"
                   data-testid="detail-read"
-                  onClick={() => {
-                    if (detail.format === "epub") onRead(detail);
-                    else setReaderNotice(true);
-                  }}
+                  onClick={() => onRead(detail)}
                 >
                   {readLabel}
                 </button>
@@ -641,11 +637,6 @@ function DetailPanel({
                   Back to shelf
                 </button>
               </div>
-              {readerNotice ? (
-                <p className="detail-note" role="status">
-                  The PDF reading room opens in a later chapter.
-                </p>
-              ) : null}
             </div>
           </>
         )}
@@ -1802,13 +1793,23 @@ function LibraryWall({
         />
       ) : null}
       {readerBook ? (
-        <EpubReader
-          book={readerBook}
-          onClose={() => {
-            setReaderBook(null);
-            void refreshWallData();
-          }}
-        />
+        readerBook.format === "pdf" ? (
+          <PdfReader
+            book={readerBook}
+            onClose={() => {
+              setReaderBook(null);
+              void refreshWallData();
+            }}
+          />
+        ) : (
+          <EpubReader
+            book={readerBook}
+            onClose={() => {
+              setReaderBook(null);
+              void refreshWallData();
+            }}
+          />
+        )
       ) : null}
       {showLabelManager ? (
         <ManageLabels

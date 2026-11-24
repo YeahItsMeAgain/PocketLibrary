@@ -66,8 +66,14 @@ export function parsePdfLocator(raw: string | null | undefined): PdfLocator | nu
   return null;
 }
 
-export async function openPdf(bytes: ArrayBuffer): Promise<PDFDocumentProxy> {
-  return getDocument({
+export interface OpenedPdf {
+  doc: PDFDocumentProxy;
+  /** Tear down the worker and every page canvas held by PDF.js. */
+  destroy(): Promise<void>;
+}
+
+export async function openPdf(bytes: ArrayBuffer): Promise<OpenedPdf> {
+  const task = getDocument({
     data: new Uint8Array(bytes),
     cMapUrl: PDF_RUNTIME_PATHS.cMapUrl,
     cMapPacked: true,
@@ -76,7 +82,9 @@ export async function openPdf(bytes: ArrayBuffer): Promise<PDFDocumentProxy> {
     // Match the worker's streaming behaviour but keep memory bounded.
     disableAutoFetch: true,
     disableStream: true,
-  }).promise;
+  });
+  const doc = await task.promise;
+  return { doc, destroy: () => task.destroy() };
 }
 
 export async function pageSize(page: PDFPageProxy): Promise<PdfPageSize> {

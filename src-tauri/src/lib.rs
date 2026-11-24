@@ -19,6 +19,11 @@ use tauri_plugin_android_fs::{AndroidFsExt, FsUri, UriPermission};
 #[cfg(target_os = "android")]
 use crate::saf::SafSource;
 
+/// Whole-file reads are the M1 transport; refuse files that would exhaust the
+/// WebView when Rust, IPC and PDF.js each hold a copy.
+#[cfg(target_os = "android")]
+const MAX_BOOK_BYTES: u64 = 100 * 1024 * 1024;
+
 fn api_error(code: &'static str, message: impl Into<String>) -> ApiError {
     ApiError {
         code,
@@ -188,8 +193,14 @@ fn read_book_response(app: &AppHandle, book_id: i64) -> Result<tauri::ipc::Respo
     let path = api.book_path(book_id)?;
     let source = SafSource::new(app.android_fs(), uri);
     let bytes = source
-        .read_path(&path)
-        .map_err(|error| logged_error("read_book", "That book could not be read.", error))?;
+        .read_path_limited(&path, MAX_BOOK_BYTES)
+        .map_err(|error| logged_error("read_book", "That book could not be read.", error))?
+        .ok_or_else(|| {
+            api_error(
+                "book_too_large",
+                "This book is larger than 100 MB and cannot be held in memory on this device. Open it in another app instead.",
+            )
+        })?;
     Ok(tauri::ipc::Response::new(bytes))
 }
 
