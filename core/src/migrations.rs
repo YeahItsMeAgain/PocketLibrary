@@ -1,11 +1,17 @@
 //! `PRAGMA user_version` migrations for the library database.
+//!
+//! Version 2 replaces the provisional path-derived identity used by ticket 02
+//! with a real BLAKE3 content hash. Because those old hashes cannot be trusted,
+//! the migration clears books and everything that depends on a book id (reading
+//! state, annotations, book labels) and lets the launch scan rebuild the shelf
+//! from the library folder. Shelves, labels and settings survive.
 
 use rusqlite::Connection;
 
 use crate::SCHEMA_VERSION;
 use crate::error::{Error, Result};
 
-const SCHEMA_V1: &str = r#"
+const SCHEMA_V2: &str = r#"
 CREATE TABLE shelves (
     id        INTEGER PRIMARY KEY,
     ordinal   INTEGER NOT NULL UNIQUE CHECK (ordinal >= 0),
@@ -29,7 +35,9 @@ CREATE TABLE books (
     publisher       TEXT,
     published_date  TEXT,
     identifier      TEXT,
+    page_count      INTEGER CHECK (page_count IS NULL OR page_count >= 0),
     cover_path      TEXT,
+    cover_source    TEXT CHECK (cover_source IS NULL OR cover_source IN ('embedded', 'rendered', 'generated')),
     added_at        INTEGER NOT NULL,
     shelf_id        INTEGER REFERENCES shelves(id) ON DELETE RESTRICT,
     slot_index      INTEGER CHECK (slot_index IS NULL OR slot_index >= 0),
@@ -112,6 +120,19 @@ INSERT INTO settings (key, value, updated_at)
 VALUES ('shelf_capacity', '12', unixepoch());
 "#;
 
+/// Pre-release reset: path-derived hashes are invalid, so dependent book data
+/// goes with the books. Labels, shelves and settings are intentionally kept.
+const MIGRATE_V1_TO_V2: &str = r#"
+DELETE FROM book_labels;
+DELETE FROM annotations;
+DELETE FROM reading_state;
+DELETE FROM books;
+ALTER TABLE books ADD COLUMN page_count INTEGER
+    CHECK (page_count IS NULL OR page_count >= 0);
+ALTER TABLE books ADD COLUMN cover_source TEXT
+    CHECK (cover_source IS NULL OR cover_source IN ('embedded', 'rendered', 'generated'));
+"#;
+
 /// Bring the database up to [`SCHEMA_VERSION`], or fail if it is newer.
 ///
 /// The migration runs in one transaction, so a failed fresh install leaves no
@@ -122,7 +143,7 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
     if version == SCHEMA_VERSION {
         return Ok(());
     }
-    if version != 0 {
+    if version > SCHEMA_VERSION {
         return Err(Error::UnsupportedSchema {
             found: version,
             supported: SCHEMA_VERSION,
@@ -130,7 +151,11 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
     }
 
     let tx = conn.transaction()?;
-    tx.execute_batch(SCHEMA_V1)?;
+    if version == 0 {
+        tx.execute_batch(SCHEMA_V2)?;
+    } else if version == 1 {
+        tx.execute_batch(MIGRATE_V1_TO_V2)?;
+    }
     tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     tx.commit()?;
     Ok(())

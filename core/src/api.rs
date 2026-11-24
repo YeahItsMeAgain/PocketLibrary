@@ -7,7 +7,7 @@
 use std::path::Path;
 
 use crate::error::{ApiError, ApiResult, Result};
-use crate::models::{AppInfo, Book, LibraryStatus, ScanReport, Shelf};
+use crate::models::{AppInfo, Book, BookDetail, LibraryStatus, ScanReport, Shelf};
 use crate::service::Service;
 use crate::source::FileSource;
 
@@ -37,6 +37,11 @@ impl Api {
     /// Every shelf in ordinal order.
     pub fn list_shelves(&self) -> ApiResult<Vec<Shelf>> {
         self.service.list_shelves().map_err(ApiError::from)
+    }
+
+    /// One book plus a data-URL cover, for the detail panel.
+    pub fn get_book_detail(&self, id: i64) -> ApiResult<BookDetail> {
+        self.service.get_book_detail(id).map_err(ApiError::from)
     }
 
     /// Reconcile the catalog with the chosen library folder.

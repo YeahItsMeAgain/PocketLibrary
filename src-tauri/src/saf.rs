@@ -4,6 +4,7 @@
 //! adapter; the scan rules themselves live in `pocketlibrary_core`.
 
 use std::collections::HashMap;
+use std::io::Read;
 use std::sync::Mutex;
 
 use pocketlibrary_core::{Error, FileSource, Result, SourceEntry, SourceKind};
@@ -66,11 +67,11 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
             };
 
             match entry {
-                Entry::File { .. } => out.push(SourceEntry {
+                Entry::File { uri, .. } => out.push(SourceEntry {
                     name,
                     path,
                     kind: SourceKind::File,
-                    handle: String::new(),
+                    handle: uri.uri,
                 }),
                 Entry::Dir { uri, .. } => {
                     if let Ok(mut paths) = self.paths.lock() {
@@ -86,5 +87,21 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
             }
         }
         Ok(out)
+    }
+
+    fn read_file(&self, handle: &str) -> Result<Vec<u8>> {
+        let uri = self.uri_for(Some(handle));
+        let mut file = self
+            .fs
+            .open_file_readable(&uri)
+            .map_err(|error| Error::SourceUnavailable {
+                message: error.to_string(),
+            })?;
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes)
+            .map_err(|error| Error::SourceUnavailable {
+                message: error.to_string(),
+            })?;
+        Ok(bytes)
     }
 }

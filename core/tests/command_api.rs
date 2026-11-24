@@ -10,14 +10,14 @@ fn database_path() -> (TempDir, std::path::PathBuf) {
 }
 
 #[test]
-fn fresh_database_migrates_to_schema_version_one() {
+fn fresh_database_migrates_to_the_current_schema() {
     let (_dir, path) = database_path();
 
     let api = Api::open(&path).expect("open fresh catalog");
     let info = api.app_info().expect("app info");
 
     assert_eq!(info.schema_version, SCHEMA_VERSION);
-    assert_eq!(info.schema_version, 1);
+    assert_eq!(info.schema_version, 2);
 }
 
 #[test]
@@ -80,7 +80,9 @@ fn serialised_books_do_not_leak_filesystem_paths() {
         publisher: None,
         published_date: None,
         identifier: None,
+        page_count: Some(320),
         cover_path: Some("/covers/secret.jpg".to_owned()),
+        cover_source: Some(pocketlibrary_core::CoverSource::Embedded),
         added_at: 0,
         shelf_id: Some(1),
         slot_index: Some(0),
@@ -114,4 +116,70 @@ fn source_errors_hide_paths_from_the_serialised_wire_message() {
     assert!(!json.contains("secret.epub"));
     assert!(!json.contains("/storage"));
     assert!(api_error.message.contains("library folder is unavailable"));
+}
+
+#[test]
+fn migrating_a_version_one_library_resets_books_but_keeps_shelves_labels_and_settings() {
+    let (_dir, path) = database_path();
+    {
+        let conn = rusqlite::Connection::open(&path).expect("create v1 database");
+        conn.execute_batch(
+            r#"
+            PRAGMA user_version = 1;
+            CREATE TABLE shelves (id INTEGER PRIMARY KEY, ordinal INTEGER NOT NULL UNIQUE, capacity INTEGER NOT NULL);
+            INSERT INTO shelves (ordinal, capacity) VALUES (0, 12);
+            CREATE TABLE books (
+                id INTEGER PRIMARY KEY, content_hash TEXT NOT NULL UNIQUE, quick_key TEXT,
+                path TEXT NOT NULL, format TEXT NOT NULL, title TEXT NOT NULL,
+                authors TEXT NOT NULL DEFAULT '[]', series TEXT, language TEXT, description TEXT,
+                publisher TEXT, published_date TEXT, identifier TEXT, cover_path TEXT,
+                added_at INTEGER NOT NULL, shelf_id INTEGER, slot_index INTEGER
+            );
+            CREATE TABLE labels (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, colour TEXT NOT NULL, created_at INTEGER NOT NULL);
+            CREATE TABLE book_labels (book_id INTEGER NOT NULL, label_id INTEGER NOT NULL, PRIMARY KEY (book_id, label_id));
+            CREATE TABLE reading_state (book_id INTEGER PRIMARY KEY, status TEXT NOT NULL DEFAULT 'unread', status_source TEXT NOT NULL DEFAULT 'auto', progress REAL NOT NULL DEFAULT 0, locator TEXT, last_opened_at INTEGER, finished_at INTEGER);
+            CREATE TABLE annotations (id INTEGER PRIMARY KEY, book_id INTEGER NOT NULL, kind TEXT NOT NULL, colour TEXT, note TEXT, locator TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+            CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL);
+            INSERT INTO settings (key, value, updated_at) VALUES ('shelf_capacity', '9', 0);
+            INSERT INTO labels (name, colour, created_at) VALUES ('Gothic', '#5a1f2a', 0);
+            INSERT INTO books (content_hash, path, format, title, added_at, shelf_id, slot_index)
+                VALUES ('old-path-hash', 'ghost.epub', 'epub', 'Ghost', 0, 1, 0);
+            INSERT INTO reading_state (book_id, status, progress) VALUES (1, 'reading', 0.5);
+            INSERT INTO book_labels (book_id, label_id) VALUES (1, 1);
+            INSERT INTO annotations (book_id, kind, locator, created_at, updated_at)
+                VALUES (1, 'note', '{}', 0, 0);
+            "#,
+        )
+        .expect("seed v1 database");
+    }
+
+    let api = Api::open(&path).expect("migrate v1 catalog");
+    assert_eq!(api.app_info().expect("app info").schema_version, 2);
+    assert!(
+        api.list_books().expect("list books").is_empty(),
+        "path-derived books are cleared for the launch scan"
+    );
+    assert_eq!(api.list_shelves().expect("list shelves").len(), 1);
+
+    let conn = rusqlite::Connection::open(&path).expect("inspect migrated database");
+    let labels: i64 = conn
+        .query_row("SELECT COUNT(*) FROM labels", [], |row| row.get(0))
+        .expect("labels kept");
+    let capacity: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'shelf_capacity'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("settings kept");
+    let dependent: (i64, i64, i64) = conn
+        .query_row(
+            "SELECT (SELECT COUNT(*) FROM reading_state), (SELECT COUNT(*) FROM annotations), (SELECT COUNT(*) FROM book_labels)",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .expect("dependent rows cleared");
+    assert_eq!(labels, 1);
+    assert_eq!(capacity, "9");
+    assert_eq!(dependent, (0, 0, 0));
 }

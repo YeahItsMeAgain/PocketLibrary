@@ -5,7 +5,9 @@
 
 use tauri::{AppHandle, Manager};
 
-use pocketlibrary_core::{Api, ApiError, AppInfo, Book, LibraryStatus, ScanReport, Shelf};
+use pocketlibrary_core::{
+    Api, ApiError, AppInfo, Book, BookDetail, LibraryStatus, ScanReport, Shelf,
+};
 
 #[cfg(target_os = "android")]
 mod saf;
@@ -176,6 +178,11 @@ fn list_shelves(api: tauri::State<'_, Api>) -> Result<Vec<Shelf>, ApiError> {
 }
 
 #[tauri::command]
+fn get_book_detail(api: tauri::State<'_, Api>, id: i64) -> Result<BookDetail, ApiError> {
+    api.get_book_detail(id)
+}
+
+#[tauri::command]
 async fn library_status(app: AppHandle) -> Result<LibraryStatus, ApiError> {
     blocking(move || current_status(&app)).await
 }
@@ -213,6 +220,7 @@ pub fn run() {
             app_info,
             list_books,
             list_shelves,
+            get_book_detail,
             library_status,
             choose_library_folder,
             rescan_library

@@ -4,7 +4,10 @@
 //! tested on a headless host.
 
 mod api;
+mod cover;
 mod error;
+mod identity;
+mod metadata;
 mod migrations;
 mod models;
 mod service;
@@ -12,13 +15,15 @@ mod source;
 
 pub use api::Api;
 pub use error::{ApiError, ApiResult, Error, Result};
+pub use identity::{content_hash, quick_key};
 pub use models::{
-    AppInfo, Book, BookFormat, LibraryState, LibraryStatus, ReadingStatus, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, BookFormat, CoverSource, LibraryState, LibraryStatus, ReadingStatus,
+    ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 pub use source::{FileSource, SourceEntry, SourceKind};
 
 /// The schema version this build knows how to create and read.
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 
 /// User-facing application name.
 pub const APP_NAME: &str = "PocketLibrary";

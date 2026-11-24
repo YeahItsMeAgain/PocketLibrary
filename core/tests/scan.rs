@@ -1,121 +1,9 @@
-use std::collections::{HashMap, HashSet};
+mod common;
 
-use pocketlibrary_core::{
-    Api, BookFormat, Error, FileSource, ReadingStatus, Result, SourceEntry, SourceKind,
-};
-use tempfile::TempDir;
+use std::collections::HashSet;
 
-/// A small in-memory directory tree that stands in for SAF in host tests.
-#[derive(Default)]
-struct FakeDir {
-    dirs: HashMap<String, Vec<SourceEntry>>,
-    failures: HashSet<String>,
-    root_missing: bool,
-}
-
-impl FakeDir {
-    fn new() -> Self {
-        let mut dirs = HashMap::new();
-        dirs.insert(String::new(), Vec::new());
-        Self {
-            dirs,
-            failures: HashSet::new(),
-            root_missing: false,
-        }
-    }
-
-    fn file(mut self, path: &str) -> Self {
-        let (parent, name) = split(path);
-        self.dirs
-            .entry(parent.to_owned())
-            .or_default()
-            .push(SourceEntry {
-                name: name.to_owned(),
-                path: path.to_owned(),
-                kind: SourceKind::File,
-                handle: String::new(),
-            });
-        self
-    }
-
-    fn dir(mut self, path: &str) -> Self {
-        let (parent, name) = split(path);
-        self.dirs
-            .entry(parent.to_owned())
-            .or_default()
-            .push(SourceEntry {
-                name: name.to_owned(),
-                path: path.to_owned(),
-                kind: SourceKind::Directory,
-                handle: path.to_owned(),
-            });
-        self.dirs.entry(path.to_owned()).or_default();
-        self
-    }
-
-    fn failing_dir(mut self, path: &str) -> Self {
-        self = self.dir(path);
-        self.failures.insert(path.to_owned());
-        self
-    }
-
-    fn missing() -> Self {
-        Self {
-            dirs: HashMap::new(),
-            failures: HashSet::new(),
-            root_missing: true,
-        }
-    }
-}
-
-impl FileSource for FakeDir {
-    fn list(&self, dir_handle: Option<&str>) -> Result<Vec<SourceEntry>> {
-        let key = dir_handle.unwrap_or("");
-        if self.root_missing {
-            return Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "folder is gone",
-            )));
-        }
-        if self.failures.contains(key) {
-            return Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::PermissionDenied,
-                format!("cannot list {key}"),
-            )));
-        }
-        self.dirs
-            .get(key)
-            .cloned()
-            .ok_or_else(|| Error::Io(std::io::Error::from(std::io::ErrorKind::NotFound)))
-    }
-}
-
-fn split(path: &str) -> (&str, &str) {
-    match path.rsplit_once('/') {
-        Some((parent, name)) => (parent, name),
-        None => ("", path),
-    }
-}
-
-fn database() -> (TempDir, Api) {
-    let (dir, _path, api) = database_at();
-    (dir, api)
-}
-
-fn database_at() -> (TempDir, std::path::PathBuf, Api) {
-    let dir = TempDir::new().expect("temporary directory");
-    let path = dir.path().join("library.db");
-    let api = Api::open(&path).expect("open catalog");
-    (dir, path, api)
-}
-
-fn book_id_at(path: &std::path::Path, book_path: &str) -> i64 {
-    let conn = rusqlite::Connection::open(path).expect("open catalog directly");
-    conn.query_row("SELECT id FROM books WHERE path = ?1", [book_path], |row| {
-        row.get(0)
-    })
-    .expect("book exists")
-}
+use common::{FakeDir, book_id_at, book_id_for_file, book_row, database, database_at};
+use pocketlibrary_core::{BookFormat, ReadingStatus, quick_key};
 
 fn reading_state_at(path: &std::path::Path, book_id: i64) -> (String, String, f64, Option<i64>) {
     let conn = rusqlite::Connection::open(path).expect("open catalog directly");
@@ -254,6 +142,7 @@ fn rescanning_twice_is_idempotent() {
     assert_eq!(second.total, 2);
     assert_eq!(second.added, 0);
     assert_eq!(second.removed, 0);
+    assert!(second.skipped.is_empty());
     assert_eq!(api.list_books().expect("list books").len(), 2);
     assert_eq!(api.list_shelves().expect("list shelves").len(), 1);
 }
@@ -376,4 +265,120 @@ fn a_second_removal_scan_reports_nothing_and_keeps_progress() {
         finished_at_after, finished_at,
         "finished_at is not rewritten"
     );
+}
+
+#[test]
+fn renaming_a_file_keeps_one_book_with_the_same_id_and_state() {
+    let (_dir, path, api) = database_at();
+    let source = FakeDir::new().file("old name.epub");
+    api.scan(&source).expect("first scan");
+    let before = api.list_books().expect("list before");
+    let id = before[0].id;
+    {
+        let conn = rusqlite::Connection::open(&path).expect("open catalog directly");
+        conn.execute(
+            "INSERT INTO reading_state (book_id, status, status_source, progress, locator)
+             VALUES (?1, 'reading', 'manual', 0.66, '{\"page\":3}')",
+            [id],
+        )
+        .expect("seed state");
+    }
+
+    let renamed = FakeDir::new()
+        .dir("shelf")
+        .file_with("shelf/new name.epub", source.bytes("old name.epub"));
+    let report = api.scan(&renamed).expect("renamed scan");
+    let after = api.list_books().expect("list after");
+
+    assert_eq!(report.added, 0, "a rename is not a new book");
+    assert_eq!(report.removed, 0, "a rename is not a removal");
+    assert_eq!(after.len(), 1);
+    assert_eq!(after[0].id, id, "identity survives the move");
+    assert_eq!(after[0].path, "shelf/new name.epub");
+    let (status, source, progress, _) = reading_state_at(&path, id);
+    assert_eq!((status.as_str(), source.as_str(), progress), ("reading", "manual", 0.66));
+}
+
+#[test]
+fn identical_bytes_at_two_paths_produce_one_book() {
+    let (_dir, path, api) = database_at();
+    let bytes = common::minimal_epub("same book");
+    let source = FakeDir::new()
+        .file_with("first.epub", bytes.clone())
+        .dir("nested")
+        .file_with("nested/copy.epub", bytes);
+
+    let report = api.scan(&source).expect("scan duplicates");
+
+    assert_eq!(report.added, 1);
+    assert_eq!(report.duplicates, 1);
+    assert_eq!(api.list_books().expect("list books").len(), 1);
+    assert_eq!(report.total, 1);
+
+    // Re-importing the same bytes again is still rejected.
+    let again = api.scan(&source).expect("rescan duplicates");
+    assert_eq!(again.added, 0);
+    assert_eq!(again.duplicates, 1);
+    assert_eq!(api.list_books().expect("list books").len(), 1);
+
+    let stored = book_row(&path, book_id_for_file(&path, "first.epub"));
+    assert_eq!(stored.0.len(), 64, "the full hash is stored as hex");
+}
+
+#[test]
+fn the_stored_quick_key_is_stable_and_matches_the_bytes() {
+    let (_dir, path, api) = database_at();
+    let source = FakeDir::new().file("quick.epub");
+    let expected = quick_key(&source.bytes("quick.epub"));
+    api.scan(&source).expect("scan");
+
+    let id = book_id_for_file(&path, "quick.epub");
+    let (hash, _, stored_quick) = book_row(&path, id);
+    assert_eq!(stored_quick.as_deref(), Some(expected.as_str()));
+    assert_eq!(hash.len(), 64);
+
+    api.scan(&source).expect("rescan");
+    let (_, _, after) = book_row(&path, id);
+    assert_eq!(after, stored_quick, "a rescan does not churn the quick key");
+}
+
+#[test]
+fn a_malformed_file_is_skipped_with_a_reason_and_does_not_abort_the_scan() {
+    let (_dir, api) = database();
+    let source = FakeDir::new()
+        .file("good.epub")
+        .file_with("broken.epub", b"this is not a zip".to_vec())
+        .file_with("broken.pdf", b"%PDF-1.4 truncated".to_vec())
+        .file("good.pdf");
+
+    let report = api.scan(&source).expect("a bad file must not abort the scan");
+
+    assert_eq!(report.added, 2);
+    assert_eq!(report.skipped.len(), 2);
+    let reasons: HashSet<_> = report
+        .skipped
+        .iter()
+        .map(|issue| (issue.name.as_str(), issue.reason.code()))
+        .collect();
+    assert_eq!(
+        reasons,
+        HashSet::from([
+            ("broken.epub", "invalid_epub"),
+            ("broken.pdf", "invalid_pdf"),
+        ])
+    );
+    assert!(
+        report
+            .skipped
+            .iter()
+            .all(|issue| !issue.name.contains('/')),
+        "scan issues carry a name, never a path"
+    );
+    let titles: Vec<_> = api
+        .list_books()
+        .expect("list books")
+        .into_iter()
+        .map(|book| book.title)
+        .collect();
+    assert_eq!(titles, vec!["good", "good"]);
 }

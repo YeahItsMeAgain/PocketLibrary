@@ -22,6 +22,9 @@ pub enum Error {
 
     #[error("catalog service lock was poisoned")]
     LockPoisoned,
+
+    #[error("book {id} does not exist")]
+    BookNotFound { id: i64 },
 }
 
 impl Error {
@@ -33,6 +36,7 @@ impl Error {
             Self::UnsupportedSchema { .. } => "unsupported_schema",
             Self::SourceUnavailable { .. } => "library_unavailable",
             Self::LockPoisoned => "lock",
+            Self::BookNotFound { .. } => "book_not_found",
         }
     }
 
@@ -48,6 +52,7 @@ impl Error {
                 "The library folder is unavailable. Reconnect it and try again."
             }
             Self::LockPoisoned => "The library is busy. Please try again.",
+            Self::BookNotFound { .. } => "That book could not be found.",
         }
     }
 }

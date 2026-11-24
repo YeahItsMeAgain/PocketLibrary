@@ -1,10 +1,11 @@
 //! The library file-source abstraction.
 //!
 //! Scan rules live here, over a deliberately small seam: a source can list one
-//! directory at a time and hands back an opaque `handle` for each child
-//! directory. A fake directory backs host tests; the SAF adapter in `src-tauri`
-//! supplies content-URI handles. Nothing above this module knows whether the
-//! entries come from a real folder, a tree picker or a test fixture.
+//! directory at a time, hands back an opaque `handle` for each child, and can
+//! read the bytes behind a file handle. A fake directory backs host tests; the
+//! SAF adapter in `src-tauri` supplies content-URI handles. Nothing above this
+//! module knows whether the entries come from a real folder, a tree picker or a
+//! test fixture.
 
 use std::path::Path;
 
@@ -26,22 +27,27 @@ pub struct SourceEntry {
     /// Logical path relative to the library root, `/`-separated.
     pub path: String,
     pub kind: SourceKind,
-    /// Source-specific handle used to list a directory; ignored for files.
+    /// Source-specific handle: a directory handle to list, or a file handle to
+    /// read. Never shown to the UI.
     pub handle: String,
 }
 
-/// A directory tree that the scanner can walk.
+/// A directory tree that the scanner can walk and read.
 pub trait FileSource {
     /// List the immediate children of `dir_handle`, or of the library root when
     /// it is `None`.
     fn list(&self, dir_handle: Option<&str>) -> Result<Vec<SourceEntry>>;
+
+    /// Read a file identified by a [`SourceEntry::handle`].
+    fn read_file(&self, handle: &str) -> Result<Vec<u8>>;
 }
 
 /// A book file discovered by a scan, before it is written to the catalog.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ScannedBook {
+    pub name: String,
     pub path: String,
-    pub title: String,
+    pub handle: String,
     pub format: BookFormat,
 }
 
@@ -61,20 +67,6 @@ fn format_for(name: &str) -> Option<BookFormat> {
         "epub" => Some(BookFormat::Epub),
         "pdf" => Some(BookFormat::Pdf),
         _ => None,
-    }
-}
-
-/// The title placeholder used until metadata parsing lands: the filename stem.
-fn title_for(name: &str) -> String {
-    let stem = Path::new(name)
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .unwrap_or(name);
-    let trimmed = stem.trim();
-    if trimmed.is_empty() {
-        name.to_owned()
-    } else {
-        trimmed.to_owned()
     }
 }
 
@@ -131,8 +123,9 @@ fn walk(
             SourceKind::File => {
                 if let Some(format) = format_for(&entry.name) {
                     books.push(ScannedBook {
+                        name: entry.name,
                         path: entry.path,
-                        title: title_for(&entry.name),
+                        handle: entry.handle,
                         format,
                     });
                 }
@@ -154,6 +147,5 @@ mod tests {
         assert_eq!(format_for("Novel.EPUB"), Some(BookFormat::Epub));
         assert_eq!(format_for("paper.pdf"), Some(BookFormat::Pdf));
         assert_eq!(format_for("notes.txt"), None);
-        assert_eq!(title_for("A Book.epub"), "A Book");
     }
 }
