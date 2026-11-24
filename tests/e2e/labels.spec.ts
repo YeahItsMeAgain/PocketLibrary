@@ -109,6 +109,11 @@ test("filtering dims non-matching spines without moving them and ANDs with statu
 
   const spines = page.getByTestId("spine");
   await expect(spines).toHaveCount(3);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+  ).toBe(true);
   const before = await spines.evaluateAll((elements) =>
     elements.map((element) => element.getBoundingClientRect().left),
   );
