@@ -4,12 +4,12 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** awaiting-device-test
 
-- [ ] First run explains why a folder must be chosen and opens the picker; the user can create or choose a subfolder
+- [x] First run explains why a folder must be chosen and opens the picker; the user can create or choose a subfolder
 - [ ] The read/write grant persists across force-stop and relaunch without re-picking
-- [ ] Recursive scan finds `.epub` and `.pdf`, ignores hidden directories and other files
-- [ ] Each found book produces a catalogue record and a spine on the wall
-- [ ] An empty library shows empty shelves with "Add books" and "Find a book"
-- [ ] A revoked or moved folder shows "Reconnect library folder" instead of an empty shelf
-- [ ] Manual rescan adds new files and reflects removed ones without duplicating
+- [x] Recursive scan finds `.epub` and `.pdf`, ignores hidden directories and other files
+- [x] Each found book produces a catalogue record and a spine on the wall
+- [x] An empty library shows empty shelves with "Add books" and "Find a book"
+- [x] A revoked or moved folder shows "Reconnect library folder" instead of an empty shelf
+- [x] Manual rescan adds new files and reflects removed ones without duplicating
