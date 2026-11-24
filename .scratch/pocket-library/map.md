@@ -2,6 +2,8 @@
 
 ## Destination
 
+**Reached 2026-11-24:** the spec is published at `spec.md`. Implementation tickets are the next step.
+
 A complete, buildable spec plus a full ticket graph for PocketLibrary — an Android-only, single-user Victorian library app — grouped into milestones: **M1** library, shelf, and reader → **M2** Libgen/Anna's acquisition → **M3** many shelves, labels, manual placement → **M4** annotations and optional features. The map is done when no decision remains that would block writing that spec and those tickets.
 
 ## Notes
