@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  isApiError,
   isLibraryUnavailable,
   platform,
   type AppInfo,
   type Book,
   type BookDetail,
   type LibraryStatus,
+  type Placement,
   type ScanIssueReason,
   type ScanReport,
   type Shelf,
@@ -344,11 +346,23 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
 
 interface LibraryWallProps {
   reloadKey: number;
+  notice: string | null;
+  undo: Placement | null;
+  busy: boolean;
+  onUndo: () => void;
   onAddBooks: () => void;
   onFindBook: () => void;
 }
 
-function LibraryWall({ reloadKey, onAddBooks, onFindBook }: LibraryWallProps) {
+function LibraryWall({
+  reloadKey,
+  notice,
+  undo,
+  busy,
+  onUndo,
+  onAddBooks,
+  onFindBook,
+}: LibraryWallProps) {
   const [shelves, setShelves] = useState<Shelf[] | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [failed, setFailed] = useState(false);
@@ -423,6 +437,29 @@ function LibraryWall({ reloadKey, onAddBooks, onFindBook }: LibraryWallProps) {
       </div>
       {openBookId !== null ? (
         <DetailPanel bookId={openBookId} onClose={closeDetail} />
+      ) : null}
+      {undo !== null ? (
+        <aside className="undo-notice" data-testid="undo-notice" role="status">
+          <p>A new shelf was added for the book you just imported.</p>
+          <button
+            type="button"
+            className="secondary-action undo-action"
+            data-testid="undo-placement"
+            onClick={onUndo}
+            disabled={busy}
+          >
+            {busy ? "Undoing…" : "Undo"}
+          </button>
+        </aside>
+      ) : null}
+      {notice ? (
+        <p
+          className="scan-notice library-notice"
+          role="status"
+          data-testid="library-notice"
+        >
+          {notice}
+        </p>
       ) : null}
       {books.length === 0 ? (
         <div className="wall-actions" data-testid="empty-library-actions">
@@ -525,18 +562,31 @@ interface SettingsViewProps {
   status: LibraryStatus;
   busy: boolean;
   notice: string | null;
+  shelfCapacity: number | null;
   onRescan: () => void;
   onChoose: () => void;
+  onSetCapacity: (capacity: number) => void;
 }
 
 function SettingsView({
   status,
   busy,
   notice,
+  shelfCapacity,
   onRescan,
   onChoose,
+  onSetCapacity,
 }: SettingsViewProps) {
   const reachable = status.state === "ready";
+  const [draftCapacity, setDraftCapacity] = useState("");
+
+  useEffect(() => {
+    if (shelfCapacity !== null) setDraftCapacity(String(shelfCapacity));
+  }, [shelfCapacity]);
+
+  const parsedCapacity = Number(draftCapacity);
+  const capacityValid =
+    Number.isInteger(parsedCapacity) && parsedCapacity >= 1;
   return (
     <main id="library-main" className="placeholder" data-testid="settings-view">
       <section className="placeholder-card settings-card">
@@ -561,6 +611,36 @@ function SettingsView({
             </dd>
           </div>
         </dl>
+        <form
+          className="capacity-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (capacityValid) onSetCapacity(parsedCapacity);
+          }}
+        >
+          <label htmlFor="shelf-capacity">Shelf capacity</label>
+          <div className="capacity-controls">
+            <input
+              id="shelf-capacity"
+              data-testid="shelf-capacity"
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={draftCapacity}
+              onChange={(event) => setDraftCapacity(event.target.value)}
+              disabled={busy || shelfCapacity === null}
+            />
+            <button
+              type="submit"
+              className="secondary-action"
+              data-testid="save-shelf-capacity"
+              disabled={busy || !capacityValid || shelfCapacity === null}
+            >
+              Save
+            </button>
+          </div>
+        </form>
         <div className="settings-actions">
           <button
             type="button"
@@ -641,6 +721,14 @@ const SCAN_REASON_LABELS: Record<ScanIssueReason, string> = {
   invalid_pdf: "not a valid PDF",
 };
 
+function appendedPlacement(report: ScanReport): Placement | null {
+  const placements = report.placements ?? [];
+  for (let index = placements.length - 1; index >= 0; index -= 1) {
+    if (placements[index].appendedShelf) return placements[index];
+  }
+  return null;
+}
+
 function scanNotice(report: ScanReport): string {
   const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
   const removed =
@@ -694,6 +782,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingUndo, setPendingUndo] = useState<Placement | null>(null);
+  const [shelfCapacity, setShelfCapacity] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pullRef = useRef<HTMLButtonElement>(null);
@@ -714,20 +804,38 @@ export default function App() {
     [closeDrawer],
   );
 
+  const initialLoadStarted = useRef(false);
+
   useEffect(() => {
-    let alive = true;
+    // A single launch reconciliation; StrictMode may replay this effect, but
+    // scanning twice would waste a scan and lose the first undo notice.
+    if (initialLoadStarted.current) return;
+    initialLoadStarted.current = true;
     (async () => {
       try {
         let next = await platform.libraryStatus();
         if (next.state === "ready") {
           const outcome = await runScan();
           if (outcome.kind === "unavailable") next = disconnected(next);
+          if (outcome.kind === "report") {
+            setPendingUndo(appendedPlacement(outcome.report));
+          }
         }
-        if (alive) setStatus(next);
+        setStatus(next);
       } catch {
-        if (alive) setStatusFailed(true);
+        setStatusFailed(true);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    platform
+      .getShelfCapacity()
+      .then((next) => {
+        if (alive) setShelfCapacity(next);
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };
@@ -743,6 +851,7 @@ export default function App() {
         const outcome = await runScan();
         if (outcome.kind === "report") {
           setNotice(scanNotice(outcome.report));
+          setPendingUndo(appendedPlacement(outcome.report));
         } else if (outcome.kind === "unavailable") {
           next = disconnected(next);
         } else {
@@ -765,6 +874,7 @@ export default function App() {
       const outcome = await runScan();
       if (outcome.kind === "report") {
         setNotice(scanNotice(outcome.report));
+        setPendingUndo(appendedPlacement(outcome.report));
         setReloadKey((key) => key + 1);
       } else if (outcome.kind === "unavailable") {
         setStatus((current) => (current ? disconnected(current) : current));
@@ -772,6 +882,53 @@ export default function App() {
       } else {
         setNotice("The scan could not be completed. Please try again.");
       }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const undoPlacement = useCallback(async () => {
+    if (pendingUndo === null) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      const removed = await platform.undoPlacement(
+        pendingUndo.bookId,
+        pendingUndo.shelfId,
+      );
+      setPendingUndo(null);
+      setReloadKey((key) => key + 1);
+      setNotice(
+        removed
+          ? "Removed from the library — the file stays in your folder"
+          : "That shelf has changed, so nothing was removed.",
+      );
+    } catch (error) {
+      setPendingUndo(null);
+      setNotice(
+        isApiError(error)
+          ? error.message
+          : "The placement could not be undone. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [pendingUndo]);
+
+  const saveCapacity = useCallback(async (capacity: number) => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const applied = await platform.setShelfCapacity(capacity);
+      setShelfCapacity(applied);
+      setReloadKey((key) => key + 1);
+      setNotice(`Shelf capacity set to ${applied}.`);
+    } catch (error) {
+      setNotice(
+        isApiError(error)
+          ? error.message
+          : "Shelf capacity could not be saved. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -807,8 +964,10 @@ export default function App() {
           status={status}
           busy={busy}
           notice={notice}
+          shelfCapacity={shelfCapacity}
           onRescan={rescan}
           onChoose={chooseFolder}
+          onSetCapacity={saveCapacity}
         />
       );
     }
@@ -853,6 +1012,10 @@ export default function App() {
     return (
       <LibraryWall
         reloadKey={reloadKey}
+        notice={notice}
+        undo={pendingUndo}
+        busy={busy}
+        onUndo={undoPlacement}
         onAddBooks={chooseFolder}
         onFindBook={() => setView("search")}
       />

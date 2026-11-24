@@ -211,6 +211,25 @@ async fn rescan_library(app: AppHandle) -> Result<ScanReport, ApiError> {
     blocking(move || rescan(&app)).await
 }
 
+#[tauri::command]
+fn get_shelf_capacity(api: tauri::State<'_, Api>) -> Result<i64, ApiError> {
+    api.shelf_capacity()
+}
+
+#[tauri::command]
+fn set_shelf_capacity(api: tauri::State<'_, Api>, capacity: i64) -> Result<i64, ApiError> {
+    api.set_shelf_capacity(capacity)
+}
+
+#[tauri::command]
+fn undo_placement(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    shelf_id: i64,
+) -> Result<bool, ApiError> {
+    api.undo_placement(book_id, shelf_id)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
@@ -237,7 +256,10 @@ pub fn run() {
             get_book_detail,
             library_status,
             choose_library_folder,
-            rescan_library
+            rescan_library,
+            get_shelf_capacity,
+            set_shelf_capacity,
+            undo_placement
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

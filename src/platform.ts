@@ -56,6 +56,14 @@ export interface Shelf {
   capacity: number;
 }
 
+/** Mirrors `pocketlibrary_core::Placement`. */
+export interface Placement {
+  bookId: number;
+  shelfId: number;
+  shelfOrdinal: number;
+  appendedShelf: boolean;
+}
+
 /** Mirrors `pocketlibrary_core::LibraryState`. */
 export type LibraryState = "needsFolder" | "ready" | "disconnected";
 
@@ -72,6 +80,7 @@ export interface ScanReport {
   removed: number;
   duplicates: number;
   skipped: ScanIssue[];
+  placements: Placement[];
 }
 
 /** Mirrors `pocketlibrary_core::ApiError` (camelCase on the wire). */
@@ -102,6 +111,9 @@ export interface Platform {
   libraryStatus(): Promise<LibraryStatus>;
   chooseLibraryFolder(): Promise<LibraryStatus>;
   rescanLibrary(): Promise<ScanReport>;
+  getShelfCapacity(): Promise<number>;
+  setShelfCapacity(capacity: number): Promise<number>;
+  undoPlacement(bookId: number, shelfId: number): Promise<boolean>;
 }
 
 export type Invoke = typeof invoke;
@@ -121,6 +133,11 @@ export function createTauriPlatform(call: Invoke): Platform {
     chooseLibraryFolder: () =>
       call<LibraryStatus>("choose_library_folder"),
     rescanLibrary: () => call<ScanReport>("rescan_library"),
+    getShelfCapacity: () => call<number>("get_shelf_capacity"),
+    setShelfCapacity: (capacity) =>
+      call<number>("set_shelf_capacity", { capacity }),
+    undoPlacement: (bookId, shelfId) =>
+      call<boolean>("undo_placement", { bookId, shelfId }),
   };
 }
 
@@ -144,6 +161,10 @@ export interface MockConfig {
   state?: LibraryState;
   folderName?: string | null;
   books?: Book[];
+  shelfCapacity?: number;
+  shelves?: Shelf[];
+  /** Books a rescan should import, one shelf-placement at a time. */
+  scanAdds?: Book[];
 }
 
 interface MockWindow extends Window {
@@ -155,25 +176,85 @@ function mockConfig(): MockConfig {
   return (window as MockWindow).__POCKETLIBRARY_MOCK__ ?? {};
 }
 
-function shelvesFor(books: Book[]): Shelf[] {
+function initialShelves(config: MockConfig, books: Book[]): Shelf[] {
+  if (config.shelves && config.shelves.length > 0) {
+    return config.shelves.map((shelf) => ({ ...shelf }));
+  }
+  const capacity = config.shelfCapacity ?? 12;
   const ids = new Set(books.map((book) => book.shelfId ?? 1));
-  if (ids.size === 0) ids.add(1);
+  ids.add(1);
   return [...ids]
     .sort((left, right) => left - right)
-    .map((id, ordinal) => ({ id, ordinal, capacity: 12 }));
+    .map((id, ordinal) => ({ id, ordinal, capacity }));
 }
 
 function createMockPlatform(config: MockConfig = {}): Platform {
   let state: LibraryState = config.state ?? "needsFolder";
   let folderName = config.folderName ?? null;
   let books = config.books ? [...config.books] : [];
+  let shelves = initialShelves(config, books);
+  let capacity = config.shelfCapacity ?? 12;
+  let scanAdds = config.scanAdds ? [...config.scanAdds] : [];
+  let nextBookId = Math.max(0, ...books.map((book) => book.id)) + 1;
+  let nextShelfId = Math.max(0, ...shelves.map((shelf) => shelf.id)) + 1;
 
   const status = (): LibraryStatus => ({ state, folderName });
+
+  function booksOnShelf(shelfId: number): Book[] {
+    return books.filter((book) => book.shelfId === shelfId);
+  }
+
+  function rescan(): ScanReport {
+    const report: ScanReport = {
+      total: books.length,
+      added: 0,
+      removed: 0,
+      duplicates: 0,
+      skipped: [],
+      placements: [],
+    };
+
+    for (const add of scanAdds) {
+      let shelf = shelves.find(
+        (candidate) =>
+          booksOnShelf(candidate.id).length < candidate.capacity,
+      );
+      let appendedShelf = false;
+      if (!shelf) {
+        const ordinal = shelves.length;
+        shelf = { id: nextShelfId++, ordinal, capacity };
+        shelves = [...shelves, shelf];
+        appendedShelf = true;
+      }
+      const used = new Set(
+        booksOnShelf(shelf.id).map((book) => book.slotIndex ?? 0),
+      );
+      let slotIndex = 0;
+      while (used.has(slotIndex)) slotIndex += 1;
+      const book: Book = {
+        ...add,
+        id: nextBookId++,
+        shelfId: shelf.id,
+        slotIndex,
+      };
+      books = [...books, book];
+      report.added += 1;
+      report.total += 1;
+      report.placements.push({
+        bookId: book.id,
+        shelfId: shelf.id,
+        shelfOrdinal: shelf.ordinal,
+        appendedShelf,
+      });
+    }
+    scanAdds = [];
+    return report;
+  }
 
   return {
     appInfo: async () => MOCK_APP_INFO,
     listBooks: async () => books,
-    listShelves: async () => shelvesFor(books),
+    listShelves: async () => shelves,
     getBookDetail: async (id) => {
       const book = books.find((candidate) => candidate.id === id);
       if (!book) throw { code: "book_not_found", message: "That book could not be found." };
@@ -184,15 +265,33 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       state = "ready";
       folderName = folderName ?? "PocketLibrary";
       books = config.books ? [...config.books] : [];
+      shelves = initialShelves(config, books);
+      scanAdds = config.scanAdds ? [...config.scanAdds] : [];
       return status();
     },
-    rescanLibrary: async () => ({
-      total: books.length,
-      added: 0,
-      removed: 0,
-      duplicates: 0,
-      skipped: [],
-    }),
+    rescanLibrary: async () => rescan(),
+    getShelfCapacity: async () => capacity,
+    setShelfCapacity: async (next) => {
+      if (!Number.isInteger(next) || next < 1) {
+        throw { code: "invalid_capacity", message: "Shelf capacity must be at least one book." };
+      }
+      capacity = next;
+      shelves = shelves.map((shelf) => ({ ...shelf, capacity: next }));
+      return capacity;
+    },
+    undoPlacement: async (bookId, shelfId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book || book.shelfId !== shelfId) return false;
+      const shelf = shelves.find((candidate) => candidate.id === shelfId);
+      if (!shelf || shelf.ordinal === 0) return false;
+      if (shelf.ordinal !== Math.max(...shelves.map((item) => item.ordinal))) {
+        return false;
+      }
+      if (booksOnShelf(shelfId).length !== 1) return false;
+      books = books.filter((candidate) => candidate.id !== bookId);
+      shelves = shelves.filter((candidate) => candidate.id !== shelfId);
+      return true;
+    },
   };
 }
 
