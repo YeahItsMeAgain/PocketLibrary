@@ -381,6 +381,7 @@ button:focus-visible {
 }
 
 .spine {
+  position: relative;
   flex: 0 1 34px;
   min-width: 18px;
   height: 82%;
@@ -398,6 +399,53 @@ button:focus-visible {
   line-height: 1.1;
   text-align: center;
   writing-mode: vertical-rl;
+}
+
+/* A finished book wears a small brass wax seal near the foot of the spine. */
+.spine[data-status="finished"] {
+  padding-bottom: 23px;
+}
+
+.spine-seal {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  margin-left: -6.5px;
+  border: 1px solid #6b4c1f;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f6e3b3, #d3ad61 48%, #97702f 100%);
+  box-shadow:
+    0 0 3px rgba(240, 220, 180, 0.4),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.45);
+  color: #3b2408;
+  font-family: var(--body);
+  font-size: 7px;
+  line-height: 1;
+  writing-mode: horizontal-tb;
+}
+
+/* A book in progress keeps a thin crimson ribbon at the head of the spine. */
+.spine[data-status="reading"] {
+  padding-top: 21px;
+}
+
+.spine-ribbon {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  width: 7px;
+  height: 16px;
+  margin-left: -3.5px;
+  background: linear-gradient(180deg, #a23434, #6f1f24);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%);
 }
 
 .lip {

@@ -28,3 +28,5 @@ New tests: failed subfolder leaves all books untouched; over-deep tree aborts; s
 Verification: `cargo test --manifest-path core/Cargo.toml` (16 passed), `npm run test:e2e` (8 passed), `npm run build`, `npx tsc --noEmit`, Android clippy `-D warnings`, and a debug APK rebuild with `apksigner verify`.
 
 APK: `src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk`, 303,866,552 bytes, SHA-256 `da9ee4d5cf70e71ca9b06ae3b9193eec6d4ccd59482cfadbb8ac73443b0528e8`.
+
+Visual cue (2026-11-24): a minimal finished seal / reading ribbon was pulled forward from 06 so removed-finished files are distinguishable now; full label system still tracked in 06.

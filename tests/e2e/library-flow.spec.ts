@@ -79,6 +79,68 @@ test("a scan result renders book spines on the shelf", async ({ page }) => {
   );
 });
 
+test("finished spines show the brass seal and reading spines the ribbon", async ({
+  page,
+}) => {
+  const books: Book[] = [
+    { ...mockBook(3, "A Finished Volume", "epub", 0), readingStatus: "finished" },
+    { ...mockBook(4, "A Volume in Progress", "pdf", 1), readingStatus: "reading" },
+  ];
+
+  await page.addInitScript((nextBooks) => {
+    (
+      window as unknown as { __POCKETLIBRARY_MOCK__: unknown }
+    ).__POCKETLIBRARY_MOCK__ = {
+      state: "ready",
+      folderName: "PocketLibrary",
+      books: nextBooks,
+    };
+  }, books);
+
+  await page.goto("/");
+
+  const finished = page.locator('[data-testid="spine"][data-status="finished"]');
+  const reading = page.locator('[data-testid="spine"][data-status="reading"]');
+  await expect(finished).toHaveCount(1);
+  await expect(reading).toHaveCount(1);
+
+  await expect(finished.getByTestId("spine-seal")).toBeVisible();
+  await expect(finished.getByTestId("spine-ribbon")).toHaveCount(0);
+  await expect(finished).toHaveAttribute("aria-label", /Finished/);
+
+  await expect(reading.getByTestId("spine-ribbon")).toBeVisible();
+  await expect(reading.getByTestId("spine-seal")).toHaveCount(0);
+  await expect(reading).toHaveAttribute("aria-label", /Reading/);
+
+  // The cues stay inside the spine and the spines still share the shelf line.
+  const finishedBox = await finished.boundingBox();
+  const readingBox = await reading.boundingBox();
+  const sealBox = await finished.getByTestId("spine-seal").boundingBox();
+  const ribbonBox = await reading.getByTestId("spine-ribbon").boundingBox();
+  for (const box of [finishedBox, readingBox, sealBox, ribbonBox]) {
+    expect(box).not.toBeNull();
+  }
+  if (finishedBox && readingBox && sealBox && ribbonBox) {
+    expect(sealBox.y).toBeGreaterThanOrEqual(finishedBox.y);
+    expect(sealBox.y + sealBox.height).toBeLessThanOrEqual(
+      finishedBox.y + finishedBox.height + 1,
+    );
+    expect(sealBox.x).toBeGreaterThanOrEqual(finishedBox.x);
+    expect(sealBox.x + sealBox.width).toBeLessThanOrEqual(
+      finishedBox.x + finishedBox.width + 1,
+    );
+    expect(ribbonBox.y).toBeGreaterThanOrEqual(readingBox.y - 1);
+    expect(ribbonBox.y + ribbonBox.height).toBeLessThanOrEqual(
+      readingBox.y + readingBox.height,
+    );
+    expect(
+      Math.abs(
+        finishedBox.y + finishedBox.height - (readingBox.y + readingBox.height),
+      ),
+    ).toBeLessThanOrEqual(1);
+  }
+});
+
 test("a revoked grant shows reconnect instead of an empty wall", async ({
   page,
 }) => {

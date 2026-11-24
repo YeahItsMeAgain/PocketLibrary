@@ -30,6 +30,12 @@ function shelfMark(ordinal: number): string {
   return ROMAN_MARKS[ordinal] ?? String(ordinal + 1);
 }
 
+const STATUS_LABELS: Record<Book["readingStatus"], string> = {
+  unread: "Unread",
+  reading: "Reading",
+  finished: "Finished",
+};
+
 type View = "library" | "search" | "settings";
 
 const NAV_ITEMS: ReadonlyArray<{ view: View; label: string }> = [
@@ -82,17 +88,37 @@ function ShelfCase({ shelf, books }: { shelf: Shelf; books: Book[] }) {
             </div>
           ) : (
             <ul className="spines">
-              {books.map((book) => (
-                <li
-                  key={book.id}
-                  className="spine"
-                  data-testid="spine"
-                  data-status={book.readingStatus}
-                  title={book.title}
-                >
-                  <span>{book.title}</span>
-                </li>
-              ))}
+              {books.map((book) => {
+                const statusLabel = STATUS_LABELS[book.readingStatus];
+                return (
+                  <li
+                    key={book.id}
+                    className="spine"
+                    data-testid="spine"
+                    data-status={book.readingStatus}
+                    title={`${book.title} — ${statusLabel}`}
+                    aria-label={`${book.title}, ${statusLabel}`}
+                  >
+                    <span className="spine-title">{book.title}</span>
+                    {book.readingStatus === "finished" ? (
+                      <span
+                        className="spine-seal"
+                        data-testid="spine-seal"
+                        aria-hidden="true"
+                      >
+                        ✓
+                      </span>
+                    ) : null}
+                    {book.readingStatus === "reading" ? (
+                      <span
+                        className="spine-ribbon"
+                        data-testid="spine-ribbon"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
