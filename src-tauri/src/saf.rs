@@ -5,7 +5,6 @@
 
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use pocketlibrary_core::{Error, FileSource, Result, SourceEntry, SourceKind};
 use tauri_plugin_android_fs::{Entry, FsUri};
@@ -60,7 +59,6 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
         let mut out = Vec::with_capacity(entries.len());
         for entry in entries {
             let name = entry.name().to_owned();
-            let modified = system_time_millis(entry.last_modified());
             let path = if parent.is_empty() {
                 name.clone()
             } else {
@@ -68,13 +66,11 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
             };
 
             match entry {
-                Entry::File { len, .. } => out.push(SourceEntry {
+                Entry::File { .. } => out.push(SourceEntry {
                     name,
                     path,
                     kind: SourceKind::File,
                     handle: String::new(),
-                    len,
-                    modified,
                 }),
                 Entry::Dir { uri, .. } => {
                     if let Ok(mut paths) = self.paths.lock() {
@@ -85,18 +81,10 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
                         path,
                         kind: SourceKind::Directory,
                         handle: uri.uri,
-                        len: 0,
-                        modified,
                     });
                 }
             }
         }
         Ok(out)
     }
-}
-
-fn system_time_millis(time: SystemTime) -> Option<i64> {
-    time.duration_since(UNIX_EPOCH)
-        .ok()
-        .map(|duration| duration.as_millis() as i64)
 }
