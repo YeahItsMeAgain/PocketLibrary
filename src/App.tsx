@@ -609,16 +609,59 @@ function DetailPanel({
         </button>
         <div className="d3-wrap">
           <div className="detail-stage v3d-frame v4d-frame">
-            <button
-              type="button"
-              className="btn-back"
-              data-testid="detail-back"
-              aria-label="Back to shelf"
-              onClick={onClose}
-            >
-              <span className="arrow" aria-hidden="true">←</span>
-              <span>Back to shelf</span>
-            </button>
+            <div className="detail-toolbar">
+              <button
+                type="button"
+                className="btn-back"
+                data-testid="detail-back"
+                aria-label="Back to shelf"
+                onClick={onClose}
+              >
+                <span className="arrow" aria-hidden="true">←</span>
+                <span>Back to shelf</span>
+              </button>
+              {detail ? (
+                <div className="detail-actions">
+                  <button
+                    type="button"
+                    className="detail-overflow"
+                    data-testid="detail-actions"
+                    aria-label="Book actions"
+                    aria-haspopup="menu"
+                    aria-expanded={statusMenu}
+                    onClick={() => {
+                      setStatusMenu((open) => !open);
+                      setLabelMenu(false);
+                    }}
+                  >
+                    <span aria-hidden="true">⋯</span>
+                  </button>
+                  {statusMenu ? (
+                    <div
+                      className="detail-status-menu"
+                      role="menu"
+                      aria-label="Set reading status"
+                    >
+                      {(
+                        ["unread", "reading", "finished"] as ReadingStatus[]
+                      ).map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={detail.readingStatus === status}
+                          className="detail-status-option"
+                          data-testid={`detail-status-option-${status}`}
+                          onClick={() => chooseStatus(status)}
+                        >
+                          {STATUS_LABELS[status]}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
 
             {failed ? (
               <div className="detail-loading">
@@ -686,44 +729,6 @@ function DetailPanel({
                         )}
                       </span>
                     ) : null}
-                    <div className="cover-status">
-                      <button
-                        type="button"
-                        className="cover-status-button"
-                        data-testid="detail-status-control"
-                        aria-haspopup="menu"
-                        aria-expanded={statusMenu}
-                        onClick={() => {
-                          setStatusMenu((open) => !open);
-                          setLabelMenu(false);
-                        }}
-                      >
-                        Status · {STATUS_LABELS[detail.readingStatus]}
-                      </button>
-                      {statusMenu ? (
-                        <div
-                          className="cover-status-menu"
-                          role="menu"
-                          aria-label="Set reading status"
-                        >
-                          {(
-                            ["unread", "reading", "finished"] as ReadingStatus[]
-                          ).map((status) => (
-                            <button
-                              key={status}
-                              type="button"
-                              role="menuitemradio"
-                              aria-checked={detail.readingStatus === status}
-                              className="cover-status-option"
-                              data-testid={`detail-status-option-${status}`}
-                              onClick={() => chooseStatus(status)}
-                            >
-                              {STATUS_LABELS[status]}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
                   </div>
                 </div>
 

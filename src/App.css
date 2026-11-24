@@ -1464,31 +1464,48 @@ button:focus-visible {
   color: #ecd6a6;
 }
 
-.detail .cover-status {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 6;
+.detail .detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 14px;
 }
 
-.detail .cover-status-button {
-  min-height: 34px;
-  padding: 6px 9px;
-  border: 1px solid rgba(201, 168, 106, 0.6);
-  border-radius: 2px;
-  background: rgba(15, 8, 18, 0.9);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
-  color: #ead6ad;
-  font-family: var(--display);
-  font-size: 8.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.detail .detail-toolbar .btn-back {
+  margin: 0;
 }
 
-.detail .cover-status-menu {
+.detail .detail-actions {
+  position: relative;
+  z-index: 8;
+  flex: 0 0 auto;
+}
+
+.detail .detail-overflow {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(201, 168, 106, 0.5);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #2a1834, #140b1c);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 168, 106, 0.16),
+    0 4px 10px rgba(0, 0, 0, 0.45);
+  color: #e6cf9b;
+  font-size: 20px;
+  line-height: 1;
+  place-items: center;
+}
+
+.detail .detail-overflow:active {
+  transform: scale(0.94);
+}
+
+.detail .detail-status-menu {
   position: absolute;
-  top: 39px;
-  left: 0;
+  top: 46px;
+  right: 0;
   display: flex;
   flex-direction: column;
   min-width: 128px;
@@ -1498,14 +1515,14 @@ button:focus-visible {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.68);
 }
 
-.detail .cover-status-option {
+.detail .detail-status-option {
   padding: 9px 10px;
   color: #e2cca3;
   font-size: 11px;
   text-align: left;
 }
 
-.detail .cover-status-option[aria-checked="true"] {
+.detail .detail-status-option[aria-checked="true"] {
   background: rgba(201, 168, 106, 0.2);
   color: #ffe7b1;
 }

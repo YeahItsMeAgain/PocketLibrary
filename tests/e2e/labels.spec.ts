@@ -173,7 +173,7 @@ test("deleting a label removes its bands but leaves every book", async ({
   await expect(page.getByTestId("filter-strip")).toContainText("No labels yet");
 });
 
-test("the detail cover shows a paper percentage sticker, a gold sticker, and a manual status control", async ({
+test("the detail cover shows a paper percentage sticker and a gold sticker, with status in overflow actions", async ({
   page,
 }) => {
   await seed(page, {
@@ -204,12 +204,21 @@ test("the detail cover shows a paper percentage sticker, a gold sticker, and a m
   await page.getByTestId("spine").nth(0).click();
   await expect(page.getByTestId("detail-title")).toBeVisible();
   await expect(page.getByTestId("detail-sticker")).toHaveCount(0);
-  await expect(page.getByTestId("detail-meta")).not.toContainText(
-    /reading status/i,
-  );
+  const detail = page.getByTestId("book-detail");
+  await expect(detail).not.toContainText("STATUS ·");
+  await expect(detail).not.toContainText(/reading status/i);
+  await expect(
+    detail.getByText(/^(unread|reading|finished)$/i),
+  ).toHaveCount(0);
 
-  await page.getByTestId("detail-status-control").click();
+  await page.getByTestId("detail-actions").click();
+  await expect(
+    page.getByRole("menu", { name: "Set reading status" }),
+  ).toBeVisible();
   await page.getByTestId("detail-status-option-finished").click();
+  await expect(
+    page.getByRole("menu", { name: "Set reading status" }),
+  ).toHaveCount(0);
   await expect(page.getByTestId("detail-sticker")).toHaveAttribute(
     "data-sticker",
     "gold",
