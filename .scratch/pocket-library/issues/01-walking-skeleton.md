@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** done
+**Status:** awaiting-device-test
 
 - [ ] Fresh install launches to an empty library wall with the drawer available
 - [x] The UI calls a real Rust command through the platform adapter and renders the result (for example, app version)
@@ -12,17 +12,25 @@
 - [x] No storage-spike screen or SPIKE-only commands remain
 - [ ] A debug APK builds with the documented command and installs on a phone
 
+## Notes
+
+- Drawer swipe/drag and Android-back gestures are deferred to ticket 09; this
+  ticket keeps tap, scrim and Escape.
+
 ## Verification
 
-- `cargo test --manifest-path core/Cargo.toml`: 4 passed (fresh migration,
-  idempotent reopen, empty catalogue, app info version/schema).
-- `npm run test:e2e`: 3 passed (empty wall, drawer navigation, Escape/focus).
+- `cargo test --manifest-path core/Cargo.toml`: 5 passed (fresh migration,
+  idempotent reopen, fresh DB has 1 shelf and 0 books, app info version/schema,
+  serialised books contain no path fields). Tests drive `Api`, the command API,
+  not the service internals.
+- `npm run test:e2e`: 5 passed (empty wall from persisted shelves, drawer
+  navigation, Escape/focus, real Tauri adapter with mocked invoke, injected
+  invoke factory).
 - `npm run build` and `npx tsc --noEmit`: pass.
-- Android clippy (`aarch64-linux-android`, `-D warnings`): pass; the NDK C
-  compiler is now exported by `scripts/android-env.sh` for bundled SQLite.
-- Debug APK built and `apksigner verify` passed:
+- Android clippy (`aarch64-linux-android`, `-D warnings`): pass.
+- Debug APK rebuilt and `apksigner verify` passed:
   `src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk`,
-  300,409,112 bytes, signed with the Android debug key.
+  300,318,672 bytes, signed with the Android debug key.
 
 The two unticked boxes need a physical phone and are unverified here: no
 emulator/device is attached, so the APK was built and signature-checked but not
