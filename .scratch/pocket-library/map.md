@@ -15,7 +15,7 @@ A complete, buildable spec plus a full ticket graph for PocketLibrary — an And
 - Labels are reusable coloured stickers, many-to-many, filters only. Reading status is unread/reading/finished, manual plus automatic, shown on the spine; a vanished file becomes "finished" and the book is never dropped.
 - Metadata: embedded first, online enrichment only for gaps, manual edit always available, hash-based duplicate detection.
 - Reader M1: TOC, typography, themes, page/scroll mode, resume, progress, bookmarks, open-in-another-app. Optional later: highlights, notes, in-book search, TTS.
-- Acquisition HTTP must use browser/TLS impersonation (JA3/JA4) to survive Cloudflare/DDoS-Guard; `wreq` (github.com/0x676e67/wreq) is the candidate. Libgen primary (LG+ mirrors; there is no structured search API — search is the HTML result table, with some filters client-side); automatic mirror failover; Anna's Archive is not a viable v1 fallback (DDoS-Guard 403; its only API needs a membership key).
+- Acquisition HTTP must use browser/TLS impersonation (JA3/JA4) to survive Cloudflare/DDoS-Guard; `wreq` (github.com/0x676e67/wreq) is the candidate. Libgen primary (LG+ mirrors; there is no structured search API — search is the HTML result table, with some filters client-side); automatic mirror failover; Anna's Archive is out of v1 entirely: no external hand-off, no source that cannot download in-app.
 - Design for ~2,000 books; virtualise the shelf.
 - Local SQLite in app-private storage; explicit export/import in M1.
 - No DRM handling. EPUB and PDF only.
@@ -30,6 +30,7 @@ A complete, buildable spec plus a full ticket graph for PocketLibrary — an And
 
 ## Decisions so far
 
+- [11 — Acquisition experience](issues/11-acquisition-ux.md): Libgen-only and fully in-app; client-side filters on 25-per-page HTML results; optional non-blocking Open Library enrichment; two-concurrent persisted queue with Range resume; md5 pre-check and BLAKE3 post-check for duplicates; `Author - Title (Year)` naming; automatic mirror failover; no Anna's Archive.
 - [14 — Reader experience](issues/14-reader-ux.md): immersive chrome, paginated by default with scroll option, three-zone taps, Contents sheet with chapters + bookmarks, Paper/Sepia/Night, five sizes and three bundled serifs, PDF uses the same shell with zoom and theme tint instead of reflow, external reading from detail and top bar.
 - [09 — Local data model](issues/09-data-model.md): SQLite/WAL in app-private storage; first-class persisted `shelves` with capacity and order; books carry `shelf_id` + `slot_index`; BLAKE3 identity with mutable path; reading state, annotations, downloads and key-value settings; `user_version` migrations.
 - [02 — Screen map and navigation](issues/02-screen-map.md): hidden brass drawer (Library/Search/Settings) opened by pull/swipe and closed by drag/back; front-desk acquisition sheet with advanced search, results, mirrors, download queue and shelf landing; labels managed from the filter strip; settings includes backup; explicit first-run and permission-recovery states.
