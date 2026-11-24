@@ -9,13 +9,18 @@ import {
 } from "react";
 
 import {
+  LABEL_PALETTE,
   isApiError,
   isLibraryUnavailable,
   platform,
   type AppInfo,
   type Book,
   type BookDetail,
+  type Label,
+  type LabelUsage,
   type LibraryStatus,
+  type ReadingState,
+  type ReadingStatus,
   type ScanIssueReason,
   type ScanReport,
   type Shelf,
@@ -75,14 +80,37 @@ interface ShelfCaseProps {
   shelf: Shelf;
   books: Book[];
   draggedBookId: number | null;
+  dimmedBookIds: Set<number>;
   onOpen: (book: Book) => void;
   onPress: (book: Book, event: ReactPointerEvent<HTMLLIElement>) => void;
 }
 
 function SpineFace({ book }: { book: Book }) {
+  const bands = book.labels.slice(0, 2);
+  const hiddenLabels = book.labels.length - bands.length;
   return (
     <>
       <span className="spine-title">{book.title}</span>
+      {bands.length > 0 ? (
+        <span className="spine-labels" aria-hidden="true">
+          {bands.map((label) => (
+            <span
+              key={label.id}
+              className="spine-label-band"
+              data-testid="spine-label-band"
+              style={{ backgroundColor: label.colour }}
+              title={label.name}
+            >
+              {label.name}
+            </span>
+          ))}
+          {hiddenLabels > 0 ? (
+            <span className="spine-label-more" data-testid="spine-label-more">
+              +{hiddenLabels}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       {book.readingStatus === "finished" ? (
         <span
           className="spine-seal"
@@ -107,6 +135,7 @@ function ShelfCase({
   shelf,
   books,
   draggedBookId,
+  dimmedBookIds,
   onOpen,
   onPress,
 }: ShelfCaseProps) {
@@ -141,14 +170,18 @@ function ShelfCase({
               {books.map((book) => {
                 const statusLabel = STATUS_LABELS[book.readingStatus];
                 const dragging = draggedBookId === book.id;
+                const dimmed = dimmedBookIds.has(book.id);
                 return (
                   <li
                     key={book.id}
-                    className={`spine${dragging ? " is-dragging-source" : ""}`}
+                    className={`spine${dragging ? " is-dragging-source" : ""}${
+                      book.labels.length > 0 ? " has-labels" : ""
+                    }${dimmed ? " is-dimmed" : ""}`}
                     data-testid="spine"
                     data-book-id={book.id}
                     data-slot={book.slotIndex ?? undefined}
                     data-status={book.readingStatus}
+                    data-dimmed={dimmed || undefined}
                     data-dragging={dragging || undefined}
                     title={`${book.title} — ${statusLabel}`}
                     aria-label={`${book.title}, ${statusLabel}`}
@@ -184,23 +217,57 @@ function ShelfCase({
 interface DetailPanelProps {
   bookId: number;
   onClose: () => void;
+  onBookChanged: (patch: {
+    id: number;
+    readingStatus?: ReadingStatus;
+    labels?: Label[];
+  }) => void;
+  onLabelsChanged: () => void;
 }
 
-function DetailPanel({ bookId, onClose }: DetailPanelProps) {
+function DetailPanel({
+  bookId,
+  onClose,
+  onBookChanged,
+  onLabelsChanged,
+}: DetailPanelProps) {
   const [detail, setDetail] = useState<BookDetail | null>(null);
+  const [reading, setReading] = useState<ReadingState | null>(null);
+  const [availableLabels, setAvailableLabels] = useState<LabelUsage[]>([]);
   const [failed, setFailed] = useState(false);
   const [readerNotice, setReaderNotice] = useState(false);
+  const [statusMenu, setStatusMenu] = useState(false);
+  const [labelMenu, setLabelMenu] = useState(false);
+  const [labelNotice, setLabelNotice] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+
+  const refreshAvailableLabels = useCallback(async () => {
+    try {
+      setAvailableLabels(await platform.listLabels());
+    } catch {
+      // The manager surface still shows the labels already worn.
+    }
+  }, []);
 
   useEffect(() => {
     let alive = true;
     setDetail(null);
+    setReading(null);
     setFailed(false);
     setReaderNotice(false);
-    platform
-      .getBookDetail(bookId)
-      .then((next) => {
-        if (alive) setDetail(next);
+    setStatusMenu(false);
+    setLabelMenu(false);
+    setLabelNotice(null);
+    Promise.all([
+      platform.getBookDetail(bookId),
+      platform.readingState(bookId),
+      platform.listLabels(),
+    ])
+      .then(([next, state, labels]) => {
+        if (!alive) return;
+        setDetail(next);
+        setReading(state);
+        setAvailableLabels(labels);
       })
       .catch(() => {
         if (alive) setFailed(true);
@@ -209,6 +276,84 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
       alive = false;
     };
   }, [bookId]);
+
+  const attachLabel = useCallback(
+    async (label: Label) => {
+      if (!detail) return;
+      try {
+        await platform.attachLabel(bookId, label.id);
+        const labels = [...detail.labels, label];
+        setDetail({ ...detail, labels });
+        onBookChanged({ id: bookId, labels });
+        onLabelsChanged();
+        setLabelMenu(false);
+        setLabelNotice(null);
+        await refreshAvailableLabels();
+      } catch (error) {
+        setLabelNotice(
+          isApiError(error)
+            ? error.message
+            : "That label could not be attached. Please try again.",
+        );
+      }
+    },
+    [
+      detail,
+      bookId,
+      onBookChanged,
+      onLabelsChanged,
+      refreshAvailableLabels,
+    ],
+  );
+
+  const detachLabel = useCallback(
+    async (label: Label) => {
+      if (!detail) return;
+      try {
+        await platform.detachLabel(bookId, label.id);
+        const labels = detail.labels.filter((worn) => worn.id !== label.id);
+        setDetail({ ...detail, labels });
+        onBookChanged({ id: bookId, labels });
+        onLabelsChanged();
+        setLabelNotice(null);
+        await refreshAvailableLabels();
+      } catch (error) {
+        setLabelNotice(
+          isApiError(error)
+            ? error.message
+            : "That label could not be removed. Please try again.",
+        );
+      }
+    },
+    [
+      detail,
+      bookId,
+      onBookChanged,
+      onLabelsChanged,
+      refreshAvailableLabels,
+    ],
+  );
+
+  const chooseStatus = useCallback(
+    async (status: ReadingStatus) => {
+      if (!detail) return;
+      try {
+        await platform.setReadingStatus(bookId, status);
+        const state = await platform.readingState(bookId);
+        setReading(state);
+        setDetail({ ...detail, readingStatus: status });
+        onBookChanged({ id: bookId, readingStatus: status });
+        setStatusMenu(false);
+      } catch (error) {
+        setLabelNotice(
+          isApiError(error)
+            ? error.message
+            : "That status could not be saved. Please try again.",
+        );
+      }
+    },
+    [detail, bookId, onBookChanged],
+  );
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -232,6 +377,20 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
       : detail?.readingStatus === "finished"
         ? "Read again"
         : "Read";
+  const sticker =
+    detail?.readingStatus === "finished"
+      ? { kind: "gold" as const, text: "✓" }
+      : detail?.readingStatus === "reading"
+        ? {
+            kind: "paper" as const,
+            text: `${Math.round((reading?.progress ?? 0) * 100)}%`,
+          }
+        : null;
+  const unattachedLabels = detail
+    ? availableLabels.filter(
+        (label) => !detail.labels.some((worn) => worn.id === label.id),
+      )
+    : [];
 
   return (
     <>
@@ -285,6 +444,58 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
                     {detail.title.slice(0, 1)}
                   </div>
                 )}
+                <div className="cover-status">
+                  <button
+                    type="button"
+                    className="cover-status-button"
+                    data-testid="detail-status-control"
+                    aria-haspopup="menu"
+                    aria-expanded={statusMenu}
+                    onClick={() => {
+                      setStatusMenu((open) => !open);
+                      setLabelMenu(false);
+                    }}
+                  >
+                    Status · {STATUS_LABELS[detail.readingStatus]}
+                  </button>
+                  {statusMenu ? (
+                    <div
+                      className="cover-status-menu"
+                      role="menu"
+                      aria-label="Set reading status"
+                    >
+                      {(
+                        ["unread", "reading", "finished"] as ReadingStatus[]
+                      ).map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={detail.readingStatus === status}
+                          className="cover-status-option"
+                          data-testid={`detail-status-option-${status}`}
+                          onClick={() => chooseStatus(status)}
+                        >
+                          {STATUS_LABELS[status]}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                {sticker ? (
+                  <div
+                    className={`cover-sticker cover-sticker-${sticker.kind}`}
+                    data-testid="detail-sticker"
+                    data-sticker={sticker.kind}
+                    aria-label={
+                      sticker.kind === "gold"
+                        ? "Finished"
+                        : `${sticker.text} read`
+                    }
+                  >
+                    {sticker.text}
+                  </div>
+                ) : null}
               </div>
             </figure>
 
@@ -299,6 +510,68 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
               {detail.series ? (
                 <p className="detail-series">{detail.series}</p>
               ) : null}
+              <div className="detail-labels" data-testid="detail-labels">
+                {detail.labels.map((label) => (
+                  <button
+                    key={label.id}
+                    type="button"
+                    className="detail-label-chip"
+                    data-testid="detail-label-chip"
+                    style={{ backgroundColor: label.colour }}
+                    aria-label={`Remove label ${label.name}`}
+                    title={`Remove ${label.name}`}
+                    onClick={() => detachLabel(label)}
+                  >
+                    <span>{label.name}</span>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="detail-label-add"
+                  data-testid="detail-add-label"
+                  aria-haspopup="menu"
+                  aria-expanded={labelMenu}
+                  onClick={() => {
+                    setLabelMenu((open) => !open);
+                    setStatusMenu(false);
+                  }}
+                >
+                  + Add label
+                </button>
+              </div>
+              {labelMenu ? (
+                <div className="detail-label-menu" role="menu" aria-label="Add a label">
+                  {unattachedLabels.length > 0 ? (
+                    unattachedLabels.map((label) => (
+                      <button
+                        key={label.id}
+                        type="button"
+                        role="menuitem"
+                        className="detail-label-option"
+                        data-testid={`label-option-${label.id}`}
+                        onClick={() => attachLabel(label)}
+                      >
+                        <span
+                          className="label-swatch"
+                          style={{ backgroundColor: label.colour }}
+                          aria-hidden="true"
+                        />
+                        {label.name}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="detail-label-empty">
+                      No other labels yet. Manage labels on the shelf.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+              {labelNotice ? (
+                <p className="detail-note" role="alert">
+                  {labelNotice}
+                </p>
+              ) : null}
               <div className="rule detail-rule" aria-hidden="true">
                 <span>❧</span>
               </div>
@@ -306,7 +579,7 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
                 {detail.description ?? "No blurb was printed with this edition."}
               </p>
 
-              <dl className="detail-meta">
+              <dl className="detail-meta" data-testid="detail-meta">
                 <div className="detail-meta-row">
                   <dt>Format</dt>
                   <dd>{detail.format.toUpperCase()}</dd>
@@ -368,6 +641,367 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
               ) : null}
             </div>
           </>
+        )}
+      </section>
+    </>
+  );
+}
+
+interface FilterStripProps {
+  labels: LabelUsage[];
+  selectedLabelIds: number[];
+  status: ReadingStatus | null;
+  matchingCount: number;
+  totalCount: number;
+  onToggleLabel: (labelId: number) => void;
+  onStatus: (status: ReadingStatus | null) => void;
+  onClear: () => void;
+  onManage: () => void;
+}
+
+function FilterStrip({
+  labels,
+  selectedLabelIds,
+  status,
+  matchingCount,
+  totalCount,
+  onToggleLabel,
+  onStatus,
+  onClear,
+  onManage,
+}: FilterStripProps) {
+  const active = selectedLabelIds.length > 0 || status !== null;
+  return (
+    <section
+      className="filter-strip"
+      data-testid="filter-strip"
+      aria-label="Shelf filters"
+    >
+      <div className="filter-row">
+        <span className="filter-kicker">Filter</span>
+        <div className="filter-chips" role="group" aria-label="Label filters">
+          {labels.length === 0 ? (
+            <span className="filter-empty">No labels yet</span>
+          ) : (
+            labels.map((label) => (
+              <button
+                key={label.id}
+                type="button"
+                className="filter-chip filter-label-chip"
+                data-testid="filter-label-chip"
+                aria-pressed={selectedLabelIds.includes(label.id)}
+                style={{ borderColor: label.colour }}
+                onClick={() => onToggleLabel(label.id)}
+              >
+                <span
+                  className="filter-dot"
+                  style={{ backgroundColor: label.colour }}
+                  aria-hidden="true"
+                />
+                <span>{label.name}</span>
+                <span className="filter-count">{label.bookCount}</span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+      <div className="filter-row filter-status-row">
+        <div
+          className="filter-chips"
+          role="group"
+          aria-label="Reading status filters"
+        >
+          {(["unread", "reading", "finished"] as ReadingStatus[]).map(
+            (value) => (
+              <button
+                key={value}
+                type="button"
+                className="filter-chip filter-status-chip"
+                data-testid={`filter-status-${value}`}
+                aria-pressed={status === value}
+                onClick={() => onStatus(status === value ? null : value)}
+              >
+                {STATUS_LABELS[value]}
+              </button>
+            ),
+          )}
+        </div>
+        <button
+          type="button"
+          className="filter-manage"
+          data-testid="manage-labels"
+          onClick={onManage}
+        >
+          Manage labels
+        </button>
+      </div>
+      <div className="filter-summary">
+        <span data-testid="filter-count" aria-live="polite">
+          {active
+            ? `${matchingCount} of ${totalCount} books match`
+            : `${totalCount} books on the wall`}
+        </span>
+        <button
+          type="button"
+          className="filter-clear"
+          data-testid="filter-clear"
+          onClick={onClear}
+          disabled={!active}
+        >
+          Clear filters
+        </button>
+      </div>
+    </section>
+  );
+}
+
+interface ManageLabelsProps {
+  onClose: () => void;
+  onChanged: () => void;
+}
+
+function ManageLabels({ onClose, onChanged }: ManageLabelsProps) {
+  const [labels, setLabels] = useState<LabelUsage[] | null>(null);
+  const [name, setName] = useState("");
+  const [colour, setColour] = useState(LABEL_PALETTE[0].colour);
+  const [editing, setEditing] = useState<{ id: number; name: string } | null>(
+    null,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      setLabels(await platform.listLabels());
+    } catch {
+      setError("Labels could not be loaded. Please try again.");
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+    closeRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [refresh, onClose]);
+
+  async function run(task: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await task();
+      await refresh();
+      onChanged();
+    } catch (caught) {
+      setError(
+        isApiError(caught)
+          ? caught.message
+          : "That label change could not be saved. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="detail-scrim"
+        aria-label="Close label manager"
+        onClick={onClose}
+      />
+      <section
+        className="book-detail manage-labels"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="manage-labels-title"
+        data-testid="manage-labels-panel"
+      >
+        <button
+          ref={closeRef}
+          type="button"
+          className="detail-close"
+          aria-label="Close label manager"
+          onClick={onClose}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+        <p className="kicker">The Label Drawer</p>
+        <h2 id="manage-labels-title">Manage labels</h2>
+        <p className="manage-note">
+          Labels group books without moving them. Deleting a label never
+          deletes a book.
+        </p>
+
+        <form
+          className="label-create"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!name.trim()) return;
+            void run(async () => {
+              await platform.createLabel(name, colour);
+              setName("");
+            });
+          }}
+        >
+          <label htmlFor="new-label-name">New label</label>
+          <input
+            id="new-label-name"
+            data-testid="label-name"
+            value={name}
+            maxLength={40}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="e.g. Gothic"
+          />
+          <div className="label-palette" role="group" aria-label="Label colour">
+            {LABEL_PALETTE.map((entry) => (
+              <button
+                key={entry.colour}
+                type="button"
+                className={`label-palette-swatch${
+                  colour === entry.colour ? " is-selected" : ""
+                }`}
+                style={{ backgroundColor: entry.colour }}
+                aria-label={entry.name}
+                aria-pressed={colour === entry.colour}
+                onClick={() => setColour(entry.colour)}
+              />
+            ))}
+          </div>
+          <button
+            type="submit"
+            className="secondary-action"
+            data-testid="create-label"
+            disabled={busy || !name.trim()}
+          >
+            Create label
+          </button>
+        </form>
+
+        {error ? (
+          <p className="action-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        {labels === null ? (
+          <p className="manage-note" aria-busy="true">
+            Opening the drawer…
+          </p>
+        ) : labels.length === 0 ? (
+          <p className="manage-note" data-testid="manage-empty">
+            No labels yet. Create one above.
+          </p>
+        ) : (
+          <ul className="manage-list">
+            {labels.map((label) => (
+              <li
+                key={label.id}
+                className="manage-row"
+                data-testid="label-row"
+              >
+                <div className="manage-row-head">
+                  <span
+                    className="manage-dot"
+                    style={{ backgroundColor: label.colour }}
+                    aria-hidden="true"
+                  />
+                  {editing?.id === label.id ? (
+                    <form
+                      className="rename-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        const next = editing.name;
+                        if (!next.trim()) return;
+                        void run(async () => {
+                          await platform.renameLabel(label.id, next);
+                          setEditing(null);
+                        });
+                      }}
+                    >
+                      <input
+                        data-testid="rename-label"
+                        value={editing.name}
+                        maxLength={40}
+                        autoFocus
+                        onChange={(event) =>
+                          setEditing({
+                            id: label.id,
+                            name: event.target.value,
+                          })
+                        }
+                      />
+                      <button type="submit" disabled={busy}>
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditing(null)}
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  ) : (
+                    <button
+                      type="button"
+                      className="manage-name"
+                      onClick={() =>
+                        setEditing({ id: label.id, name: label.name })
+                      }
+                    >
+                      {label.name}
+                    </button>
+                  )}
+                  <span className="manage-usage">
+                    {label.bookCount === 1
+                      ? "1 book"
+                      : `${label.bookCount} books`}
+                  </span>
+                </div>
+                <div className="manage-row-foot">
+                  <div
+                    className="label-palette label-palette-small"
+                    role="group"
+                    aria-label={`Colour for ${label.name}`}
+                  >
+                    {LABEL_PALETTE.map((entry) => (
+                      <button
+                        key={entry.colour}
+                        type="button"
+                        className={`label-palette-swatch label-palette-swatch-small${
+                          label.colour === entry.colour ? " is-selected" : ""
+                        }`}
+                        style={{ backgroundColor: entry.colour }}
+                        aria-label={entry.name}
+                        aria-pressed={label.colour === entry.colour}
+                        onClick={() =>
+                          void run(() =>
+                            platform.recolourLabel(label.id, entry.colour),
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="manage-delete"
+                    aria-label={`Delete ${label.name}`}
+                    onClick={() => void run(() => platform.deleteLabel(label.id))}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </>
@@ -511,6 +1145,10 @@ function LibraryWall({
 }: LibraryWallProps) {
   const [shelves, setShelves] = useState<Shelf[] | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
+  const [labels, setLabels] = useState<LabelUsage[]>([]);
+  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
+  const [statusFilter, setStatusFilter] = useState<ReadingStatus | null>(null);
+  const [showLabelManager, setShowLabelManager] = useState(false);
   const [failed, setFailed] = useState(false);
   const [openBookId, setOpenBookId] = useState<number | null>(null);
   const [preview, setPreview] = useState<DragPreview | null>(null);
@@ -546,14 +1184,61 @@ function LibraryWall({
     }
   }, []);
 
+  const refreshLabels = useCallback(async () => {
+    try {
+      const next = await platform.listLabels();
+      setLabels(next);
+      setSelectedLabelIds((current) =>
+        current.filter((id) => next.some((label) => label.id === id)),
+      );
+    } catch {
+      // Keep the labels already on screen; the next reload retries.
+    }
+  }, []);
+
+  const refreshWallData = useCallback(async () => {
+    await refreshLabels();
+    try {
+      setBooks(await platform.listBooks());
+    } catch {
+      // A failed refresh leaves the current wall in place.
+    }
+  }, [refreshLabels]);
+
+  const updateBook = useCallback(
+    (patch: {
+      id: number;
+      readingStatus?: ReadingStatus;
+      labels?: Label[];
+    }) => {
+      setBooks((current) =>
+        current.map((book) =>
+          book.id === patch.id
+            ? {
+                ...book,
+                readingStatus: patch.readingStatus ?? book.readingStatus,
+                labels: patch.labels ?? book.labels,
+              }
+            : book,
+        ),
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
     let alive = true;
     setFailed(false);
-    Promise.all([platform.listShelves(), platform.listBooks()])
-      .then(([nextShelves, nextBooks]) => {
+    Promise.all([
+      platform.listShelves(),
+      platform.listBooks(),
+      platform.listLabels(),
+    ])
+      .then(([nextShelves, nextBooks, nextLabels]) => {
         if (!alive) return;
         setShelves(nextShelves);
         setBooks(nextBooks);
+        setLabels(nextLabels);
       })
       .catch(() => {
         if (alive) setFailed(true);
@@ -1020,6 +1705,28 @@ function LibraryWall({
     );
   }
 
+  const filterActive = selectedLabelIds.length > 0 || statusFilter !== null;
+  const matchingIds = new Set(
+    books
+      .filter((book) => {
+        const worn = book.labels ?? [];
+        return (
+          selectedLabelIds.every((labelId) =>
+            worn.some((label) => label.id === labelId),
+          ) &&
+          (statusFilter === null || book.readingStatus === statusFilter)
+        );
+      })
+      .map((book) => book.id),
+  );
+  const dimmedBookIds = filterActive
+    ? new Set(
+        books
+          .filter((book) => !matchingIds.has(book.id))
+          .map((book) => book.id),
+      )
+    : new Set<number>();
+
   const booksByShelf = new Map<number, Book[]>();
   for (const book of displayBooks) {
     if (book.shelfId === null) continue;
@@ -1039,12 +1746,33 @@ function LibraryWall({
       }}
     >
       <div className="wall-inner">
+        <FilterStrip
+          labels={labels}
+          selectedLabelIds={selectedLabelIds}
+          status={statusFilter}
+          matchingCount={matchingIds.size}
+          totalCount={books.length}
+          onToggleLabel={(labelId) =>
+            setSelectedLabelIds((current) =>
+              current.includes(labelId)
+                ? current.filter((id) => id !== labelId)
+                : [...current, labelId],
+            )
+          }
+          onStatus={setStatusFilter}
+          onClear={() => {
+            setSelectedLabelIds([]);
+            setStatusFilter(null);
+          }}
+          onManage={() => setShowLabelManager(true)}
+        />
         {shelves.map((shelf) => (
           <ShelfCase
             key={shelf.id}
             shelf={shelf}
             books={booksByShelf.get(shelf.id) ?? []}
             draggedBookId={lift?.book.id ?? null}
+            dimmedBookIds={dimmedBookIds}
             onOpen={(book) => {
               if (performance.now() < suppressClickRef.current) return;
               setOpenBookId(book.id);
@@ -1054,7 +1782,18 @@ function LibraryWall({
         ))}
       </div>
       {openBookId !== null ? (
-        <DetailPanel bookId={openBookId} onClose={closeDetail} />
+        <DetailPanel
+          bookId={openBookId}
+          onClose={closeDetail}
+          onBookChanged={updateBook}
+          onLabelsChanged={refreshLabels}
+        />
+      ) : null}
+      {showLabelManager ? (
+        <ManageLabels
+          onClose={() => setShowLabelManager(false)}
+          onChanged={refreshWallData}
+        />
       ) : null}
       {notice ? (
         <p
