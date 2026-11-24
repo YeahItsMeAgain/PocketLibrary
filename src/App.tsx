@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  isLibraryUnavailable,
   platform,
   type AppInfo,
   type Book,
@@ -36,15 +37,6 @@ const NAV_ITEMS: ReadonlyArray<{ view: View; label: string }> = [
   { view: "search", label: "Search" },
   { view: "settings", label: "Settings" },
 ];
-
-function isUnavailable(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "library_unavailable"
-  );
-}
 
 function Masthead() {
   return (
@@ -414,6 +406,23 @@ function scanNotice(report: ScanReport): string {
     .join(" · ");
 }
 
+type ScanOutcome =
+  | { kind: "report"; report: ScanReport }
+  | { kind: "unavailable" }
+  | { kind: "failed" };
+
+async function runScan(): Promise<ScanOutcome> {
+  try {
+    return { kind: "report", report: await platform.rescanLibrary() };
+  } catch (error) {
+    return { kind: isLibraryUnavailable(error) ? "unavailable" : "failed" };
+  }
+}
+
+function disconnected(status: LibraryStatus): LibraryStatus {
+  return { state: "disconnected", folderName: status.folderName };
+}
+
 export default function App() {
   const [view, setView] = useState<View>("library");
   const [status, setStatus] = useState<LibraryStatus | null>(null);
@@ -447,13 +456,8 @@ export default function App() {
       try {
         let next = await platform.libraryStatus();
         if (next.state === "ready") {
-          try {
-            await platform.rescanLibrary();
-          } catch (error) {
-            if (isUnavailable(error)) {
-              next = { state: "disconnected", folderName: next.folderName };
-            }
-          }
+          const outcome = await runScan();
+          if (outcome.kind === "unavailable") next = disconnected(next);
         }
         if (alive) setStatus(next);
       } catch {
@@ -472,15 +476,13 @@ export default function App() {
     try {
       let next = await platform.chooseLibraryFolder();
       if (next.state === "ready") {
-        try {
-          const report = await platform.rescanLibrary();
-          setNotice(scanNotice(report));
-        } catch (error) {
-          if (isUnavailable(error)) {
-            next = { state: "disconnected", folderName: next.folderName };
-          } else {
-            setActionError("The folder was granted, but the first scan failed.");
-          }
+        const outcome = await runScan();
+        if (outcome.kind === "report") {
+          setNotice(scanNotice(outcome.report));
+        } else if (outcome.kind === "unavailable") {
+          next = disconnected(next);
+        } else {
+          setActionError("The folder was granted, but the first scan failed.");
         }
       }
       setStatus(next);
@@ -496,14 +498,12 @@ export default function App() {
     setBusy(true);
     setNotice(null);
     try {
-      const report = await platform.rescanLibrary();
-      setNotice(scanNotice(report));
-      setReloadKey((key) => key + 1);
-    } catch (error) {
-      if (isUnavailable(error)) {
-        setStatus((current) =>
-          current ? { ...current, state: "disconnected" } : current,
-        );
+      const outcome = await runScan();
+      if (outcome.kind === "report") {
+        setNotice(scanNotice(outcome.report));
+        setReloadKey((key) => key + 1);
+      } else if (outcome.kind === "unavailable") {
+        setStatus((current) => (current ? disconnected(current) : current));
         setNotice(null);
       } else {
         setNotice("The scan could not be completed. Please try again.");

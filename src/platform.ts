@@ -60,6 +60,26 @@ export interface ScanReport {
   removed: number;
 }
 
+/** Mirrors `pocketlibrary_core::ApiError` (camelCase on the wire). */
+export interface ApiError {
+  code: string;
+  message: string;
+}
+
+/** Narrow an unknown rejection from `invoke` to the command API error shape. */
+export function isApiError(error: unknown): error is ApiError {
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { code?: unknown; message?: unknown };
+  return (
+    typeof candidate.code === "string" && typeof candidate.message === "string"
+  );
+}
+
+/** True when the chosen library folder is no longer reachable. */
+export function isLibraryUnavailable(error: unknown): error is ApiError {
+  return isApiError(error) && error.code === "library_unavailable";
+}
+
 export interface Platform {
   appInfo(): Promise<AppInfo>;
   listBooks(): Promise<Book[]>;
