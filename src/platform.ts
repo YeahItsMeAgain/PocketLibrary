@@ -36,12 +36,46 @@ export interface Book {
   shelfId: number | null;
   slotIndex: number | null;
   readingStatus: ReadingStatus;
+  labels: Label[];
 }
 
 /** Mirrors `pocketlibrary_core::BookDetail`. */
 export interface BookDetail extends Book {
   coverDataUrl: string | null;
 }
+
+/** A reusable coloured label. */
+export interface Label {
+  id: number;
+  name: string;
+  colour: string;
+  createdAt: number;
+}
+
+/** A label with the number of books wearing it. */
+export interface LabelUsage extends Label {
+  bookCount: number;
+}
+
+/** Mirrors `pocketlibrary_core::ReadingState`. */
+export interface ReadingState {
+  status: ReadingStatus;
+  statusSource: "auto" | "manual";
+  progress: number;
+  locator: string | null;
+}
+
+/** The fixed label palette; no free colour picker. */
+export const LABEL_PALETTE: ReadonlyArray<{ name: string; colour: string }> = [
+  { name: "Oxblood", colour: "#6e2630" },
+  { name: "Forest", colour: "#294735" },
+  { name: "Mustard", colour: "#6b4d18" },
+  { name: "Ink blue", colour: "#26384f" },
+  { name: "Sepia", colour: "#57402d" },
+  { name: "Plum", colour: "#4a2a45" },
+  { name: "Teal", colour: "#214d4c" },
+  { name: "Charcoal", colour: "#333336" },
+];
 
 /** Mirrors `pocketlibrary_core::ScanIssue`. */
 export interface ScanIssue {
@@ -114,6 +148,15 @@ export interface Platform {
   getShelfCapacity(): Promise<number>;
   setShelfCapacity(capacity: number): Promise<number>;
   moveBook(bookId: number, shelfId: number, slotIndex: number): Promise<void>;
+  listLabels(): Promise<LabelUsage[]>;
+  createLabel(name: string, colour: string): Promise<Label>;
+  renameLabel(labelId: number, name: string): Promise<Label>;
+  recolourLabel(labelId: number, colour: string): Promise<Label>;
+  deleteLabel(labelId: number): Promise<void>;
+  attachLabel(bookId: number, labelId: number): Promise<void>;
+  detachLabel(bookId: number, labelId: number): Promise<void>;
+  readingState(bookId: number): Promise<ReadingState>;
+  setReadingStatus(bookId: number, status: ReadingStatus): Promise<void>;
 }
 
 export type Invoke = typeof invoke;
@@ -138,6 +181,22 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<number>("set_shelf_capacity", { capacity }),
     moveBook: (bookId, shelfId, slotIndex) =>
       call<void>("move_book", { bookId, shelfId, slotIndex }),
+    listLabels: () => call<LabelUsage[]>("label_usage"),
+    createLabel: (name, colour) =>
+      call<Label>("create_label", { name, colour }),
+    renameLabel: (labelId, name) =>
+      call<Label>("rename_label", { labelId, name }),
+    recolourLabel: (labelId, colour) =>
+      call<Label>("recolour_label", { labelId, colour }),
+    deleteLabel: (labelId) => call<void>("delete_label", { labelId }),
+    attachLabel: (bookId, labelId) =>
+      call<void>("attach_label", { bookId, labelId }),
+    detachLabel: (bookId, labelId) =>
+      call<void>("detach_label", { bookId, labelId }),
+    readingState: (bookId) =>
+      call<ReadingState>("reading_state", { bookId }),
+    setReadingStatus: (bookId, status) =>
+      call<void>("set_reading_status", { bookId, status }),
   };
 }
 
@@ -165,6 +224,10 @@ export interface MockConfig {
   shelves?: Shelf[];
   /** Books a rescan should import, one shelf-placement at a time. */
   scanAdds?: Book[];
+  /** Labels available before any are created through the UI. */
+  labels?: Label[];
+  /** Progress fractions for the detail sticker, keyed by book id. */
+  readingProgress?: Record<number, number>;
 }
 
 interface MockWindow extends Window {
@@ -246,17 +309,83 @@ function applyMove(
   return orderBooks(updated, shelves);
 }
 
+function seedBooks(source: Book[] | undefined): Book[] {
+  return source
+    ? source.map((book) => ({ ...book, labels: [...(book.labels ?? [])] }))
+    : [];
+}
+
+function seedLabels(config: MockConfig, books: Book[]): Label[] {
+  const labels = (config.labels ?? []).map((label) => ({ ...label }));
+  for (const book of books) {
+    for (const label of book.labels) {
+      if (!labels.some((candidate) => candidate.id === label.id)) {
+        labels.push({ ...label });
+      }
+    }
+  }
+  return labels.sort(
+    (left, right) => left.createdAt - right.createdAt || left.id - right.id,
+  );
+}
+
 function createMockPlatform(config: MockConfig = {}): Platform {
   let state: LibraryState = config.state ?? "needsFolder";
   let folderName = config.folderName ?? null;
-  let books = config.books ? [...config.books] : [];
+  let books = seedBooks(config.books);
+  let labels = seedLabels(config, books);
   let shelves = initialShelves(config, books);
   let capacity = config.shelfCapacity ?? 12;
   let scanAdds = config.scanAdds ? [...config.scanAdds] : [];
   let nextBookId = Math.max(0, ...books.map((book) => book.id)) + 1;
   let nextShelfId = Math.max(0, ...shelves.map((shelf) => shelf.id)) + 1;
+  let nextLabelId = Math.max(0, ...labels.map((label) => label.id)) + 1;
+  const progress = new Map<number, number>(
+    Object.entries(config.readingProgress ?? {}).map(([id, value]) => [
+      Number(id),
+      value,
+    ]),
+  );
 
   const status = (): LibraryStatus => ({ state, folderName });
+
+  function labelUsage(): LabelUsage[] {
+    return labels.map((label) => ({
+      ...label,
+      bookCount: books.filter((book) =>
+        book.labels.some((worn) => worn.id === label.id),
+      ).length,
+    }));
+  }
+
+  function findLabel(labelId: number): Label {
+    const label = labels.find((candidate) => candidate.id === labelId);
+    if (!label) {
+      throw { code: "label_not_found", message: "That label could not be found." };
+    }
+    return label;
+  }
+
+  function updateLabelEverywhere(label: Label) {
+    labels = labels.map((candidate) =>
+      candidate.id === label.id ? { ...label } : candidate,
+    );
+    books = books.map((book) => ({
+      ...book,
+      labels: book.labels.map((worn) =>
+        worn.id === label.id ? { ...label } : worn,
+      ),
+    }));
+  }
+
+  function progressFor(book: Book): number {
+    if (progress.has(book.id)) return progress.get(book.id) ?? 0;
+    return book.readingStatus === "finished"
+      ? 1
+      : book.readingStatus === "reading"
+        ? 0.42
+        : 0;
+  }
 
   function booksOnShelf(shelfId: number): Book[] {
     return books.filter((book) => book.shelfId === shelfId);
@@ -322,9 +451,11 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     chooseLibraryFolder: async () => {
       state = "ready";
       folderName = folderName ?? "PocketLibrary";
-      books = config.books ? [...config.books] : [];
+      books = seedBooks(config.books);
+      labels = seedLabels(config, books);
       shelves = initialShelves(config, books);
       scanAdds = config.scanAdds ? [...config.scanAdds] : [];
+      nextLabelId = Math.max(0, ...labels.map((label) => label.id)) + 1;
       return status();
     },
     rescanLibrary: async () => rescan(),
@@ -361,6 +492,117 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         throw { code: "shelf_full", message: "That shelf is already full." };
       }
       books = applyMove(books, shelves, bookId, shelfId, slotIndex);
+    },
+    listLabels: async () => labelUsage(),
+    createLabel: async (name, colour) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        throw { code: "invalid_label_name", message: "A label needs a name." };
+      }
+      if (!LABEL_PALETTE.some((entry) => entry.colour === colour)) {
+        throw {
+          code: "invalid_label_colour",
+          message: "Choose one of the printed label colours.",
+        };
+      }
+      if (
+        labels.some(
+          (label) => label.name.toLowerCase() === trimmed.toLowerCase(),
+        )
+      ) {
+        throw {
+          code: "label_exists",
+          message: "A label with that name already exists.",
+        };
+      }
+      const label: Label = {
+        id: nextLabelId++,
+        name: trimmed,
+        colour,
+        createdAt: Math.floor(Date.now() / 1000),
+      };
+      labels = [...labels, label];
+      return { ...label };
+    },
+    renameLabel: async (labelId, name) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        throw { code: "invalid_label_name", message: "A label needs a name." };
+      }
+      if (
+        labels.some(
+          (label) =>
+            label.id !== labelId &&
+            label.name.toLowerCase() === trimmed.toLowerCase(),
+        )
+      ) {
+        throw {
+          code: "label_exists",
+          message: "A label with that name already exists.",
+        };
+      }
+      const label = { ...findLabel(labelId), name: trimmed };
+      updateLabelEverywhere(label);
+      return { ...label };
+    },
+    recolourLabel: async (labelId, colour) => {
+      if (!LABEL_PALETTE.some((entry) => entry.colour === colour)) {
+        throw {
+          code: "invalid_label_colour",
+          message: "Choose one of the printed label colours.",
+        };
+      }
+      const label = { ...findLabel(labelId), colour };
+      updateLabelEverywhere(label);
+      return { ...label };
+    },
+    deleteLabel: async (labelId) => {
+      findLabel(labelId);
+      labels = labels.filter((label) => label.id !== labelId);
+      books = books.map((book) => ({
+        ...book,
+        labels: book.labels.filter((label) => label.id !== labelId),
+      }));
+    },
+    attachLabel: async (bookId, labelId) => {
+      const label = findLabel(labelId);
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      if (!book.labels.some((worn) => worn.id === labelId)) {
+        book.labels = [...book.labels, { ...label }];
+        books = [...books];
+      }
+    },
+    detachLabel: async (bookId, labelId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      book.labels = book.labels.filter((worn) => worn.id !== labelId);
+      books = [...books];
+    },
+    readingState: async (bookId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      return {
+        status: book.readingStatus,
+        statusSource: "auto",
+        progress: progressFor(book),
+        locator: null,
+      };
+    },
+    setReadingStatus: async (bookId, nextStatus) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      book.readingStatus = nextStatus;
+      if (nextStatus === "finished") progress.set(bookId, 1);
+      books = [...books];
     },
   };
 }

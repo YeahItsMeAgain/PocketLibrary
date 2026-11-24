@@ -6,7 +6,8 @@
 use tauri::{AppHandle, Manager};
 
 use pocketlibrary_core::{
-    Api, ApiError, AppInfo, Book, BookDetail, LibraryStatus, ScanReport, Shelf,
+    Api, ApiError, AppInfo, Book, BookDetail, Label, LabelUsage, LibraryStatus, ReadingState,
+    ReadingStatus, ScanReport, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -231,6 +232,59 @@ fn set_shelf_capacity(api: tauri::State<'_, Api>, capacity: i64) -> Result<i64, 
     api.set_shelf_capacity(capacity)
 }
 
+#[tauri::command]
+fn label_usage(api: tauri::State<'_, Api>) -> Result<Vec<LabelUsage>, ApiError> {
+    api.label_usage()
+}
+
+#[tauri::command]
+fn create_label(api: tauri::State<'_, Api>, name: String, colour: String) -> Result<Label, ApiError> {
+    api.create_label(&name, &colour)
+}
+
+#[tauri::command]
+fn rename_label(api: tauri::State<'_, Api>, label_id: i64, name: String) -> Result<Label, ApiError> {
+    api.rename_label(label_id, &name)
+}
+
+#[tauri::command]
+fn recolour_label(
+    api: tauri::State<'_, Api>,
+    label_id: i64,
+    colour: String,
+) -> Result<Label, ApiError> {
+    api.recolour_label(label_id, &colour)
+}
+
+#[tauri::command]
+fn delete_label(api: tauri::State<'_, Api>, label_id: i64) -> Result<(), ApiError> {
+    api.delete_label(label_id)
+}
+
+#[tauri::command]
+fn attach_label(api: tauri::State<'_, Api>, book_id: i64, label_id: i64) -> Result<(), ApiError> {
+    api.attach_label(book_id, label_id)
+}
+
+#[tauri::command]
+fn detach_label(api: tauri::State<'_, Api>, book_id: i64, label_id: i64) -> Result<(), ApiError> {
+    api.detach_label(book_id, label_id)
+}
+
+#[tauri::command]
+fn reading_state(api: tauri::State<'_, Api>, book_id: i64) -> Result<ReadingState, ApiError> {
+    api.reading_state(book_id)
+}
+
+#[tauri::command]
+fn set_reading_status(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    status: ReadingStatus,
+) -> Result<(), ApiError> {
+    api.set_reading_status(book_id, status)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
@@ -260,7 +314,16 @@ pub fn run() {
             rescan_library,
             move_book,
             get_shelf_capacity,
-            set_shelf_capacity
+            set_shelf_capacity,
+            label_usage,
+            create_label,
+            rename_label,
+            recolour_label,
+            delete_label,
+            attach_label,
+            detach_label,
+            reading_state,
+            set_reading_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
