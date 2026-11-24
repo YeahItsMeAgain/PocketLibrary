@@ -15,6 +15,9 @@ dist
 dist-ssr
 *.local
 
+# Local build produced by perf/bench.mjs
+perf/.build/
+
 # Playwright artifacts (screenshots, traces, reports)
 test-results
 playwright-report

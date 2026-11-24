@@ -1,0 +1,114 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /Outlines 10 0 R /PageMode /UseOutlines >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 239 >>
+stream
+BT
+/F1 28 Tf
+72 700 Td
+32 TL
+(Chapter One) Tj
+T*
+(The Lamplighter's Test) Tj
+T*
+() Tj
+T*
+(This is the first page of a small PDF fixture.) Tj
+T*
+(It exists so the reader can be tested without) Tj
+T*
+(a large or copyrighted document.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 251 >>
+stream
+BT
+/F1 28 Tf
+72 700 Td
+32 TL
+(Chapter Two) Tj
+T*
+() Tj
+T*
+(The second page waits across the room.) Tj
+T*
+(Tap right to turn, or jump to page 2.) Tj
+T*
+() Tj
+T*
+(The wash of sepia should tint the paper,) Tj
+T*
+(not reflow a single line of type.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 177 >>
+stream
+BT
+/F1 28 Tf
+72 700 Td
+32 TL
+(The End) Tj
+T*
+() Tj
+T*
+(A third and final page.) Tj
+T*
+() Tj
+T*
+(Text and layout are dedicated to the public) Tj
+T*
+(domain under CC0 1.0.) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+10 0 obj
+<< /Type /Outlines /First 11 0 R /Last 12 0 R /Count 2 >>
+endobj
+11 0 obj
+<< /Title (Chapter One) /Parent 10 0 R /Next 12 0 R /Dest [3 0 R /Fit] >>
+endobj
+12 0 obj
+<< /Title (Chapter Two) /Parent 10 0 R /Prev 11 0 R /Dest [5 0 R /Fit] >>
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000015 00000 n 
+0000000104 00000 n 
+0000000173 00000 n 
+0000000299 00000 n 
+0000000588 00000 n 
+0000000714 00000 n 
+0000001015 00000 n 
+0000001141 00000 n 
+0000001368 00000 n 
+0000001465 00000 n 
+0000001539 00000 n 
+0000001629 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R >>
+startxref
+1719
+%%EOF

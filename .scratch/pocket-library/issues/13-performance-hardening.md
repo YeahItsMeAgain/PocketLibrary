@@ -4,7 +4,7 @@
 
 **Blocked by:** 05, 06
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Shelves use `content-visibility: auto` with an intrinsic size; no JS windowing, canvas, or WebGL
 - [ ] Drag and filter never read whole-library geometry; shelf/slot lookup is arithmetic on the model

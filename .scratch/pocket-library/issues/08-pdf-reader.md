@@ -4,7 +4,7 @@
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] A PDF opens in the reader with the same top/bottom bars and tap zones
 - [ ] Fit-width is the default; pinch zoom and page-number jump work

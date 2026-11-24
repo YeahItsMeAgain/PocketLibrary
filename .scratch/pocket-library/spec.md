@@ -247,7 +247,7 @@ Identity is the internal id, not the path. The BLAKE3 hash is unique and survive
 
 ## Further Notes
 
-- **Delivery order (not scope):** M1 library + shelf + reader; M2 acquisition; M3 shelving, labels and status; M4 annotations and optional reader features. Every milestone should leave an installable APK.
+- **Delivery order (not scope):** M1 library + shelf + reader; M2 acquisition; M3 shelving, labels and status; M4 annotations and optional reader features. A dedicated visual-fidelity ticket (16) follows the functional shelf work and precedes release. Every milestone should leave an installable APK.
 - **Known risks:** foliate-js API churn and CSP; `tauri-plugin-android-fs` is a single-maintainer dependency; Android System WebView fragmentation; Libgen mirror volatility; no KVM, so runtime verification depends on the user's phone.
 - **Open spikes:** `wreq` TLS impersonation; hayro cross-compile to arm64; mmap on real SAF handles; a 2,000-file cold scan on a real device; release signing with the generated keystore.
 - **App identity** (icon, splash, versioning) is not yet decided; it should be settled before the first release build.
