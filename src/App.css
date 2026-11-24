@@ -178,6 +178,11 @@ button:focus-visible {
 
 .shelf {
   margin: 24px 0 0;
+  /* Ticket 13: render only shelves near the viewport. The intrinsic size is the
+     measured section height at 390x844 (crown + cavity + lip + board + plinth);
+     `auto` makes the engine remember the real size once a shelf has rendered. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 242px;
 }
 
 .case {
@@ -1385,8 +1390,9 @@ html.is-book-dragging body {
 }
 
 .spine.is-dimmed {
+  /* Opacity is compositor-only; a per-spine filter would repaint every visible
+     spine on each filter toggle. Ticket 13 measured the opacity-only path. */
   opacity: 0.24;
-  filter: saturate(0.55);
 }
 
 .spine.is-dimmed:hover,
