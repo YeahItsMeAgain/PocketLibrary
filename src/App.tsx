@@ -149,15 +149,6 @@ function ShelfCase({ shelf, books, onOpen }: ShelfCaseProps) {
   );
 }
 
-const STATUS_CUES: Record<
-  Book["readingStatus"],
-  { label: string; mark: string }
-> = {
-  unread: { label: "Unread", mark: "❧" },
-  reading: { label: "Reading", mark: "▮" },
-  finished: { label: "Finished", mark: "✓" },
-};
-
 interface DetailPanelProps {
   bookId: number;
   onClose: () => void;
@@ -199,7 +190,6 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const cue = detail ? STATUS_CUES[detail.readingStatus] : null;
   const authors =
     detail && detail.authors.length > 0
       ? detail.authors.join(" · ")
@@ -320,19 +310,6 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
                   </div>
                 ) : null}
               </dl>
-
-              {cue ? (
-                <p
-                  className={`detail-status detail-status-${detail.readingStatus}`}
-                  data-testid="detail-status"
-                  data-status={detail.readingStatus}
-                >
-                  <span className="detail-status-mark" aria-hidden="true">
-                    {cue.mark}
-                  </span>
-                  {cue.label}
-                </p>
-              ) : null}
 
               <div className="detail-actions">
                 <button

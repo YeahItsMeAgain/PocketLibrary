@@ -16,14 +16,12 @@ export interface AppInfo {
 
 export type BookFormat = "epub" | "pdf";
 export type ReadingStatus = "unread" | "reading" | "finished";
-export type CoverSource = "embedded" | "rendered" | "generated";
 export type ScanIssueReason = "unreadable" | "invalid_epub" | "invalid_pdf";
 
 /** Mirrors `pocketlibrary_core::Book` (camelCase on the wire). */
 export interface Book {
   id: number;
   contentHash: string;
-  quickKey: string | null;
   format: BookFormat;
   title: string;
   authors: string[];
@@ -34,7 +32,6 @@ export interface Book {
   publishedDate: string | null;
   identifier: string | null;
   pageCount: number | null;
-  coverSource: CoverSource | null;
   addedAt: number;
   shelfId: number | null;
   slotIndex: number | null;

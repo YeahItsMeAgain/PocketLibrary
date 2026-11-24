@@ -11,7 +11,6 @@ function mockBook(
   return {
     id,
     contentHash: `hash-${id}`,
-    quickKey: null,
     format,
     title,
     authors: [],
@@ -22,7 +21,6 @@ function mockBook(
     publishedDate: null,
     identifier: null,
     pageCount: null,
-    coverSource: null,
     addedAt: 1_700_000_000,
     shelfId: 1,
     slotIndex,
@@ -217,10 +215,6 @@ test("tapping a spine opens the framed detail and Back returns to the wall", asy
   await expect(page.getByTestId("detail-author")).toHaveText("Ada Lovelace");
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "A quiet revolution",
-  );
-  await expect(page.getByTestId("detail-status")).toHaveAttribute(
-    "data-status",
-    "reading",
   );
   await expect(page.getByTestId("detail-read")).toHaveText(
     "Continue reading",
