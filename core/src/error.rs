@@ -38,6 +38,18 @@ pub enum Error {
 
     #[error("shelf {id} has no room for another book")]
     ShelfFull { id: i64 },
+
+    #[error("label {id} does not exist")]
+    LabelNotFound { id: i64 },
+
+    #[error("label name {name:?} is already used")]
+    LabelExists { name: String },
+
+    #[error("a label needs a non-empty name")]
+    InvalidLabelName,
+
+    #[error("label colour {colour:?} is not in the fixed palette")]
+    InvalidLabelColour { colour: String },
 }
 
 impl Error {
@@ -53,6 +65,10 @@ impl Error {
             Self::InvalidCapacity => "invalid_capacity",
             Self::InvalidTarget { .. } => "invalid_target",
             Self::ShelfFull { .. } => "shelf_full",
+            Self::LabelNotFound { .. } => "label_not_found",
+            Self::LabelExists { .. } => "label_exists",
+            Self::InvalidLabelName => "invalid_label_name",
+            Self::InvalidLabelColour { .. } => "invalid_label_colour",
         }
     }
 
@@ -72,6 +88,10 @@ impl Error {
             Self::InvalidCapacity => "Shelf capacity must be at least one book.",
             Self::InvalidTarget { .. } => "That book cannot be placed there.",
             Self::ShelfFull { .. } => "That shelf is already full.",
+            Self::LabelNotFound { .. } => "That label could not be found.",
+            Self::LabelExists { .. } => "A label with that name already exists.",
+            Self::InvalidLabelName => "A label needs a name.",
+            Self::InvalidLabelColour { .. } => "Choose one of the printed label colours.",
         }
     }
 }

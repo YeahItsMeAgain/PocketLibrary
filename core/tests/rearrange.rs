@@ -176,7 +176,7 @@ fn moving_a_book_preserves_status_labels_progress_and_locator() {
     let books = api.list_books().expect("books");
     let moved = book(&books, "book-0").id;
 
-    let label = api.create_label("Gothic", "#8d5a6a").expect("create label");
+    let label = api.create_label("Gothic", "#6e2630").expect("create label");
     api.attach_label(moved, label.id).expect("attach label");
     api.set_reading_state(
         moved,

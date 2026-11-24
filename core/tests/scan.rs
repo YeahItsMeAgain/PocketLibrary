@@ -258,7 +258,7 @@ fn renaming_a_file_keeps_one_book_with_its_labels_progress_and_locator() {
     let id = before[0].id;
     api.set_reading_state(id, ReadingStatus::Reading, 0.66, Some(r#"{"page":3}"#))
         .expect("seed state");
-    let label = api.create_label("Gothic", "#5a1f2a").expect("create label");
+    let label = api.create_label("Gothic", "#6e2630").expect("create label");
     api.attach_label(id, label.id).expect("attach label");
 
     let renamed = FakeDir::new()

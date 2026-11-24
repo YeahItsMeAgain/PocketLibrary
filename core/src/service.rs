@@ -12,7 +12,7 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 use crate::error::{Error, Result};
 use crate::migrations;
 use crate::models::{
-    AppInfo, Book, BookDetail, BookFormat, CoverSource, Label, LibraryStatus, Placement,
+    AppInfo, Book, BookDetail, BookFormat, CoverSource, Label, LabelUsage, LibraryStatus, Placement,
     ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 use crate::source::{FileSource, ScannedBook, collect_books};
@@ -31,6 +31,19 @@ const LIBRARY_FOLDER_URI: &str = "library_folder_uri";
 const LIBRARY_FOLDER_NAME: &str = "library_folder_name";
 const SHELF_CAPACITY: &str = "shelf_capacity";
 const DEFAULT_SHELF_CAPACITY: i64 = 12;
+
+/// The fixed eight-colour label palette. Every colour clears 5.56:1 against
+/// the cream label text, so the UI never needs a free colour picker.
+pub const LABEL_PALETTE: &[&str] = &[
+    "#6e2630", // oxblood
+    "#294735", // forest
+    "#6b4d18", // mustard
+    "#26384f", // ink blue
+    "#57402d", // sepia
+    "#4a2a45", // plum
+    "#214d4c", // teal
+    "#333336", // charcoal
+];
 
 /// Handle to an open library database.
 ///
@@ -107,9 +120,13 @@ impl Service {
              ORDER BY b.shelf_id IS NULL, b.shelf_id, b.slot_index, b.title COLLATE NOCASE, b.id"
         ))?;
 
-        let books = statement
+        let mut books = statement
             .query_map([], book_from_row)?
             .collect::<std::result::Result<Vec<_>, _>>()?;
+        let mut labels = all_book_labels(&conn)?;
+        for book in &mut books {
+            book.labels = labels.remove(&book.id).unwrap_or_default();
+        }
         Ok(books)
     }
 
@@ -121,13 +138,16 @@ impl Service {
     pub fn get_book_detail(&self, id: i64, source: Option<&dyn FileSource>) -> Result<BookDetail> {
         let mut book = {
             let conn = self.connection()?;
-            conn.query_row(
-                &format!("SELECT {BOOK_COLUMNS} {BOOK_SOURCE} WHERE b.id = ?1"),
-                [id],
-                book_from_row,
-            )
-            .optional()?
-            .ok_or(Error::BookNotFound { id })?
+            let mut book = conn
+                .query_row(
+                    &format!("SELECT {BOOK_COLUMNS} {BOOK_SOURCE} WHERE b.id = ?1"),
+                    [id],
+                    book_from_row,
+                )
+                .optional()?
+                .ok_or(Error::BookNotFound { id })?;
+            book.labels = labels_for_book_conn(&conn, id)?;
+            book
         };
 
         let cached = book
@@ -631,6 +651,93 @@ impl Service {
         Ok(())
     }
 
+    /// Set a status by hand; the manual source wins over later auto updates.
+    pub fn set_reading_status(&self, book_id: i64, status: ReadingStatus) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let now = unix_timestamp();
+        conn.execute(
+            "INSERT INTO reading_state
+                 (book_id, status, status_source, progress, finished_at)
+             VALUES (?1, ?2, 'manual', 0, ?3)
+             ON CONFLICT(book_id) DO UPDATE SET
+                 status = excluded.status,
+                 status_source = 'manual',
+                 finished_at = CASE
+                     WHEN excluded.status = 'finished'
+                     THEN COALESCE(reading_state.finished_at, excluded.finished_at)
+                     ELSE reading_state.finished_at
+                 END",
+            params![book_id, status, now],
+        )?;
+        Ok(())
+    }
+
+    /// The reader's auto-on-open rule: first open marks a book reading.
+    ///
+    /// A manual override wins, and a finished book is never knocked back to
+    /// reading. The reader wiring lands in ticket 07; this is the operation.
+    pub fn record_open(&self, book_id: i64) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        conn.execute(
+            "INSERT INTO reading_state
+                 (book_id, status, status_source, progress, last_opened_at)
+             VALUES (?1, 'reading', 'auto', 0, ?2)
+             ON CONFLICT(book_id) DO UPDATE SET
+                 status = CASE
+                     WHEN reading_state.status_source = 'manual'
+                          OR reading_state.status = 'finished'
+                     THEN reading_state.status
+                     ELSE 'reading'
+                 END,
+                 last_opened_at = excluded.last_opened_at",
+            params![book_id, unix_timestamp()],
+        )?;
+        Ok(())
+    }
+
+    /// Record reader progress; the last page or >=98% marks the book finished.
+    ///
+    /// Manual overrides still win. Reaching the end again does not clear
+    /// finished, and a vanished file is handled by [`Service::scan`].
+    pub fn record_progress(
+        &self,
+        book_id: i64,
+        progress: f64,
+        locator: Option<&str>,
+    ) -> Result<ReadingStatus> {
+        let progress = progress.clamp(0.0, 1.0);
+        let current = self.reading_state(book_id)?;
+        let next = if current.status_source == "manual" {
+            current.status
+        } else if progress >= 0.98 || current.status == ReadingStatus::Finished {
+            ReadingStatus::Finished
+        } else {
+            ReadingStatus::Reading
+        };
+        let conn = self.connection()?;
+        let now = unix_timestamp();
+        conn.execute(
+            "INSERT INTO reading_state
+                 (book_id, status, status_source, progress, locator, last_opened_at, finished_at)
+             VALUES (?1, ?2, 'auto', ?3, ?4, ?5,
+                 CASE WHEN ?2 = 'finished' THEN ?5 ELSE NULL END)
+             ON CONFLICT(book_id) DO UPDATE SET
+                 status = excluded.status,
+                 progress = excluded.progress,
+                 locator = excluded.locator,
+                 last_opened_at = excluded.last_opened_at,
+                 finished_at = CASE
+                     WHEN excluded.status = 'finished'
+                     THEN COALESCE(reading_state.finished_at, excluded.finished_at)
+                     ELSE reading_state.finished_at
+                 END",
+            params![book_id, next, progress, locator, now],
+        )?;
+        Ok(next)
+    }
+
     /// Every label, in creation order.
     pub fn list_labels(&self) -> Result<Vec<Label>> {
         let conn = self.connection()?;
@@ -642,9 +749,34 @@ impl Service {
         Ok(labels)
     }
 
-    /// Create a reusable label.
-    pub fn create_label(&self, name: &str, colour: &str) -> Result<Label> {
+    /// Every label with the number of books wearing it.
+    pub fn label_usage(&self) -> Result<Vec<LabelUsage>> {
         let conn = self.connection()?;
+        let mut statement = conn.prepare(
+            "SELECT l.id, l.name, l.colour, l.created_at, COUNT(bl.book_id)
+             FROM labels l LEFT JOIN book_labels bl ON bl.label_id = l.id
+             GROUP BY l.id
+             ORDER BY l.created_at, l.id",
+        )?;
+        let labels = statement
+            .query_map([], |row| {
+                Ok(LabelUsage {
+                    label: label_from_row_at(row, 0)?,
+                    book_count: row.get(4)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(labels)
+    }
+
+    /// Create a reusable label from the fixed palette.
+    pub fn create_label(&self, name: &str, colour: &str) -> Result<Label> {
+        let name = valid_label_name(name)?;
+        validate_label_colour(colour)?;
+        let conn = self.connection()?;
+        if label_name_taken(&conn, &name, None)? {
+            return Err(Error::LabelExists { name });
+        }
         conn.execute(
             "INSERT INTO labels (name, colour, created_at) VALUES (?1, ?2, ?3)",
             params![name, colour, unix_timestamp()],
@@ -658,12 +790,71 @@ impl Service {
         .map_err(Error::from)
     }
 
+    /// Rename a label. The new name must still be unique.
+    pub fn rename_label(&self, label_id: i64, name: &str) -> Result<Label> {
+        let name = valid_label_name(name)?;
+        let conn = self.connection()?;
+        ensure_label(&conn, label_id)?;
+        if label_name_taken(&conn, &name, Some(label_id))? {
+            return Err(Error::LabelExists { name });
+        }
+        conn.execute(
+            "UPDATE labels SET name = ?1 WHERE id = ?2",
+            params![name, label_id],
+        )?;
+        conn.query_row(
+            "SELECT id, name, colour, created_at FROM labels WHERE id = ?1",
+            [label_id],
+            label_from_row,
+        )
+        .map_err(Error::from)
+    }
+
+    /// Recolour a label from the fixed palette.
+    pub fn recolour_label(&self, label_id: i64, colour: &str) -> Result<Label> {
+        validate_label_colour(colour)?;
+        let conn = self.connection()?;
+        ensure_label(&conn, label_id)?;
+        conn.execute(
+            "UPDATE labels SET colour = ?1 WHERE id = ?2",
+            params![colour, label_id],
+        )?;
+        conn.query_row(
+            "SELECT id, name, colour, created_at FROM labels WHERE id = ?1",
+            [label_id],
+            label_from_row,
+        )
+        .map_err(Error::from)
+    }
+
+    /// Delete a label and every association. No book is touched.
+    pub fn delete_label(&self, label_id: i64) -> Result<()> {
+        let conn = self.connection()?;
+        let changed = conn.execute("DELETE FROM labels WHERE id = ?1", [label_id])?;
+        if changed == 0 {
+            return Err(Error::LabelNotFound { id: label_id });
+        }
+        Ok(())
+    }
+
     /// Attach a label to a book; attaching twice is a no-op.
     pub fn attach_label(&self, book_id: i64, label_id: i64) -> Result<()> {
         let conn = self.connection()?;
         ensure_book(&conn, book_id)?;
+        ensure_label(&conn, label_id)?;
         conn.execute(
             "INSERT OR IGNORE INTO book_labels (book_id, label_id) VALUES (?1, ?2)",
+            params![book_id, label_id],
+        )?;
+        Ok(())
+    }
+
+    /// Detach a label from a book; detaching a missing association is a no-op.
+    pub fn detach_label(&self, book_id: i64, label_id: i64) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        conn.execute(
+            "DELETE FROM book_labels WHERE book_id = ?1 AND label_id = ?2",
             params![book_id, label_id],
         )?;
         Ok(())
@@ -673,16 +864,52 @@ impl Service {
     pub fn labels_for_book(&self, book_id: i64) -> Result<Vec<Label>> {
         let conn = self.connection()?;
         ensure_book(&conn, book_id)?;
-        let mut statement = conn.prepare(
-            "SELECT l.id, l.name, l.colour, l.created_at
-             FROM labels l JOIN book_labels bl ON bl.label_id = l.id
-             WHERE bl.book_id = ?1
-             ORDER BY l.created_at, l.id",
-        )?;
-        let labels = statement
-            .query_map([book_id], label_from_row)?
+        labels_for_book_conn(&conn, book_id)
+    }
+
+    /// Books matching every selected label and, optionally, the status axis.
+    ///
+    /// Multiple labels combine with AND, as do labels and status. An empty
+    /// selection returns every book id in shelf order.
+    pub fn filter_books(
+        &self,
+        label_ids: &[i64],
+        status: Option<ReadingStatus>,
+    ) -> Result<Vec<i64>> {
+        let conn = self.connection()?;
+        let mut sql = String::from(
+            "SELECT b.id FROM books b
+             LEFT JOIN reading_state r ON r.book_id = b.id
+             WHERE 1 = 1",
+        );
+        let mut values: Vec<rusqlite::types::Value> = Vec::new();
+        if let Some(status) = status {
+            sql.push_str(" AND COALESCE(r.status, 'unread') = ?");
+            let text = match status {
+                ReadingStatus::Unread => "unread",
+                ReadingStatus::Reading => "reading",
+                ReadingStatus::Finished => "finished",
+            };
+            values.push(rusqlite::types::Value::Text(text.to_owned()));
+        }
+        for label_id in label_ids {
+            sql.push_str(
+                " AND EXISTS (
+                    SELECT 1 FROM book_labels bl
+                    WHERE bl.book_id = b.id AND bl.label_id = ?
+                 )",
+            );
+            values.push((*label_id).into());
+        }
+        sql.push_str(
+            " ORDER BY b.shelf_id IS NULL, b.shelf_id, b.slot_index,
+              b.title COLLATE NOCASE, b.id",
+        );
+        let mut statement = conn.prepare(&sql)?;
+        let ids = statement
+            .query_map(rusqlite::params_from_iter(values), |row| row.get(0))?
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        Ok(labels)
+        Ok(ids)
     }
 }
 
@@ -698,13 +925,86 @@ fn ensure_book(conn: &Connection, book_id: i64) -> Result<()> {
     }
 }
 
+fn ensure_label(conn: &Connection, label_id: i64) -> Result<()> {
+    let exists: Option<i64> = conn
+        .query_row("SELECT id FROM labels WHERE id = ?1", [label_id], |row| {
+            row.get(0)
+        })
+        .optional()?;
+    match exists {
+        Some(_) => Ok(()),
+        None => Err(Error::LabelNotFound { id: label_id }),
+    }
+}
+
+fn valid_label_name(name: &str) -> Result<String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err(Error::InvalidLabelName);
+    }
+    Ok(trimmed.to_owned())
+}
+
+fn validate_label_colour(colour: &str) -> Result<()> {
+    if LABEL_PALETTE.contains(&colour) {
+        Ok(())
+    } else {
+        Err(Error::InvalidLabelColour {
+            colour: colour.to_owned(),
+        })
+    }
+}
+
+fn label_name_taken(conn: &Connection, name: &str, excluding: Option<i64>) -> Result<bool> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM labels WHERE name = ?1 COLLATE NOCASE AND id <> ?2",
+        params![name, excluding.unwrap_or(-1)],
+        |row| row.get(0),
+    )?;
+    Ok(count > 0)
+}
+
 fn label_from_row(row: &Row<'_>) -> rusqlite::Result<Label> {
+    label_from_row_at(row, 0)
+}
+
+fn label_from_row_at(row: &Row<'_>, offset: usize) -> rusqlite::Result<Label> {
     Ok(Label {
-        id: row.get(0)?,
-        name: row.get(1)?,
-        colour: row.get(2)?,
-        created_at: row.get(3)?,
+        id: row.get(offset)?,
+        name: row.get(offset + 1)?,
+        colour: row.get(offset + 2)?,
+        created_at: row.get(offset + 3)?,
     })
+}
+
+fn labels_for_book_conn(conn: &Connection, book_id: i64) -> Result<Vec<Label>> {
+    let mut statement = conn.prepare(
+        "SELECT l.id, l.name, l.colour, l.created_at
+         FROM labels l JOIN book_labels bl ON bl.label_id = l.id
+         WHERE bl.book_id = ?1
+         ORDER BY l.created_at, l.id",
+    )?;
+    let labels = statement
+        .query_map([book_id], label_from_row)?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    Ok(labels)
+}
+
+fn all_book_labels(conn: &Connection) -> Result<HashMap<i64, Vec<Label>>> {
+    let mut statement = conn.prepare(
+        "SELECT bl.book_id, l.id, l.name, l.colour, l.created_at
+         FROM book_labels bl JOIN labels l ON l.id = bl.label_id
+         ORDER BY l.created_at, l.id",
+    )?;
+    let rows = statement.query_map([], |row| {
+        Ok((row.get::<_, i64>(0)?, label_from_row_at(row, 1)?))
+    })?;
+    let mut labels: HashMap<i64, Vec<Label>> = HashMap::new();
+    for row in rows {
+        let (book_id, label) = row?;
+        labels.entry(book_id).or_default().push(label);
+    }
+    Ok(labels)
 }
 
 struct HashedFile {
@@ -931,5 +1231,6 @@ fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
         shelf_id: row.get(17)?,
         slot_index: row.get(18)?,
         reading_status: row.get::<_, ReadingStatus>(19)?,
+        labels: Vec::new(),
     })
 }

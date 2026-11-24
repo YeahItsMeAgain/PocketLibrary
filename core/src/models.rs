@@ -158,6 +158,8 @@ pub struct Book {
     pub shelf_id: Option<i64>,
     pub slot_index: Option<i64>,
     pub reading_status: ReadingStatus,
+    /// Labels worn by this book, in creation order.
+    pub labels: Vec<Label>,
 }
 
 /// A book plus everything the detail panel needs.
@@ -230,6 +232,15 @@ pub struct Label {
     pub name: String,
     pub colour: String,
     pub created_at: i64,
+}
+
+/// A label together with how many books wear it, for the manager surface.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LabelUsage {
+    #[serde(flatten)]
+    pub label: Label,
+    pub book_count: i64,
 }
 
 /// A book's reading position and status.

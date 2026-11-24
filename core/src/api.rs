@@ -8,7 +8,8 @@ use std::path::Path;
 
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
-    AppInfo, Book, BookDetail, Label, LibraryStatus, ReadingState, ReadingStatus, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus,
+    ScanReport, Shelf,
 };
 use crate::service::Service;
 use crate::source::FileSource;
@@ -130,6 +131,32 @@ impl Api {
             .map_err(ApiError::from)
     }
 
+    /// Every label with how many books wear it.
+    pub fn label_usage(&self) -> ApiResult<Vec<LabelUsage>> {
+        self.service.label_usage().map_err(ApiError::from)
+    }
+
+    /// Rename a label.
+    pub fn rename_label(&self, label_id: i64, name: &str) -> ApiResult<Label> {
+        self.service
+            .rename_label(label_id, name)
+            .map_err(ApiError::from)
+    }
+
+    /// Recolour a label from the fixed palette.
+    pub fn recolour_label(&self, label_id: i64, colour: &str) -> ApiResult<Label> {
+        self.service
+            .recolour_label(label_id, colour)
+            .map_err(ApiError::from)
+    }
+
+    /// Delete a label and its associations, touching no book.
+    pub fn delete_label(&self, label_id: i64) -> ApiResult<()> {
+        self.service
+            .delete_label(label_id)
+            .map_err(ApiError::from)
+    }
+
     /// Attach a label to a book.
     pub fn attach_label(&self, book_id: i64, label_id: i64) -> ApiResult<()> {
         self.service
@@ -137,10 +164,52 @@ impl Api {
             .map_err(ApiError::from)
     }
 
+    /// Detach a label from a book.
+    pub fn detach_label(&self, book_id: i64, label_id: i64) -> ApiResult<()> {
+        self.service
+            .detach_label(book_id, label_id)
+            .map_err(ApiError::from)
+    }
+
     /// Labels worn by one book.
     pub fn labels_for_book(&self, book_id: i64) -> ApiResult<Vec<Label>> {
         self.service
             .labels_for_book(book_id)
+            .map_err(ApiError::from)
+    }
+
+    /// Book ids matching all selected labels and the optional status.
+    pub fn filter_books(
+        &self,
+        label_ids: &[i64],
+        status: Option<ReadingStatus>,
+    ) -> ApiResult<Vec<i64>> {
+        self.service
+            .filter_books(label_ids, status)
+            .map_err(ApiError::from)
+    }
+
+    /// Set a manual reading status that later auto updates cannot override.
+    pub fn set_reading_status(&self, book_id: i64, status: ReadingStatus) -> ApiResult<()> {
+        self.service
+            .set_reading_status(book_id, status)
+            .map_err(ApiError::from)
+    }
+
+    /// The reader's auto-on-open operation (wired in ticket 07).
+    pub fn record_open(&self, book_id: i64) -> ApiResult<()> {
+        self.service.record_open(book_id).map_err(ApiError::from)
+    }
+
+    /// Record reading progress; >=98% or the last page finishes the book.
+    pub fn record_progress(
+        &self,
+        book_id: i64,
+        progress: f64,
+        locator: Option<&str>,
+    ) -> ApiResult<ReadingStatus> {
+        self.service
+            .record_progress(book_id, progress, locator)
             .map_err(ApiError::from)
     }
 }

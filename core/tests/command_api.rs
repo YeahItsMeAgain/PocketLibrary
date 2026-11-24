@@ -87,6 +87,7 @@ fn serialised_books_do_not_leak_filesystem_paths() {
         shelf_id: Some(1),
         slot_index: Some(0),
         reading_status: ReadingStatus::Unread,
+        labels: Vec::new(),
     };
 
     let json = serde_json::to_value(&book).expect("serialise book");
