@@ -5,7 +5,9 @@ import {
   platform,
   type AppInfo,
   type Book,
+  type BookDetail,
   type LibraryStatus,
+  type ScanIssueReason,
   type ScanReport,
   type Shelf,
 } from "./platform";
@@ -60,7 +62,13 @@ function Masthead() {
   );
 }
 
-function ShelfCase({ shelf, books }: { shelf: Shelf; books: Book[] }) {
+interface ShelfCaseProps {
+  shelf: Shelf;
+  books: Book[];
+  onOpen: (book: Book) => void;
+}
+
+function ShelfCase({ shelf, books, onOpen }: ShelfCaseProps) {
   const mark = shelfMark(shelf.ordinal);
   const empty = books.length === 0;
 
@@ -98,6 +106,15 @@ function ShelfCase({ shelf, books }: { shelf: Shelf; books: Book[] }) {
                     data-status={book.readingStatus}
                     title={`${book.title} — ${statusLabel}`}
                     aria-label={`${book.title}, ${statusLabel}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onOpen(book)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onOpen(book);
+                      }
+                    }}
                   >
                     <span className="spine-title">{book.title}</span>
                     {book.readingStatus === "finished" ? (
@@ -132,6 +149,222 @@ function ShelfCase({ shelf, books }: { shelf: Shelf; books: Book[] }) {
   );
 }
 
+const STATUS_CUES: Record<
+  Book["readingStatus"],
+  { label: string; mark: string }
+> = {
+  unread: { label: "Unread", mark: "❧" },
+  reading: { label: "Reading", mark: "▮" },
+  finished: { label: "Finished", mark: "✓" },
+};
+
+interface DetailPanelProps {
+  bookId: number;
+  onClose: () => void;
+}
+
+function DetailPanel({ bookId, onClose }: DetailPanelProps) {
+  const [detail, setDetail] = useState<BookDetail | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [readerNotice, setReaderNotice] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setDetail(null);
+    setFailed(false);
+    setReaderNotice(false);
+    platform
+      .getBookDetail(bookId)
+      .then((next) => {
+        if (alive) setDetail(next);
+      })
+      .catch(() => {
+        if (alive) setFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [bookId]);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  const cue = detail ? STATUS_CUES[detail.readingStatus] : null;
+  const authors =
+    detail && detail.authors.length > 0
+      ? detail.authors.join(" · ")
+      : "Unknown author";
+  const readLabel =
+    detail?.readingStatus === "reading"
+      ? "Continue reading"
+      : detail?.readingStatus === "finished"
+        ? "Read again"
+        : "Read";
+
+  return (
+    <>
+      <button
+        type="button"
+        className="detail-scrim"
+        aria-label="Close book detail"
+        onClick={onClose}
+      />
+      <section
+        className="book-detail"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-title"
+        data-testid="book-detail"
+      >
+        <button
+          ref={closeRef}
+          type="button"
+          className="detail-close"
+          aria-label="Back to shelf"
+          onClick={onClose}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+
+        {failed ? (
+          <div className="detail-loading">
+            <p className="kicker">The Keeper's Ledger</p>
+            <h2 id="detail-title">This volume is unavailable</h2>
+            <p>The book could not be opened just now.</p>
+          </div>
+        ) : detail === null ? (
+          <div className="detail-loading" aria-busy="true">
+            <p className="kicker">Fetching the volume</p>
+            <h2 id="detail-title">Opening…</h2>
+          </div>
+        ) : (
+          <>
+            <figure className="detail-cover-frame">
+              <div className="detail-cover-mat">
+                {detail.coverDataUrl ? (
+                  <img
+                    className="detail-cover"
+                    data-testid="detail-cover"
+                    src={detail.coverDataUrl}
+                    alt={`Cover of ${detail.title}`}
+                  />
+                ) : (
+                  <div className="detail-cover detail-cover-fallback" aria-hidden="true">
+                    {detail.title.slice(0, 1)}
+                  </div>
+                )}
+              </div>
+            </figure>
+
+            <div className="detail-body">
+              <p className="kicker">From the shelf</p>
+              <h2 id="detail-title" data-testid="detail-title">
+                {detail.title}
+              </h2>
+              <p className="detail-author" data-testid="detail-author">
+                {authors}
+              </p>
+              {detail.series ? (
+                <p className="detail-series">{detail.series}</p>
+              ) : null}
+              <div className="rule detail-rule" aria-hidden="true">
+                <span>❧</span>
+              </div>
+              <p className="detail-blurb" data-testid="detail-blurb">
+                {detail.description ?? "No blurb was printed with this edition."}
+              </p>
+
+              <dl className="detail-meta">
+                <div className="detail-meta-row">
+                  <dt>Format</dt>
+                  <dd>{detail.format.toUpperCase()}</dd>
+                </div>
+                {detail.publisher ? (
+                  <div className="detail-meta-row">
+                    <dt>Publisher</dt>
+                    <dd>{detail.publisher}</dd>
+                  </div>
+                ) : null}
+                {detail.publishedDate ? (
+                  <div className="detail-meta-row">
+                    <dt>Published</dt>
+                    <dd>{detail.publishedDate}</dd>
+                  </div>
+                ) : null}
+                {detail.language ? (
+                  <div className="detail-meta-row">
+                    <dt>Language</dt>
+                    <dd>{detail.language}</dd>
+                  </div>
+                ) : null}
+                {detail.pageCount ? (
+                  <div className="detail-meta-row">
+                    <dt>Pages</dt>
+                    <dd>{detail.pageCount}</dd>
+                  </div>
+                ) : null}
+                {detail.identifier ? (
+                  <div className="detail-meta-row">
+                    <dt>Identifier</dt>
+                    <dd>{detail.identifier}</dd>
+                  </div>
+                ) : null}
+              </dl>
+
+              {cue ? (
+                <p
+                  className={`detail-status detail-status-${detail.readingStatus}`}
+                  data-testid="detail-status"
+                  data-status={detail.readingStatus}
+                >
+                  <span className="detail-status-mark" aria-hidden="true">
+                    {cue.mark}
+                  </span>
+                  {cue.label}
+                </p>
+              ) : null}
+
+              <div className="detail-actions">
+                <button
+                  type="button"
+                  className="primary-action"
+                  data-testid="detail-read"
+                  onClick={() => setReaderNotice(true)}
+                >
+                  {readLabel}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-action"
+                  data-testid="detail-back"
+                  onClick={onClose}
+                >
+                  Back to shelf
+                </button>
+              </div>
+              {readerNotice ? (
+                <p className="detail-note" role="status">
+                  The reading room opens in the next chapter.
+                </p>
+              ) : null}
+            </div>
+          </>
+        )}
+      </section>
+    </>
+  );
+}
+
 interface LibraryWallProps {
   reloadKey: number;
   onAddBooks: () => void;
@@ -142,6 +375,8 @@ function LibraryWall({ reloadKey, onAddBooks, onFindBook }: LibraryWallProps) {
   const [shelves, setShelves] = useState<Shelf[] | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [failed, setFailed] = useState(false);
+  const [openBookId, setOpenBookId] = useState<number | null>(null);
+  const closeDetail = useCallback(() => setOpenBookId(null), []);
 
   useEffect(() => {
     let alive = true;
@@ -205,9 +440,13 @@ function LibraryWall({ reloadKey, onAddBooks, onFindBook }: LibraryWallProps) {
             key={shelf.id}
             shelf={shelf}
             books={booksByShelf.get(shelf.id) ?? []}
+            onOpen={(book) => setOpenBookId(book.id)}
           />
         ))}
       </div>
+      {openBookId !== null ? (
+        <DetailPanel bookId={openBookId} onClose={closeDetail} />
+      ) : null}
       {books.length === 0 ? (
         <div className="wall-actions" data-testid="empty-library-actions">
           <p className="wall-note">
@@ -419,6 +658,12 @@ function AppInfoFooter() {
   );
 }
 
+const SCAN_REASON_LABELS: Record<ScanIssueReason, string> = {
+  unreadable: "could not be read",
+  invalid_epub: "not a valid EPUB",
+  invalid_pdf: "not a valid PDF",
+};
+
 function scanNotice(report: ScanReport): string {
   const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
   const removed =
@@ -427,7 +672,23 @@ function scanNotice(report: ScanReport): string {
       : report.removed === 1
         ? "1 book marked finished"
         : `${report.removed} books marked finished`;
-  return [`Scan complete: ${report.total} books`, added, removed]
+  const duplicates =
+    report.duplicates > 0
+      ? report.duplicates === 1
+        ? "1 duplicate copy ignored"
+        : `${report.duplicates} duplicate copies ignored`
+      : null;
+  const skipped =
+    report.skipped.length > 0
+      ? report.skipped
+          .slice(0, 2)
+          .map(
+            (issue) =>
+              `Skipped ${issue.name}: ${SCAN_REASON_LABELS[issue.reason]}`,
+          )
+          .join(" · ")
+      : null;
+  return [`Scan complete: ${report.total} books`, added, removed, duplicates, skipped]
     .filter(Boolean)
     .join(" · ");
 }

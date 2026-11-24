@@ -21,6 +21,8 @@ function mockBook(
     publisher: null,
     publishedDate: null,
     identifier: null,
+    pageCount: null,
+    coverSource: null,
     addedAt: 1_700_000_000,
     shelfId: 1,
     slotIndex,
@@ -165,4 +167,93 @@ test("a revoked grant shows reconnect instead of an empty wall", async ({
   ).toBeVisible();
   await expect(page.getByTestId("library-wall")).toHaveCount(0);
   await expect(page.getByTestId("empty-shelf")).toHaveCount(0);
+});
+
+test("tapping a spine opens the framed detail and Back returns to the wall", async ({
+  page,
+}) => {
+  const books: Book[] = [
+    {
+      ...mockBook(9, "The Hollow Crown", "epub", 0),
+      authors: ["Ada Lovelace"],
+      description:
+        "A quiet revolution gathers behind the palace doors, and one reader must choose a side.",
+      publisher: "Harrow & Row",
+      publishedDate: "1974-05-01",
+      series: "The Crown Papers",
+      language: "en",
+      readingStatus: "reading",
+    },
+  ];
+
+  await page.addInitScript((nextBooks) => {
+    (
+      window as unknown as { __POCKETLIBRARY_MOCK__: unknown }
+    ).__POCKETLIBRARY_MOCK__ = {
+      state: "ready",
+      folderName: "PocketLibrary",
+      books: nextBooks,
+    };
+  }, books);
+
+  await page.goto("/");
+
+  const wall = page.getByTestId("library-wall");
+  await expect(wall).toBeVisible();
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+
+  await page.getByTestId("spine").first().click();
+
+  const detail = page.getByTestId("book-detail");
+  await expect(detail).toBeVisible();
+  await expect(page.getByTestId("detail-cover")).toBeVisible();
+  await expect(page.getByTestId("detail-cover")).toHaveAttribute(
+    "src",
+    /^data:image/,
+  );
+  await expect(page.getByTestId("detail-title")).toHaveText(
+    "The Hollow Crown",
+  );
+  await expect(page.getByTestId("detail-author")).toHaveText("Ada Lovelace");
+  await expect(page.getByTestId("detail-blurb")).toContainText(
+    "A quiet revolution",
+  );
+  await expect(page.getByTestId("detail-status")).toHaveAttribute(
+    "data-status",
+    "reading",
+  );
+  await expect(page.getByTestId("detail-read")).toHaveText(
+    "Continue reading",
+  );
+
+  await page.getByTestId("detail-back").click();
+
+  await expect(detail).toHaveCount(0);
+  await expect(wall).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+});
+
+test("Escape and the scrim close the detail panel", async ({ page }) => {
+  await page.addInitScript((nextBooks) => {
+    (
+      window as unknown as { __POCKETLIBRARY_MOCK__: unknown }
+    ).__POCKETLIBRARY_MOCK__ = {
+      state: "ready",
+      folderName: "PocketLibrary",
+      books: nextBooks,
+    };
+  }, BOOKS);
+
+  await page.goto("/");
+  await page.getByTestId("spine").first().click();
+  await expect(page.getByTestId("book-detail")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("book-detail")).toHaveCount(0);
+
+  await page.getByTestId("spine").first().click();
+  await expect(page.getByTestId("book-detail")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Close book detail" })
+    .click({ position: { x: 5, y: 5 } });
+  await expect(page.getByTestId("book-detail")).toHaveCount(0);
 });

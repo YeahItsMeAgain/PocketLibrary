@@ -16,6 +16,8 @@ export interface AppInfo {
 
 export type BookFormat = "epub" | "pdf";
 export type ReadingStatus = "unread" | "reading" | "finished";
+export type CoverSource = "embedded" | "rendered" | "generated";
+export type ScanIssueReason = "unreadable" | "invalid_epub" | "invalid_pdf";
 
 /** Mirrors `pocketlibrary_core::Book` (camelCase on the wire). */
 export interface Book {
@@ -31,10 +33,23 @@ export interface Book {
   publisher: string | null;
   publishedDate: string | null;
   identifier: string | null;
+  pageCount: number | null;
+  coverSource: CoverSource | null;
   addedAt: number;
   shelfId: number | null;
   slotIndex: number | null;
   readingStatus: ReadingStatus;
+}
+
+/** Mirrors `pocketlibrary_core::BookDetail`. */
+export interface BookDetail extends Book {
+  coverDataUrl: string | null;
+}
+
+/** Mirrors `pocketlibrary_core::ScanIssue`. */
+export interface ScanIssue {
+  name: string;
+  reason: ScanIssueReason;
 }
 
 /** Mirrors `pocketlibrary_core::Shelf`. */
@@ -58,6 +73,8 @@ export interface ScanReport {
   total: number;
   added: number;
   removed: number;
+  duplicates: number;
+  skipped: ScanIssue[];
 }
 
 /** Mirrors `pocketlibrary_core::ApiError` (camelCase on the wire). */
@@ -84,6 +101,7 @@ export interface Platform {
   appInfo(): Promise<AppInfo>;
   listBooks(): Promise<Book[]>;
   listShelves(): Promise<Shelf[]>;
+  getBookDetail(id: number): Promise<BookDetail>;
   libraryStatus(): Promise<LibraryStatus>;
   chooseLibraryFolder(): Promise<LibraryStatus>;
   rescanLibrary(): Promise<ScanReport>;
@@ -101,6 +119,7 @@ export function createTauriPlatform(call: Invoke): Platform {
     appInfo: () => call<AppInfo>("app_info"),
     listBooks: () => call<Book[]>("list_books"),
     listShelves: () => call<Shelf[]>("list_shelves"),
+    getBookDetail: (id) => call<BookDetail>("get_book_detail", { id }),
     libraryStatus: () => call<LibraryStatus>("library_status"),
     chooseLibraryFolder: () =>
       call<LibraryStatus>("choose_library_folder"),
@@ -111,8 +130,18 @@ export function createTauriPlatform(call: Invoke): Platform {
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
   appVersion: "0.1.0",
-  schemaVersion: 1,
+  schemaVersion: 2,
 };
+
+const MOCK_COVER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">' +
+      '<rect width="300" height="450" fill="#1a0d1c"/>' +
+      '<rect x="18" y="18" width="264" height="414" fill="none" stroke="#c9a86a" stroke-width="2"/>' +
+      '<path d="M150 150 L190 225 L150 300 L110 225 Z" fill="none" stroke="#c9a86a" stroke-width="2"/>' +
+      "</svg>",
+  );
 
 export interface MockConfig {
   state?: LibraryState;
@@ -148,6 +177,11 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     appInfo: async () => MOCK_APP_INFO,
     listBooks: async () => books,
     listShelves: async () => shelvesFor(books),
+    getBookDetail: async (id) => {
+      const book = books.find((candidate) => candidate.id === id);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      return { ...book, coverDataUrl: MOCK_COVER };
+    },
     libraryStatus: async () => status(),
     chooseLibraryFolder: async () => {
       state = "ready";
@@ -159,6 +193,8 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       total: books.length,
       added: 0,
       removed: 0,
+      duplicates: 0,
+      skipped: [],
     }),
   };
 }

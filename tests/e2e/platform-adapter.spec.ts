@@ -12,7 +12,7 @@ test("the real Tauri adapter renders values from a mocked invoke", async ({
               return {
                 name: "PocketLibrary",
                 appVersion: "9.8.7",
-                schemaVersion: 1,
+                schemaVersion: 2,
               };
             case "list_books":
               return [];
@@ -21,7 +21,7 @@ test("the real Tauri adapter renders values from a mocked invoke", async ({
             case "library_status":
               return { state: "ready", folderName: "PocketLibrary" };
             case "rescan_library":
-              return { total: 0, added: 0, removed: 0 };
+              return { total: 0, added: 0, removed: 0, duplicates: 0, skipped: [] };
             default:
               throw new Error(`unexpected command: ${command}`);
           }
