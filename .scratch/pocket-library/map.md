@@ -30,6 +30,7 @@ A complete, buildable spec plus a full ticket graph for PocketLibrary — an And
 
 ## Decisions so far
 
+- [12 — Backup and external-reader handoff](issues/12-backup-external-reader.md): versioned `.pocketlibrary` zip of metadata (not books) via the system file picker; merge-by-hash import with an explicit replace path; explicit export plus optional OS auto-backup; external reader via content URI with no false position sync.
 - [11 — Acquisition experience](issues/11-acquisition-ux.md): Libgen-only and fully in-app; client-side filters on 25-per-page HTML results; optional non-blocking Open Library enrichment; two-concurrent persisted queue with Range resume; md5 pre-check and BLAKE3 post-check for duplicates; `Author - Title (Year)` naming; automatic mirror failover; no Anna's Archive.
 - [14 — Reader experience](issues/14-reader-ux.md): immersive chrome, paginated by default with scroll option, three-zone taps, Contents sheet with chapters + bookmarks, Paper/Sepia/Night, five sizes and three bundled serifs, PDF uses the same shell with zoom and theme tint instead of reflow, external reading from detail and top bar.
 - [09 — Local data model](issues/09-data-model.md): SQLite/WAL in app-private storage; first-class persisted `shelves` with capacity and order; books carry `shelf_id` + `slot_index`; BLAKE3 identity with mutable path; reading state, annotations, downloads and key-value settings; `user_version` migrations.
