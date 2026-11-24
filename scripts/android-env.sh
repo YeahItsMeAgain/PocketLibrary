@@ -18,6 +18,14 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export NDK_HOME="${NDK_HOME:-$ANDROID_HOME/ndk/28.2.13676358}"
 
+# The bundled SQLite in libsqlite3-sys needs an explicit NDK C toolchain when
+# building for the Android target from a plain `cargo`/`cargo clippy` command.
+# API 24 matches the app's minSdk.
+ANDROID_CC="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+export CC_aarch64_linux_android="${CC_aarch64_linux_android:-$ANDROID_CC}"
+export AR_aarch64_linux_android="${AR_aarch64_linux_android:-$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar}"
+export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER:-$ANDROID_CC}"
+
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
 # The Rust Android targets are installed by `tauri android init` (aarch64 is

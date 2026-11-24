@@ -115,10 +115,12 @@ Debug, arm64 only:
 src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
 ```
 
-Verified artifact (2026-11-24):
+Verified artifact (2026-11-24, walking-skeleton build with the core catalogue
+and bundled SQLite):
 
-- size: **135,251,177 bytes (129 MiB)** — debug builds keep symbols and Rust
-  debug info, so this is much larger than a release build
+- size: **300,409,112 bytes (287 MiB)** — debug builds keep Rust symbols (the
+  `.so` alone is ~165 MB) and are stored uncompressed in the APK, so this is
+  much larger than a release build
 - `native-code: 'arm64-v8a'`
 - `package: app.pocketlibrary`, `versionCode 1000`, `versionName 0.1.0`
 - `minSdkVersion 24`, `targetSdkVersion 36`
@@ -147,7 +149,7 @@ Signer #1 certificate SHA-256 digest: c9612c660f5ea8abeb58d2e9b335edc7951e0513f7
 ```
 
 SHA-256 of `app-universal-debug.apk`:
-`730fbed116cafd5c636ebcf9054a057fd5d2850efcbd42816c0c1840ec07692e`.
+`f85cb15c75f68d7e60986a47b81266aeb6a32417574a83aaaf42d022e5073987`.
 
 ## 6. Release signing
 
@@ -270,17 +272,23 @@ The config (`playwright.config.ts`) starts the Vite dev server at
 ## 8. Per-merge checks
 
 ```bash
+cargo test --manifest-path core/Cargo.toml   # headless catalogue tests
 npm run build              # tsc && vite build
 npm run test:e2e           # Playwright smoke
 cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android --all-targets -- -D warnings
 npm run tauri android build -- --apk --target aarch64 --debug --ci
 ```
 
-`cargo test` / host-target `cargo clippy` need desktop GTK/WebKit development
-packages (`glib-2.0.pc`, `webkit2gtk-4.1`, …), which are not installed on this
-no-sudo box. Use the `--target aarch64-linux-android` clippy invocation above
-(verified green) and the APK build to exercise the Rust code here; run host
-`cargo test` on a machine with the Tauri desktop prerequisites.
+`source scripts/android-env.sh` first: it now exports the NDK C compiler for
+`aarch64-linux-android`, which the bundled SQLite in `libsqlite3-sys` needs.
+
+The core crate (`core/`) has no Tauri dependency, so its tests run on this
+headless host. `cargo test` / host-target `cargo clippy` for `src-tauri` still
+need desktop GTK/WebKit development packages (`glib-2.0.pc`,
+`webkit2gtk-4.1`, …), which are not installed on this no-sudo box. Use the
+`--target aarch64-linux-android` clippy invocation above (verified green) and
+the APK build to exercise the Tauri shell; run host `cargo test` for it on a
+machine with the Tauri desktop prerequisites.
 
 ## 9. Troubleshooting
 
