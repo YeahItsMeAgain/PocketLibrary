@@ -1,15 +1,20 @@
-//! The catalogue service: the only writer of the library database.
+//! The catalog service: the only writer of the library database.
 
 use std::fs;
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
 
-use rusqlite::{Connection, OptionalExtension, Row, params};
+use rusqlite::{Connection, Row};
 
 use crate::error::{Error, Result};
 use crate::migrations;
 use crate::models::{AppInfo, Book, BookFormat, Shelf};
 use crate::{APP_NAME, SCHEMA_VERSION};
+
+/// The one book projection, kept in one place so every query stays in sync.
+const BOOK_COLUMNS: &str = "id, content_hash, quick_key, path, format, title, authors,
+     series, language, description, publisher, published_date, identifier,
+     cover_path, added_at, shelf_id, slot_index";
 
 /// Handle to an open library database.
 ///
@@ -32,12 +37,6 @@ impl Service {
         }
 
         let conn = Connection::open(path)?;
-        Self::from_connection(conn)
-    }
-
-    /// Open a private in-memory catalogue (useful for tests and tools).
-    pub fn open_in_memory() -> Result<Self> {
-        let conn = Connection::open_in_memory()?;
         Self::from_connection(conn)
     }
 
@@ -78,13 +77,11 @@ impl Service {
     /// Every book known to the library, in shelf order.
     pub fn list_books(&self) -> Result<Vec<Book>> {
         let conn = self.connection()?;
-        let mut statement = conn.prepare(
-            "SELECT id, content_hash, quick_key, path, format, title, authors,
-                    series, language, description, publisher, published_date,
-                    identifier, cover_path, added_at, shelf_id, slot_index
+        let mut statement = conn.prepare(&format!(
+            "SELECT {BOOK_COLUMNS}
              FROM books
-             ORDER BY shelf_id IS NULL, shelf_id, slot_index, title COLLATE NOCASE, id",
-        )?;
+             ORDER BY shelf_id IS NULL, shelf_id, slot_index, title COLLATE NOCASE, id"
+        ))?;
 
         let books = statement
             .query_map([], book_from_row)?
@@ -109,32 +106,12 @@ impl Service {
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(shelves)
     }
-
-    /// Look up a book by its internal id.
-    pub fn find_book(&self, id: i64) -> Result<Option<Book>> {
-        let conn = self.connection()?;
-        let book = conn
-            .query_row(
-                "SELECT id, content_hash, quick_key, path, format, title, authors,
-                        series, language, description, publisher, published_date,
-                        identifier, cover_path, added_at, shelf_id, slot_index
-                 FROM books WHERE id = ?1",
-                params![id],
-                book_from_row,
-            )
-            .optional()?;
-        Ok(book)
-    }
 }
 
 fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
     let authors_json: String = row.get(6)?;
     let authors = serde_json::from_str(&authors_json).map_err(|error| {
-        rusqlite::Error::FromSqlConversionFailure(
-            6,
-            rusqlite::types::Type::Text,
-            Box::new(error),
-        )
+        rusqlite::Error::FromSqlConversionFailure(6, rusqlite::types::Type::Text, Box::new(error))
     })?;
 
     Ok(Book {

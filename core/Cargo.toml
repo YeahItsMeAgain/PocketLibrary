@@ -1,7 +1,7 @@
 [package]
 name = "pocketlibrary_core"
 version = "0.1.0"
-description = "SQLite catalogue and service layer for PocketLibrary"
+description = "SQLite catalog and service layer for PocketLibrary"
 edition = "2024"
 
 [lib]

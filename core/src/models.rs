@@ -57,6 +57,8 @@ pub struct Book {
     pub id: i64,
     pub content_hash: String,
     pub quick_key: Option<String>,
+    /// Filesystem path. Never serialised to the UI; `id` is the opaque handle.
+    #[serde(skip)]
     pub path: String,
     pub format: BookFormat,
     pub title: String,
@@ -67,6 +69,8 @@ pub struct Book {
     pub publisher: Option<String>,
     pub published_date: Option<String>,
     pub identifier: Option<String>,
+    /// Cached cover path. Never serialised to the UI.
+    #[serde(skip)]
     pub cover_path: Option<String>,
     pub added_at: i64,
     pub shelf_id: Option<i64>,

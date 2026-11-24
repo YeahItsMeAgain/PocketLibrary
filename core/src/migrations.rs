@@ -2,8 +2,8 @@
 
 use rusqlite::Connection;
 
-use crate::error::{Error, Result};
 use crate::SCHEMA_VERSION;
+use crate::error::{Error, Result};
 
 const SCHEMA_V1: &str = r#"
 CREATE TABLE shelves (
@@ -11,6 +11,9 @@ CREATE TABLE shelves (
     ordinal   INTEGER NOT NULL UNIQUE CHECK (ordinal >= 0),
     capacity  INTEGER NOT NULL DEFAULT 12 CHECK (capacity > 0)
 );
+
+-- A fresh library opens with one empty shelf, ready for the first book.
+INSERT INTO shelves (ordinal, capacity) VALUES (0, 12);
 
 CREATE TABLE books (
     id              INTEGER PRIMARY KEY,
@@ -28,7 +31,7 @@ CREATE TABLE books (
     identifier      TEXT,
     cover_path      TEXT,
     added_at        INTEGER NOT NULL,
-    shelf_id        INTEGER REFERENCES shelves(id) ON DELETE SET NULL,
+    shelf_id        INTEGER REFERENCES shelves(id) ON DELETE RESTRICT,
     slot_index      INTEGER CHECK (slot_index IS NULL OR slot_index >= 0),
     CHECK ((shelf_id IS NULL) = (slot_index IS NULL))
 );
@@ -112,7 +115,7 @@ VALUES ('shelf_capacity', '12', unixepoch());
 /// Bring the database up to [`SCHEMA_VERSION`], or fail if it is newer.
 ///
 /// The migration runs in one transaction, so a failed fresh install leaves no
-/// half-built catalogue. Reopening an already-migrated database is a no-op.
+/// half-built catalog. Reopening an already-migrated database is a no-op.
 pub fn migrate(conn: &mut Connection) -> Result<()> {
     let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
 
