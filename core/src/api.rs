@@ -8,8 +8,8 @@ use std::path::Path;
 
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
-    AppInfo, Book, BookDetail, Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus,
-    ScanReport, Shelf,
+    AppInfo, Book, BookDetail, Bookmark, Label, LabelUsage, LibraryStatus, ReadingState,
+    ReadingStatus, ScanReport, Shelf,
 };
 use crate::service::Service;
 use crate::source::FileSource;
@@ -193,6 +193,30 @@ impl Api {
     pub fn set_reading_status(&self, book_id: i64, status: ReadingStatus) -> ApiResult<()> {
         self.service
             .set_reading_status(book_id, status)
+            .map_err(ApiError::from)
+    }
+
+    /// The book's library-relative path, used only by the shell to read bytes.
+    pub fn book_path(&self, book_id: i64) -> ApiResult<String> {
+        self.service.book_path(book_id).map_err(ApiError::from)
+    }
+
+    /// Every live bookmark for a book.
+    pub fn list_bookmarks(&self, book_id: i64) -> ApiResult<Vec<Bookmark>> {
+        self.service.list_bookmarks(book_id).map_err(ApiError::from)
+    }
+
+    /// Add a bookmark from the reader's versioned locator JSON.
+    pub fn add_bookmark(&self, book_id: i64, locator: &str) -> ApiResult<Bookmark> {
+        self.service
+            .add_bookmark(book_id, locator)
+            .map_err(ApiError::from)
+    }
+
+    /// Delete one bookmark.
+    pub fn delete_bookmark(&self, book_id: i64, bookmark_id: i64) -> ApiResult<()> {
+        self.service
+            .delete_bookmark(book_id, bookmark_id)
             .map_err(ApiError::from)
     }
 

@@ -65,6 +65,14 @@ export interface ReadingState {
   locator: string | null;
 }
 
+/** Mirrors `pocketlibrary_core::Bookmark` (a `kind='bookmark'` annotation). */
+export interface Bookmark {
+  id: number;
+  bookId: number;
+  locator: string;
+  createdAt: number;
+}
+
 /** The fixed label palette; no free colour picker. */
 export const LABEL_PALETTE: ReadonlyArray<{ name: string; colour: string }> = [
   { name: "Oxblood", colour: "#6e2630" },
@@ -157,6 +165,16 @@ export interface Platform {
   detachLabel(bookId: number, labelId: number): Promise<void>;
   readingState(bookId: number): Promise<ReadingState>;
   setReadingStatus(bookId: number, status: ReadingStatus): Promise<void>;
+  readBook(bookId: number): Promise<ArrayBuffer>;
+  recordOpen(bookId: number): Promise<void>;
+  recordProgress(
+    bookId: number,
+    progress: number,
+    locator: string | null,
+  ): Promise<ReadingStatus>;
+  listBookmarks(bookId: number): Promise<Bookmark[]>;
+  addBookmark(bookId: number, locator: string): Promise<Bookmark>;
+  deleteBookmark(bookId: number, bookmarkId: number): Promise<void>;
 }
 
 export type Invoke = typeof invoke;
@@ -197,6 +215,19 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<ReadingState>("reading_state", { bookId }),
     setReadingStatus: (bookId, status) =>
       call<void>("set_reading_status", { bookId, status }),
+    readBook: async (bookId) => {
+      const bytes = await call<ArrayBuffer>("read_book", { bookId });
+      return bytes instanceof ArrayBuffer ? bytes : new Uint8Array(bytes as number[]).buffer;
+    },
+    recordOpen: (bookId) => call<void>("record_open", { bookId }),
+    recordProgress: (bookId, progress, locator) =>
+      call<ReadingStatus>("record_progress", { bookId, progress, locator }),
+    listBookmarks: (bookId) =>
+      call<Bookmark[]>("list_bookmarks", { bookId }),
+    addBookmark: (bookId, locator) =>
+      call<Bookmark>("add_bookmark", { bookId, locator }),
+    deleteBookmark: (bookId, bookmarkId) =>
+      call<void>("delete_bookmark", { bookId, bookmarkId }),
   };
 }
 
@@ -228,6 +259,36 @@ export interface MockConfig {
   labels?: Label[];
   /** Progress fractions for the detail sticker, keyed by book id. */
   readingProgress?: Record<number, number>;
+  /** Optional EPUB fixture URL per book id (defaults to sample.epub). */
+  bookFiles?: Record<number, string>;
+}
+
+const MOCK_READING_KEY = "pocketlibrary.mock.reading";
+const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
+const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
+
+interface StoredReading {
+  status: ReadingStatus;
+  statusSource: "auto" | "manual";
+  progress: number;
+  locator: string | null;
+}
+
+function readStored<T>(key: string, fallback: T): T {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStored(key: string, value: unknown) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // A private WebView may refuse storage; the session still works.
+  }
 }
 
 interface MockWindow extends Window {
@@ -346,6 +407,37 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       value,
     ]),
   );
+  const storedReading = readStored<Record<number, StoredReading>>(
+    MOCK_READING_KEY,
+    {},
+  );
+  const bookmarkStore = readStored<Record<number, Bookmark[]>>(
+    MOCK_BOOKMARKS_KEY,
+    {},
+  );
+  let nextBookmarkId =
+    Math.max(
+      0,
+      ...Object.values(bookmarkStore).flatMap((list) => list.map((b) => b.id)),
+    ) + 1;
+  for (const book of books) {
+    const stored = storedReading[book.id];
+    if (stored) {
+      book.readingStatus = stored.status;
+      progress.set(book.id, stored.progress);
+    }
+  }
+
+  function saveReading(bookId: number, next: StoredReading) {
+    storedReading[bookId] = next;
+    writeStored(MOCK_READING_KEY, storedReading);
+    const book = books.find((candidate) => candidate.id === bookId);
+    if (book) {
+      book.readingStatus = next.status;
+      books = [...books];
+    }
+    progress.set(bookId, next.progress);
+  }
 
   const status = (): LibraryStatus => ({ state, folderName });
 
@@ -452,6 +544,10 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       state = "ready";
       folderName = folderName ?? "PocketLibrary";
       books = seedBooks(config.books);
+      for (const book of books) {
+        const stored = storedReading[book.id];
+        if (stored) book.readingStatus = stored.status;
+      }
       labels = seedLabels(config, books);
       shelves = initialShelves(config, books);
       scanAdds = config.scanAdds ? [...config.scanAdds] : [];
@@ -588,11 +684,12 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       if (!book) {
         throw { code: "book_not_found", message: "That book could not be found." };
       }
+      const stored = storedReading[bookId];
       return {
-        status: book.readingStatus,
-        statusSource: "auto",
-        progress: progressFor(book),
-        locator: null,
+        status: stored?.status ?? book.readingStatus,
+        statusSource: stored?.statusSource ?? "auto",
+        progress: stored?.progress ?? progressFor(book),
+        locator: stored?.locator ?? null,
       };
     },
     setReadingStatus: async (bookId, nextStatus) => {
@@ -600,9 +697,81 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       if (!book) {
         throw { code: "book_not_found", message: "That book could not be found." };
       }
-      book.readingStatus = nextStatus;
-      if (nextStatus === "finished") progress.set(bookId, 1);
-      books = [...books];
+      const previous = storedReading[bookId];
+      saveReading(bookId, {
+        status: nextStatus,
+        statusSource: "manual",
+        progress:
+          nextStatus === "finished" ? 1 : (previous?.progress ?? progressFor(book)),
+        locator: previous?.locator ?? null,
+      });
+    },
+    readBook: async (bookId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      const url = config.bookFiles?.[bookId] ?? MOCK_SAMPLE_EPUB;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw { code: "read_book", message: "That book could not be read." };
+      }
+      return response.arrayBuffer();
+    },
+    recordOpen: async (bookId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      const current = storedReading[bookId];
+      if (current?.statusSource === "manual" || current?.status === "finished") {
+        return;
+      }
+      saveReading(bookId, {
+        status: "reading",
+        statusSource: "auto",
+        progress: current?.progress ?? 0,
+        locator: current?.locator ?? null,
+      });
+    },
+    recordProgress: async (bookId, nextProgress, locator) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      const clamped = Math.max(0, Math.min(1, nextProgress));
+      const current = storedReading[bookId];
+      const nextStatus: ReadingStatus =
+        current?.statusSource === "manual"
+          ? current.status
+          : clamped >= 0.98 || current?.status === "finished"
+            ? "finished"
+            : "reading";
+      saveReading(bookId, {
+        status: nextStatus,
+        statusSource: "auto",
+        progress: clamped,
+        locator: locator ?? current?.locator ?? null,
+      });
+      return nextStatus;
+    },
+    listBookmarks: async (bookId) => [...(bookmarkStore[bookId] ?? [])],
+    addBookmark: async (bookId, locator) => {
+      const bookmark: Bookmark = {
+        id: nextBookmarkId++,
+        bookId,
+        locator,
+        createdAt: Math.floor(Date.now() / 1000),
+      };
+      bookmarkStore[bookId] = [...(bookmarkStore[bookId] ?? []), bookmark];
+      writeStored(MOCK_BOOKMARKS_KEY, bookmarkStore);
+      return { ...bookmark };
+    },
+    deleteBookmark: async (bookId, bookmarkId) => {
+      bookmarkStore[bookId] = (bookmarkStore[bookId] ?? []).filter(
+        (bookmark) => bookmark.id !== bookmarkId,
+      );
+      writeStored(MOCK_BOOKMARKS_KEY, bookmarkStore);
     },
   };
 }

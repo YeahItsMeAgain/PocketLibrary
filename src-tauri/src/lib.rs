@@ -6,8 +6,8 @@
 use tauri::{AppHandle, Manager};
 
 use pocketlibrary_core::{
-    Api, ApiError, AppInfo, Book, BookDetail, Label, LabelUsage, LibraryStatus, ReadingState,
-    ReadingStatus, ScanReport, Shelf,
+    Api, ApiError, AppInfo, Book, BookDetail, Bookmark, Label, LabelUsage, LibraryStatus,
+    ReadingState, ReadingStatus, ScanReport, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -163,6 +163,44 @@ fn rescan(_app: &AppHandle) -> Result<ScanReport, ApiError> {
     ))
 }
 
+/// Read a book's bytes for the in-app reader.
+///
+/// A Tauri command returning a raw IPC response is deliberate: the bytes never
+/// become JSON or base64 on the wire. The whole file is still materialised once
+/// in Rust and once in the WebView (unavoidable for foliate's Blob loader), so
+/// very large EPUBs need headroom; this is documented in the reader notes.
+#[cfg(target_os = "android")]
+fn read_book_response(app: &AppHandle, book_id: i64) -> Result<tauri::ipc::Response, ApiError> {
+    let api = app.state::<Api>();
+    let token = api.library_folder()?.ok_or_else(|| {
+        api_error(
+            "library_unavailable",
+            "No library folder has been chosen yet.",
+        )
+    })?;
+    let uri = parse_folder_token(&token);
+    if !grant_is_valid(app, &uri) {
+        return Err(api_error(
+            "library_unavailable",
+            "The library folder is no longer accessible.",
+        ));
+    }
+    let path = api.book_path(book_id)?;
+    let source = SafSource::new(app.android_fs(), uri);
+    let bytes = source
+        .read_path(&path)
+        .map_err(|error| logged_error("read_book", "That book could not be read.", error))?;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+#[cfg(not(target_os = "android"))]
+fn read_book_response(_app: &AppHandle, _book_id: i64) -> Result<tauri::ipc::Response, ApiError> {
+    Err(api_error(
+        "unsupported",
+        "Opening a book needs the Android build.",
+    ))
+}
+
 #[tauri::command]
 fn app_info(api: tauri::State<'_, Api>) -> Result<AppInfo, ApiError> {
     api.app_info()
@@ -272,6 +310,49 @@ fn detach_label(api: tauri::State<'_, Api>, book_id: i64, label_id: i64) -> Resu
 }
 
 #[tauri::command]
+async fn read_book(app: AppHandle, book_id: i64) -> Result<tauri::ipc::Response, ApiError> {
+    blocking(move || read_book_response(&app, book_id)).await
+}
+
+#[tauri::command]
+fn list_bookmarks(api: tauri::State<'_, Api>, book_id: i64) -> Result<Vec<Bookmark>, ApiError> {
+    api.list_bookmarks(book_id)
+}
+
+#[tauri::command]
+fn add_bookmark(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    locator: String,
+) -> Result<Bookmark, ApiError> {
+    api.add_bookmark(book_id, &locator)
+}
+
+#[tauri::command]
+fn delete_bookmark(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    bookmark_id: i64,
+) -> Result<(), ApiError> {
+    api.delete_bookmark(book_id, bookmark_id)
+}
+
+#[tauri::command]
+fn record_open(api: tauri::State<'_, Api>, book_id: i64) -> Result<(), ApiError> {
+    api.record_open(book_id)
+}
+
+#[tauri::command]
+fn record_progress(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    progress: f64,
+    locator: Option<String>,
+) -> Result<ReadingStatus, ApiError> {
+    api.record_progress(book_id, progress, locator.as_deref())
+}
+
+#[tauri::command]
 fn reading_state(api: tauri::State<'_, Api>, book_id: i64) -> Result<ReadingState, ApiError> {
     api.reading_state(book_id)
 }
@@ -322,6 +403,12 @@ pub fn run() {
             delete_label,
             attach_label,
             detach_label,
+            read_book,
+            list_bookmarks,
+            add_bookmark,
+            delete_bookmark,
+            record_open,
+            record_progress,
             reading_state,
             set_reading_status
         ])

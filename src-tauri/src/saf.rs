@@ -38,6 +38,34 @@ impl<'a, R: tauri::Runtime> SafSource<'a, R> {
             },
         }
     }
+
+    /// Find a logical library path by walking the SAF tree, then read its bytes.
+    ///
+    /// The catalog stores library-relative paths. SAF only exposes content-URI
+    /// handles, so the shell resolves the path here and hands the bytes back to
+    /// the reader; neither the path nor the URI crosses the command wire.
+    pub fn read_path(&self, target: &str) -> Result<Vec<u8>> {
+        fn walk(source: &SafSource<'_, impl tauri::Runtime>, dir: Option<&str>, target: &str) -> Result<Option<String>> {
+            for entry in source.list(dir)? {
+                if entry.kind == SourceKind::File && entry.path == target {
+                    return Ok(Some(entry.handle));
+                }
+                if entry.kind == SourceKind::Directory
+                    && let Some(handle) = walk(source, Some(&entry.handle), target)?
+                {
+                    return Ok(Some(handle));
+                }
+            }
+            Ok(None)
+        }
+
+        match walk(self, None, target)? {
+            Some(handle) => self.read_file(&handle),
+            None => Err(Error::SourceUnavailable {
+                message: format!("book path not found: {target}"),
+            }),
+        }
+    }
 }
 
 impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {

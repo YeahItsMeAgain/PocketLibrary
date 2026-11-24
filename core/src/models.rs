@@ -243,6 +243,17 @@ pub struct LabelUsage {
     pub book_count: i64,
 }
 
+/// One durable bookmark. Bookmarks are annotations with `kind = 'bookmark'`;
+/// the locator is a versioned JSON document (CFI + quote fallback).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Bookmark {
+    pub id: i64,
+    pub book_id: i64,
+    pub locator: String,
+    pub created_at: i64,
+}
+
 /// A book's reading position and status.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

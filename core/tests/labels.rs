@@ -179,3 +179,40 @@ fn opening_sets_reading_and_progress_finishes_but_manual_override_wins() {
     assert_eq!(state.status, ReadingStatus::Finished);
     assert_eq!(state.status_source, "manual");
 }
+
+#[test]
+fn bookmarks_are_annotations_and_read_book_paths_stay_in_the_shell() {
+    let (_dir, api) = database();
+    api.scan(&source(&["bookmarked"]))
+        .expect("scan one book");
+    let id = book_id(&api, "bookmarked");
+
+    assert!(api.list_bookmarks(id).expect("empty bookmarks").is_empty());
+    assert_eq!(
+        api.add_bookmark(id, "  ").expect_err("empty locator").code,
+        "invalid_reader_locator"
+    );
+
+    let first = api
+        .add_bookmark(id, r#"{"v":1,"cfi":"epubcfi(/6/2!/4,/2,/8/1:0)","progress":0.1}"#)
+        .expect("first bookmark");
+    let second = api
+        .add_bookmark(id, r#"{"v":1,"cfi":"epubcfi(/6/4!/4,/2,/8/1:12)","progress":0.6}"#)
+        .expect("second bookmark");
+    assert_eq!(api.list_bookmarks(id).expect("bookmarks").len(), 2);
+    assert_eq!(first.book_id, id);
+    assert_eq!(second.book_id, id);
+
+    api.delete_bookmark(id, first.id).expect("delete bookmark");
+    let remaining = api.list_bookmarks(id).expect("remaining bookmarks");
+    assert_eq!(remaining.len(), 1);
+    assert_eq!(remaining[0].id, second.id);
+    assert_eq!(
+        api.delete_bookmark(id, first.id)
+            .expect_err("already deleted")
+            .code,
+        "bookmark_not_found"
+    );
+
+    assert_eq!(api.book_path(id).expect("book path"), "bookmarked.epub");
+}

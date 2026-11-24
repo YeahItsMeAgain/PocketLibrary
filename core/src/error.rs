@@ -50,6 +50,12 @@ pub enum Error {
 
     #[error("label colour {colour:?} is not in the fixed palette")]
     InvalidLabelColour { colour: String },
+
+    #[error("a reader locator cannot be empty")]
+    InvalidReaderLocator,
+
+    #[error("bookmark {id} does not exist")]
+    BookmarkNotFound { id: i64 },
 }
 
 impl Error {
@@ -69,6 +75,8 @@ impl Error {
             Self::LabelExists { .. } => "label_exists",
             Self::InvalidLabelName => "invalid_label_name",
             Self::InvalidLabelColour { .. } => "invalid_label_colour",
+            Self::InvalidReaderLocator => "invalid_reader_locator",
+            Self::BookmarkNotFound { .. } => "bookmark_not_found",
         }
     }
 
@@ -92,6 +100,8 @@ impl Error {
             Self::LabelExists { .. } => "A label with that name already exists.",
             Self::InvalidLabelName => "A label needs a name.",
             Self::InvalidLabelColour { .. } => "Choose one of the printed label colours.",
+            Self::InvalidReaderLocator => "The reading position could not be saved.",
+            Self::BookmarkNotFound { .. } => "That bookmark could not be found.",
         }
     }
 }

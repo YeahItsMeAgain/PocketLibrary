@@ -12,8 +12,8 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 use crate::error::{Error, Result};
 use crate::migrations;
 use crate::models::{
-    AppInfo, Book, BookDetail, BookFormat, CoverSource, Label, LabelUsage, LibraryStatus, Placement,
-    ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Label, LabelUsage, LibraryStatus,
+    Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 use crate::source::{FileSource, ScannedBook, collect_books};
 use crate::{APP_NAME, SCHEMA_VERSION, cover, identity, metadata};
@@ -736,6 +736,82 @@ impl Service {
             params![book_id, next, progress, locator, now],
         )?;
         Ok(next)
+    }
+
+    /// The logical library-relative path of a book, for the reader shell.
+    ///
+    /// This never crosses the command wire: the shell uses it to read bytes and
+    /// then returns only the bytes to the web UI.
+    pub fn book_path(&self, book_id: i64) -> Result<String> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let path = conn.query_row(
+            "SELECT path FROM books WHERE id = ?1",
+            [book_id],
+            |row| row.get(0),
+        )?;
+        Ok(path)
+    }
+
+    /// Every live bookmark for a book, oldest first.
+    pub fn list_bookmarks(&self, book_id: i64) -> Result<Vec<Bookmark>> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let mut statement = conn.prepare(
+            "SELECT id, book_id, locator, created_at
+             FROM annotations
+             WHERE book_id = ?1 AND kind = 'bookmark'
+             ORDER BY created_at, id",
+        )?;
+        let bookmarks = statement
+            .query_map([book_id], |row| {
+                Ok(Bookmark {
+                    id: row.get(0)?,
+                    book_id: row.get(1)?,
+                    locator: row.get(2)?,
+                    created_at: row.get(3)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(bookmarks)
+    }
+
+    /// Add a bookmark using the versioned locator JSON produced by the reader.
+    pub fn add_bookmark(&self, book_id: i64, locator: &str) -> Result<Bookmark> {
+        let locator = locator.trim();
+        if locator.is_empty() {
+            return Err(Error::InvalidReaderLocator);
+        }
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let now = unix_timestamp();
+        conn.execute(
+            "INSERT INTO annotations
+                 (book_id, kind, colour, note, locator, created_at, updated_at)
+             VALUES (?1, 'bookmark', NULL, NULL, ?2, ?3, ?3)",
+            params![book_id, locator, now],
+        )?;
+        Ok(Bookmark {
+            id: conn.last_insert_rowid(),
+            book_id,
+            locator: locator.to_owned(),
+            created_at: now,
+        })
+    }
+
+    /// Delete one bookmark. Highlights and notes are untouched.
+    pub fn delete_bookmark(&self, book_id: i64, bookmark_id: i64) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let changed = conn.execute(
+            "DELETE FROM annotations
+             WHERE id = ?1 AND book_id = ?2 AND kind = 'bookmark'",
+            params![bookmark_id, book_id],
+        )?;
+        if changed == 0 {
+            return Err(Error::BookmarkNotFound { id: bookmark_id });
+        }
+        Ok(())
     }
 
     /// Every label, in creation order.
