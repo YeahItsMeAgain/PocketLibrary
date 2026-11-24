@@ -33,6 +33,7 @@ import {
   type ReaderSettings,
   type ReaderTheme,
 } from "./settings";
+import { ReaderPersistentChrome, useReaderExit } from "./ReaderControls";
 
 interface ReaderLocator {
   v: 1;
@@ -107,6 +108,7 @@ async function resolveStart(
 }
 
 export default function EpubReader({ book, onClose }: EpubReaderProps) {
+  const close = useReaderExit(onClose);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<FoliateView | null>(null);
   const persistTimer = useRef(0);
@@ -401,6 +403,12 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
     >
       <div className="reader-stage" ref={containerRef} />
 
+      <ReaderPersistentChrome
+        progress={progress}
+        label={`${percent}%`}
+        onClose={close}
+      />
+
       {!ready && !failed ? (
         <div className="reader-loading" data-testid="reader-loading">
           <p className="kicker">Opening the volume</p>
@@ -412,7 +420,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
           <p className="kicker">The reading room is dark</p>
           <h2>{book.title}</h2>
           <p>{failed}</p>
-          <button type="button" className="secondary-action" onClick={onClose}>
+          <button type="button" className="secondary-action" onClick={close}>
             Back to shelf
           </button>
         </div>
@@ -435,7 +443,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
           className="reader-back"
           data-testid="reader-back"
           aria-label="Back to shelf"
-          onClick={onClose}
+          onClick={close}
         >
           <span aria-hidden="true">←</span> Shelf
         </button>

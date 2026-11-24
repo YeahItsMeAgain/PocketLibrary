@@ -23,11 +23,12 @@
 - **Status:** `record_open` on first open, `record_progress` while reading and at the end (≥98%). Manual overrides still win.
 - **External reader:** deferred. The top bar button is labelled "Open in another app" and shows an honest deferred notice; no share intent or content-URI FileProvider was implemented this session. This is the only unticked box.
 - **Device-only checks:** verify the scripted EPUB under Android System WebView (CSP inheritance from the app origin into foliate's blob iframe), the SAF `read_book` path on a real folder, and tap-zone feel on a physical screen.
+- **Persistent shell (2026-11-25):** both readers now keep a translucent `← Library` pill at the top-left and a brass progress line plus percent/page readout at the bottom edge while the chrome is hidden. The pill and bar hide only when their revealed bar already carries the same control. `useReaderExit` pushes one history entry on open and serves the top-bar Back, the pill, Escape and Android/browser back; UI closes pop the entry without re-entering popstate, and popstate closes without touching history again. StrictMode's double effect reuses the single entry. Playwright covers persistent visibility/progress, pill close, Escape and `page.goBack()` for EPUB and PDF.
 
 ## Verification
 
 - `cargo test --manifest-path core/Cargo.toml` — pass, including bookmark CRUD.
-- `npm run test:e2e` — 31 pass (reader, CSP, existing suites).
+- `npm run test:e2e` — 40 pass (reader shell, CSP, existing suites).
 - `npm run build` / `npx tsc --noEmit` — pass.
-- Android clippy: `cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android -- -D warnings` — pass.
-- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 15,980,230 bytes, SHA-256 `0773203d35ae31d1461b1b9a062a291674620e40d69a4032a668ac3549d1358b`, signer `CN=PocketLibrary`.
+- Android clippy: `cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android -- -D warnings` — pass (no Rust changes this session).
+- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 18,499,150 bytes, SHA-256 `0dad4eff8081f08b837df9c526d4b619c89b5b0cb0df37c7a8d8fdb7b6e08377`, signer `CN=PocketLibrary`. Download: `https://tunnel.invalid/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`.

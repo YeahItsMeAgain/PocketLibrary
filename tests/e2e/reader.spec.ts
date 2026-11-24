@@ -293,3 +293,55 @@ test("open in another app is an honest placeholder", async ({ page }) => {
     "deferred",
   );
 });
+
+async function persistentProgress(page: Page): Promise<number> {
+  const value = await page
+    .getByTestId("reader-persistent-progress")
+    .getAttribute("aria-valuenow");
+  return Number(value ?? 0);
+}
+
+test("persistent Library pill and progress stay visible without chrome", async ({
+  page,
+}) => {
+  await boot(page, { settings: { spacing: 2 } });
+  await page.goto("/");
+  await openReader(page);
+
+  await expect(page.locator(".reader-top")).not.toHaveClass(/is-visible/);
+  await expect(page.getByTestId("reader-persistent-back")).toBeVisible();
+  await expect(page.getByTestId("reader-persistent-progress")).toBeVisible();
+  await expect(page.getByTestId("reader-persistent-percent")).toBeVisible();
+  expect(await persistentProgress(page)).toBe(0);
+
+  await page.mouse.click(350, 500);
+  await expect.poll(() => persistentProgress(page)).toBeGreaterThan(0);
+  await expect(page.locator(".reader-top")).not.toHaveClass(/is-visible/);
+
+  await page.getByTestId("reader-persistent-back").click();
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+});
+
+test("Escape closes the reader", async ({ page }) => {
+  await boot(page);
+  await page.goto("/");
+  await openReader(page);
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+});
+
+test("browser back closes the reader instead of leaving the app", async ({
+  page,
+}) => {
+  await boot(page);
+  await page.goto("/");
+  await openReader(page);
+
+  await page.goBack();
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+  await expect(page.getByTestId("spine").first()).toBeVisible();
+});

@@ -30,6 +30,7 @@ import {
   type ReaderSettings,
   type ReaderTheme,
 } from "./settings";
+import { ReaderPersistentChrome, useReaderExit } from "./ReaderControls";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import "./pdf.css";
 
@@ -70,6 +71,7 @@ function touchDistance(touches: TouchList): number {
 }
 
 export default function PdfReader({ book, onClose }: PdfReaderProps) {
+  const close = useReaderExit(onClose);
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -511,6 +513,12 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         ) : null}
       </div>
 
+      <ReaderPersistentChrome
+        progress={progress}
+        label={`${percent}% · ${pageNumber}/${numPages || "—"}`}
+        onClose={close}
+      />
+
       {!ready && !failed ? (
         <div className="reader-loading" data-testid="reader-loading">
           <p className="kicker">Opening the folio</p>
@@ -522,7 +530,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           <p className="kicker">The reading room is dark</p>
           <h2>{book.title}</h2>
           <p>{failed}</p>
-          <button type="button" className="secondary-action" onClick={onClose}>
+          <button type="button" className="secondary-action" onClick={close}>
             Back to shelf
           </button>
         </div>
@@ -545,7 +553,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           className="reader-back"
           data-testid="reader-back"
           aria-label="Back to shelf"
-          onClick={onClose}
+          onClick={close}
         >
           <span aria-hidden="true">←</span> Shelf
         </button>

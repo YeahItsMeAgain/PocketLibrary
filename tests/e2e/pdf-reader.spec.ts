@@ -166,8 +166,7 @@ test("a PDF opens fit-width, jumps, themes, zooms, resumes and returns", async (
 
 test("PDF bookmarks add from a page, survive relaunch, and remove", async ({
   page,
-}) => {
-  await boot(page);
+}) => {  await boot(page);
   await openReader(page);
   await showChrome(page);
 
@@ -191,3 +190,51 @@ test("PDF bookmarks add from a page, survive relaunch, and remove", async ({
   await page.getByTestId("reader-bookmark-delete").click();
   await expect(page.getByTestId("reader-bookmark-row")).toHaveCount(0);
 });
+
+async function persistentProgress(page: Page): Promise<number> {
+  const value = await page
+    .getByTestId("reader-persistent-progress")
+    .getAttribute("aria-valuenow");
+  return Number(value ?? 0);
+}
+
+test("PDF persistent controls stay visible and return to the wall", async ({
+  page,
+}) => {
+  await boot(page);
+  await openReader(page);
+
+  await expect(page.locator(".reader-top")).not.toHaveClass(/is-visible/);
+  await expect(page.getByTestId("reader-persistent-back")).toBeVisible();
+  await expect(page.getByTestId("reader-persistent-progress")).toBeVisible();
+  await expect(page.getByTestId("reader-persistent-percent")).toContainText(
+    "1/3",
+  );
+  expect(await persistentProgress(page)).toBe(33);
+
+  await page.getByTestId("reader-persistent-back").click();
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+});
+
+test("PDF Escape closes the reader", async ({ page }) => {
+  await boot(page);
+  await openReader(page);
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+});
+
+test("PDF browser back closes the reader instead of leaving the app", async ({
+  page,
+}) => {
+  await boot(page);
+  await openReader(page);
+
+  await page.goBack();
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+  await expect(page.getByTestId("spine").first()).toBeVisible();
+});
+
