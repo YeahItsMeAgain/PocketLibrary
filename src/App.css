@@ -529,6 +529,142 @@ button:focus-visible {
   line-height: 1.65;
 }
 
+.folder-hint {
+  padding: 10px 12px;
+  border: 1px solid rgba(201, 168, 106, 0.22);
+  background: rgba(201, 168, 106, 0.06);
+  font-size: 12px !important;
+  letter-spacing: 0.04em;
+}
+
+.folder-hint strong {
+  color: #e8cf9b;
+  font-weight: 600;
+}
+
+.primary-action,
+.secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 20px;
+  padding: 0 22px;
+  border: 1px solid rgba(201, 168, 106, 0.6);
+  font-family: var(--display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1b1019;
+  background: linear-gradient(180deg, #e2c68f, #b4915a);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.55),
+    0 6px 16px rgba(0, 0, 0, 0.45);
+  transition:
+    filter 0.15s ease,
+    transform 0.15s var(--ease-out);
+}
+
+.primary-action:hover,
+.secondary-action:hover {
+  filter: brightness(1.08);
+}
+
+.primary-action:active,
+.secondary-action:active {
+  transform: translateY(1px);
+}
+
+.primary-action:disabled,
+.secondary-action:disabled {
+  cursor: default;
+  filter: grayscale(0.5) brightness(0.7);
+}
+
+.secondary-action {
+  color: #e6d2ab;
+  background: linear-gradient(180deg, #33203b, #1a1020);
+}
+
+.action-error {
+  margin: 16px 0 0 !important;
+  color: #e8a59a !important;
+  font-size: 12px !important;
+}
+
+.wall-actions {
+  max-width: 320px;
+  margin: 26px auto 0;
+  text-align: center;
+}
+
+.wall-actions .wall-note {
+  margin-top: 0;
+}
+
+.wall-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.wall-buttons .primary-action,
+.wall-buttons .secondary-action {
+  flex: 1 1 130px;
+}
+
+.settings-card {
+  width: min(370px, 100%);
+}
+
+.settings-list {
+  margin: 18px 0 0;
+  text-align: left;
+}
+
+.setting-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 2px;
+  border-bottom: 1px solid rgba(201, 168, 106, 0.16);
+}
+
+.setting-row dt {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #9c825d;
+}
+
+.setting-row dd {
+  margin: 0;
+  font-size: 13px;
+  color: #e6d2ab;
+}
+
+.settings-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.settings-actions .primary-action,
+.settings-actions .secondary-action {
+  width: 100%;
+  margin-top: 0;
+}
+
+.scan-notice {
+  margin: 16px 0 0 !important;
+  color: #c8b088 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.06em;
+}
+
 /* --------------------------------------------------------------- app info */
 
 .app-info {

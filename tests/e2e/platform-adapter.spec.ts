@@ -18,6 +18,10 @@ test("the real Tauri adapter renders values from a mocked invoke", async ({
               return [];
             case "list_shelves":
               return [{ id: 1, ordinal: 0, capacity: 12 }];
+            case "library_status":
+              return { state: "ready", folderName: "PocketLibrary" };
+            case "rescan_library":
+              return { total: 0, added: 0, removed: 0 };
             default:
               throw new Error(`unexpected command: ${command}`);
           }

@@ -1,15 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("fresh install opens on an empty library wall", async ({ page }) => {
+test("fresh install opens on folder onboarding", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByTestId("library-wall")).toBeVisible();
+  await expect(page.getByTestId("onboarding")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Pocket Library" })).toBeVisible();
-  await expect(page.getByTestId("empty-shelf")).toHaveCount(1);
-  await expect(page.getByText("Awaiting its first volume").first()).toBeVisible();
   await expect(
-    page.getByText("No volumes yet. The room is ready when you are."),
+    page.getByRole("button", { name: "Choose library folder" }),
   ).toBeVisible();
+  await expect(page.getByTestId("library-wall")).toHaveCount(0);
 
   const appInfo = page.getByTestId("app-info");
   await expect(appInfo).toContainText("PocketLibrary");
@@ -20,6 +19,10 @@ test("fresh install opens on an empty library wall", async ({ page }) => {
 test("the brass drawer navigates between Library, Search and Settings", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { __POCKETLIBRARY_MOCK__: unknown }).__POCKETLIBRARY_MOCK__ =
+      { state: "ready", folderName: "PocketLibrary", books: [] };
+  });
   await page.goto("/");
 
   const pull = page.getByRole("button", { name: "Open navigation" });
@@ -47,6 +50,10 @@ test("the brass drawer navigates between Library, Search and Settings", async ({
 });
 
 test("Escape closes the drawer and returns focus to the pull", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { __POCKETLIBRARY_MOCK__: unknown }).__POCKETLIBRARY_MOCK__ =
+      { state: "ready", folderName: "PocketLibrary", books: [] };
+  });
   await page.goto("/");
 
   const pull = page.getByRole("button", { name: "Open navigation" });

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { platform, type AppInfo, type Book, type Shelf } from "./platform";
+import {
+  platform,
+  type AppInfo,
+  type Book,
+  type LibraryStatus,
+  type ScanReport,
+  type Shelf,
+} from "./platform";
 import "./App.css";
 
 const ROMAN_MARKS = [
@@ -29,6 +36,15 @@ const NAV_ITEMS: ReadonlyArray<{ view: View; label: string }> = [
   { view: "search", label: "Search" },
   { view: "settings", label: "Settings" },
 ];
+
+function isUnavailable(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "library_unavailable"
+  );
+}
 
 function Masthead() {
   return (
@@ -75,7 +91,13 @@ function ShelfCase({ shelf, books }: { shelf: Shelf; books: Book[] }) {
           ) : (
             <ul className="spines">
               {books.map((book) => (
-                <li key={book.id} className="spine" title={book.title}>
+                <li
+                  key={book.id}
+                  className="spine"
+                  data-testid="spine"
+                  data-status={book.readingStatus}
+                  title={book.title}
+                >
                   <span>{book.title}</span>
                 </li>
               ))}
@@ -92,13 +114,20 @@ function ShelfCase({ shelf, books }: { shelf: Shelf; books: Book[] }) {
   );
 }
 
-function LibraryWall() {
+interface LibraryWallProps {
+  reloadKey: number;
+  onAddBooks: () => void;
+  onFindBook: () => void;
+}
+
+function LibraryWall({ reloadKey, onAddBooks, onFindBook }: LibraryWallProps) {
   const [shelves, setShelves] = useState<Shelf[] | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
+    setFailed(false);
     Promise.all([platform.listShelves(), platform.listBooks()])
       .then(([nextShelves, nextBooks]) => {
         if (!alive) return;
@@ -111,7 +140,7 @@ function LibraryWall() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (failed) {
     return (
@@ -161,39 +190,176 @@ function LibraryWall() {
           />
         ))}
       </div>
-      {books.length === 0 && shelves.length > 0 && (
-        <p className="wall-note">
-          No volumes yet. The room is ready when you are.
-        </p>
-      )}
+      {books.length === 0 ? (
+        <div className="wall-actions" data-testid="empty-library-actions">
+          <p className="wall-note">
+            No volumes yet. The room is ready when you are.
+          </p>
+          <div className="wall-buttons">
+            <button type="button" className="primary-action" onClick={onAddBooks}>
+              Add books
+            </button>
+            <button type="button" className="secondary-action" onClick={onFindBook}>
+              Find a book
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
 
-const PLACEHOLDERS: Record<Exclude<View, "library">, { kicker: string; title: string; body: string }> = {
-  search: {
-    kicker: "The Acquisition Desk",
-    title: "Search",
-    body: "Searching the wider library is being bound in a later chapter.",
-  },
-  settings: {
-    kicker: "The Keeper's Ledger",
-    title: "Settings",
-    body: "The library folder, reader defaults and backup will live here soon.",
-  },
-};
+interface FolderActionProps {
+  busy: boolean;
+  error: string | null;
+  onChoose: () => void;
+}
 
-function Placeholder({ view }: { view: Exclude<View, "library"> }) {
-  const copy = PLACEHOLDERS[view];
+function Onboarding({ busy, error, onChoose }: FolderActionProps) {
   return (
-    <main id="library-main" className="placeholder" data-testid="placeholder-view">
+    <main id="library-main" className="placeholder" data-testid="onboarding">
       <section className="placeholder-card">
-        <p className="kicker">{copy.kicker}</p>
-        <h2>{copy.title}</h2>
+        <p className="kicker">Before the shelves can fill</p>
+        <h2>Choose a library folder</h2>
         <div className="rule" aria-hidden="true">
           <span>❧</span>
         </div>
-        <p>{copy.body}</p>
+        <p>
+          Android gives apps access to one folder at a time. PocketLibrary reads
+          your EPUBs and PDFs where they already live; nothing is copied.
+        </p>
+        <p className="folder-hint">
+          In the picker, choose or create <strong>Documents/PocketLibrary</strong>.
+        </p>
+        <button
+          type="button"
+          className="primary-action"
+          onClick={onChoose}
+          disabled={busy}
+        >
+          {busy ? "Opening the folder picker…" : "Choose library folder"}
+        </button>
+        {error ? (
+          <p className="action-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </section>
+    </main>
+  );
+}
+
+function Reconnect({
+  folderName,
+  busy,
+  error,
+  onChoose,
+}: FolderActionProps & { folderName: string | null }) {
+  return (
+    <main id="library-main" className="placeholder" data-testid="reconnect">
+      <section className="placeholder-card">
+        <p className="kicker">The door is locked</p>
+        <h2>Reconnect library folder</h2>
+        <div className="rule" aria-hidden="true">
+          <span>❧</span>
+        </div>
+        <p>
+          PocketLibrary cannot reach{" "}
+          {folderName ? <strong>{folderName}</strong> : "your library folder"}.
+          Android may have revoked access, or the folder was moved or renamed.
+          Your books, shelves and progress are safe.
+        </p>
+        <button
+          type="button"
+          className="primary-action"
+          onClick={onChoose}
+          disabled={busy}
+        >
+          {busy ? "Opening the folder picker…" : "Reconnect library folder"}
+        </button>
+        {error ? (
+          <p className="action-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </section>
+    </main>
+  );
+}
+
+interface SettingsViewProps {
+  status: LibraryStatus;
+  busy: boolean;
+  notice: string | null;
+  onRescan: () => void;
+  onChoose: () => void;
+}
+
+function SettingsView({
+  status,
+  busy,
+  notice,
+  onRescan,
+  onChoose,
+}: SettingsViewProps) {
+  const reachable = status.state === "ready";
+  return (
+    <main id="library-main" className="placeholder" data-testid="settings-view">
+      <section className="placeholder-card settings-card">
+        <p className="kicker">The Keeper's Ledger</p>
+        <h2>Settings</h2>
+        <div className="rule" aria-hidden="true">
+          <span>❧</span>
+        </div>
+        <dl className="settings-list">
+          <div className="setting-row">
+            <dt>Library folder</dt>
+            <dd>{status.folderName ?? "Not chosen"}</dd>
+          </div>
+          <div className="setting-row">
+            <dt>Access</dt>
+            <dd>
+              {reachable
+                ? "Read and write"
+                : status.state === "disconnected"
+                  ? "Needs reconnecting"
+                  : "Not granted"}
+            </dd>
+          </div>
+        </dl>
+        <div className="settings-actions">
+          <button
+            type="button"
+            className="primary-action"
+            onClick={onRescan}
+            disabled={busy || !reachable}
+          >
+            {busy ? "Scanning…" : "Rescan library"}
+          </button>
+          <button type="button" className="secondary-action" onClick={onChoose}>
+            Change library folder
+          </button>
+        </div>
+        {notice ? (
+          <p className="scan-notice" role="status">
+            {notice}
+          </p>
+        ) : null}
+      </section>
+    </main>
+  );
+}
+
+function SearchPlaceholder() {
+  return (
+    <main id="library-main" className="placeholder" data-testid="placeholder-view">
+      <section className="placeholder-card">
+        <p className="kicker">The Acquisition Desk</p>
+        <h2>Search</h2>
+        <div className="rule" aria-hidden="true">
+          <span>❧</span>
+        </div>
+        <p>Searching the wider library is being bound in a later chapter.</p>
       </section>
     </main>
   );
@@ -235,8 +401,27 @@ function AppInfoFooter() {
   );
 }
 
+function scanNotice(report: ScanReport): string {
+  const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
+  const removed =
+    report.removed === 0
+      ? null
+      : report.removed === 1
+        ? "1 book marked finished"
+        : `${report.removed} books marked finished`;
+  return [`Scan complete: ${report.total} books`, added, removed]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export default function App() {
   const [view, setView] = useState<View>("library");
+  const [status, setStatus] = useState<LibraryStatus | null>(null);
+  const [statusFailed, setStatusFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pullRef = useRef<HTMLButtonElement>(null);
   const firstItemRef = useRef<HTMLButtonElement>(null);
@@ -257,6 +442,78 @@ export default function App() {
   );
 
   useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        let next = await platform.libraryStatus();
+        if (next.state === "ready") {
+          try {
+            await platform.rescanLibrary();
+          } catch (error) {
+            if (isUnavailable(error)) {
+              next = { state: "disconnected", folderName: next.folderName };
+            }
+          }
+        }
+        if (alive) setStatus(next);
+      } catch {
+        if (alive) setStatusFailed(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const chooseFolder = useCallback(async () => {
+    setBusy(true);
+    setActionError(null);
+    setNotice(null);
+    try {
+      let next = await platform.chooseLibraryFolder();
+      if (next.state === "ready") {
+        try {
+          const report = await platform.rescanLibrary();
+          setNotice(scanNotice(report));
+        } catch (error) {
+          if (isUnavailable(error)) {
+            next = { state: "disconnected", folderName: next.folderName };
+          } else {
+            setActionError("The folder was granted, but the first scan failed.");
+          }
+        }
+      }
+      setStatus(next);
+      setReloadKey((key) => key + 1);
+    } catch {
+      setActionError("The folder picker could not be opened. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const rescan = useCallback(async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const report = await platform.rescanLibrary();
+      setNotice(scanNotice(report));
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      if (isUnavailable(error)) {
+        setStatus((current) =>
+          current ? { ...current, state: "disconnected" } : current,
+        );
+        setNotice(null);
+      } else {
+        setNotice("The scan could not be completed. Please try again.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!drawerOpen) return;
 
     firstItemRef.current?.focus();
@@ -271,12 +528,79 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [drawerOpen, closeDrawer]);
 
+  function renderMain() {
+    if (view === "search") return <SearchPlaceholder />;
+    if (view === "settings") {
+      if (status === null) {
+        return (
+          <main id="library-main" className="placeholder" aria-busy="true">
+            <div className="wall-inner" />
+          </main>
+        );
+      }
+      return (
+        <SettingsView
+          status={status}
+          busy={busy}
+          notice={notice}
+          onRescan={rescan}
+          onChoose={chooseFolder}
+        />
+      );
+    }
+    if (statusFailed) {
+      return (
+        <main id="library-main" className="placeholder" data-testid="library-error">
+          <section className="placeholder-card">
+            <p className="kicker">The Keeper's Ledger</p>
+            <h2>Library unavailable</h2>
+            <p>The library folder state could not be read just now.</p>
+          </section>
+        </main>
+      );
+    }
+    if (status === null) {
+      return (
+        <main
+          id="library-main"
+          className="library-wall"
+          data-testid="library-wall"
+          aria-busy="true"
+        >
+          <div className="wall-inner" />
+        </main>
+      );
+    }
+    if (status.state === "needsFolder") {
+      return (
+        <Onboarding busy={busy} error={actionError} onChoose={chooseFolder} />
+      );
+    }
+    if (status.state === "disconnected") {
+      return (
+        <Reconnect
+          folderName={status.folderName}
+          busy={busy}
+          error={actionError}
+          onChoose={chooseFolder}
+        />
+      );
+    }
+    return (
+      <LibraryWall
+        reloadKey={reloadKey}
+        onAddBooks={chooseFolder}
+        onFindBook={() => setView("search")}
+      />
+    );
+  }
+
   return (
     <div className="room">
       <Masthead />
       <AppInfoFooter />
 
-      {view === "library" ? <LibraryWall /> : <Placeholder view={view} />}
+      {renderMain()}
 
       <button
         ref={pullRef}
