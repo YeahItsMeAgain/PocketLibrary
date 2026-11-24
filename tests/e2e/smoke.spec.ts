@@ -5,8 +5,11 @@ test("fresh install opens on an empty library wall", async ({ page }) => {
 
   await expect(page.getByTestId("library-wall")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Pocket Library" })).toBeVisible();
-  await expect(page.getByTestId("empty-shelf")).toHaveCount(3);
+  await expect(page.getByTestId("empty-shelf")).toHaveCount(1);
   await expect(page.getByText("Awaiting its first volume").first()).toBeVisible();
+  await expect(
+    page.getByText("No volumes yet. The room is ready when you are."),
+  ).toBeVisible();
 
   const appInfo = page.getByTestId("app-info");
   await expect(appInfo).toContainText("PocketLibrary");

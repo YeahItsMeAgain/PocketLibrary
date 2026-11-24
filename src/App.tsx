@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { platform, type AppInfo } from "./platform";
+import { platform, type AppInfo, type Book, type Shelf } from "./platform";
 import "./App.css";
 
-const SHELF_MARKS = ["I", "II", "III"] as const;
+const ROMAN_MARKS = [
+  "I",
+  "II",
+  "III",
+  "IV",
+  "V",
+  "VI",
+  "VII",
+  "VIII",
+  "IX",
+  "X",
+  "XI",
+  "XII",
+] as const;
+
+function shelfMark(ordinal: number): string {
+  return ROMAN_MARKS[ordinal] ?? String(ordinal + 1);
+}
 
 type View = "library" | "search" | "settings";
 
@@ -29,12 +46,17 @@ function Masthead() {
   );
 }
 
-function EmptyShelf({ mark }: { mark: string }) {
+function ShelfCase({ shelf, books }: { shelf: Shelf; books: Book[] }) {
+  const mark = shelfMark(shelf.ordinal);
+  const empty = books.length === 0;
+
   return (
     <section
       className="shelf"
-      data-testid="empty-shelf"
-      aria-label={`Shelf ${mark}, empty`}
+      data-testid={empty ? "empty-shelf" : "shelf"}
+      aria-label={
+        empty ? `Shelf ${mark}, empty` : `Shelf ${mark}, ${books.length} books`
+      }
     >
       <div className="case">
         <div className="crown" aria-hidden="true">
@@ -45,10 +67,20 @@ function EmptyShelf({ mark }: { mark: string }) {
           <div className="pilaster pilaster-left" aria-hidden="true" />
           <div className="pilaster pilaster-right" aria-hidden="true" />
           <div className="lamp" aria-hidden="true" />
-          <div className="empty-note">
-            <span className="empty-title">Shelf {mark}</span>
-            <span className="empty-sub">Awaiting its first volume</span>
-          </div>
+          {empty ? (
+            <div className="empty-note">
+              <span className="empty-title">Shelf {mark}</span>
+              <span className="empty-sub">Awaiting its first volume</span>
+            </div>
+          ) : (
+            <ul className="spines">
+              {books.map((book) => (
+                <li key={book.id} className="spine" title={book.title}>
+                  <span>{book.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="lip" aria-hidden="true" />
         <div className="board">
@@ -61,16 +93,79 @@ function EmptyShelf({ mark }: { mark: string }) {
 }
 
 function LibraryWall() {
+  const [shelves, setShelves] = useState<Shelf[] | null>(null);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([platform.listShelves(), platform.listBooks()])
+      .then(([nextShelves, nextBooks]) => {
+        if (!alive) return;
+        setShelves(nextShelves);
+        setBooks(nextBooks);
+      })
+      .catch(() => {
+        if (alive) setFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (failed) {
+    return (
+      <main
+        id="library-main"
+        className="placeholder"
+        data-testid="library-error"
+      >
+        <section className="placeholder-card">
+          <p className="kicker">The Keeper's Ledger</p>
+          <h2>Library unavailable</h2>
+          <p>The shelves could not be opened just now.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (shelves === null) {
+    return (
+      <main
+        id="library-main"
+        className="library-wall"
+        data-testid="library-wall"
+        aria-busy="true"
+      >
+        <div className="wall-inner" />
+      </main>
+    );
+  }
+
+  const booksByShelf = new Map<number, Book[]>();
+  for (const book of books) {
+    if (book.shelfId === null) continue;
+    const shelfBooks = booksByShelf.get(book.shelfId);
+    if (shelfBooks) shelfBooks.push(book);
+    else booksByShelf.set(book.shelfId, [book]);
+  }
+
   return (
     <main id="library-main" className="library-wall" data-testid="library-wall">
       <div className="wall-inner">
-        {SHELF_MARKS.map((mark) => (
-          <EmptyShelf key={mark} mark={mark} />
+        {shelves.map((shelf) => (
+          <ShelfCase
+            key={shelf.id}
+            shelf={shelf}
+            books={booksByShelf.get(shelf.id) ?? []}
+          />
         ))}
       </div>
-      <p className="wall-note">
-        No volumes yet. The room is ready when you are.
-      </p>
+      {books.length === 0 && shelves.length > 0 && (
+        <p className="wall-note">
+          No volumes yet. The room is ready when you are.
+        </p>
+      )}
     </main>
   );
 }
