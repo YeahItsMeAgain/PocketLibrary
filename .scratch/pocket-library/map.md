@@ -30,6 +30,8 @@ A complete, buildable spec plus a full ticket graph for PocketLibrary — an And
 
 ## Decisions so far
 
+- [02 — Screen map and navigation](issues/02-screen-map.md): hidden brass drawer (Library/Search/Settings) opened by pull/swipe and closed by drag/back; front-desk acquisition sheet with advanced search, results, mirrors, download queue and shelf landing; labels managed from the filter strip; settings includes backup; explicit first-run and permission-recovery states.
+- [01 — Shelf interaction](issues/01-shelf-interaction.md): vertical wall, tap-to-open, long-press-lift-and-drag, auto-append a shelf when full with undo, no shelf management at all, filters dim only, return preserves position.
 - [06 — Victorian visual design system](issues/06-visual-design-system.md): "Refined reading room" v4 — dark aubergine/plum, brass and oxblood, ornate gradient/SVG casework, coloured labels with cream text, larger spine type, real covers as hero, labelled back-to-shelf, compositor-only motion.
 - [05 — Reader engine and annotation model](issues/05-reader-engine-annotations.md): foliate-js behind a ReaderEngine adapter (strict CSP mandatory), epub-ts fallback, pdfjs-dist for PDF, Readium Locator + quote selectors for annotations, annotations table in M1.
 - [03 — Libgen and Anna's Archive access](issues/03-libgen-annas-api.md): hand-rolled LG+ client; `index.php` HTML search with client-side filters; `ads.php`→`get.php`→CDN downloads with Range resume; SLUM `status.json` as a health hint; Anna's external-browser only; `wreq` TLS impersonation candidate.

@@ -115,3 +115,15 @@ Built as `shelf-v4.html` (copy of `shelf-variants.html` plus a scoped `html[data
 **Back to shelf**: the detail panel opens with a 44 px brass-bordered **← Back to shelf** button at the top (the fixed × remains as secondary). In the reader, the bare arrow is now a labelled **← Shelf** control that tears down both reader and detail back to the wall; the reader × still closes only the reader. Both are visible without hover.
 
 **Verified** (Playwright/Chromium, 390×844 and 360×844): no console errors, no horizontal overflow, all label bands/chips fit, no clipped spine titles/authors, detail back and reader back both reach the shelf, local and public URLs return 200.
+
+## Navigation & acquisition flows — drawer + front desk (2026-11-24)
+
+Throwaway `prototype/design/flows.html`, built on `shelf-v4.html` without modifying v4.
+
+- **Drawer**: no tab bar. A small brass pull sits at the bottom centre; tap, drag it upward, or swipe up from a 30 px invisible edge strip. The rail carries Library / Search / Settings. Scrim tap, downward swipe on the rail, or Library closes it. A one-time brass hint ("Swipe up to open the drawer") shows after load and dismisses on the first interaction. Transform/opacity only, v4 easing, reduced motion collapses all of it.
+- **Front desk**: Search slides a full-screen sheet with query + collapsible advanced fields (title, author, publisher, year range, language, format, ISBN) and 9 fake Libgen records, including Rock Paper Scissors / Alice Feeney / 2021 / EPUB / 2.1 MB / Libgen. A row opens a result sheet with generated cover, blurb, metadata, libgen.li + libgen.bz mirrors and the Download CTA.
+- **Download**: in-sheet progress bar with percentage and Cancel (marks the queue item failed), then "Added to library". A brass badge in the search header shows active downloads and opens the running/completed/failed ledger (seeded with one of each).
+- **New spine**: completion replaces the empty Shelf IV cavity with a real generated spine, a `NEW` band and a `1/10 · New` plate. "Return to shelf" closes the sheets, glides the shelf into view and re-runs the arrival glow. The masthead volume count increments.
+- **Settings**: library folder + Rescan (fake completion toast), font-size stepper, reader theme, download naming, Export/Import, About.
+- **Verified**: Playwright/Chromium at 390×844 and 320×700 — tap/swipe opens the drawer, downward swipe closes it, search filters, result and download complete, queue shows running/completed/failed, spine appears, detail + reader still work, no console errors, no horizontal overflow; local and public URLs return 200.
+- **Rough**: queue history is seeded, settings toggles are cosmetic, and the drawer rail's live drag is pointer-only (no keyboard gesture equivalent; Enter/Space on the pull still opens it).
