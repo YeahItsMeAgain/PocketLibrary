@@ -115,10 +115,10 @@ Debug, arm64 only:
 src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
 ```
 
-Verified artifact (2026-11-24, walking-skeleton build with the core catalogue
+Verified artifact (2026-11-24, walking-skeleton build with the core catalog
 and bundled SQLite):
 
-- size: **300,409,112 bytes (287 MiB)** — debug builds keep Rust symbols (the
+- size: **300,318,672 bytes (286 MiB)** — debug builds keep Rust symbols (the
   `.so` alone is ~165 MB) and are stored uncompressed in the APK, so this is
   much larger than a release build
 - `native-code: 'arm64-v8a'`
@@ -149,7 +149,7 @@ Signer #1 certificate SHA-256 digest: c9612c660f5ea8abeb58d2e9b335edc7951e0513f7
 ```
 
 SHA-256 of `app-universal-debug.apk`:
-`f85cb15c75f68d7e60986a47b81266aeb6a32417574a83aaaf42d022e5073987`.
+`10303dad7f2b40704c08e0f4abdedf26f97981bf40452a59075618e6c415c144`.
 
 ## 6. Release signing
 
@@ -272,7 +272,7 @@ The config (`playwright.config.ts`) starts the Vite dev server at
 ## 8. Per-merge checks
 
 ```bash
-cargo test --manifest-path core/Cargo.toml   # headless catalogue tests
+cargo test --manifest-path core/Cargo.toml   # headless catalog tests
 npm run build              # tsc && vite build
 npm run test:e2e           # Playwright smoke
 cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android --all-targets -- -D warnings
