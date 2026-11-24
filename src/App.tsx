@@ -142,6 +142,12 @@ function surname(author: string): string {
   return parts[parts.length - 1] ?? author;
 }
 
+function spineLabelAbbr(name: string): string {
+  const words = name.trim().split(/\s+/);
+  const first = words[0] ?? name;
+  return first.length > 4 ? first.slice(0, 4) : first;
+}
+
 
 function CrestMark({ className = "mast-orn" }: { className?: string }) {
   return (
@@ -262,6 +268,7 @@ function SpineFace({ book }: { book: Book }) {
             key={label.id}
             className="lb"
             data-testid="spine-label-band"
+            data-short={spineLabelAbbr(label.name)}
             style={
               {
                 "--lc": label.colour,
@@ -271,7 +278,7 @@ function SpineFace({ book }: { book: Book }) {
             }
             title={label.name}
           >
-            {label.name}
+            <span className="visually-hidden">{label.name}</span>
           </span>
         ))}
         {hiddenLabels > 0 ? (
