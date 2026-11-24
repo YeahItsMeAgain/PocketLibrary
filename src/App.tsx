@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
@@ -57,24 +58,172 @@ const STATUS_LABELS: Record<Book["readingStatus"], string> = {
 
 type View = "library" | "search" | "settings";
 
-const NAV_ITEMS: ReadonlyArray<{ view: View; label: string }> = [
-  { view: "library", label: "Library" },
-  { view: "search", label: "Search" },
-  { view: "settings", label: "Settings" },
+const NAV_ITEMS: ReadonlyArray<{ view: View; label: string; note: string }> = [
+  { view: "library", label: "Library", note: "The wall" },
+  { view: "search", label: "Search", note: "Front desk" },
+  { view: "settings", label: "Settings", note: "The study" },
 ];
 
-function Masthead() {
+/* ---------------------------------------------------------------- spines */
+
+/** Curated Victorian bindings. Spines hash into these, never random. */
+const SPINE_PALETTES: ReadonlyArray<readonly [string, string]> = [
+  ["#5a201c", "#2e0d0c"],
+  ["#33243f", "#170f20"],
+  ["#1d2f45", "#0b1623"],
+  ["#7a5a26", "#402c10"],
+  ["#3b2233", "#190e18"],
+  ["#4b3422", "#24150c"],
+  ["#3a2436", "#1a0f19"],
+  ["#333a45", "#171b22"],
+  ["#6b3a24", "#33170c"],
+  ["#5d1f2a", "#2c0b11"],
+  ["#5a2637", "#2a0f19"],
+  ["#1b2740", "#0a1120"],
+  ["#3d2a1d", "#1c1008"],
+  ["#3a3046", "#191321"],
+];
+
+const SPINE_GOLD = "#d8b976";
+const SPINE_INK = "#f4e6c4";
+const SPINE_ORNAMENTS = ["✦", "❦", "❧", "✶"] as const;
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * (1 - amount));
+  const g = Math.round(((n >> 8) & 255) * (1 - amount));
+  const b = Math.round((n & 255) * (1 - amount));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+interface SpineStyle {
+  width: number;
+  height: number;
+  lean: number;
+  c1: string;
+  c2: string;
+  fontSize: string;
+  ornament: string;
+}
+
+function spineStyle(book: Book): SpineStyle {
+  const seed =
+    hashString(book.contentHash || `${book.title}|${book.authors.join("|")}`) +
+    (book.slotIndex ?? 0) * 2654435761;
+  const palette = SPINE_PALETTES[seed % SPINE_PALETTES.length];
+  const width = 27 + (seed % 8);
+  const height = 198 + ((seed >>> 3) % 41);
+  const lean = seed % 9 === 4 ? -2.2 : seed % 11 === 8 ? 1.3 : 0;
+  const offset = book.format === "pdf" ? 5 : 0;
+  const alt = SPINE_PALETTES[(seed + offset) % SPINE_PALETTES.length];
+  const source = book.format === "pdf" ? alt : palette;
+  return {
+    width,
+    height,
+    lean,
+    c1: shade(source[0], 0.16),
+    c2: shade(source[1], 0.3),
+    fontSize: width < 29 ? "9.6px" : width > 33 ? "10.8px" : "10.2px",
+    ornament: SPINE_ORNAMENTS[seed % SPINE_ORNAMENTS.length],
+  };
+}
+
+function surname(author: string): string {
+  const parts = author.trim().split(/\s+/);
+  return parts[parts.length - 1] ?? author;
+}
+
+
+function CrestMark({ className = "mast-orn" }: { className?: string }) {
   return (
-    <header className="masthead">
+    <svg
+      className={className}
+      width="52"
+      height="14"
+      viewBox="0 0 52 14"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M2 11h14M36 11h14" stroke="currentColor" opacity=".55" />
+      <path
+        d="M26 1c-3 3.4-6.4 5-10.4 5 3.6 1.6 6 4 7.2 7 1.2-2.6 2.2-2.6 3.2-4 1 1.4 2 1.4 3.2 4 1.2-3 3.6-5.4 7.2-7C32.4 6 29 4.4 26 1z"
+        fill="currentColor"
+        opacity=".85"
+      />
+      <circle cx="26" cy="12" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CrownCrest() {
+  return (
+    <svg
+      className="v4-crest"
+      width="62"
+      height="17"
+      viewBox="0 0 64 18"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path d="M2 15h18M44 15h18" stroke="currentColor" opacity=".5" />
+      <path
+        d="M32 2c-3 4-6.5 6-11 6 4 1.8 6.8 4.6 8.2 8 1.1-2.4 2-2.8 2.8-4.2.8 1.4 1.7 1.8 2.8 4.2C36.2 12.6 39 9.8 43 8c-4.5 0-8-2-11-6z"
+        fill="currentColor"
+        opacity=".9"
+      />
+      <circle cx="32" cy="16" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function Bracket({ side }: { side: "l" | "r" }) {
+  const flip = side === "r" ? ' transform="scale(-1,1) translate(-34,0)"' : "";
+  return (
+    <svg
+      className={`v4-brk v4-brk-${side}`}
+      width="30"
+      height="30"
+      viewBox="0 0 34 34"
+      fill="none"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{
+        __html: `<path d="M3 3c0 16 7 25 27 28" stroke="currentColor" stroke-width="1.2"/><path d="M8 4c.5 12 5.5 19 20 22" stroke="currentColor" stroke-width="1" opacity=".55"/><path d="M13 5c.6 8 3.6 13 12 15" stroke="currentColor" stroke-width="1" opacity=".4"/><circle cx="5" cy="5" r="2" fill="currentColor" opacity=".7"/><g${flip}></g>`,
+      }}
+    />
+  );
+}
+
+function Masthead({
+  volumeCount,
+  caseCount,
+}: {
+  volumeCount?: number;
+  caseCount?: number;
+}) {
+  const meta =
+    volumeCount === undefined
+      ? "A quiet room for your own books"
+      : `${volumeCount} ${volumeCount === 1 ? "volume" : "volumes"} · ${
+          caseCount ?? 0
+        } ${caseCount === 1 ? "case" : "cases"}`;
+  return (
+    <header className="v4-mast">
       <p className="kicker">Bibliotheca Domestica</p>
-      <div className="crest" aria-hidden="true">
-        ❦
-      </div>
+      <CrestMark />
       <h1>Pocket Library</h1>
       <div className="rule" aria-hidden="true">
-        <span>❧</span>
+        <span>❦</span>
       </div>
-      <p className="tagline">A quiet room for your own books</p>
+      <p className="meta">{meta}</p>
     </header>
   );
 }
@@ -91,41 +240,49 @@ interface ShelfCaseProps {
 function SpineFace({ book }: { book: Book }) {
   const bands = book.labels.slice(0, 2);
   const hiddenLabels = book.labels.length - bands.length;
+  const author = book.authors[0];
   return (
     <>
-      <span className="spine-title">{book.title}</span>
-      {bands.length > 0 ? (
-        <span className="spine-labels" aria-hidden="true">
-          {bands.map((label) => (
-            <span
-              key={label.id}
-              className="spine-label-band"
-              data-testid="spine-label-band"
-              style={{ backgroundColor: label.colour }}
-              title={label.name}
-            >
-              {label.name}
-            </span>
-          ))}
-          {hiddenLabels > 0 ? (
-            <span className="spine-label-more" data-testid="spine-label-more">
-              +{hiddenLabels}
-            </span>
-          ) : null}
-        </span>
-      ) : null}
+      <span className="spine-text">
+        <span className="st">{book.title}</span>
+        {author ? <span className="sa">{surname(author)}</span> : null}
+      </span>
       {book.readingStatus === "finished" ? (
         <span
-          className="spine-seal"
+          className="seal"
           data-testid="spine-seal"
           aria-hidden="true"
         >
-          ✓
+          ✦
         </span>
       ) : null}
+      <span className="bands">
+        {bands.map((label) => (
+          <span
+            key={label.id}
+            className="lb"
+            data-testid="spine-label-band"
+            style={
+              {
+                "--lc": label.colour,
+                "--li": "#f8edd6",
+                backgroundColor: label.colour,
+              } as CSSProperties
+            }
+            title={label.name}
+          >
+            {label.name}
+          </span>
+        ))}
+        {hiddenLabels > 0 ? (
+          <span className="lb more" data-testid="spine-label-more">
+            +{hiddenLabels}
+          </span>
+        ) : null}
+      </span>
       {book.readingStatus === "reading" ? (
         <span
-          className="spine-ribbon"
+          className="ribbon"
           data-testid="spine-ribbon"
           aria-hidden="true"
         />
@@ -144,42 +301,46 @@ function ShelfCase({
 }: ShelfCaseProps) {
   const mark = shelfMark(shelf.ordinal);
   const empty = books.length === 0;
+  const full = books.length >= shelf.capacity && shelf.ordinal > 0;
 
   return (
     <section
-      className="shelf"
+      className={`v4-shelf${empty ? " v4-empty" : ""}`}
       data-shelf-id={shelf.id}
       data-testid={empty ? "empty-shelf" : "shelf"}
       aria-label={
         empty ? `Shelf ${mark}, empty` : `Shelf ${mark}, ${books.length} books`
       }
     >
-      <div className="case">
-        <div className="crown" aria-hidden="true">
-          <span className="crest-small">❦</span>
+      <div className="v4-case">
+        <Bracket side="l" />
+        <Bracket side="r" />
+        <div className="v4-crown" aria-hidden="true">
+          <CrownCrest />
         </div>
-        <div className="cavity">
-          <div className="back" aria-hidden="true" />
-          <div className="pilaster pilaster-left" aria-hidden="true" />
-          <div className="pilaster pilaster-right" aria-hidden="true" />
-          <div className="lamp" aria-hidden="true" />
+        <div className="v4-cavity">
+          <div className="v4-back" aria-hidden="true" />
+          <div className="v4-pil v4-pil-l" aria-hidden="true" />
+          <div className="v4-pil v4-pil-r" aria-hidden="true" />
+          <div className="v4-lamp" aria-hidden="true" />
           {empty ? (
-            <div className="empty-note">
-              <span className="empty-title">Shelf {mark}</span>
-              <span className="empty-sub">Awaiting its first volume</span>
+            <div className="v4-empty-note">
+              <span className="e1">Shelf {mark}</span>
+              <span className="e2">Awaiting its first volume</span>
             </div>
           ) : (
-            <ul className="spines">
+            <ul className="spines v4-books">
               {books.map((book) => {
                 const statusLabel = STATUS_LABELS[book.readingStatus];
                 const dragging = draggedBookId === book.id;
                 const dimmed = dimmedBookIds.has(book.id);
+                const style = spineStyle(book);
                 return (
                   <li
                     key={book.id}
-                    className={`spine${dragging ? " is-dragging-source" : ""}${
-                      book.labels.length > 0 ? " has-labels" : ""
-                    }${dimmed ? " is-dimmed" : ""}`}
+                    className={`spine book${dragging ? " is-dragging-source" : ""}${
+                      dimmed ? " is-dim" : ""
+                    }`}
                     data-testid="spine"
                     data-book-id={book.id}
                     data-slot={book.slotIndex ?? undefined}
@@ -191,6 +352,18 @@ function ShelfCase({
                     aria-grabbed={dragging || undefined}
                     role="button"
                     tabIndex={0}
+                    style={
+                      {
+                        "--w": `${style.width}px`,
+                        "--h": `${style.height}px`,
+                        "--c1": style.c1,
+                        "--c2": style.c2,
+                        "--gold": SPINE_GOLD,
+                        "--ink": SPINE_INK,
+                        "--lean": `${style.lean}deg`,
+                        "--fs": style.fontSize,
+                      } as CSSProperties
+                    }
                     onPointerDown={(event) => onPress(book, event)}
                     onClick={() => onOpen(book)}
                     onKeyDown={(event) => {
@@ -207,11 +380,16 @@ function ShelfCase({
             </ul>
           )}
         </div>
-        <div className="lip" aria-hidden="true" />
-        <div className="board">
-          <span className="plate">Shelf {mark}</span>
+        <div className="v4-lip" aria-hidden="true" />
+        <div className="v4-board">
+          <span className="v4-plate">Shelf {mark}</span>
+          {full ? (
+            <span className="v4-full">
+              Full · {books.length}/{shelf.capacity}
+            </span>
+          ) : null}
         </div>
-        <div className="plinth" aria-hidden="true" />
+        <div className="v4-plinth" aria-hidden="true" />
       </div>
     </section>
   );
@@ -219,6 +397,7 @@ function ShelfCase({
 
 interface DetailPanelProps {
   bookId: number;
+  shelfLabel: string;
   onClose: () => void;
   onRead: (book: Book) => void;
   onBookChanged: (patch: {
@@ -231,6 +410,7 @@ interface DetailPanelProps {
 
 function DetailPanel({
   bookId,
+  shelfLabel: shelfMarkLabel,
   onClose,
   onRead,
   onBookChanged,
@@ -395,6 +575,7 @@ function DetailPanel({
       )
     : [];
 
+  const readingProgress = Math.round((reading?.progress ?? 0) * 100);
   return (
     <>
       <button
@@ -404,7 +585,7 @@ function DetailPanel({
         onClick={onClose}
       />
       <section
-        className="book-detail"
+        className="detail d3 d4 is-open"
         role="dialog"
         aria-modal="true"
         aria-labelledby="detail-title"
@@ -413,233 +594,281 @@ function DetailPanel({
         <button
           ref={closeRef}
           type="button"
-          className="detail-close"
+          className="close"
           aria-label="Back to shelf"
           onClick={onClose}
         >
           <span aria-hidden="true">×</span>
         </button>
+        <div className="d3-wrap">
+          <div className="detail-stage v3d-frame v4d-frame">
+            <button
+              type="button"
+              className="btn-back"
+              data-testid="detail-back"
+              aria-label="Back to shelf"
+              onClick={onClose}
+            >
+              <span className="arrow" aria-hidden="true">←</span>
+              <span>Back to shelf</span>
+            </button>
 
-        {failed ? (
-          <div className="detail-loading">
-            <p className="kicker">The Keeper's Ledger</p>
-            <h2 id="detail-title">This volume is unavailable</h2>
-            <p>The book could not be opened just now.</p>
-          </div>
-        ) : detail === null ? (
-          <div className="detail-loading" aria-busy="true">
-            <p className="kicker">Fetching the volume</p>
-            <h2 id="detail-title">Opening…</h2>
-          </div>
-        ) : (
-          <>
-            <figure className="detail-cover-frame">
-              <div className="detail-cover-mat">
-                {detail.coverDataUrl ? (
-                  <img
-                    className="detail-cover"
-                    data-testid="detail-cover"
-                    src={detail.coverDataUrl}
-                    alt={`Cover of ${detail.title}`}
-                  />
-                ) : (
-                  <div className="detail-cover detail-cover-fallback" aria-hidden="true">
-                    {detail.title.slice(0, 1)}
+            {failed ? (
+              <div className="detail-loading">
+                <p className="v3d-top" aria-hidden="true">✦ ❦ ✦</p>
+                <h2 id="detail-title">This volume is unavailable</h2>
+                <p>The book could not be opened just now.</p>
+              </div>
+            ) : detail === null ? (
+              <div className="detail-loading" aria-busy="true">
+                <p className="v3d-top" aria-hidden="true">✦ ❦ ✦</p>
+                <h2 id="detail-title">Opening…</h2>
+              </div>
+            ) : (
+              <>
+                <p className="v3d-top" aria-hidden="true">✦ ❦ ✦</p>
+                <div className="v3d-coverwrap v4d-coverwrap">
+                  <div className="v4-cover">
+                    <div className="v4-cover-art">
+                      {detail.coverDataUrl ? (
+                        <img
+                          data-testid="detail-cover"
+                          src={detail.coverDataUrl}
+                          alt={`Cover of ${detail.title}`}
+                          loading="eager"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="cover cov-lg" aria-hidden="true">
+                          <span className="cov-frame" />
+                          <span className="cov-title">{detail.title}</span>
+                          <span className="cov-orn">❦</span>
+                          <span className="cov-author">
+                            {detail.authors.join(" · ") || "Unknown"}
+                          </span>
+                          <span className="cov-imprint">Pocket Library</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="v4-pages" aria-hidden="true" />
+                    <span className="v4-hinge" aria-hidden="true" />
+                    {sticker ? (
+                      <span
+                        className={`sticker sticker-${sticker.kind}`}
+                        data-testid="detail-sticker"
+                        data-sticker={sticker.kind}
+                        aria-label={
+                          sticker.kind === "gold"
+                            ? "Finished"
+                            : `${sticker.text} read`
+                        }
+                      >
+                        {sticker.kind === "gold" ? (
+                          <>
+                            <span className="gstar" aria-hidden="true">✦</span>
+                            <span className="gsub">Finished</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="pct">
+                              {sticker.text.replace("%", "")}
+                              <i>%</i>
+                            </span>
+                            <span className="psub" aria-hidden="true" />
+                          </>
+                        )}
+                      </span>
+                    ) : null}
+                    <div className="cover-status">
+                      <button
+                        type="button"
+                        className="cover-status-button"
+                        data-testid="detail-status-control"
+                        aria-haspopup="menu"
+                        aria-expanded={statusMenu}
+                        onClick={() => {
+                          setStatusMenu((open) => !open);
+                          setLabelMenu(false);
+                        }}
+                      >
+                        Status · {STATUS_LABELS[detail.readingStatus]}
+                      </button>
+                      {statusMenu ? (
+                        <div
+                          className="cover-status-menu"
+                          role="menu"
+                          aria-label="Set reading status"
+                        >
+                          {(
+                            ["unread", "reading", "finished"] as ReadingStatus[]
+                          ).map((status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={detail.readingStatus === status}
+                              className="cover-status-option"
+                              data-testid={`detail-status-option-${status}`}
+                              onClick={() => chooseStatus(status)}
+                            >
+                              {STATUS_LABELS[status]}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                )}
-                <div className="cover-status">
+                </div>
+
+                <h2 id="detail-title" data-testid="detail-title">
+                  {detail.title}
+                </h2>
+                <p className="byline" data-testid="detail-author">
+                  {authors}
+                </p>
+                {detail.series ? (
+                  <p className="detail-series">{detail.series}</p>
+                ) : null}
+                <div className="orn-rule" aria-hidden="true">❧</div>
+                <p className="blurb" data-testid="detail-blurb">
+                  {detail.description ?? "No blurb was printed with this edition."}
+                </p>
+
+                {detail.readingStatus === "reading" ? (
+                  <div className="progress">
+                    <div className="p-cap">
+                      <span>Progress</span>
+                      <span>{readingProgress}%</span>
+                    </div>
+                    <span className="bar">
+                      <i style={{ width: `${readingProgress}%` }} />
+                    </span>
+                  </div>
+                ) : null}
+
+                <div className="detail-labels dlabels" data-testid="detail-labels">
+                  {detail.labels.map((label) => (
+                    <button
+                      key={label.id}
+                      type="button"
+                      className="detail-label-chip dlabel"
+                      data-testid="detail-label-chip"
+                      style={
+                        {
+                          "--lc": label.colour,
+                          "--li": "#f8edd6",
+                          backgroundColor: label.colour,
+                        } as CSSProperties
+                      }
+                      aria-label={`Remove label ${label.name}`}
+                      title={`Remove ${label.name}`}
+                      onClick={() => detachLabel(label)}
+                    >
+                      <span>{label.name}</span>
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  ))}
                   <button
                     type="button"
-                    className="cover-status-button"
-                    data-testid="detail-status-control"
+                    className="detail-label-add dlabel none"
+                    data-testid="detail-add-label"
                     aria-haspopup="menu"
-                    aria-expanded={statusMenu}
+                    aria-expanded={labelMenu}
                     onClick={() => {
-                      setStatusMenu((open) => !open);
-                      setLabelMenu(false);
+                      setLabelMenu((open) => !open);
+                      setStatusMenu(false);
                     }}
                   >
-                    Status · {STATUS_LABELS[detail.readingStatus]}
+                    + Add label
                   </button>
-                  {statusMenu ? (
-                    <div
-                      className="cover-status-menu"
-                      role="menu"
-                      aria-label="Set reading status"
-                    >
-                      {(
-                        ["unread", "reading", "finished"] as ReadingStatus[]
-                      ).map((status) => (
+                </div>
+                {labelMenu ? (
+                  <div className="detail-label-menu" role="menu" aria-label="Add a label">
+                    {unattachedLabels.length > 0 ? (
+                      unattachedLabels.map((label) => (
                         <button
-                          key={status}
+                          key={label.id}
                           type="button"
-                          role="menuitemradio"
-                          aria-checked={detail.readingStatus === status}
-                          className="cover-status-option"
-                          data-testid={`detail-status-option-${status}`}
-                          onClick={() => chooseStatus(status)}
+                          role="menuitem"
+                          className="detail-label-option"
+                          data-testid={`label-option-${label.id}`}
+                          onClick={() => attachLabel(label)}
                         >
-                          {STATUS_LABELS[status]}
+                          <span
+                            className="label-swatch"
+                            style={{ backgroundColor: label.colour }}
+                            aria-hidden="true"
+                          />
+                          {label.name}
                         </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-                {sticker ? (
-                  <div
-                    className={`cover-sticker cover-sticker-${sticker.kind}`}
-                    data-testid="detail-sticker"
-                    data-sticker={sticker.kind}
-                    aria-label={
-                      sticker.kind === "gold"
-                        ? "Finished"
-                        : `${sticker.text} read`
-                    }
-                  >
-                    {sticker.text}
+                      ))
+                    ) : (
+                      <p className="detail-label-empty">
+                        No other labels yet. Manage labels on the shelf.
+                      </p>
+                    )}
                   </div>
                 ) : null}
-              </div>
-            </figure>
+                {labelNotice ? (
+                  <p className="detail-note" role="alert">
+                    {labelNotice}
+                  </p>
+                ) : null}
 
-            <div className="detail-body">
-              <p className="kicker">From the shelf</p>
-              <h2 id="detail-title" data-testid="detail-title">
-                {detail.title}
-              </h2>
-              <p className="detail-author" data-testid="detail-author">
-                {authors}
-              </p>
-              {detail.series ? (
-                <p className="detail-series">{detail.series}</p>
-              ) : null}
-              <div className="detail-labels" data-testid="detail-labels">
-                {detail.labels.map((label) => (
-                  <button
-                    key={label.id}
-                    type="button"
-                    className="detail-label-chip"
-                    data-testid="detail-label-chip"
-                    style={{ backgroundColor: label.colour }}
-                    aria-label={`Remove label ${label.name}`}
-                    title={`Remove ${label.name}`}
-                    onClick={() => detachLabel(label)}
-                  >
-                    <span>{label.name}</span>
-                    <span aria-hidden="true">×</span>
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="detail-label-add"
-                  data-testid="detail-add-label"
-                  aria-haspopup="menu"
-                  aria-expanded={labelMenu}
-                  onClick={() => {
-                    setLabelMenu((open) => !open);
-                    setStatusMenu(false);
-                  }}
-                >
-                  + Add label
-                </button>
-              </div>
-              {labelMenu ? (
-                <div className="detail-label-menu" role="menu" aria-label="Add a label">
-                  {unattachedLabels.length > 0 ? (
-                    unattachedLabels.map((label) => (
-                      <button
-                        key={label.id}
-                        type="button"
-                        role="menuitem"
-                        className="detail-label-option"
-                        data-testid={`label-option-${label.id}`}
-                        onClick={() => attachLabel(label)}
-                      >
-                        <span
-                          className="label-swatch"
-                          style={{ backgroundColor: label.colour }}
-                          aria-hidden="true"
-                        />
-                        {label.name}
-                      </button>
-                    ))
-                  ) : (
-                    <p className="detail-label-empty">
-                      No other labels yet. Manage labels on the shelf.
-                    </p>
-                  )}
+                <div className="meta-strip" data-testid="detail-meta">
+                  <span>
+                    <em>Edition</em>
+                    <b>{detail.publishedDate?.slice(0, 4) ?? "—"}</b>
+                  </span>
+                  <span>
+                    <em>Shelf</em>
+                    <b>{shelfMarkLabel}</b>
+                  </span>
+                  <span>
+                    <em>Format</em>
+                    <b>{detail.format.toUpperCase()}</b>
+                  </span>
+                  <span>
+                    <em>Labels</em>
+                    <b>{detail.labels.length}</b>
+                  </span>
                 </div>
-              ) : null}
-              {labelNotice ? (
-                <p className="detail-note" role="alert">
-                  {labelNotice}
+                <p className="detail-fine">
+                  {[
+                    detail.publisher,
+                    detail.language ? `Language ${detail.language}` : null,
+                    detail.pageCount ? `${detail.pageCount} pages` : null,
+                    detail.identifier,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Pocket Library edition"}
                 </p>
-              ) : null}
-              <div className="rule detail-rule" aria-hidden="true">
-                <span>❧</span>
-              </div>
-              <p className="detail-blurb" data-testid="detail-blurb">
-                {detail.description ?? "No blurb was printed with this edition."}
-              </p>
 
-              <dl className="detail-meta" data-testid="detail-meta">
-                <div className="detail-meta-row">
-                  <dt>Format</dt>
-                  <dd>{detail.format.toUpperCase()}</dd>
-                </div>
-                {detail.publisher ? (
-                  <div className="detail-meta-row">
-                    <dt>Publisher</dt>
-                    <dd>{detail.publisher}</dd>
-                  </div>
-                ) : null}
-                {detail.publishedDate ? (
-                  <div className="detail-meta-row">
-                    <dt>Published</dt>
-                    <dd>{detail.publishedDate}</dd>
-                  </div>
-                ) : null}
-                {detail.language ? (
-                  <div className="detail-meta-row">
-                    <dt>Language</dt>
-                    <dd>{detail.language}</dd>
-                  </div>
-                ) : null}
-                {detail.pageCount ? (
-                  <div className="detail-meta-row">
-                    <dt>Pages</dt>
-                    <dd>{detail.pageCount}</dd>
-                  </div>
-                ) : null}
-                {detail.identifier ? (
-                  <div className="detail-meta-row">
-                    <dt>Identifier</dt>
-                    <dd>{detail.identifier}</dd>
-                  </div>
-                ) : null}
-              </dl>
-
-              <div className="detail-actions">
                 <button
                   type="button"
-                  className="primary-action"
+                  className="btn-read"
                   data-testid="detail-read"
                   onClick={() => onRead(detail)}
                 >
-                  {readLabel}
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M10 4.4C8.3 3.2 6.2 2.9 3 3.1v12.1c3.2-.2 5.3.1 7 1.3 1.7-1.2 3.8-1.5 7-1.3V3.1c-3.2-.2-5.3.1-7 1.3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+                    <path d="M10 4.6v11.9" stroke="currentColor" strokeWidth="1.1" />
+                  </svg>
+                  <span>{readLabel}</span>
                 </button>
                 <button
                   type="button"
-                  className="secondary-action"
-                  data-testid="detail-back"
+                  className="btn-return"
+                  data-testid="detail-return"
                   onClick={onClose}
                 >
-                  Back to shelf
+                  Return to shelf
                 </button>
-              </div>
-            </div>
-          </>
-        )}
+              </>
+            )}
+          </div>
+          <p className="hint">Tap outside or press Esc to close</p>
+        </div>
       </section>
     </>
   );
@@ -669,30 +898,37 @@ function FilterStrip({
   onManage,
 }: FilterStripProps) {
   const active = selectedLabelIds.length > 0 || status !== null;
+  const countText = active
+    ? `${matchingCount} of ${totalCount} books match`
+    : `${totalCount} books on the wall`;
+  const statusColour: Record<ReadingStatus, string> = {
+    unread: "#7c7364",
+    reading: "#a83238",
+    finished: "#b58a34",
+  };
   return (
     <section
-      className="filter-strip"
+      className="filterbar fb-1"
       data-testid="filter-strip"
       aria-label="Shelf filters"
+      role="toolbar"
     >
-      <div className="filter-row">
-        <span className="filter-kicker">Filter</span>
-        <div className="filter-chips" role="group" aria-label="Label filters">
+      <div className="fb-row">
+        <div className="fb-scroll" role="group" aria-label="Label filters">
           {labels.length === 0 ? (
-            <span className="filter-empty">No labels yet</span>
+            <span className="fb-empty">No labels yet</span>
           ) : (
             labels.map((label) => (
               <button
                 key={label.id}
                 type="button"
-                className="filter-chip filter-label-chip"
+                className="chip filter-label-chip"
                 data-testid="filter-label-chip"
                 aria-pressed={selectedLabelIds.includes(label.id)}
-                style={{ borderColor: label.colour }}
                 onClick={() => onToggleLabel(label.id)}
               >
                 <span
-                  className="filter-dot"
+                  className="dot"
                   style={{ backgroundColor: label.colour }}
                   aria-hidden="true"
                 />
@@ -701,11 +937,29 @@ function FilterStrip({
               </button>
             ))
           )}
+          <button
+            type="button"
+            className="chip clear"
+            data-testid="filter-clear"
+            onClick={onClear}
+            hidden={!active}
+            aria-label="Clear filters"
+          >
+            Clear
+          </button>
         </div>
+        <div className="fb-count" aria-hidden="true">
+          <b>{active ? matchingCount : totalCount}</b>
+          <span>vols</span>
+        </div>
+        <span className="visually-hidden" data-testid="filter-count" aria-live="polite">
+          {countText}
+        </span>
       </div>
-      <div className="filter-row filter-status-row">
+      <div className="fb-row">
+        <span className="fb-cap">Status</span>
         <div
-          className="filter-chips"
+          className="fb-scroll"
           role="group"
           aria-label="Reading status filters"
         >
@@ -714,11 +968,16 @@ function FilterStrip({
               <button
                 key={value}
                 type="button"
-                className="filter-chip filter-status-chip"
+                className="chip filter-status-chip"
                 data-testid={`filter-status-${value}`}
                 aria-pressed={status === value}
                 onClick={() => onStatus(status === value ? null : value)}
               >
+                <span
+                  className="dot status-dot"
+                  style={{ backgroundColor: statusColour[value] }}
+                  aria-hidden="true"
+                />
                 {STATUS_LABELS[value]}
               </button>
             ),
@@ -726,27 +985,12 @@ function FilterStrip({
         </div>
         <button
           type="button"
-          className="filter-manage"
+          className="fb-manage filter-manage"
           data-testid="manage-labels"
+          aria-label="Manage labels"
           onClick={onManage}
         >
-          Manage labels
-        </button>
-      </div>
-      <div className="filter-summary">
-        <span data-testid="filter-count" aria-live="polite">
-          {active
-            ? `${matchingCount} of ${totalCount} books match`
-            : `${totalCount} books on the wall`}
-        </span>
-        <button
-          type="button"
-          className="filter-clear"
-          data-testid="filter-clear"
-          onClick={onClear}
-          disabled={!active}
-        >
-          Clear filters
+          Manage
         </button>
       </div>
     </section>
@@ -1018,6 +1262,7 @@ const DRAG_THRESHOLD = 8;
 const EDGE_ZONE = 88;
 const EDGE_MAX_SPEED = 14;
 const HINT_KEY = "pocketlibrary.dragHintSeen";
+const DRAWER_HINT_KEY = "pocketlibrary.drawerHintSeen";
 
 interface ShelfGeometry {
   left: number;
@@ -1256,22 +1501,61 @@ function LibraryWall({
   const measureWall = useCallback(() => {
     const wall = wallRef.current;
     if (!wall) return;
+    const startedAt = performance.now();
     const next = new Map<number, ShelfGeometry>();
+    // Ticket 16: only the shelf containers are measured. Slot centres are
+    // derived from the deterministic spine widths plus the flex gap, so a
+    // lift never forces layout for every spine on the wall.
     wall
-      .querySelectorAll<HTMLElement>("section.shelf[data-shelf-id]")
+      .querySelectorAll<HTMLElement>("section[data-shelf-id]")
       .forEach((section) => {
         const shelfId = Number(section.dataset.shelfId);
         const rect = section.getBoundingClientRect();
+        const viewport = window.innerHeight || 844;
+        if (rect.bottom < -240 || rect.top > viewport + 240) return;
+        const strip = section.querySelector<HTMLElement>(".spines");
+        const stripRect = strip ? strip.getBoundingClientRect() : rect;
+        const elements = strip
+          ? Array.from(
+              strip.querySelectorAll<HTMLElement>(":scope > .spine"),
+            )
+          : [];
+        const bookIds = elements.map((element) =>
+          Number(element.dataset.bookId),
+        );
+        const nominal = bookIds.map((bookId) => {
+          const book = booksRef.current.find(
+            (candidate) => candidate.id === bookId,
+          );
+          return book ? spineStyle(book).width : 30;
+        });
+        const count = nominal.length;
+        let widths = nominal;
+        if (count > 1) {
+          const total = nominal.reduce((sum, width) => sum + width, 0);
+          const available = stripRect.width;
+          if (total + (count - 1) > available) {
+            const scale = Math.max(0, (available - (count - 1)) / total);
+            widths = nominal.map((width) => width * scale);
+          }
+        }
+        const widthTotal = widths.reduce((sum, width) => sum + width, 0);
+        const gap =
+          count > 1
+            ? Math.max(
+                0,
+                (stripRect.width - widthTotal - (count - 1)) / (count - 1),
+              ) + 1
+            : 0;
         const slots: ShelfGeometry["slots"] = [];
-        section
-          .querySelectorAll<HTMLElement>(".spines > .spine")
-          .forEach((element) => {
-            const spine = element.getBoundingClientRect();
-            slots.push({
-              bookId: Number(element.dataset.bookId),
-              center: spine.left + spine.width / 2,
-            });
+        let cursor = count === 1 ? (stripRect.width - widths[0]) / 2 : 0;
+        for (let index = 0; index < count; index += 1) {
+          slots.push({
+            bookId: bookIds[index],
+            center: stripRect.left + cursor + widths[index] / 2,
           });
+          cursor += widths[index] + gap;
+        }
         next.set(shelfId, {
           left: rect.left,
           top: rect.top,
@@ -1281,12 +1565,20 @@ function LibraryWall({
         });
       });
     geometryRef.current = next;
+    try {
+      performance.measure("pocketlibrary:measure-wall", {
+        start: startedAt,
+        end: performance.now(),
+      });
+    } catch {
+      // Performance measurement is diagnostic only.
+    }
   }, []);
 
   const captureSpineRects = useCallback((shelfIds: Set<number>) => {
     const positions = new Map<number, { left: number; top: number }>();
     wallRef.current
-      ?.querySelectorAll<HTMLElement>("section.shelf[data-shelf-id]")
+      ?.querySelectorAll<HTMLElement>("section[data-shelf-id]")
       .forEach((section) => {
         if (!shelfIds.has(Number(section.dataset.shelfId))) return;
         section
@@ -1744,6 +2036,7 @@ function LibraryWall({
         if (gestureRef.current?.lifted) event.preventDefault();
       }}
     >
+      <Masthead volumeCount={books.length} caseCount={shelves.length} />
       <div className="wall-inner">
         <FilterStrip
           labels={labels}
@@ -1783,6 +2076,15 @@ function LibraryWall({
       {openBookId !== null ? (
         <DetailPanel
           bookId={openBookId}
+          shelfLabel={
+            shelfMark(
+              shelves.find(
+                (shelf) =>
+                  shelf.id ===
+                  books.find((book) => book.id === openBookId)?.shelfId,
+              )?.ordinal ?? 0,
+            )
+          }
           onClose={closeDetail}
           onRead={(book) => {
             setReaderBook(book);
@@ -1849,16 +2151,26 @@ function LibraryWall({
         <div className="book-drag-layer" aria-hidden="true">
           <div
             ref={ghostRef}
-            className={`spine drag-ghost${lift.returning ? " is-returning" : ""}`}
-            style={{
-              left: lift.left,
-              top: lift.top,
-              width: lift.width,
-              height: lift.height,
-              transform: lift.returning
-                ? `translate3d(${lift.dx}px, ${lift.dy}px, 0) scale(1)`
-                : undefined,
-            }}
+            className={`spine book drag-ghost${lift.returning ? " is-returning" : ""}`}
+            style={
+              {
+                left: lift.left,
+                top: lift.top,
+                width: lift.width,
+                height: lift.height,
+                "--w": `${lift.width}px`,
+                "--h": `${lift.height}px`,
+                "--c1": spineStyle(lift.book).c1,
+                "--c2": spineStyle(lift.book).c2,
+                "--gold": SPINE_GOLD,
+                "--ink": SPINE_INK,
+                "--lean": "0deg",
+                "--fs": spineStyle(lift.book).fontSize,
+                transform: lift.returning
+                  ? `translate3d(${lift.dx}px, ${lift.dy}px, 0) scale(1)`
+                  : undefined,
+              } as CSSProperties
+            }
           >
             <SpineFace book={lift.book} />
           </div>
@@ -2111,7 +2423,7 @@ function SearchPlaceholder() {
   );
 }
 
-function AppInfoFooter() {
+function AppInfoFooter({ hidden = false }: { hidden?: boolean }) {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -2131,7 +2443,12 @@ function AppInfoFooter() {
   }, []);
 
   return (
-    <footer className="app-info" data-testid="app-info" aria-live="polite">
+    <footer
+      className={`app-info${hidden ? " app-info-hidden" : ""}`}
+      data-testid="app-info"
+      aria-live="polite"
+      aria-hidden={hidden || undefined}
+    >
       {failed ? (
         <span>App information unavailable</span>
       ) : (
@@ -2209,15 +2526,173 @@ export default function App() {
   const [shelfCapacity, setShelfCapacity] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOffset, setDrawerOffset] = useState<number | null>(null);
+  const [drawerDragging, setDrawerDragging] = useState(false);
+  const [showDrawerHint, setShowDrawerHint] = useState(false);
   const pullRef = useRef<HTMLButtonElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLButtonElement>(null);
+  const drawerDragRef = useRef<{
+    fromOpen: boolean;
+    y0: number;
+    t0: number;
+    height: number;
+    y: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressRailRef = useRef(0);
+  const lastHandleGestureRef = useRef(0);
+  const drawerOpenedAtRef = useRef(0);
+
+  const openDrawer = useCallback(() => {
+    setShowDrawerHint(false);
+    setDrawerOffset(null);
+    setDrawerDragging(false);
+    setDrawerOpen(true);
+    drawerOpenedAtRef.current = performance.now();
+  }, []);
 
   const closeDrawer = useCallback((restoreFocus = true) => {
     setDrawerOpen(false);
+    setDrawerOffset(null);
+    setDrawerDragging(false);
     if (restoreFocus) {
       pullRef.current?.focus();
     }
   }, []);
+
+  const dismissDrawerHint = useCallback(() => {
+    setShowDrawerHint(false);
+    try {
+      window.localStorage.setItem(DRAWER_HINT_KEY, "1");
+    } catch {
+      // A private WebView may refuse storage; the hint simply returns.
+    }
+  }, []);
+
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = window.localStorage.getItem(DRAWER_HINT_KEY) === "1";
+    } catch {
+      seen = false;
+    }
+    if (seen) return;
+    const show = window.setTimeout(() => setShowDrawerHint(true), 900);
+    const hide = window.setTimeout(() => setShowDrawerHint(false), 7100);
+    return () => {
+      window.clearTimeout(show);
+      window.clearTimeout(hide);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showDrawerHint) return;
+    const dismiss = () => dismissDrawerHint();
+    window.addEventListener("pointerdown", dismiss, { passive: true });
+    return () => window.removeEventListener("pointerdown", dismiss);
+  }, [showDrawerHint, dismissDrawerHint]);
+
+  function startDrawerDrag(fromOpen: boolean, event: ReactPointerEvent) {
+    if (fromOpen && !drawerOpen) return;
+    if (!fromOpen && drawerOpen) return;
+    if (fromOpen && (event.target as HTMLElement).closest("button")) return;
+    const rail = railRef.current;
+    const height = rail?.offsetHeight || 208;
+    dismissDrawerHint();
+    drawerDragRef.current = {
+      fromOpen,
+      y0: event.clientY,
+      t0: performance.now(),
+      height,
+      y: fromOpen ? 0 : height,
+      moved: false,
+    };
+    if (!fromOpen) {
+      setDrawerOpen(true);
+      drawerOpenedAtRef.current = performance.now();
+    }
+    setDrawerDragging(true);
+    setDrawerOffset(fromOpen ? 0 : height);
+    try {
+      (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    } catch {
+      // Pointer capture is an enhancement; the window listeners still work.
+    }
+    if (!(event.target as HTMLElement).closest("button")) {
+      event.preventDefault();
+    }
+  }
+
+  useEffect(() => {
+    if (!drawerDragging) return;
+    const onMove = (event: PointerEvent) => {
+      const drag = drawerDragRef.current;
+      if (!drag) return;
+      const dy = event.clientY - drag.y0;
+      if (Math.abs(dy) > 6) drag.moved = true;
+      const y = drag.fromOpen
+        ? Math.max(0, Math.min(drag.height, dy))
+        : Math.max(0, Math.min(drag.height, drag.height + dy));
+      drag.y = y;
+      setDrawerOffset(y);
+      if (event.cancelable) event.preventDefault();
+    };
+    const onEnd = (event: PointerEvent) => {
+      const drag = drawerDragRef.current;
+      drawerDragRef.current = null;
+      setDrawerDragging(false);
+      if (!drag) return;
+      const dy = (event.clientY ?? drag.y0) - drag.y0;
+      const dt = Math.max(1, performance.now() - drag.t0);
+      const velocity = dy / dt;
+      if (!drag.fromOpen) lastHandleGestureRef.current = performance.now();
+      if (drag.moved && drag.fromOpen) {
+        suppressRailRef.current = performance.now() + 500;
+      }
+      let shouldOpen: boolean;
+      if (drag.fromOpen) {
+        shouldOpen = !(drag.y > drag.height * 0.25 || velocity > 0.45);
+      } else {
+        shouldOpen =
+          drag.y < drag.height * 0.55 || velocity < -0.45;
+        if (!drag.moved && dt < 420) shouldOpen = true;
+      }
+      if (shouldOpen) openDrawer();
+      else closeDrawer(false);
+    };
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onEnd);
+    window.addEventListener("pointercancel", onEnd);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
+    };
+  }, [drawerDragging, drawerOpen, openDrawer, closeDrawer]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDrawer();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    const state = { pocketLibraryDrawer: true };
+    try {
+      window.history.pushState(state, "");
+    } catch {
+      // History is best-effort on older WebViews.
+    }
+    const onPop = () => closeDrawer(false);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("popstate", onPop);
+    };
+  }, [drawerOpen, closeDrawer]);
 
   const navigate = useCallback(
     (next: View) => {
@@ -2326,18 +2801,8 @@ export default function App() {
 
   useEffect(() => {
     if (!drawerOpen) return;
-
     firstItemRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeDrawer();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drawerOpen, closeDrawer]);
+  }, [drawerOpen]);
 
   function renderMain() {
     if (view === "search") return <SearchPlaceholder />;
@@ -2409,13 +2874,19 @@ export default function App() {
     );
   }
 
+  const libraryReady = view === "library" && status?.state === "ready";
   return (
-    <div className="room">
-      <Masthead />
-      <AppInfoFooter />
+    <div className={`room v4-room${drawerOpen ? " is-drawer-open" : ""}`}>
+      {!libraryReady ? <Masthead /> : null}
+      <AppInfoFooter hidden={view !== "settings"} />
 
       {renderMain()}
 
+      <div
+        className="edge-zone"
+        aria-hidden="true"
+        onPointerDown={(event) => startDrawerDrag(false, event)}
+      />
       <button
         ref={pullRef}
         type="button"
@@ -2423,10 +2894,21 @@ export default function App() {
         aria-label="Open navigation"
         aria-expanded={drawerOpen}
         aria-controls="navigation-drawer"
-        onClick={() => setDrawerOpen(true)}
+        onPointerDown={(event) => startDrawerDrag(false, event)}
+        onClick={() => {
+          if (performance.now() - lastHandleGestureRef.current < 500) return;
+          if (drawerOpen) closeDrawer();
+          else openDrawer();
+        }}
       >
-        <span className="pull-handle" aria-hidden="true" />
+        <span className="pull-slot" aria-hidden="true" />
       </button>
+
+      {showDrawerHint && !drawerOpen ? (
+        <p className="drawer-hint show" role="status">
+          <span className="up" aria-hidden="true">↑</span> Swipe up to open the drawer
+        </p>
+      ) : null}
 
       {drawerOpen && (
         <>
@@ -2436,38 +2918,71 @@ export default function App() {
             aria-label="Close navigation"
             onClick={() => closeDrawer()}
           />
-          <div
-            id="navigation-drawer"
-            className="drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="drawer-title"
-          >
-            <div className="drawer-inner">
-              <div className="drawer-grip" aria-hidden="true" />
-              <h2 id="drawer-title" className="drawer-title">
+          <div id="navigation-drawer" className="drawer is-open">
+            <div
+              ref={railRef}
+              className={`drawer-rail${drawerDragging ? " is-dragging" : ""}`}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="drawer-title"
+              style={
+                drawerOffset !== null
+                  ? { transform: `translate3d(0, ${drawerOffset}px, 0)` }
+                  : undefined
+              }
+              onPointerDown={(event) => startDrawerDrag(true, event)}
+              onClickCapture={(event) => {
+                if (performance.now() < suppressRailRef.current) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+              }}
+            >
+              <h2 id="drawer-title" className="visually-hidden">
                 Navigation
               </h2>
-              <nav aria-label="Main navigation">
-                <ul className="drawer-list">
-                  {NAV_ITEMS.map((item, index) => (
-                    <li key={item.view}>
-                      <button
-                        ref={index === 0 ? firstItemRef : undefined}
-                        type="button"
-                        className="drawer-item"
-                        aria-current={view === item.view ? "page" : undefined}
-                        onClick={() => navigate(item.view)}
-                      >
-                        <span>{item.label}</span>
-                        <span className="drawer-mark" aria-hidden="true">
-                          ❧
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
+              <div className="drawer-grip" aria-hidden="true" />
+              <p className="drawer-cap">The Household Catalogue</p>
+              <div className="drawer-items">
+                {NAV_ITEMS.map((item, index) => (
+                  <button
+                    key={item.view}
+                    ref={index === 0 ? firstItemRef : undefined}
+                    type="button"
+                    className="drawer-item"
+                    aria-current={view === item.view ? "page" : undefined}
+                    onClick={() => navigate(item.view)}
+                  >
+                    <svg
+                      width="25"
+                      height="25"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      {item.view === "library" ? (
+                        <>
+                          <path d="M4 4.5h3v15H4zM9 6h3v13.5H9zM14 3.5l3 .8-4 14.8-3-.8z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+                          <path d="M3 20.5h18" stroke="currentColor" strokeWidth="1.2" />
+                        </>
+                      ) : item.view === "search" ? (
+                        <>
+                          <circle cx="10.5" cy="10.5" r="6" stroke="currentColor" strokeWidth="1.3" />
+                          <path d="M15 15l5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                        </>
+                      ) : (
+                        <>
+                          <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.3" />
+                          <path d="M12 3.2v2M12 18.8v2M20.8 12h-2M5.2 12h-2M18.2 5.8l-1.4 1.4M7.2 16.8l-1.4 1.4M18.2 18.2l-1.4-1.4M7.2 7.2L5.8 5.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                        </>
+                      )}
+                    </svg>
+                    <b>{item.label}</b>
+                    <span aria-hidden="true">{item.note}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="drawer-foot">Tap outside or swipe down to close</p>
             </div>
           </div>
         </>
