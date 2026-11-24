@@ -130,6 +130,8 @@ impl FromSql for CoverSource {
 pub struct Book {
     pub id: i64,
     pub content_hash: String,
+    /// Scan-side quick fingerprint. Never serialised to the UI.
+    #[serde(skip)]
     pub quick_key: Option<String>,
     /// Filesystem path. Never serialised to the UI; `id` is the opaque handle.
     #[serde(skip)]
@@ -148,6 +150,9 @@ pub struct Book {
     /// Cached cover path. Never serialised to the UI.
     #[serde(skip)]
     pub cover_path: Option<String>,
+    /// Where the cached cover came from. Kept in the model for the scan and the
+    /// detail refresh; the UI has no use for it on the wire.
+    #[serde(skip)]
     pub cover_source: Option<CoverSource>,
     pub added_at: i64,
     pub shelf_id: Option<i64>,
@@ -204,6 +209,26 @@ pub struct Shelf {
     pub id: i64,
     pub ordinal: i64,
     pub capacity: i64,
+}
+
+/// A reusable coloured label.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Label {
+    pub id: i64,
+    pub name: String,
+    pub colour: String,
+    pub created_at: i64,
+}
+
+/// A book's reading position and status.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadingState {
+    pub status: ReadingStatus,
+    pub status_source: String,
+    pub progress: f64,
+    pub locator: Option<String>,
 }
 
 /// What one rescan changed, in user-visible terms.

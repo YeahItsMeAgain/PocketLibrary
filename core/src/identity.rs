@@ -19,14 +19,27 @@ pub fn content_hash(bytes: &[u8]) -> String {
 /// Files shorter than two spans are hashed whole. The length is mixed in so a
 /// truncated copy cannot share a key with its original.
 pub fn quick_key(bytes: &[u8]) -> String {
-    let mut hasher = blake3::Hasher::new();
-    hasher.update(&(bytes.len() as u64).to_le_bytes());
     if bytes.len() <= QUICK_SPAN * 2 {
-        hasher.update(bytes);
+        quick_key_from_parts(bytes.len() as u64, bytes, &[])
     } else {
-        hasher.update(&bytes[..QUICK_SPAN]);
-        hasher.update(&bytes[bytes.len() - QUICK_SPAN..]);
+        quick_key_from_parts(
+            bytes.len() as u64,
+            &bytes[..QUICK_SPAN],
+            &bytes[bytes.len() - QUICK_SPAN..],
+        )
     }
+}
+
+/// Build a quick key from a source that read only the head and tail.
+///
+/// `length` is the complete file length; `head` and `tail` are the first and
+/// last [`QUICK_SPAN`] bytes. For files no longer than two spans, `head` holds
+/// the whole file and `tail` is empty.
+pub fn quick_key_from_parts(length: u64, head: &[u8], tail: &[u8]) -> String {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&length.to_le_bytes());
+    hasher.update(head);
+    hasher.update(tail);
     hasher.finalize().to_hex().to_string()
 }
 
@@ -55,6 +68,19 @@ mod tests {
         let mut long = short.clone();
         long.push(0);
         assert_ne!(quick_key(&short), quick_key(&long));
+    }
+
+    #[test]
+    fn parts_build_the_same_key_as_whole_bytes() {
+        let bytes = vec![3u8; QUICK_SPAN * 3];
+        assert_eq!(
+            quick_key(&bytes),
+            quick_key_from_parts(
+                bytes.len() as u64,
+                &bytes[..QUICK_SPAN],
+                &bytes[bytes.len() - QUICK_SPAN..],
+            )
+        );
     }
 
     #[test]

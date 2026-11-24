@@ -3,9 +3,9 @@
 
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
-use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-use pocketlibrary_core::{Api, Error, FileSource, Result, SourceEntry, SourceKind};
+use pocketlibrary_core::{Api, Error, FileSource, QuickBytes, Result, SourceEntry, SourceKind};
 use tempfile::TempDir;
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
@@ -17,6 +17,7 @@ pub struct FakeDir {
     files: HashMap<String, Vec<u8>>,
     failures: HashSet<String>,
     root_missing: bool,
+    full_reads: AtomicUsize,
 }
 
 impl FakeDir {
@@ -84,6 +85,15 @@ impl FakeDir {
             .unwrap_or_else(|| panic!("fixture {path} exists"))
             .clone()
     }
+
+    /// How many whole files the scan has read.
+    pub fn full_reads(&self) -> usize {
+        self.full_reads.load(Ordering::SeqCst)
+    }
+
+    pub fn reset_full_reads(&self) {
+        self.full_reads.store(0, Ordering::SeqCst);
+    }
 }
 
 impl FileSource for FakeDir {
@@ -107,7 +117,28 @@ impl FileSource for FakeDir {
             .ok_or_else(|| Error::Io(std::io::Error::from(std::io::ErrorKind::NotFound)))
     }
 
+    fn read_quick(&self, handle: &str) -> Result<QuickBytes> {
+        let bytes = self.files.get(handle).ok_or_else(|| {
+            Error::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("cannot read {handle}"),
+            ))
+        })?;
+        let span = pocketlibrary_core::QUICK_SPAN;
+        let (head, tail) = if bytes.len() <= span * 2 {
+            (bytes.clone(), Vec::new())
+        } else {
+            (bytes[..span].to_vec(), bytes[bytes.len() - span..].to_vec())
+        };
+        Ok(QuickBytes {
+            length: bytes.len() as u64,
+            head,
+            tail,
+        })
+    }
+
     fn read_file(&self, handle: &str) -> Result<Vec<u8>> {
+        self.full_reads.fetch_add(1, Ordering::SeqCst);
         self.files.get(handle).cloned().ok_or_else(|| {
             Error::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
@@ -134,34 +165,6 @@ pub fn database_at() -> (TempDir, std::path::PathBuf, Api) {
     let path = dir.path().join("library.db");
     let api = Api::open(&path).expect("open catalog");
     (dir, path, api)
-}
-
-pub fn book_id_at(path: &Path, book_path: &str) -> i64 {
-    let conn = rusqlite::Connection::open(path).expect("open catalog directly");
-    conn.query_row("SELECT id FROM books WHERE path = ?1", [book_path], |row| {
-        row.get(0)
-    })
-    .expect("book exists")
-}
-
-pub fn book_id_for_file(path: &Path, file_name: &str) -> i64 {
-    let conn = rusqlite::Connection::open(path).expect("open catalog directly");
-    conn.query_row(
-        "SELECT id FROM books WHERE path = ?1 OR path LIKE ?2",
-        [file_name, &format!("%/{file_name}")],
-        |row| row.get(0),
-    )
-    .expect("book exists")
-}
-
-pub fn book_row(path: &Path, id: i64) -> (String, String, Option<String>) {
-    let conn = rusqlite::Connection::open(path).expect("open catalog directly");
-    conn.query_row(
-        "SELECT content_hash, path, quick_key FROM books WHERE id = ?1",
-        [id],
-        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
-    )
-    .expect("book row exists")
 }
 
 /// Valid-looking fixture bytes for a path, unique per path.
@@ -255,6 +258,79 @@ pub fn rich_epub(cover: Option<&[u8]>) -> Vec<u8> {
     )
 }
 
+/// An EPUB 2 package whose metadata uses the legacy `<meta name= ...>` form.
+pub fn epub2_with(marker: &str, metadata: &[String]) -> Vec<u8> {
+    let mut opf_meta = format!(
+        r#"<dc:identifier id="bookid">urn:uuid:{}</dc:identifier>"#,
+        marker.replace(|c: char| !c.is_ascii_alphanumeric(), "-")
+    );
+    for entry in metadata {
+        opf_meta.push_str(entry);
+    }
+    let opf = format!(
+        r#"<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">{opf_meta}</metadata>
+  <manifest>
+    <item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine><itemref idref="chapter"/></spine>
+</package>"#
+    );
+    epub_zip(marker, &opf, &[], None)
+}
+
+/// An EPUB with an image in the manifest but no `cover-image` property.
+pub fn epub_with_plain_image(marker: &str, image: &[u8]) -> Vec<u8> {
+    let opf = format!(
+        r#"<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="bookid">urn:uuid:{}</dc:identifier><dc:title>Plain Image</dc:title></metadata>
+  <manifest>
+    <item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/>
+    <item id="pic" href="pic.png" media-type="image/png"/>
+  </manifest>
+  <spine><itemref idref="chapter"/></spine>
+</package>"#,
+        marker.replace(|c: char| !c.is_ascii_alphanumeric(), "-")
+    );
+    epub_zip(marker, &opf, &[("OEBPS/pic.png", image.to_vec())], None)
+}
+
+fn epub_zip(marker: &str, opf: &str, extra: &[(&str, Vec<u8>)], cover: Option<&[u8]>) -> Vec<u8> {
+    let container = r#"<?xml version="1.0" encoding="utf-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+</container>"#;
+    let chapter = r#"<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Chapter</title></head><body><p>Text.</p></body></html>"#;
+
+    let mut buffer = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut buffer);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        let mut entries = vec![
+            ("mimetype", b"application/epub+zip".to_vec()),
+            ("META-INF/container.xml", container.as_bytes().to_vec()),
+            ("OEBPS/content.opf", opf.as_bytes().to_vec()),
+            ("OEBPS/chapter.xhtml", chapter.as_bytes().to_vec()),
+            ("OEBPS/unique.txt", marker.as_bytes().to_vec()),
+        ];
+        for (name, bytes) in extra {
+            entries.push((name, bytes.clone()));
+        }
+        if let Some(cover) = cover {
+            entries.push(("OEBPS/cover.png", cover.to_vec()));
+        }
+        for (name, contents) in entries {
+            zip.start_file(name, options).expect("zip entry");
+            std::io::Write::write_all(&mut zip, &contents).expect("write entry");
+        }
+        zip.finish().expect("finish epub");
+    }
+    buffer.into_inner()
+}
+
 pub fn png_cover(width: u32, height: u32) -> Vec<u8> {
     let image = image::DynamicImage::ImageRgb8(image::RgbImage::from_pixel(
         width,
@@ -270,6 +346,18 @@ pub fn png_cover(width: u32, height: u32) -> Vec<u8> {
 
 /// A minimal one-page PDF. `title`/`author` are omitted when `None`.
 pub fn pdf_with(marker: &str, title: Option<&str>, author: Option<&str>) -> Vec<u8> {
+    let mut fields = vec![];
+    if let Some(title) = title {
+        fields.push(("Title", title));
+    }
+    if let Some(author) = author {
+        fields.push(("Author", author));
+    }
+    pdf_with_info(marker, &fields, 1)
+}
+
+/// A PDF with arbitrary Info entries and a page count.
+pub fn pdf_with_info(marker: &str, fields: &[(&str, &str)], pages: u32) -> Vec<u8> {
     use lopdf::{Document, Object, Stream, dictionary};
 
     let mut doc = Document::with_version("1.5");
@@ -278,19 +366,24 @@ pub fn pdf_with(marker: &str, title: Option<&str>, author: Option<&str>) -> Vec<
         dictionary! {},
         b"0.12 0.06 0.16 rg 0 0 300 400 re f".to_vec(),
     ));
-    let page_id = doc.add_object(dictionary! {
-        "Type" => "Page",
-        "Parent" => pages_id,
-        "MediaBox" => vec![0.into(), 0.into(), 300.into(), 400.into()],
-        "Contents" => content_id,
-        "Resources" => dictionary! {},
-    });
+    let kids: Vec<Object> = (0..pages)
+        .map(|_| {
+            let id = doc.add_object(dictionary! {
+                "Type" => "Page",
+                "Parent" => pages_id,
+                "MediaBox" => vec![0.into(), 0.into(), 300.into(), 400.into()],
+                "Contents" => content_id,
+                "Resources" => dictionary! {},
+            });
+            Object::Reference(id)
+        })
+        .collect();
     doc.objects.insert(
         pages_id,
         Object::Dictionary(dictionary! {
             "Type" => "Pages",
-            "Kids" => vec![page_id.into()],
-            "Count" => 1,
+            "Kids" => kids,
+            "Count" => i64::from(pages),
         }),
     );
     let catalog_id = doc.add_object(dictionary! {
@@ -300,11 +393,8 @@ pub fn pdf_with(marker: &str, title: Option<&str>, author: Option<&str>) -> Vec<
     doc.trailer.set("Root", catalog_id);
 
     let mut info = dictionary! { "Producer" => Object::string_literal(marker.to_owned()) };
-    if let Some(title) = title {
-        info.set("Title", Object::string_literal(title.to_owned()));
-    }
-    if let Some(author) = author {
-        info.set("Author", Object::string_literal(author.to_owned()));
+    for (key, value) in fields {
+        info.set(*key, Object::string_literal((*value).to_owned()));
     }
     let info_id = doc.add_object(info);
     doc.trailer.set("Info", info_id);

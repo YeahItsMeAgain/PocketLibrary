@@ -19,7 +19,11 @@ pub const COVER_QUALITY: u8 = 80;
 /// bytes are not a decodable image.
 pub fn normalise(bytes: &[u8]) -> Option<Vec<u8>> {
     let image = image::load_from_memory(bytes).ok()?;
-    let fitted = image.resize(COVER_WIDTH, COVER_HEIGHT, image::imageops::FilterType::Lanczos3);
+    let fitted = image.resize(
+        COVER_WIDTH,
+        COVER_HEIGHT,
+        image::imageops::FilterType::Lanczos3,
+    );
     encode_jpeg(&fitted)
 }
 
@@ -56,8 +60,24 @@ pub fn generated(content_hash: &str) -> Vec<u8> {
     }
 
     // Double brass rule framing the plate.
-    stroke_rect(&mut image, 26, 26, COVER_WIDTH - 26, COVER_HEIGHT - 26, brass, 2);
-    stroke_rect(&mut image, 36, 36, COVER_WIDTH - 36, COVER_HEIGHT - 36, brass, 1);
+    stroke_rect(
+        &mut image,
+        26,
+        26,
+        COVER_WIDTH - 26,
+        COVER_HEIGHT - 26,
+        brass,
+        2,
+    );
+    stroke_rect(
+        &mut image,
+        36,
+        36,
+        COVER_WIDTH - 36,
+        COVER_HEIGHT - 36,
+        brass,
+        1,
+    );
 
     // A small lozenge, then a hairline and a label-sized rule near the foot.
     let centre_x = COVER_WIDTH as i32 / 2;
@@ -150,20 +170,6 @@ pub fn ensure(
     }
     fs::write(&path, bytes).ok()?;
     Some((path, source))
-}
-
-/// Read the cached cover, generating one if the cache file is missing.
-pub fn load_or_generate(cache_dir: &Path, content_hash: &str) -> Option<Vec<u8>> {
-    let path = cover_path(cache_dir, content_hash);
-    if let Ok(bytes) = fs::read(&path) {
-        return Some(bytes);
-    }
-    if fs::create_dir_all(cache_dir).is_err() {
-        return None;
-    }
-    let bytes = generated(content_hash);
-    let _ = fs::write(&path, &bytes);
-    (!bytes.is_empty()).then_some(bytes)
 }
 
 pub fn cover_path(cache_dir: &Path, content_hash: &str) -> PathBuf {

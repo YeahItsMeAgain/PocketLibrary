@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Mutex;
 
-use pocketlibrary_core::{Error, FileSource, Result, SourceEntry, SourceKind};
+use pocketlibrary_core::{Error, FileSource, QuickBytes, Result, SourceEntry, SourceKind};
 use tauri_plugin_android_fs::{Entry, FsUri};
 
 /// Lists a SAF tree one directory at a time.
@@ -89,14 +89,27 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
         Ok(out)
     }
 
+    fn read_quick(&self, handle: &str) -> Result<QuickBytes> {
+        let uri = self.uri_for(Some(handle));
+        let mut file =
+            self.fs
+                .open_file_readable(&uri)
+                .map_err(|error| Error::SourceUnavailable {
+                    message: error.to_string(),
+                })?;
+        QuickBytes::read_from(&mut file).map_err(|error| Error::SourceUnavailable {
+            message: error.to_string(),
+        })
+    }
+
     fn read_file(&self, handle: &str) -> Result<Vec<u8>> {
         let uri = self.uri_for(Some(handle));
-        let mut file = self
-            .fs
-            .open_file_readable(&uri)
-            .map_err(|error| Error::SourceUnavailable {
-                message: error.to_string(),
-            })?;
+        let mut file =
+            self.fs
+                .open_file_readable(&uri)
+                .map_err(|error| Error::SourceUnavailable {
+                    message: error.to_string(),
+                })?;
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes)
             .map_err(|error| Error::SourceUnavailable {

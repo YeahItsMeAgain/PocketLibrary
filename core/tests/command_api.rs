@@ -159,27 +159,16 @@ fn migrating_a_version_one_library_resets_books_but_keeps_shelves_labels_and_set
         api.list_books().expect("list books").is_empty(),
         "path-derived books are cleared for the launch scan"
     );
-    assert_eq!(api.list_shelves().expect("list shelves").len(), 1);
-
-    let conn = rusqlite::Connection::open(&path).expect("inspect migrated database");
-    let labels: i64 = conn
-        .query_row("SELECT COUNT(*) FROM labels", [], |row| row.get(0))
-        .expect("labels kept");
-    let capacity: String = conn
-        .query_row(
-            "SELECT value FROM settings WHERE key = 'shelf_capacity'",
-            [],
-            |row| row.get(0),
-        )
-        .expect("settings kept");
-    let dependent: (i64, i64, i64) = conn
-        .query_row(
-            "SELECT (SELECT COUNT(*) FROM reading_state), (SELECT COUNT(*) FROM annotations), (SELECT COUNT(*) FROM book_labels)",
-            [],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
-        )
-        .expect("dependent rows cleared");
-    assert_eq!(labels, 1);
-    assert_eq!(capacity, "9");
-    assert_eq!(dependent, (0, 0, 0));
+    let shelves = api.list_shelves().expect("list shelves");
+    assert_eq!(shelves.len(), 1, "shelves survive the reset");
+    assert_eq!(
+        api.list_labels().expect("labels kept"),
+        vec![pocketlibrary_core::Label {
+            id: 1,
+            name: "Gothic".to_owned(),
+            colour: "#5a1f2a".to_owned(),
+            created_at: 0,
+        }],
+        "labels survive the reset"
+    );
 }

@@ -12,8 +12,8 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 use crate::error::{Error, Result};
 use crate::migrations;
 use crate::models::{
-    AppInfo, Book, BookDetail, BookFormat, CoverSource, LibraryStatus, ReadingStatus, ScanIssue,
-    ScanIssueReason, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, BookFormat, CoverSource, Label, LibraryStatus, ReadingState,
+    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 use crate::source::{FileSource, ScannedBook, collect_books};
 use crate::{APP_NAME, SCHEMA_VERSION, cover, identity, metadata};
@@ -114,8 +114,12 @@ impl Service {
     }
 
     /// One book plus the cover bytes the detail panel needs.
-    pub fn get_book_detail(&self, id: i64) -> Result<BookDetail> {
-        let book = {
+    ///
+    /// When the cache file is missing, `source` is used to re-extract or
+    /// re-render the real cover; an unreadable book falls back to a generated
+    /// plate. The stored `cover_source` is repaired at the same time.
+    pub fn get_book_detail(&self, id: i64, source: Option<&dyn FileSource>) -> Result<BookDetail> {
+        let mut book = {
             let conn = self.connection()?;
             conn.query_row(
                 &format!("SELECT {BOOK_COLUMNS} {BOOK_SOURCE} WHERE b.id = ?1"),
@@ -126,18 +130,72 @@ impl Service {
             .ok_or(Error::BookNotFound { id })?
         };
 
-        let cover_data_url = cover::load_or_generate(&self.cover_dir, &book.content_hash)
-            .map(|bytes| {
-                format!(
-                    "data:image/jpeg;base64,{}",
-                    base64::engine::general_purpose::STANDARD.encode(bytes)
-                )
-            });
+        let cached = book
+            .cover_path
+            .as_deref()
+            .and_then(|path| fs::read(path).ok());
+
+        let bytes = match cached {
+            Some(bytes) => Some(bytes),
+            None => {
+                let restored = self.restore_cover(&book, source);
+                if let Some((path, source)) = &restored {
+                    book.cover_path = Some(path.to_string_lossy().into_owned());
+                    book.cover_source = Some(*source);
+                }
+                restored.and_then(|(path, _)| fs::read(path).ok())
+            }
+        };
+
+        let cover_data_url = bytes.map(|bytes| {
+            format!(
+                "data:image/jpeg;base64,{}",
+                base64::engine::general_purpose::STANDARD.encode(bytes)
+            )
+        });
 
         Ok(BookDetail {
             book,
             cover_data_url,
         })
+    }
+
+    /// Rebuild a missing cover from the book file and record where it came from.
+    fn restore_cover(
+        &self,
+        book: &Book,
+        source: Option<&dyn FileSource>,
+    ) -> Option<(PathBuf, CoverSource)> {
+        let extracted = source.and_then(|source| {
+            let scanned = collect_books(source)
+                .ok()?
+                .into_iter()
+                .find(|entry| entry.path == book.path)?;
+            let bytes = source.read_file(&scanned.handle).ok()?;
+            metadata::extract(scanned.format, &bytes, &scanned.name).ok()
+        });
+
+        let embedded = extracted
+            .as_ref()
+            .and_then(|parsed| parsed.cover.as_deref());
+        let embedded_source = match extracted.as_ref() {
+            Some(parsed) if parsed.cover_rendered => CoverSource::Rendered,
+            _ => CoverSource::Embedded,
+        };
+        let restored = cover::ensure(
+            &self.cover_dir,
+            &book.content_hash,
+            embedded,
+            embedded_source,
+        )?;
+
+        if let Ok(conn) = self.connection() {
+            let _ = conn.execute(
+                "UPDATE books SET cover_path = ?1, cover_source = ?2 WHERE id = ?3",
+                params![restored.0.to_string_lossy(), restored.1, book.id],
+            );
+        }
+        Some(restored)
     }
 
     /// Every shelf in ordinal order.
@@ -215,7 +273,40 @@ impl Service {
         let mut skipped = Vec::new();
         let mut hashed = Vec::with_capacity(found.len());
 
+        // Quick keys already in the catalog let an unchanged rescan skip the
+        // full read entirely. The full hash still decides duplicates.
+        let known_quick_keys = {
+            let conn = self.connection()?;
+            let mut statement = conn
+                .prepare("SELECT quick_key, content_hash FROM books WHERE quick_key IS NOT NULL")?;
+            let rows = statement.query_map([], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+            })?;
+            rows.collect::<std::result::Result<HashMap<_, _>, _>>()?
+        };
+
         for file in found {
+            let quick = match source.read_quick(&file.handle) {
+                Ok(quick) => quick,
+                Err(_) => {
+                    skipped.push(ScanIssue {
+                        name: file.name,
+                        reason: ScanIssueReason::Unreadable,
+                    });
+                    continue;
+                }
+            };
+            let quick_key = identity::quick_key_from_parts(quick.length, &quick.head, &quick.tail);
+
+            if let Some(content_hash) = known_quick_keys.get(&quick_key) {
+                hashed.push(HashedFile {
+                    quick_key,
+                    content_hash: content_hash.clone(),
+                    scanned: file,
+                });
+                continue;
+            }
+
             match source.read_file(&file.handle) {
                 Ok(bytes) => hashed.push(HashedFile {
                     quick_key: identity::quick_key(&bytes),
@@ -292,20 +383,21 @@ impl Service {
                     continue;
                 }
             };
-            let extracted =
-                match metadata::extract(representative.scanned.format, &bytes, &representative.scanned.name)
-                {
-                    Ok(extracted) => extracted,
-                    Err(reason) => {
-                        skipped.push(ScanIssue {
-                            name: representative.scanned.name.clone(),
-                            reason,
-                        });
-                        continue;
-                    }
-                };
+            let parsed = match metadata::extract(
+                representative.scanned.format,
+                &bytes,
+                &representative.scanned.name,
+            ) {
+                Ok(parsed) => parsed,
+                Err(reason) => {
+                    skipped.push(ScanIssue {
+                        name: representative.scanned.name.clone(),
+                        reason,
+                    });
+                    continue;
+                }
+            };
 
-            let parsed = extracted.metadata;
             let cover = cover::ensure(
                 &self.cover_dir,
                 &hash,
@@ -320,16 +412,21 @@ impl Service {
             let (shelf_id, slot_index) = allocate_slot(&tx, &mut shelves, capacity)?;
             insert_book(
                 &tx,
-                &representative.scanned,
-                &hash,
-                &representative.quick_key,
-                &parsed,
-                cover.as_ref(),
-                shelf_id,
-                slot_index,
-                now,
+                NewBook {
+                    scanned: &representative.scanned,
+                    content_hash: &hash,
+                    quick_key: &representative.quick_key,
+                    metadata: &parsed,
+                    cover: cover.as_ref(),
+                    shelf_id,
+                    slot_index,
+                    added_at: now,
+                },
             )?;
-            existing.insert(hash.clone(), (tx.last_insert_rowid(), representative.scanned.path.clone()));
+            existing.insert(
+                hash.clone(),
+                (tx.last_insert_rowid(), representative.scanned.path.clone()),
+            );
             touched.insert(hash.clone());
             added += 1;
         }
@@ -365,6 +462,135 @@ impl Service {
             skipped,
         })
     }
+
+    /// A book's reading position, defaulting to unread when it has no row.
+    ///
+    /// This is the seam the reading surface (ticket 06) will drive; ticket 03
+    /// tests use it to prove a rename keeps progress and locator.
+    pub fn reading_state(&self, book_id: i64) -> Result<ReadingState> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let state = conn
+            .query_row(
+                "SELECT status, status_source, progress, locator
+                 FROM reading_state WHERE book_id = ?1",
+                [book_id],
+                |row| {
+                    Ok(ReadingState {
+                        status: row.get(0)?,
+                        status_source: row.get(1)?,
+                        progress: row.get(2)?,
+                        locator: row.get(3)?,
+                    })
+                },
+            )
+            .optional()?;
+        Ok(state.unwrap_or(ReadingState {
+            status: ReadingStatus::Unread,
+            status_source: "auto".to_owned(),
+            progress: 0.0,
+            locator: None,
+        }))
+    }
+
+    /// Set reading status, progress and locator, as a manual override.
+    pub fn set_reading_state(
+        &self,
+        book_id: i64,
+        status: ReadingStatus,
+        progress: f64,
+        locator: Option<&str>,
+    ) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        conn.execute(
+            "INSERT INTO reading_state (book_id, status, status_source, progress, locator, last_opened_at)
+             VALUES (?1, ?2, 'manual', ?3, ?4, ?5)
+             ON CONFLICT(book_id) DO UPDATE SET
+                 status = excluded.status,
+                 status_source = 'manual',
+                 progress = excluded.progress,
+                 locator = excluded.locator,
+                 last_opened_at = excluded.last_opened_at",
+            params![book_id, status, progress, locator, unix_timestamp()],
+        )?;
+        Ok(())
+    }
+
+    /// Every label, in creation order.
+    pub fn list_labels(&self) -> Result<Vec<Label>> {
+        let conn = self.connection()?;
+        let mut statement = conn
+            .prepare("SELECT id, name, colour, created_at FROM labels ORDER BY created_at, id")?;
+        let labels = statement
+            .query_map([], label_from_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(labels)
+    }
+
+    /// Create a reusable label.
+    pub fn create_label(&self, name: &str, colour: &str) -> Result<Label> {
+        let conn = self.connection()?;
+        conn.execute(
+            "INSERT INTO labels (name, colour, created_at) VALUES (?1, ?2, ?3)",
+            params![name, colour, unix_timestamp()],
+        )?;
+        let id = conn.last_insert_rowid();
+        conn.query_row(
+            "SELECT id, name, colour, created_at FROM labels WHERE id = ?1",
+            [id],
+            label_from_row,
+        )
+        .map_err(Error::from)
+    }
+
+    /// Attach a label to a book; attaching twice is a no-op.
+    pub fn attach_label(&self, book_id: i64, label_id: i64) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        conn.execute(
+            "INSERT OR IGNORE INTO book_labels (book_id, label_id) VALUES (?1, ?2)",
+            params![book_id, label_id],
+        )?;
+        Ok(())
+    }
+
+    /// Labels worn by one book, in creation order.
+    pub fn labels_for_book(&self, book_id: i64) -> Result<Vec<Label>> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let mut statement = conn.prepare(
+            "SELECT l.id, l.name, l.colour, l.created_at
+             FROM labels l JOIN book_labels bl ON bl.label_id = l.id
+             WHERE bl.book_id = ?1
+             ORDER BY l.created_at, l.id",
+        )?;
+        let labels = statement
+            .query_map([book_id], label_from_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(labels)
+    }
+}
+
+fn ensure_book(conn: &Connection, book_id: i64) -> Result<()> {
+    let exists: Option<i64> = conn
+        .query_row("SELECT id FROM books WHERE id = ?1", [book_id], |row| {
+            row.get(0)
+        })
+        .optional()?;
+    match exists {
+        Some(_) => Ok(()),
+        None => Err(Error::BookNotFound { id: book_id }),
+    }
+}
+
+fn label_from_row(row: &Row<'_>) -> rusqlite::Result<Label> {
+    Ok(Label {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        colour: row.get(2)?,
+        created_at: row.get(3)?,
+    })
 }
 
 struct HashedFile {
@@ -457,26 +683,39 @@ fn allocate_slot(
     Ok((id, 0))
 }
 
-#[allow(clippy::too_many_arguments)]
-fn insert_book(
-    conn: &Connection,
-    book: &ScannedBook,
-    content_hash: &str,
-    quick_key: &str,
-    metadata: &metadata::ParsedMetadata,
-    cover: Option<&(PathBuf, CoverSource)>,
+/// Everything needed to insert one newly discovered book.
+struct NewBook<'a> {
+    scanned: &'a ScannedBook,
+    content_hash: &'a str,
+    quick_key: &'a str,
+    metadata: &'a metadata::ParsedMetadata,
+    cover: Option<&'a (PathBuf, CoverSource)>,
     shelf_id: i64,
     slot_index: i64,
     added_at: i64,
-) -> Result<()> {
-    let authors = serde_json::to_string(&metadata.authors).map_err(|error| {
-        Error::Io(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            error,
-        ))
-    })?;
+}
+
+fn insert_book(conn: &Connection, book: NewBook<'_>) -> Result<()> {
+    let NewBook {
+        scanned,
+        content_hash,
+        quick_key,
+        metadata,
+        cover,
+        shelf_id,
+        slot_index,
+        added_at,
+    } = book;
+    let authors = serde_json::to_string(&metadata.authors)
+        .map_err(|error| Error::Io(std::io::Error::new(std::io::ErrorKind::InvalidData, error)))?;
     let cover_path = cover.map(|(path, _)| path.to_string_lossy().into_owned());
     let cover_source = cover.map(|(_, source)| *source);
+    // The final fallback must never show the extension on a shelf.
+    let fallback_title = scanned
+        .name
+        .rsplit_once('.')
+        .map(|(stem, _)| stem)
+        .unwrap_or(&scanned.name);
 
     conn.execute(
         "INSERT INTO books (
@@ -487,9 +726,9 @@ fn insert_book(
         params![
             content_hash,
             quick_key,
-            book.path,
-            book.format,
-            metadata.title.as_deref().unwrap_or(&book.name),
+            scanned.path,
+            scanned.format,
+            metadata.title.as_deref().unwrap_or(fallback_title),
             authors,
             metadata.series,
             metadata.language,

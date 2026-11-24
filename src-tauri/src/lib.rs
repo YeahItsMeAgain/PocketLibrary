@@ -178,8 +178,22 @@ fn list_shelves(api: tauri::State<'_, Api>) -> Result<Vec<Shelf>, ApiError> {
 }
 
 #[tauri::command]
-fn get_book_detail(api: tauri::State<'_, Api>, id: i64) -> Result<BookDetail, ApiError> {
-    api.get_book_detail(id)
+async fn get_book_detail(app: AppHandle, id: i64) -> Result<BookDetail, ApiError> {
+    blocking(move || {
+        let api = app.state::<Api>();
+        #[cfg(target_os = "android")]
+        {
+            if let Some(token) = api.library_folder()? {
+                let uri = parse_folder_token(&token);
+                if grant_is_valid(&app, &uri) {
+                    let source = SafSource::new(app.android_fs(), uri);
+                    return api.get_book_detail(id, Some(&source));
+                }
+            }
+        }
+        api.get_book_detail(id, None)
+    })
+    .await
 }
 
 #[tauri::command]

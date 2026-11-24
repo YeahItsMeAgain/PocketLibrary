@@ -10,6 +10,7 @@
 use std::path::Path;
 
 use crate::error::{Error, Result};
+use crate::identity::QUICK_SPAN;
 use crate::models::BookFormat;
 
 /// What a directory listing entry is.
@@ -32,11 +33,49 @@ pub struct SourceEntry {
     pub handle: String,
 }
 
+/// The bytes needed to build a cheap identity check without reading a whole
+/// file: its complete length plus the head and tail spans.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuickBytes {
+    pub length: u64,
+    pub head: Vec<u8>,
+    pub tail: Vec<u8>,
+}
+
+impl QuickBytes {
+    /// Read the head and tail from a seekable file.
+    pub fn read_from(file: &mut std::fs::File) -> Result<Self> {
+        use std::io::{Read, Seek, SeekFrom};
+
+        let length = file.metadata()?.len();
+        let span = QUICK_SPAN as u64;
+        let mut head = Vec::new();
+        if length <= span * 2 {
+            file.read_to_end(&mut head)?;
+            return Ok(Self {
+                length,
+                head,
+                tail: Vec::new(),
+            });
+        }
+
+        head.resize(QUICK_SPAN, 0);
+        file.read_exact(&mut head)?;
+        let mut tail = vec![0u8; QUICK_SPAN];
+        file.seek(SeekFrom::Start(length - span))?;
+        file.read_exact(&mut tail)?;
+        Ok(Self { length, head, tail })
+    }
+}
+
 /// A directory tree that the scanner can walk and read.
 pub trait FileSource {
     /// List the immediate children of `dir_handle`, or of the library root when
     /// it is `None`.
     fn list(&self, dir_handle: Option<&str>) -> Result<Vec<SourceEntry>>;
+
+    /// Read the bytes needed for a quick key, without reading the whole file.
+    fn read_quick(&self, handle: &str) -> Result<QuickBytes>;
 
     /// Read a file identified by a [`SourceEntry::handle`].
     fn read_file(&self, handle: &str) -> Result<Vec<u8>>;

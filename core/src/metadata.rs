@@ -31,17 +31,15 @@ pub struct ParsedMetadata {
     pub cover_rendered: bool,
 }
 
-/// The result of reading a book file.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExtractedBook {
-    pub metadata: ParsedMetadata,
-}
-
 /// Read metadata and a cover candidate from a book file.
 ///
 /// The filename supplies `title` and `author` hints for fields the file leaves
 /// empty; embedded values always win.
-pub fn extract(format: BookFormat, bytes: &[u8], filename: &str) -> Result<ExtractedBook, ScanIssueReason> {
+pub fn extract(
+    format: BookFormat,
+    bytes: &[u8],
+    filename: &str,
+) -> Result<ParsedMetadata, ScanIssueReason> {
     let hints = parse_filename(filename);
     let mut parsed = match format {
         BookFormat::Epub => parse_epub(bytes)?,
@@ -78,7 +76,7 @@ pub fn extract(format: BookFormat, bytes: &[u8], filename: &str) -> Result<Extra
     parsed.publisher = parsed.publisher.and_then(clean_optional);
     parsed.identifier = parsed.identifier.and_then(clean_optional);
 
-    Ok(ExtractedBook { metadata: parsed })
+    Ok(parsed)
 }
 
 fn clean_optional(value: String) -> Option<String> {
@@ -105,9 +103,7 @@ fn parse_epub(bytes: &[u8]) -> Result<ParsedMetadata, ScanIssueReason> {
             .or_else(|| metadata.by_property("calibre:series").next())
             .map(|entry| entry.value().to_owned()),
         language: metadata.language().map(|value| value.value().to_owned()),
-        description: metadata
-            .description()
-            .map(|entry| entry.value().to_owned()),
+        description: metadata.description().map(|entry| entry.value().to_owned()),
         publisher: metadata
             .publishers()
             .next()
@@ -143,29 +139,31 @@ fn parse_epub(bytes: &[u8]) -> Result<ParsedMetadata, ScanIssueReason> {
 }
 
 fn parse_pdf(bytes: &[u8]) -> Result<ParsedMetadata, ScanIssueReason> {
-    let info = lopdf::Document::load_metadata_mem(bytes).map_err(|_| ScanIssueReason::InvalidPdf)?;
+    let info =
+        lopdf::Document::load_metadata_mem(bytes).map_err(|_| ScanIssueReason::InvalidPdf)?;
+    // Only the named junk cases are rejected; a real title is allowed to start
+    // with "document" or mention a format.
     let filename_junk = |value: &str| {
         let lower = value.trim().to_ascii_lowercase();
-        lower.is_empty()
-            || lower == "untitled"
-            || lower.starts_with("untitled ")
-            || lower.starts_with("microsoft word")
-            || lower.starts_with("document")
-            || lower.ends_with(".dvi")
+        lower.is_empty() || lower == "untitled" || lower.starts_with("untitled ")
     };
 
-    let title = info.title.filter(|value| !filename_junk(value));
+    let publisher = custom_entry(&info, "Publisher");
+    let series = custom_entry(&info, "Series");
+    let language = custom_entry(&info, "Language");
+    let identifier = custom_entry(&info, "Identifier");
+    // `Microsoft Word - Draft.doc` is a producer artefact, not a title.
+    let title = info.title.filter(|value| {
+        !filename_junk(value)
+            && !value
+                .trim()
+                .to_ascii_lowercase()
+                .starts_with("microsoft word")
+    });
     let authors = info
         .author
         .into_iter()
-        .flat_map(|value| {
-            value
-                .split([';', ','])
-                .map(str::trim)
-                .filter(|part| !part.is_empty())
-                .map(str::to_owned)
-                .collect::<Vec<_>>()
-        })
+        .flat_map(|value| split_authors(&value))
         .collect();
 
     let (cover, cover_rendered) = match render_pdf_cover(bytes) {
@@ -178,14 +176,73 @@ fn parse_pdf(bytes: &[u8]) -> Result<ParsedMetadata, ScanIssueReason> {
         authors,
         description: info.subject,
         published_date: info.creation_date.as_deref().and_then(pdf_year),
-        publisher: None,
-        identifier: None,
-        series: None,
-        language: None,
+        publisher,
+        identifier,
+        series,
+        language,
         page_count: Some(i64::from(info.page_count)),
         cover,
         cover_rendered,
     })
+}
+
+/// Look up a non-standard Info dictionary entry by name, case-insensitively.
+fn custom_entry(info: &lopdf::PdfMetadata, name: &str) -> Option<String> {
+    info.custom
+        .iter()
+        .find(|(key, _)| key.eq_ignore_ascii_case(name.as_bytes()))
+        .and_then(|(_, value)| match value {
+            lopdf::Object::String(bytes, _) | lopdf::Object::Name(bytes) => {
+                String::from_utf8(bytes.clone()).ok()
+            }
+            _ => None,
+        })
+}
+
+/// Split a PDF author field on semicolons and the word `and`.
+///
+/// Commas are deliberately kept: `Le Guin, Ursula K.` is one author, not two.
+fn split_authors(value: &str) -> Vec<String> {
+    let mut authors = Vec::new();
+    for chunk in value.split(';') {
+        for part in split_on_word(chunk, "and") {
+            let part = part.trim();
+            if !part.is_empty() {
+                authors.push(part.to_owned());
+            }
+        }
+    }
+    authors
+}
+
+/// Split on a whole word, case-insensitively, keeping the surrounding text.
+fn split_on_word<'a>(value: &'a str, word: &str) -> Vec<&'a str> {
+    let lower = value.to_ascii_lowercase();
+    let needle = word.to_ascii_lowercase();
+    let mut parts = Vec::new();
+    let mut start = 0;
+    while let Some(found) = lower[start..].find(&needle) {
+        let at = start + found;
+        let before_ok = at == 0
+            || !lower[..at]
+                .chars()
+                .next_back()
+                .is_some_and(char::is_alphanumeric);
+        let after = at + needle.len();
+        let after_ok = after == lower.len()
+            || !lower[after..]
+                .chars()
+                .next()
+                .is_some_and(char::is_alphanumeric);
+        if before_ok && after_ok {
+            parts.push(&value[start..at]);
+            start = after;
+        } else {
+            start = at + needle.len();
+        }
+    }
+    parts.push(&value[start..]);
+    parts
 }
 
 /// Render page one to a PNG at roughly 600 px wide. Failure is never fatal.
@@ -264,10 +321,9 @@ fn parse_filename(filename: &str) -> FilenameHints {
     }
 
     let (author, title) = match title_part.split_once(" - ") {
-        Some((author, title)) if !author.trim().is_empty() && !title.trim().is_empty() => (
-            Some(collapse_spaces(author)),
-            collapse_spaces(title),
-        ),
+        Some((author, title)) if !author.trim().is_empty() && !title.trim().is_empty() => {
+            (Some(collapse_spaces(author)), collapse_spaces(title))
+        }
         _ => (None, collapse_spaces(&title_part)),
     };
 
@@ -379,6 +435,22 @@ mod tests {
         assert_eq!(hints.title.as_deref(), Some("Real Title"));
         assert_eq!(hints.author.as_deref(), Some("Author"));
         assert_eq!(hints.year.as_deref(), Some("2001"));
+    }
+
+    #[test]
+    fn pdf_authors_split_on_semicolons_and_and_but_not_commas() {
+        assert_eq!(
+            split_authors("Le Guin, Ursula K.; Ada Lovelace"),
+            vec!["Le Guin, Ursula K.", "Ada Lovelace"]
+        );
+        assert_eq!(
+            split_authors("Ursula K. Le Guin and Ada Lovelace"),
+            vec!["Ursula K. Le Guin", "Ada Lovelace"]
+        );
+        assert_eq!(
+            split_authors("Le Guin, Ursula K."),
+            vec!["Le Guin, Ursula K."]
+        );
     }
 
     #[test]

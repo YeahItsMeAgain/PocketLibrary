@@ -7,7 +7,9 @@
 use std::path::Path;
 
 use crate::error::{ApiError, ApiResult, Result};
-use crate::models::{AppInfo, Book, BookDetail, LibraryStatus, ScanReport, Shelf};
+use crate::models::{
+    AppInfo, Book, BookDetail, Label, LibraryStatus, ReadingState, ReadingStatus, ScanReport, Shelf,
+};
 use crate::service::Service;
 use crate::source::FileSource;
 
@@ -40,8 +42,16 @@ impl Api {
     }
 
     /// One book plus a data-URL cover, for the detail panel.
-    pub fn get_book_detail(&self, id: i64) -> ApiResult<BookDetail> {
-        self.service.get_book_detail(id).map_err(ApiError::from)
+    ///
+    /// `source` lets a missing cover cache be rebuilt from the real file.
+    pub fn get_book_detail(
+        &self,
+        id: i64,
+        source: Option<&dyn FileSource>,
+    ) -> ApiResult<BookDetail> {
+        self.service
+            .get_book_detail(id, source)
+            .map_err(ApiError::from)
     }
 
     /// Reconcile the catalog with the chosen library folder.
@@ -65,6 +75,50 @@ impl Api {
     pub fn library_status(&self, grant_valid: bool) -> ApiResult<LibraryStatus> {
         self.service
             .library_status(grant_valid)
+            .map_err(ApiError::from)
+    }
+
+    /// A book's reading position, defaulting to unread.
+    pub fn reading_state(&self, id: i64) -> ApiResult<ReadingState> {
+        self.service.reading_state(id).map_err(ApiError::from)
+    }
+
+    /// Set a book's reading status, progress and locator.
+    pub fn set_reading_state(
+        &self,
+        id: i64,
+        status: ReadingStatus,
+        progress: f64,
+        locator: Option<&str>,
+    ) -> ApiResult<()> {
+        self.service
+            .set_reading_state(id, status, progress, locator)
+            .map_err(ApiError::from)
+    }
+
+    /// Every label.
+    pub fn list_labels(&self) -> ApiResult<Vec<Label>> {
+        self.service.list_labels().map_err(ApiError::from)
+    }
+
+    /// Create a reusable label.
+    pub fn create_label(&self, name: &str, colour: &str) -> ApiResult<Label> {
+        self.service
+            .create_label(name, colour)
+            .map_err(ApiError::from)
+    }
+
+    /// Attach a label to a book.
+    pub fn attach_label(&self, book_id: i64, label_id: i64) -> ApiResult<()> {
+        self.service
+            .attach_label(book_id, label_id)
+            .map_err(ApiError::from)
+    }
+
+    /// Labels worn by one book.
+    pub fn labels_for_book(&self, book_id: i64) -> ApiResult<Vec<Label>> {
+        self.service
+            .labels_for_book(book_id)
             .map_err(ApiError::from)
     }
 }

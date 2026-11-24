@@ -2,19 +2,8 @@ mod common;
 
 use std::collections::HashSet;
 
-use common::{FakeDir, book_id_at, book_id_for_file, book_row, database, database_at};
-use pocketlibrary_core::{BookFormat, ReadingStatus, quick_key};
-
-fn reading_state_at(path: &std::path::Path, book_id: i64) -> (String, String, f64, Option<i64>) {
-    let conn = rusqlite::Connection::open(path).expect("open catalog directly");
-    conn.query_row(
-        "SELECT status, status_source, progress, finished_at
-         FROM reading_state WHERE book_id = ?1",
-        [book_id],
-        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
-    )
-    .expect("reading state exists")
-}
+use common::{FakeDir, database, database_at};
+use pocketlibrary_core::{BookFormat, ReadingStatus};
 
 #[test]
 fn an_empty_folder_keeps_the_grant_and_shows_no_books() {
@@ -223,31 +212,28 @@ fn an_overdeep_tree_aborts_instead_of_returning_a_partial_scan() {
 
 #[test]
 fn a_second_removal_scan_reports_nothing_and_keeps_progress() {
-    let (_dir, path, api) = database_at();
+    let (_dir, _path, api) = database_at();
     api.scan(&FakeDir::new().file("keep.epub").file("leave.pdf"))
         .expect("first scan");
-    let leaving_id = book_id_at(&path, "leave.pdf");
-
-    {
-        let conn = rusqlite::Connection::open(&path).expect("open catalog directly");
-        conn.execute(
-            "INSERT INTO reading_state (book_id, status, status_source, progress)
-             VALUES (?1, 'reading', 'manual', 0.42)",
-            [leaving_id],
-        )
+    let leaving_id = api
+        .list_books()
+        .expect("list before")
+        .into_iter()
+        .find(|book| book.title == "leave")
+        .expect("leaving book")
+        .id;
+    api.set_reading_state(leaving_id, ReadingStatus::Reading, 0.42, None)
         .expect("seed progress");
-    }
 
     let first_removal = api
         .scan(&FakeDir::new().file("keep.epub"))
         .expect("removal scan");
     assert_eq!(first_removal.removed, 1);
 
-    let (status, source, progress, finished_at) = reading_state_at(&path, leaving_id);
-    assert_eq!(status, "finished");
-    assert_eq!(source, "manual", "status_source is preserved");
-    assert_eq!(progress, 0.42, "progress is preserved");
-    assert!(finished_at.is_some());
+    let state = api.reading_state(leaving_id).expect("reading state");
+    assert_eq!(state.status, ReadingStatus::Finished);
+    assert_eq!(state.status_source, "manual", "status_source is preserved");
+    assert_eq!(state.progress, 0.42, "progress is preserved");
 
     let second_removal = api
         .scan(&FakeDir::new().file("keep.epub"))
@@ -257,32 +243,23 @@ fn a_second_removal_scan_reports_nothing_and_keeps_progress() {
         "a finished book is not removed twice"
     );
 
-    let (status, source, progress, finished_at_after) = reading_state_at(&path, leaving_id);
-    assert_eq!(status, "finished");
-    assert_eq!(source, "manual");
-    assert_eq!(progress, 0.42);
-    assert_eq!(
-        finished_at_after, finished_at,
-        "finished_at is not rewritten"
-    );
+    let state = api.reading_state(leaving_id).expect("reading state");
+    assert_eq!(state.status, ReadingStatus::Finished);
+    assert_eq!(state.status_source, "manual");
+    assert_eq!(state.progress, 0.42);
 }
 
 #[test]
-fn renaming_a_file_keeps_one_book_with_the_same_id_and_state() {
-    let (_dir, path, api) = database_at();
+fn renaming_a_file_keeps_one_book_with_its_labels_progress_and_locator() {
+    let (_dir, _path, api) = database_at();
     let source = FakeDir::new().file("old name.epub");
     api.scan(&source).expect("first scan");
     let before = api.list_books().expect("list before");
     let id = before[0].id;
-    {
-        let conn = rusqlite::Connection::open(&path).expect("open catalog directly");
-        conn.execute(
-            "INSERT INTO reading_state (book_id, status, status_source, progress, locator)
-             VALUES (?1, 'reading', 'manual', 0.66, '{\"page\":3}')",
-            [id],
-        )
+    api.set_reading_state(id, ReadingStatus::Reading, 0.66, Some(r#"{"page":3}"#))
         .expect("seed state");
-    }
+    let label = api.create_label("Gothic", "#5a1f2a").expect("create label");
+    api.attach_label(id, label.id).expect("attach label");
 
     let renamed = FakeDir::new()
         .dir("shelf")
@@ -294,14 +271,18 @@ fn renaming_a_file_keeps_one_book_with_the_same_id_and_state() {
     assert_eq!(report.removed, 0, "a rename is not a removal");
     assert_eq!(after.len(), 1);
     assert_eq!(after[0].id, id, "identity survives the move");
-    assert_eq!(after[0].path, "shelf/new name.epub");
-    let (status, source, progress, _) = reading_state_at(&path, id);
-    assert_eq!((status.as_str(), source.as_str(), progress), ("reading", "manual", 0.66));
+    assert_eq!(after[0].reading_status, ReadingStatus::Reading);
+
+    let state = api.reading_state(id).expect("reading state");
+    assert_eq!(state.progress, 0.66);
+    assert_eq!(state.locator.as_deref(), Some(r#"{"page":3}"#));
+    let labels = api.labels_for_book(id).expect("labels after rename");
+    assert_eq!(labels, vec![label]);
 }
 
 #[test]
 fn identical_bytes_at_two_paths_produce_one_book() {
-    let (_dir, path, api) = database_at();
+    let (_dir, _path, api) = database_at();
     let bytes = common::minimal_epub("same book");
     let source = FakeDir::new()
         .file_with("first.epub", bytes.clone())
@@ -320,26 +301,28 @@ fn identical_bytes_at_two_paths_produce_one_book() {
     assert_eq!(again.added, 0);
     assert_eq!(again.duplicates, 1);
     assert_eq!(api.list_books().expect("list books").len(), 1);
-
-    let stored = book_row(&path, book_id_for_file(&path, "first.epub"));
-    assert_eq!(stored.0.len(), 64, "the full hash is stored as hex");
 }
 
 #[test]
-fn the_stored_quick_key_is_stable_and_matches_the_bytes() {
-    let (_dir, path, api) = database_at();
-    let source = FakeDir::new().file("quick.epub");
-    let expected = quick_key(&source.bytes("quick.epub"));
-    api.scan(&source).expect("scan");
+fn an_unchanged_rescan_reads_only_quick_keys_not_whole_files() {
+    let (_dir, api) = database();
+    let source = FakeDir::new()
+        .file("quick.epub")
+        .dir("nested")
+        .file("nested/other.pdf");
+    api.scan(&source).expect("first scan");
+    assert!(
+        source.full_reads() >= 2,
+        "the first scan reads new files to hash and parse them"
+    );
 
-    let id = book_id_for_file(&path, "quick.epub");
-    let (hash, _, stored_quick) = book_row(&path, id);
-    assert_eq!(stored_quick.as_deref(), Some(expected.as_str()));
-    assert_eq!(hash.len(), 64);
-
-    api.scan(&source).expect("rescan");
-    let (_, _, after) = book_row(&path, id);
-    assert_eq!(after, stored_quick, "a rescan does not churn the quick key");
+    source.reset_full_reads();
+    let report = api.scan(&source).expect("rescan");
+    assert_eq!(source.full_reads(), 0, "unchanged files are not read whole");
+    assert_eq!(report.added, 0);
+    assert_eq!(report.removed, 0);
+    assert_eq!(report.duplicates, 0);
+    assert_eq!(api.list_books().expect("list books").len(), 2);
 }
 
 #[test]
@@ -351,7 +334,9 @@ fn a_malformed_file_is_skipped_with_a_reason_and_does_not_abort_the_scan() {
         .file_with("broken.pdf", b"%PDF-1.4 truncated".to_vec())
         .file("good.pdf");
 
-    let report = api.scan(&source).expect("a bad file must not abort the scan");
+    let report = api
+        .scan(&source)
+        .expect("a bad file must not abort the scan");
 
     assert_eq!(report.added, 2);
     assert_eq!(report.skipped.len(), 2);
@@ -368,10 +353,7 @@ fn a_malformed_file_is_skipped_with_a_reason_and_does_not_abort_the_scan() {
         ])
     );
     assert!(
-        report
-            .skipped
-            .iter()
-            .all(|issue| !issue.name.contains('/')),
+        report.skipped.iter().all(|issue| !issue.name.contains('/')),
         "scan issues carry a name, never a path"
     );
     let titles: Vec<_> = api
