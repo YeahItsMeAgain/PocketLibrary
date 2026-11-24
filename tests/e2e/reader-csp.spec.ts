@@ -67,3 +67,79 @@ test("the built app ships a strict CSP and a scripted EPUB cannot reach the app 
   await page.mouse.click(195, 420);
   await expect(page.getByTestId("reader-progress")).toBeVisible();
 });
+
+const PDF: Book = {
+  id: 21,
+  contentHash: "sample-pdf-hash",
+  format: "pdf",
+  title: "The Lamplighter's PDF",
+  authors: [],
+  series: null,
+  language: "en",
+  description: null,
+  publisher: null,
+  publishedDate: null,
+  identifier: null,
+  pageCount: 3,
+  addedAt: 1_700_000_000,
+  shelfId: 1,
+  slotIndex: 0,
+  readingStatus: "unread",
+  labels: [],
+};
+
+test("the built app runs the local PDF worker and wasm under the strict CSP", async ({
+  page,
+}) => {
+  const problems: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") problems.push(message.text());
+  });
+  page.on("pageerror", (error) => problems.push(error.message));
+
+  await page.addInitScript((book) => {
+    (
+      window as unknown as { __POCKETLIBRARY_MOCK__: unknown }
+    ).__POCKETLIBRARY_MOCK__ = {
+      state: "ready",
+      folderName: "PocketLibrary",
+      books: [book],
+      bookFiles: { 21: "/test-assets/sample.pdf" },
+    };
+  }, PDF);
+  await page.goto("/");
+
+  const csp = await page
+    .locator('meta[http-equiv="Content-Security-Policy"]')
+    .getAttribute("content");
+  expect(csp).toContain("'wasm-unsafe-eval'");
+  expect(csp).toContain("worker-src 'self' blob:");
+  expect(csp).toContain("script-src 'self'");
+
+  await page.getByTestId("spine").first().click();
+  await page.getByTestId("detail-read").click();
+  await expect(page.getByTestId("reader")).toBeVisible();
+  await expect(page.getByTestId("reader-error")).toHaveCount(0);
+  await expect(page.getByTestId("reader-loading")).toHaveCount(0, {
+    timeout: 20_000,
+  });
+
+  // A painted, non-blank canvas plus text-layer spans means the local worker
+  // and the document parser both ran under the production policy.
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const canvas = document.querySelector(
+          ".pdf-canvas",
+        ) as HTMLCanvasElement | null;
+        const context = canvas?.getContext("2d");
+        if (!canvas || !context) return false;
+        const pixel = context.getImageData(0, 0, 1, 1).data;
+        const text = document.querySelectorAll(".pdf-text-layer span").length;
+        return pixel[3] === 255 && text > 0;
+      }),
+    )
+    .toBe(true);
+
+  expect(problems.filter((text) => /Content Security Policy|Refused to/i.test(text))).toEqual([]);
+});
