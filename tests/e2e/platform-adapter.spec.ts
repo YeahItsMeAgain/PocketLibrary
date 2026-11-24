@@ -31,6 +31,8 @@ test("the real Tauri adapter renders values from a mocked invoke", async ({
               };
             case "get_shelf_capacity":
               return 12;
+            case "label_usage":
+              return [];
             default:
               throw new Error(`unexpected command: ${command}`);
           }

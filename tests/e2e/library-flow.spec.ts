@@ -25,6 +25,7 @@ function mockBook(
     shelfId: 1,
     slotIndex,
     readingStatus: "unread",
+    labels: [],
   };
 }
 
