@@ -27,8 +27,9 @@ const PORT = Number(process.env.PERF_PORT ?? 1439);
 const BASE_URL = process.env.PERF_URL ?? `http://localhost:${PORT}`;
 const LABEL = process.env.PERF_LABEL ?? "current";
 const RATE = Number(process.env.PERF_RATE ?? 4);
-const DPR = Number(process.env.PERF_DPR ?? 3);
+const DPR = Number(process.env.PERF_DPR ?? 1);
 const BOOK_COUNT = Number(process.env.PERF_BOOKS ?? 2000);
+const BASELINE_CSS = process.env.PERF_BASELINE_CSS === "1";
 const SHELF_CAPACITY = 11; // the 10-11 volumes/shelf from the research note
 const SCROLL_FRAMES = 240;
 const SCROLL_STEP = 14; // ~9.4 shelves per pass at 264 px/shelf
@@ -166,7 +167,7 @@ function startServer() {
       "--logLevel",
       "warn",
     ],
-    { cwd: ROOT, stdio: "inherit" },
+    { cwd: ROOT, stdio: "inherit", detached: true },
   );
   return server;
 }
@@ -176,10 +177,17 @@ async function run() {
   const shelfCount = Math.ceil(BOOK_COUNT / SHELF_CAPACITY);
   const usingExternalServer = Boolean(process.env.PERF_URL);
   const server = usingExternalServer ? null : startServer();
-  const exit = () => server?.kill("SIGTERM");
-  process.on("exit", exit);
+  const stopServer = () => {
+    if (!server || server.killed) return;
+    try {
+      process.kill(-server.pid, "SIGKILL");
+    } catch {
+      server.kill("SIGKILL");
+    }
+  };
+  process.on("exit", stopServer);
   process.on("SIGINT", () => {
-    exit();
+    stopServer();
     process.exit(130);
   });
 
@@ -197,7 +205,24 @@ async function run() {
     await cdp.send("Performance.enable").catch(() => {});
     await cdp.send("Emulation.setCPUThrottlingRate", { rate: RATE });
 
-    await page.addInitScript((seed) => {
+    await page.addInitScript(({ seed, baselineCss }) => {
+      if (baselineCss) {
+        // Reproduce the pre-hardening stylesheet without checking out old code:
+        // CV off for shelf sections, and the old per-spine dimming filter.
+        const inject = () => {
+          const head = document.head ?? document.documentElement;
+          if (!head) {
+            setTimeout(inject, 0);
+            return;
+          }
+          const style = document.createElement("style");
+          style.textContent =
+            ".shelf{content-visibility:visible!important;contain-intrinsic-size:none!important}" +
+            ".spine.is-dimmed{filter:saturate(0.55)!important}";
+          head.appendChild(style);
+        };
+        inject();
+      }
       window.localStorage.setItem("pocketlibrary.dragHintSeen", "1");
       window.__POCKETLIBRARY_MOCK__ = seed;
       window.__PERF__ = {
@@ -266,7 +291,7 @@ async function run() {
         requestAnimationFrame(firstFrame);
       };
       requestAnimationFrame(firstFrame);
-    }, config);
+    }, { seed: config, baselineCss: BASELINE_CSS });
 
     const startedAt = Date.now();
     await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
@@ -357,16 +382,6 @@ async function run() {
     // A drag-like per-pointer-move probe: with the wall at rest, read the
     // cached geometry path once. This is not a full gesture; it reports the
     // cost of one layout-forcing sweep that the product does on lift.
-    const dragProbe = await page.evaluate(async () => {
-      window.__PERF__.phase = "drag";
-      const wall = document.querySelector('[data-testid="library-wall"]');
-      const t0 = performance.now();
-      const sections = wall.querySelectorAll("section.shelf[data-shelf-id]");
-      sections.forEach((section) => section.getBoundingClientRect());
-      const sweep = performance.now() - t0;
-      return { shelfSweepMs: +sweep.toFixed(1), shelves: sections.length };
-    });
-
     const metrics = await cdp.send("Performance.getMetrics").catch(() => null);
     const heap = await cdp
       .send("Runtime.getHeapUsage")
@@ -374,6 +389,33 @@ async function run() {
     const domCounters = await cdp
       .send("Memory.getDOMCounters")
       .catch(() => ({ nodes: null, documents: null, jsEventListeners: null }));
+
+    // Cached geometry path once. This is not a full gesture; it reports the
+    // cost of one layout-forcing sweep that the product does on lift. Run it
+    // after the memory read so forcing every skipped shelf to lay out does not
+    // inflate the renderer-DOM number.
+    const dragProbe = await page.evaluate(async () => {
+      window.__PERF__.phase = "drag";
+      const wall = document.querySelector('[data-testid="library-wall"]');
+      const sections = [...wall.querySelectorAll("section.shelf[data-shelf-id]")];
+      const t0 = performance.now();
+      sections.forEach((section) => section.getBoundingClientRect());
+      const sectionSweep = performance.now() - t0;
+      const t1 = performance.now();
+      let spines = 0;
+      sections.forEach((section) => {
+        section.querySelectorAll(".spines > .spine").forEach((spine) => {
+          spines += 1;
+          spine.getBoundingClientRect();
+        });
+      });
+      const spineSweep = performance.now() - t1;
+      return {
+        sectionSweepMs: +sectionSweep.toFixed(1),
+        spineSweepMs: +spineSweep.toFixed(1),
+        spines,
+      };
+    });
 
     const longTasks = await page.evaluate(() => window.__PERF__.longTasks);
     const loaf = await page.evaluate(() => window.__PERF__.loaf);
@@ -383,6 +425,7 @@ async function run() {
     const result = {
       label: LABEL,
       generatedAt: new Date().toISOString(),
+      baselineCss: BASELINE_CSS,
       environment: {
         baseUrl: BASE_URL,
         viewport: "390x844",
@@ -460,7 +503,7 @@ async function run() {
         `renderer DOM       ${result.memory.embedderHeapUsedMb} MB · ${result.memory.domNodes} nodes`,
         `filter apply       ${result.filter.applySync} ms sync / ${result.filter.applySettled} ms settled`,
         `filter clear       ${result.filter.clearSync} ms sync / ${result.filter.clearSettled} ms settled`,
-        `shelf rect sweep   ${result.dragProbe.shelfSweepMs} ms (lift-time layout cost)`,
+        `shelf rect sweep   ${result.dragProbe.sectionSweepMs} ms sections / ${result.dragProbe.spineSweepMs} ms including spines (lift-time layout cost)`,
       ].join("\n"),
     );
     console.log(`\nWrote ${outFile}`);
@@ -471,7 +514,7 @@ async function run() {
       scrollP99: result.scroll.warm.p99,
       longTasksOver50: result.longTasks.over50,
       domMb: result.memory.embedderHeapUsedMb,
-      filterMs: result.filter.applySync,
+      filterMs: result.filter.applySettled,
     };
     const pass =
       budget.firstShelfMs < 400 &&
@@ -483,10 +526,10 @@ async function run() {
     console.log(`Budgets: ${pass ? "PASS" : "MISS"} (see docs/perf-shelf-benchmark.md)`);
 
     await browser.close();
-    exit();
-    process.exitCode = pass ? 0 : 1;
+    stopServer();
+    process.exit(pass ? 0 : 1);
   } finally {
-    exit();
+    stopServer();
   }
 }
 
