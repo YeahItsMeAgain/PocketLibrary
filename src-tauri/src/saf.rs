@@ -66,15 +66,6 @@ impl<'a, R: tauri::Runtime> SafSource<'a, R> {
         walk(self, None, target)
     }
 
-    pub fn read_path(&self, target: &str) -> Result<Vec<u8>> {
-        match self.find_handle(target)? {
-            Some(handle) => self.read_file(&handle),
-            None => Err(Error::SourceUnavailable {
-                message: format!("book path not found: {target}"),
-            }),
-        }
-    }
-
     /// Read a whole book, refusing anything above `limit` bytes.
     ///
     /// The reader receives the entire file over IPC, so a very large PDF would

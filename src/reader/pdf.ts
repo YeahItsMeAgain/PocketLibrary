@@ -11,6 +11,7 @@ import {
   getDocument,
   type PDFDocumentProxy,
   type PDFPageProxy,
+  type RenderTask,
 } from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 
@@ -162,6 +163,7 @@ export async function renderPage(options: {
   availableWidth: number;
   zoom: number;
   maxCanvasPixels?: number;
+  onTask?: (task: RenderTask) => void;
 }): Promise<RenderedPage> {
   const { page, canvas, textContainer, availableWidth, zoom } = options;
   const maxPixels = options.maxCanvasPixels ?? 12_000_000;
@@ -186,7 +188,9 @@ export async function renderPage(options: {
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, viewport.width, viewport.height);
 
-  await page.render({ canvas: null, canvasContext: context, viewport }).promise;
+  const task = page.render({ canvas: null, canvasContext: context, viewport });
+  options.onTask?.(task);
+  await task.promise;
 
   textContainer.replaceChildren();
   textContainer.style.width = `${viewport.width}px`;

@@ -74,7 +74,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
-  const destroyRef = useRef<(() => Promise<void>) | null>(null);
+  const renderTask = useRef<{ cancel(): void } | null>(null);
   const latestLocator = useRef<PdfLocator | null>(null);
   const persistTimer = useRef(0);
   const zoomRef = useRef(1);
@@ -180,7 +180,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         }
         const pdf = opened_pdf.doc;
         opened.destroy = opened_pdf.destroy;
-        destroyRef.current = opened_pdf.destroy;
         pdfRef.current = pdf;
         setNumPages(pdf.numPages);
         totalRef.current = pdf.numPages;
@@ -212,8 +211,8 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
 
     return () => {
       cancelled = true;
+      renderTask.current?.cancel();
       void opened.destroy?.();
-      destroyRef.current = null;
       pdfRef.current = null;
     };
   }, [book.id]);
@@ -226,6 +225,8 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
     const text = textRef.current;
     if (!pdf || !canvas || !text) return;
     let cancelled = false;
+    renderTask.current?.cancel();
+    renderTask.current = null;
     setRendering(true);
 
     (async () => {
@@ -244,6 +245,10 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           textContainer: text,
           availableWidth: available,
           zoom,
+          onTask: (task) => {
+            if (cancelled) task.cancel();
+            else renderTask.current = task;
+          },
         });
         if (cancelled) return;
         setRendering(false);
@@ -260,6 +265,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
 
     return () => {
       cancelled = true;
+      renderTask.current?.cancel();
     };
   }, [ready, pageNumber, zoom, stageWidth]);
 
