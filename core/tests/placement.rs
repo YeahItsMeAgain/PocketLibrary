@@ -74,7 +74,7 @@ fn the_second_shelf_takes_the_next_book_after_the_first_is_full() {
 }
 
 #[test]
-fn a_full_library_appends_a_shelf_and_undo_removes_only_the_record() {
+fn a_full_library_appends_a_shelf_and_places_the_book_there() {
     let (_dir, api) = database();
     api.set_shelf_capacity(1).expect("set capacity");
     let before = source(1);
@@ -86,43 +86,17 @@ fn a_full_library_appends_a_shelf_and_undo_removes_only_the_record() {
     let placement = report.placements[0].clone();
     assert!(placement.appended_shelf);
     assert_eq!(placement.shelf_ordinal, 1);
-    assert_eq!(api.list_shelves().expect("shelves").len(), 2);
-    assert_eq!(api.list_books().expect("books").len(), 2);
-
-    // The file is still in the folder; undo is purely catalog work.
-    assert!(!after.bytes("book-1.epub").is_empty());
-    assert!(
-        api.undo_placement(placement.book_id, placement.shelf_id)
-            .expect("undo placement")
-    );
-    assert_eq!(api.list_shelves().expect("shelves").len(), 1);
+    let shelves = api.list_shelves().expect("shelves");
+    assert_eq!(shelves.len(), 2);
     let books = api.list_books().expect("books");
-    assert_eq!(books.len(), 1);
-    assert_eq!(books[0].title, "book-0");
-
-    let rescanned = api.scan(&after).expect("rescan re-adds the file");
-    assert_eq!(rescanned.added, 1);
-    assert_eq!(api.list_books().expect("books").len(), 2);
-    assert_eq!(api.list_shelves().expect("shelves").len(), 2);
-}
-
-#[test]
-fn undo_is_a_no_op_when_the_appended_shelf_gained_another_book() {
-    let (_dir, api) = database();
-    api.set_shelf_capacity(2).expect("set capacity");
-    api.scan(&source(2)).expect("fill the only shelf");
-    let report = api.scan(&source(3)).expect("append shelf");
-    let placement = report.placements[0].clone();
-    api.scan(&source(4))
-        .expect("put another book on the new shelf");
-
-    assert!(
-        !api.undo_placement(placement.book_id, placement.shelf_id)
-            .expect("undo is refused"),
-        "a shelf that is no longer empty must not be removed"
-    );
-    assert_eq!(api.list_shelves().expect("shelves").len(), 2);
-    assert_eq!(api.list_books().expect("books").len(), 4);
+    assert_eq!(books.len(), 2);
+    let placed = books
+        .iter()
+        .find(|book| book.title == "book-1")
+        .expect("the imported book");
+    assert_eq!(placed.shelf_id, Some(placement.shelf_id));
+    assert_eq!(placed.slot_index, Some(0));
+    assert!(!after.bytes("book-1.epub").is_empty());
 }
 
 #[test]

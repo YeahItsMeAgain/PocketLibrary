@@ -59,14 +59,6 @@ impl Api {
         self.service.scan(source).map_err(ApiError::from)
     }
 
-    /// Undo an automatic placement, removing the book record and the shelf
-    /// appended for it without touching the file.
-    pub fn undo_placement(&self, book_id: i64, shelf_id: i64) -> ApiResult<bool> {
-        self.service
-            .undo_placement(book_id, shelf_id)
-            .map_err(ApiError::from)
-    }
-
     /// The configured shelf capacity.
     pub fn shelf_capacity(&self) -> ApiResult<i64> {
         self.service.shelf_capacity().map_err(ApiError::from)

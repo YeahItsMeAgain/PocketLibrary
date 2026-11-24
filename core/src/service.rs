@@ -496,57 +496,6 @@ impl Service {
         })
     }
 
-    /// Undo an automatic placement, removing the book record and the shelf
-    /// that was appended for it.
-    ///
-    /// This never touches the book file: a later rescan simply adds it again.
-    /// The undo is a no-op when the book has moved, is gone, or the shelf now
-    /// holds another book. Only a non-seed trailing shelf can be removed.
-    pub fn undo_placement(&self, book_id: i64, shelf_id: i64) -> Result<bool> {
-        let mut conn = self.connection()?;
-        let tx = conn.transaction()?;
-
-        let current_shelf: Option<i64> = tx
-            .query_row(
-                "SELECT shelf_id FROM books WHERE id = ?1",
-                [book_id],
-                |row| row.get(0),
-            )
-            .optional()?;
-        if current_shelf != Some(shelf_id) {
-            return Ok(false);
-        }
-
-        let shelf: Option<(i64, i64)> = tx
-            .query_row(
-                "SELECT ordinal, capacity FROM shelves WHERE id = ?1",
-                [shelf_id],
-                |row| Ok((row.get(0)?, row.get(1)?)),
-            )
-            .optional()?;
-        let Some((ordinal, _capacity)) = shelf else {
-            return Ok(false);
-        };
-        let books_on_shelf: i64 = tx.query_row(
-            "SELECT COUNT(*) FROM books WHERE shelf_id = ?1",
-            [shelf_id],
-            |row| row.get(0),
-        )?;
-        let last_ordinal: i64 = tx.query_row(
-            "SELECT COALESCE(MAX(ordinal), -1) FROM shelves",
-            [],
-            |row| row.get(0),
-        )?;
-        if books_on_shelf != 1 || ordinal == 0 || ordinal != last_ordinal {
-            return Ok(false);
-        }
-
-        tx.execute("DELETE FROM books WHERE id = ?1", [book_id])?;
-        tx.execute("DELETE FROM shelves WHERE id = ?1", [shelf_id])?;
-        tx.commit()?;
-        Ok(true)
-    }
-
     /// A book's reading position, defaulting to unread when it has no row.
     ///
     /// This is the seam the reading surface (ticket 06) will drive; ticket 03

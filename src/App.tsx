@@ -8,7 +8,6 @@ import {
   type Book,
   type BookDetail,
   type LibraryStatus,
-  type Placement,
   type ScanIssueReason,
   type ScanReport,
   type Shelf,
@@ -347,9 +346,6 @@ function DetailPanel({ bookId, onClose }: DetailPanelProps) {
 interface LibraryWallProps {
   reloadKey: number;
   notice: string | null;
-  undo: Placement | null;
-  busy: boolean;
-  onUndo: () => void;
   onAddBooks: () => void;
   onFindBook: () => void;
 }
@@ -357,9 +353,6 @@ interface LibraryWallProps {
 function LibraryWall({
   reloadKey,
   notice,
-  undo,
-  busy,
-  onUndo,
   onAddBooks,
   onFindBook,
 }: LibraryWallProps) {
@@ -437,20 +430,6 @@ function LibraryWall({
       </div>
       {openBookId !== null ? (
         <DetailPanel bookId={openBookId} onClose={closeDetail} />
-      ) : null}
-      {undo !== null ? (
-        <aside className="undo-notice" data-testid="undo-notice" role="status">
-          <p>A new shelf was added for the book you just imported.</p>
-          <button
-            type="button"
-            className="secondary-action undo-action"
-            data-testid="undo-placement"
-            onClick={onUndo}
-            disabled={busy}
-          >
-            {busy ? "Undoing…" : "Undo"}
-          </button>
-        </aside>
       ) : null}
       {notice ? (
         <p
@@ -721,14 +700,6 @@ const SCAN_REASON_LABELS: Record<ScanIssueReason, string> = {
   invalid_pdf: "not a valid PDF",
 };
 
-function appendedPlacement(report: ScanReport): Placement | null {
-  const placements = report.placements ?? [];
-  for (let index = placements.length - 1; index >= 0; index -= 1) {
-    if (placements[index].appendedShelf) return placements[index];
-  }
-  return null;
-}
-
 function scanNotice(report: ScanReport): string {
   const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
   const removed =
@@ -782,7 +753,6 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [pendingUndo, setPendingUndo] = useState<Placement | null>(null);
   const [shelfCapacity, setShelfCapacity] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -808,7 +778,7 @@ export default function App() {
 
   useEffect(() => {
     // A single launch reconciliation; StrictMode may replay this effect, but
-    // scanning twice would waste a scan and lose the first undo notice.
+    // scanning twice would waste a scan.
     if (initialLoadStarted.current) return;
     initialLoadStarted.current = true;
     (async () => {
@@ -817,9 +787,6 @@ export default function App() {
         if (next.state === "ready") {
           const outcome = await runScan();
           if (outcome.kind === "unavailable") next = disconnected(next);
-          if (outcome.kind === "report") {
-            setPendingUndo(appendedPlacement(outcome.report));
-          }
         }
         setStatus(next);
       } catch {
@@ -851,7 +818,6 @@ export default function App() {
         const outcome = await runScan();
         if (outcome.kind === "report") {
           setNotice(scanNotice(outcome.report));
-          setPendingUndo(appendedPlacement(outcome.report));
         } else if (outcome.kind === "unavailable") {
           next = disconnected(next);
         } else {
@@ -874,7 +840,6 @@ export default function App() {
       const outcome = await runScan();
       if (outcome.kind === "report") {
         setNotice(scanNotice(outcome.report));
-        setPendingUndo(appendedPlacement(outcome.report));
         setReloadKey((key) => key + 1);
       } else if (outcome.kind === "unavailable") {
         setStatus((current) => (current ? disconnected(current) : current));
@@ -886,34 +851,6 @@ export default function App() {
       setBusy(false);
     }
   }, []);
-
-  const undoPlacement = useCallback(async () => {
-    if (pendingUndo === null) return;
-    setBusy(true);
-    setNotice(null);
-    try {
-      const removed = await platform.undoPlacement(
-        pendingUndo.bookId,
-        pendingUndo.shelfId,
-      );
-      setPendingUndo(null);
-      setReloadKey((key) => key + 1);
-      setNotice(
-        removed
-          ? "Removed from the library — the file stays in your folder"
-          : "That shelf has changed, so nothing was removed.",
-      );
-    } catch (error) {
-      setPendingUndo(null);
-      setNotice(
-        isApiError(error)
-          ? error.message
-          : "The placement could not be undone. Please try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }, [pendingUndo]);
 
   const saveCapacity = useCallback(async (capacity: number) => {
     setBusy(true);
@@ -1013,9 +950,6 @@ export default function App() {
       <LibraryWall
         reloadKey={reloadKey}
         notice={notice}
-        undo={pendingUndo}
-        busy={busy}
-        onUndo={undoPlacement}
         onAddBooks={chooseFolder}
         onFindBook={() => setView("search")}
       />

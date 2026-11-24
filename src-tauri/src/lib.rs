@@ -221,15 +221,6 @@ fn set_shelf_capacity(api: tauri::State<'_, Api>, capacity: i64) -> Result<i64, 
     api.set_shelf_capacity(capacity)
 }
 
-#[tauri::command]
-fn undo_placement(
-    api: tauri::State<'_, Api>,
-    book_id: i64,
-    shelf_id: i64,
-) -> Result<bool, ApiError> {
-    api.undo_placement(book_id, shelf_id)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
@@ -258,8 +249,7 @@ pub fn run() {
             choose_library_folder,
             rescan_library,
             get_shelf_capacity,
-            set_shelf_capacity,
-            undo_placement
+            set_shelf_capacity
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

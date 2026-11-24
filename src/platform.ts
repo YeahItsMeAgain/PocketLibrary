@@ -113,7 +113,6 @@ export interface Platform {
   rescanLibrary(): Promise<ScanReport>;
   getShelfCapacity(): Promise<number>;
   setShelfCapacity(capacity: number): Promise<number>;
-  undoPlacement(bookId: number, shelfId: number): Promise<boolean>;
 }
 
 export type Invoke = typeof invoke;
@@ -136,8 +135,6 @@ export function createTauriPlatform(call: Invoke): Platform {
     getShelfCapacity: () => call<number>("get_shelf_capacity"),
     setShelfCapacity: (capacity) =>
       call<number>("set_shelf_capacity", { capacity }),
-    undoPlacement: (bookId, shelfId) =>
-      call<boolean>("undo_placement", { bookId, shelfId }),
   };
 }
 
@@ -278,19 +275,6 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       capacity = next;
       shelves = shelves.map((shelf) => ({ ...shelf, capacity: next }));
       return capacity;
-    },
-    undoPlacement: async (bookId, shelfId) => {
-      const book = books.find((candidate) => candidate.id === bookId);
-      if (!book || book.shelfId !== shelfId) return false;
-      const shelf = shelves.find((candidate) => candidate.id === shelfId);
-      if (!shelf || shelf.ordinal === 0) return false;
-      if (shelf.ordinal !== Math.max(...shelves.map((item) => item.ordinal))) {
-        return false;
-      }
-      if (booksOnShelf(shelfId).length !== 1) return false;
-      books = books.filter((candidate) => candidate.id !== bookId);
-      shelves = shelves.filter((candidate) => candidate.id !== shelfId);
-      return true;
     },
   };
 }

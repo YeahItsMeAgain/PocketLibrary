@@ -37,36 +37,6 @@ async function seed(page: Parameters<typeof test>[0]["page"], config: MockConfig
   await page.goto("/");
 }
 
-test("a new shelf offers undo and the undo removes the book and shelf", async ({
-  page,
-}) => {
-  const first = mockBook(1, "The First Volume", 1, 0);
-  const added = mockBook(0, "The Arrival", 0, 0);
-
-  await seed(page, {
-    state: "ready",
-    folderName: "PocketLibrary",
-    books: [first],
-    shelfCapacity: 1,
-    scanAdds: [added],
-  });
-
-  await expect(page.getByTestId("spine")).toHaveCount(2);
-  await expect(page.getByTestId("shelf")).toHaveCount(2);
-  const notice = page.getByTestId("undo-notice");
-  await expect(notice).toBeVisible();
-  await expect(notice).toContainText("A new shelf was added");
-
-  await page.getByTestId("undo-placement").click();
-
-  await expect(page.getByTestId("undo-notice")).toHaveCount(0);
-  await expect(page.getByTestId("spine")).toHaveCount(1);
-  await expect(page.getByTestId("shelf")).toHaveCount(1);
-  await expect(page.getByTestId("library-notice")).toHaveText(
-    "Removed from the library — the file stays in your folder",
-  );
-});
-
 test("the wall and settings expose no shelf management controls", async ({
   page,
 }) => {

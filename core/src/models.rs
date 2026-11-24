@@ -211,7 +211,7 @@ pub struct Shelf {
     pub capacity: i64,
 }
 
-/// Where one newly imported book landed, for the wall's undo notice.
+/// Where one newly imported book landed, so append behavior can be observed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Placement {

@@ -751,34 +751,6 @@ button:focus-visible {
   margin-top: 0;
 }
 
-.undo-notice {
-  position: sticky;
-  z-index: 80;
-  bottom: max(14px, env(safe-area-inset-bottom));
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  max-width: 420px;
-  margin: 22px auto 0;
-  padding: 12px 14px;
-  border: 1px solid rgba(201, 168, 106, 0.5);
-  background: rgba(19, 11, 24, 0.97);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
-}
-
-.undo-notice p {
-  flex: 1;
-  margin: 0;
-  color: #d9c39a;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.undo-notice .undo-action {
-  flex: 0 0 auto;
-  margin-top: 0;
-}
-
 .library-notice {
   max-width: 420px;
   margin: 14px auto 0 !important;
