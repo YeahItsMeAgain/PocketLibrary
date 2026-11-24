@@ -25,6 +25,8 @@ import {
   type ScanReport,
   type Shelf,
 } from "./platform";
+import EpubReader from "./reader/EpubReader";
+import { loadReaderSettings, saveReaderSettings } from "./reader/settings";
 import "./App.css";
 
 const ROMAN_MARKS = [
@@ -217,6 +219,7 @@ function ShelfCase({
 interface DetailPanelProps {
   bookId: number;
   onClose: () => void;
+  onRead: (book: Book) => void;
   onBookChanged: (patch: {
     id: number;
     readingStatus?: ReadingStatus;
@@ -228,6 +231,7 @@ interface DetailPanelProps {
 function DetailPanel({
   bookId,
   onClose,
+  onRead,
   onBookChanged,
   onLabelsChanged,
 }: DetailPanelProps) {
@@ -621,7 +625,10 @@ function DetailPanel({
                   type="button"
                   className="primary-action"
                   data-testid="detail-read"
-                  onClick={() => setReaderNotice(true)}
+                  onClick={() => {
+                    if (detail.format === "epub") onRead(detail);
+                    else setReaderNotice(true);
+                  }}
                 >
                   {readLabel}
                 </button>
@@ -636,7 +643,7 @@ function DetailPanel({
               </div>
               {readerNotice ? (
                 <p className="detail-note" role="status">
-                  The reading room opens in the next chapter.
+                  The PDF reading room opens in a later chapter.
                 </p>
               ) : null}
             </div>
@@ -1151,6 +1158,7 @@ function LibraryWall({
   const [showLabelManager, setShowLabelManager] = useState(false);
   const [failed, setFailed] = useState(false);
   const [openBookId, setOpenBookId] = useState<number | null>(null);
+  const [readerBook, setReaderBook] = useState<Book | null>(null);
   const [preview, setPreview] = useState<DragPreview | null>(null);
   const [lift, setLift] = useState<LiftVisual | null>(null);
   const [moveNotice, setMoveNotice] = useState<string | null>(null);
@@ -1785,8 +1793,21 @@ function LibraryWall({
         <DetailPanel
           bookId={openBookId}
           onClose={closeDetail}
+          onRead={(book) => {
+            setReaderBook(book);
+            setOpenBookId(null);
+          }}
           onBookChanged={updateBook}
           onLabelsChanged={refreshLabels}
+        />
+      ) : null}
+      {readerBook ? (
+        <EpubReader
+          book={readerBook}
+          onClose={() => {
+            setReaderBook(null);
+            void refreshWallData();
+          }}
         />
       ) : null}
       {showLabelManager ? (
@@ -1960,10 +1981,18 @@ function SettingsView({
 }: SettingsViewProps) {
   const reachable = status.state === "ready";
   const [draftCapacity, setDraftCapacity] = useState("");
+  const [readerMode, setReaderMode] = useState(
+    () => loadReaderSettings().mode,
+  );
 
   useEffect(() => {
     if (shelfCapacity !== null) setDraftCapacity(String(shelfCapacity));
   }, [shelfCapacity]);
+
+  const chooseReaderMode = useCallback((mode: "paginated" | "scrolled") => {
+    setReaderMode(mode);
+    saveReaderSettings({ ...loadReaderSettings(), mode });
+  }, []);
 
   const parsedCapacity = Number(draftCapacity);
   const capacityValid =
@@ -1989,6 +2018,27 @@ function SettingsView({
                 : status.state === "disconnected"
                   ? "Needs reconnecting"
                   : "Not granted"}
+            </dd>
+          </div>
+          <div className="setting-row">
+            <dt>Reader pages</dt>
+            <dd className="setting-choice">
+              <button
+                type="button"
+                data-testid="settings-reader-paginated"
+                aria-pressed={readerMode === "paginated"}
+                onClick={() => chooseReaderMode("paginated")}
+              >
+                Paginated
+              </button>
+              <button
+                type="button"
+                data-testid="settings-reader-scrolled"
+                aria-pressed={readerMode === "scrolled"}
+                onClick={() => chooseReaderMode("scrolled")}
+              >
+                Scroll
+              </button>
             </dd>
           </div>
         </dl>

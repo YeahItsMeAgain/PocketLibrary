@@ -20,10 +20,21 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [{ name: "chromium" }],
-  webServer: {
-    command: "npm run dev",
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "npm run dev",
+      url: baseURL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      // The built app carries the production CSP meta tag; the dev server
+      // needs 'unsafe-inline' for React refresh. The CSP spec runs here.
+      command:
+        "npm run build && npm run preview -- --port 1421 --strictPort",
+      url: "http://localhost:1421",
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+  ],
 });
