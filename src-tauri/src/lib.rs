@@ -1,41 +1,25 @@
-//! Tauri shell around the PocketLibrary core catalogue.
+//! Tauri shell around the PocketLibrary core catalog.
 //!
-//! The commands here are thin wrappers over `pocketlibrary_core::Service`; the
-//! web UI reaches them only through the typed platform adapter.
+//! The commands here are thin wrappers over `pocketlibrary_core::Api`; the web
+//! UI reaches them only through the typed platform adapter.
 
 use tauri::Manager;
 
-use pocketlibrary_core::{AppInfo, Book, Service, Shelf};
+use pocketlibrary_core::{Api, ApiError, AppInfo, Book, Shelf};
 
-/// A serialisable error envelope. Commands never return bare strings.
-#[derive(Debug, serde::Serialize)]
-struct CommandError {
-    code: &'static str,
-    message: String,
-}
-
-impl From<pocketlibrary_core::Error> for CommandError {
-    fn from(error: pocketlibrary_core::Error) -> Self {
-        Self {
-            code: "catalogue",
-            message: error.to_string(),
-        }
-    }
+#[tauri::command]
+fn app_info(api: tauri::State<'_, Api>) -> Result<AppInfo, ApiError> {
+    api.app_info()
 }
 
 #[tauri::command]
-fn app_info(service: tauri::State<'_, Service>) -> Result<AppInfo, CommandError> {
-    service.app_info().map_err(Into::into)
+fn list_books(api: tauri::State<'_, Api>) -> Result<Vec<Book>, ApiError> {
+    api.list_books()
 }
 
 #[tauri::command]
-fn list_books(service: tauri::State<'_, Service>) -> Result<Vec<Book>, CommandError> {
-    service.list_books().map_err(Into::into)
-}
-
-#[tauri::command]
-fn list_shelves(service: tauri::State<'_, Service>) -> Result<Vec<Shelf>, CommandError> {
-    service.list_shelves().map_err(Into::into)
+fn list_shelves(api: tauri::State<'_, Api>) -> Result<Vec<Shelf>, ApiError> {
+    api.list_shelves()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -44,8 +28,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
-            let service = Service::open(data_dir.join("library.db"))?;
-            app.manage(service);
+            let api = Api::open(data_dir.join("library.db"))?;
+            app.manage(api);
             Ok(())
         });
 
