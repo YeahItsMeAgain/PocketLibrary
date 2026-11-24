@@ -5,6 +5,8 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "opener:default"
+    "opener:default",
+    "android-fs:default",
+    "android-fs:allow-write-text-file"
   ]
 }

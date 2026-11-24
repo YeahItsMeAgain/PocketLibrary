@@ -1,0 +1,117 @@
+/* Plain diagnostic styling for the storage spike. No product design here. */
+.spike {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #111;
+  background: #fff;
+}
+
+.spike h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.25rem;
+}
+
+.spike-note {
+  margin: 0 0 1rem;
+  color: #555;
+}
+
+.spike-status {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.6rem;
+  margin-bottom: 0.75rem;
+  overflow-wrap: anywhere;
+  background: #f7f7f7;
+}
+
+.spike-status > div + div {
+  margin-top: 0.2rem;
+}
+
+.spike-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.spike-buttons button,
+.spike-log-head button {
+  font: inherit;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #888;
+  border-radius: 4px;
+  background: #fafafa;
+  color: #111;
+}
+
+.spike-buttons button:active,
+.spike-log-head button:active {
+  background: #e6e6e6;
+}
+
+.spike-buttons button:disabled,
+.spike-log-head button:disabled {
+  opacity: 0.55;
+}
+
+.spike-busy {
+  color: #7a4b00;
+  margin: 0 0 0.75rem;
+}
+
+.spike-log {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.spike-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.spike-log-head button {
+  padding: 0.25rem 0.5rem;
+  font-size: 12px;
+}
+
+.spike-log ol {
+  margin: 0;
+  padding-left: 1.3rem;
+}
+
+.spike-log li {
+  margin: 0.2rem 0;
+  overflow-wrap: anywhere;
+}
+
+.spike-log .kind-ok {
+  color: #0a6b25;
+}
+
+.spike-log .kind-warn {
+  color: #8a5a00;
+}
+
+.spike-log .kind-error {
+  color: #a31616;
+  font-weight: 600;
+}
+
+.spike-empty {
+  margin: 0;
+  color: #666;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
