@@ -96,9 +96,13 @@ Put the edit immediately after `tauri android init` and before the first build.
 source scripts/android-env.sh
 npm install                     # if node_modules is missing
 npm run tauri android init -- --ci
-# re-apply the compileSdk/targetSdk 36 edit from section 2
-npm run tauri android build -- --apk --target aarch64 --debug --ci
+# re-apply the compileSdk/targetSdk 36 edit from section 2, plus the release
+# signing config from section 6
+npm run tauri android build -- --apk --target aarch64 --ci
 ```
+
+Release is the default build. Add `--debug` only when you specifically need a
+debuggable APK.
 
 `init` also installs the armv7/i686/x86_64 Rust targets; that is expected. Only
 `aarch64` is needed for a phone build.
@@ -109,49 +113,70 @@ the end.
 
 ## 4. APK output
 
-Debug, arm64 only:
+Release, arm64 only (the default):
+
+```
+src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+```
+
+Release builds are minified and signed with the release key, so they are
+roughly 10–20 MB. Use `--split-per-abi` if you want per-ABI release APKs.
+
+Debug output, only with `--debug`:
 
 ```
 src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
 ```
 
-Verified artifact (2026-11-24, walking-skeleton build with the core catalog
-and bundled SQLite):
-
-- size: **300,318,672 bytes (286 MiB)** — debug builds keep Rust symbols (the
-  `.so` alone is ~165 MB) and are stored uncompressed in the APK, so this is
-  much larger than a release build
-- `native-code: 'arm64-v8a'`
-- `package: app.pocketlibrary`, `versionCode 1000`, `versionName 0.1.0`
-- `minSdkVersion 24`, `targetSdkVersion 36`
-- signed with the Android debug key (`CN=Android Debug`)
-
-Release output, when built without `--debug`, is placed under
-`src-tauri/gen/android/app/build/outputs/apk/universal/release/`; use
-`--split-per-abi` if you want per-ABI release APKs.
+A verified debug artifact (2026-11-24) was **300,318,672 bytes (286 MiB)**:
+debug builds keep Rust symbols (the `.so` alone is ~165 MB) and store native
+libraries uncompressed. Both variants report `native-code: 'arm64-v8a'`,
+`package: app.pocketlibrary`, `minSdkVersion 24`, `targetSdkVersion 36`; the
+debug APK is signed with the Android debug key (`CN=Android Debug`).
 
 ## 5. Verification
 
 ```bash
 source scripts/android-env.sh
-APK=src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+APK=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 
 "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK"
 "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | head -20
 sha256sum "$APK"
 ```
 
-For the verified debug APK, `apksigner` reported:
+A correctly signed release APK reports the release certificate
+(`CN=PocketLibrary, O=Personal, C=US`), **not** `CN=Android Debug`. The exact
+certificate digest and APK SHA-256 are printed by the commands above; re-check
+them after each build rather than trusting a stale value.
 
-```
-Signer #1 certificate DN: C=US, O=Android, CN=Android Debug
-Signer #1 certificate SHA-256 digest: c9612c660f5ea8abeb58d2e9b335edc7951e0513f79d4758c4a1171782d86691
-```
-
-SHA-256 of `app-universal-debug.apk`:
+The verified debug APK reported `Signer #1 certificate DN: C=US, O=Android,
+CN=Android Debug`, SHA-256 digest
+`c9612c660f5ea8abeb58d2e9b335edc7951e0513f79d4758c4a1171782d86691`; its APK
+SHA-256 was
 `10303dad7f2b40704c08e0f4abdedf26f97981bf40452a59075618e6c415c144`.
 
 ## 6. Release signing
+
+The release build is signed from environment variables read by
+`src-tauri/gen/android/app/build.gradle.kts`:
+
+| Variable | Purpose |
+|---|---|
+| `POCKETLIBRARY_KEYSTORE` | Absolute path to the keystore |
+| `POCKETLIBRARY_KEYSTORE_PASS` | Store/key password (PKCS12 uses one password) |
+| `POCKETLIBRARY_KEY_ALIAS` | Key alias, defaults to `pocketlibrary` |
+
+`scripts/android-env.sh` exports the first two automatically when the defaults
+below exist, so the normal workflow is just:
+
+```bash
+source scripts/android-env.sh
+npm run tauri android build -- --apk --target aarch64 --ci
+```
+
+A release build with the variables missing fails at Gradle configuration time
+instead of producing an unsigned APK. Debug builds do not need them.
 
 The release keystore already exists:
 
@@ -159,8 +184,13 @@ The release keystore already exists:
   alias `pocketlibrary`, 10,000 days, mode 600)
 - password: `$HOME/.android-keys/pocketlibrary.pass` (mode 600)
 
-These are outside the repo and must never be committed. To regenerate from
-scratch (this replaces the key, so existing installs must be uninstalled):
+These are outside the repo and must never be committed. The release certificate
+is **not** the debug certificate, so a release APK cannot be installed over a
+debug install: uninstall the debug app first (`adb uninstall app.pocketlibrary`,
+or uninstall from the phone's app settings) before sideloading the release APK.
+
+To regenerate from scratch (this replaces the key, so existing installs must be
+uninstalled, and future builds need re-signing):
 
 ```bash
 mkdir -p "$HOME/.android-keys" && chmod 700 "$HOME/.android-keys"
@@ -177,76 +207,18 @@ keytool -genkeypair -v \
 chmod 600 "$HOME/.android-keys/pocketlibrary-release.jks"
 ```
 
-### Option A — wire signing into Gradle (Tauri's recommended path)
+### Re-applying after `tauri android init`
 
-Create `src-tauri/gen/android/keystore.properties` (already gitignored):
+The signing config lives in `src-tauri/gen/android/app/build.gradle.kts`.
+`tauri android init` regenerates the whole `gen/android` tree and overwrites it,
+so after any re-init you must re-apply:
 
-```properties
-storeFile=$HOME/.android-keys/pocketlibrary-release.jks
-storePassword=<contents of pocketlibrary.pass>
-keyAlias=pocketlibrary
-keyPassword=<contents of pocketlibrary.pass>
-```
+1. the `compileSdk`/`targetSdk` 36 edit from section 2, and
+2. the environment-driven `signingConfigs`/`buildTypes.release` block from this
+   section (or copy the file back from git).
 
-Then add to `src-tauri/gen/android/app/build.gradle.kts`:
-
-```kotlin
-import java.io.FileInputStream
-import java.util.Properties
-
-val keystoreProperties = Properties().apply {
-    val file = rootProject.file("keystore.properties")
-    if (file.exists()) file.inputStream().use { load(it) }
-}
-
-android {
-    signingConfigs {
-        create("release") {
-            if (keystoreProperties.getProperty("storeFile") != null) {
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-            }
-        }
-    }
-    buildTypes {
-        getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
-        }
-    }
-}
-```
-
-Build:
-
-```bash
-npm run tauri android build -- --apk --target aarch64 --ci
-```
-
-### Option B — sign an unsigned APK manually
-
-Use this if you prefer not to edit Gradle. Build a release APK, then align and
-sign the unsigned output:
-
-```bash
-BT="$ANDROID_HOME/build-tools/36.0.0"
-PASS=$(cat "$HOME/.android-keys/pocketlibrary.pass")
-UNSIGNED=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
-
-"$BT/zipalign" -v -p 4 "$UNSIGNED" /tmp/pocketlibrary-aligned.apk
-"$BT/apksigner" sign \
-  --ks "$HOME/.android-keys/pocketlibrary-release.jks" \
-  --ks-key-alias pocketlibrary \
-  --ks-pass "pass:$PASS" \
-  --key-pass "pass:$PASS" \
-  --out /tmp/pocketlibrary-release.apk \
-  /tmp/pocketlibrary-aligned.apk
-"$BT/apksigner" verify --print-certs /tmp/pocketlibrary-release.apk
-```
-
-A release build is not produced by the default workflow yet; run it deliberately
-after the debug build is green.
+The same applies to the `optimization`/ProGuard settings in that file. The
+keystore itself is outside the repo and unaffected by re-init.
 
 ### Version codes
 
@@ -276,7 +248,7 @@ cargo test --manifest-path core/Cargo.toml   # headless catalog tests
 npm run build              # tsc && vite build
 npm run test:e2e           # Playwright smoke
 cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android --all-targets -- -D warnings
-npm run tauri android build -- --apk --target aarch64 --debug --ci
+npm run tauri android build -- --apk --target aarch64 --ci
 ```
 
 `source scripts/android-env.sh` first: it now exports the NDK C compiler for

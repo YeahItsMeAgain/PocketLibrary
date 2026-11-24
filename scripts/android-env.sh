@@ -28,6 +28,21 @@ export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${CARGO_TARGET_AARCH64_LINUX_A
 
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
+# Release signing. The keystore and password live outside the repo (see
+# docs/build.md). Export them only when both exist so this file stays safe to
+# source in a fresh shell; the password is read, never printed.
+POCKETLIBRARY_KEYSTORE="${POCKETLIBRARY_KEYSTORE:-$HOME/.android-keys/pocketlibrary-release.jks}"
+POCKETLIBRARY_KEYSTORE_PASS_FILE="${POCKETLIBRARY_KEYSTORE_PASS_FILE:-$HOME/.android-keys/pocketlibrary.pass}"
+
+if [[ -f "$POCKETLIBRARY_KEYSTORE" && -r "$POCKETLIBRARY_KEYSTORE_PASS_FILE" ]]; then
+  POCKETLIBRARY_KEY_ALIAS="${POCKETLIBRARY_KEY_ALIAS:-pocketlibrary}"
+  POCKETLIBRARY_KEYSTORE_PASS="$(<"$POCKETLIBRARY_KEYSTORE_PASS_FILE")"
+  export POCKETLIBRARY_KEYSTORE POCKETLIBRARY_KEYSTORE_PASS POCKETLIBRARY_KEY_ALIAS
+  unset POCKETLIBRARY_KEYSTORE_PASS_FILE
+else
+  unset POCKETLIBRARY_KEYSTORE POCKETLIBRARY_KEYSTORE_PASS_FILE
+fi
+
 # The Rust Android targets are installed by `tauri android init` (aarch64 is
 # the only one needed for a phone APK). To install manually:
 #   rustup target add aarch64-linux-android

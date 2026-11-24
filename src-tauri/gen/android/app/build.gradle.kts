@@ -14,6 +14,26 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// Release signing is driven by the environment so no secret ever lives in the
+// repo. `scripts/android-env.sh` exports these when the keystore and pass file
+// exist. Fail loudly on a release build rather than producing an unsigned APK.
+val releaseKeystorePath = System.getenv("POCKETLIBRARY_KEYSTORE")
+val releaseKeystorePassword = System.getenv("POCKETLIBRARY_KEYSTORE_PASS")
+val releaseKeyAlias = System.getenv("POCKETLIBRARY_KEY_ALIAS") ?: "pocketlibrary"
+
+val missingReleaseSigning = buildList {
+    if (releaseKeystorePath.isNullOrBlank()) add("POCKETLIBRARY_KEYSTORE")
+    if (releaseKeystorePassword.isNullOrBlank()) add("POCKETLIBRARY_KEYSTORE_PASS")
+}
+val releaseSigningReady = missingReleaseSigning.isEmpty()
+val buildingRelease = gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }
+if (buildingRelease && !releaseSigningReady) {
+    throw GradleException(
+        "Release signing is not configured: missing ${missingReleaseSigning.joinToString(", ")}. " +
+            "Run `source scripts/android-env.sh` first, or export the variables manually."
+    )
+}
+
 android {
     // SDK 37 is not yet offered by this machine's sdkmanager; 36 is supported by AGP 9.x.
     compileSdk = 36
@@ -25,6 +45,16 @@ android {
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    signingConfigs {
+        if (releaseSigningReady) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseKeystorePassword!!
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeystorePassword!!
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -40,6 +70,9 @@ android {
             }
         }
         getByName("release") {
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                enable = true
             }
