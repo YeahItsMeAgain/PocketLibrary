@@ -30,6 +30,7 @@ A complete, buildable spec plus a full ticket graph for PocketLibrary — an And
 
 ## Decisions so far
 
+- [13 — Shelf performance](issues/13-shelf-performance.md): DOM-per-spine with `content-visibility: auto` per shelf (no JS windowing, no canvas/WebGL in v1); arithmetic drag lookups instead of DOM geometry reads; `preserve-3d` only on the detail; targets and a four-step fallback ladder.
 - [10 — Android storage spike](issues/10-android-storage-spike.md): `tauri-plugin-android-fs` 30.2.0 proven on a real phone — pick/persist survives relaunch, recursive scan works (36 ms for one file), SAF fd read (1,904 B, EPUB magic, matching SHA-256), write/read, clear grant; 2,000-file scan still unmeasured.
 - [12 — Backup and external-reader handoff](issues/12-backup-external-reader.md): versioned `.pocketlibrary` zip of metadata (not books) via the system file picker; merge-by-hash import with an explicit replace path; explicit export plus optional OS auto-backup; external reader via content URI with no false position sync.
 - [11 — Acquisition experience](issues/11-acquisition-ux.md): Libgen-only and fully in-app; client-side filters on 25-per-page HTML results; optional non-blocking Open Library enrichment; two-concurrent persisted queue with Range resume; md5 pre-check and BLAKE3 post-check for duplicates; `Author - Title (Year)` naming; automatic mirror failover; no Anna's Archive.
