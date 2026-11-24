@@ -21,7 +21,6 @@ export interface Book {
   id: number;
   contentHash: string;
   quickKey: string | null;
-  path: string;
   format: BookFormat;
   title: string;
   authors: string[];
@@ -31,7 +30,6 @@ export interface Book {
   publisher: string | null;
   publishedDate: string | null;
   identifier: string | null;
-  coverPath: string | null;
   addedAt: number;
   shelfId: number | null;
   slotIndex: number | null;
@@ -50,11 +48,20 @@ export interface Platform {
   listShelves(): Promise<Shelf[]>;
 }
 
-const tauriPlatform: Platform = {
-  appInfo: () => invoke<AppInfo>("app_info"),
-  listBooks: () => invoke<Book[]>("list_books"),
-  listShelves: () => invoke<Shelf[]>("list_shelves"),
-};
+export type Invoke = typeof invoke;
+
+/**
+ * Build the Tauri adapter around an invoke function.
+ *
+ * Injecting the function lets tests drive the real adapter without a device.
+ */
+export function createTauriPlatform(call: Invoke): Platform {
+  return {
+    appInfo: () => call<AppInfo>("app_info"),
+    listBooks: () => call<Book[]>("list_books"),
+    listShelves: () => call<Shelf[]>("list_shelves"),
+  };
+}
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
@@ -62,10 +69,13 @@ export const MOCK_APP_INFO: AppInfo = {
   schemaVersion: 1,
 };
 
+/** Mirrors the one shelf seeded by migration v1 on a fresh database. */
+const MOCK_SHELVES: Shelf[] = [{ id: 1, ordinal: 0, capacity: 12 }];
+
 const mockPlatform: Platform = {
   appInfo: async () => MOCK_APP_INFO,
   listBooks: async () => [],
-  listShelves: async () => [],
+  listShelves: async () => MOCK_SHELVES,
 };
 
 function runningInTauri(): boolean {
@@ -73,8 +83,8 @@ function runningInTauri(): boolean {
   return isTauri() || "__TAURI_INTERNALS__" in window;
 }
 
-export function createPlatform(): Platform {
-  return runningInTauri() ? tauriPlatform : mockPlatform;
+export function createPlatform(call: Invoke = invoke): Platform {
+  return runningInTauri() ? createTauriPlatform(call) : mockPlatform;
 }
 
 /** The platform the app is running against. */
