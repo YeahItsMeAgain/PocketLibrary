@@ -68,6 +68,30 @@ pub enum Error {
 
     #[error("Libgen mirror {mirror} returned an unrecognised page")]
     MirrorFormatChanged { mirror: String },
+
+    #[error("the download mirror failed: {message}")]
+    DownloadMirrorFailed { message: String },
+
+    #[error("the download key expired")]
+    DownloadExpiredKey,
+
+    #[error("the downloaded file was truncated")]
+    DownloadTruncated,
+
+    #[error("the downloaded file is not a valid {format}")]
+    DownloadWrongMagic { format: String },
+
+    #[error("the downloaded file could not be written: {message}")]
+    DownloadDisk { message: String },
+
+    #[error("this file is already in the library")]
+    DownloadDuplicate { book_id: i64 },
+
+    #[error("download {id} does not exist")]
+    DownloadNotFound { id: i64 },
+
+    #[error("the downloaded file could not be read as a book")]
+    DownloadInvalidBook,
 }
 
 impl Error {
@@ -93,6 +117,14 @@ impl Error {
             Self::Offline => "offline",
             Self::AllMirrorsFailed { .. } => "all_mirrors_failed",
             Self::MirrorFormatChanged { .. } => "mirror_format_changed",
+            Self::DownloadMirrorFailed { .. } => "mirror_failed",
+            Self::DownloadExpiredKey => "expired_key",
+            Self::DownloadTruncated => "truncated_file",
+            Self::DownloadWrongMagic { .. } => "wrong_magic",
+            Self::DownloadDisk { .. } => "disk",
+            Self::DownloadDuplicate { .. } => "duplicate",
+            Self::DownloadNotFound { .. } => "download_not_found",
+            Self::DownloadInvalidBook => "invalid_book",
         }
     }
 
@@ -127,6 +159,26 @@ impl Error {
             }
             Self::MirrorFormatChanged { .. } => {
                 "A Libgen mirror answered, but its results could not be read."
+            }
+            Self::DownloadMirrorFailed { .. } => {
+                "The download mirror refused or timed out. Try again."
+            }
+            Self::DownloadExpiredKey => {
+                "The download key expired. Try again to mint a fresh one."
+            }
+            Self::DownloadTruncated => {
+                "The file arrived incomplete. Retry to resume where it stopped."
+            }
+            Self::DownloadWrongMagic { .. } => {
+                "The mirror sent a file that is not the requested book."
+            }
+            Self::DownloadDisk { .. } => {
+                "The book could not be written to the library folder."
+            }
+            Self::DownloadDuplicate { .. } => "That book is already in your library.",
+            Self::DownloadNotFound { .. } => "That download could not be found.",
+            Self::DownloadInvalidBook => {
+                "The downloaded file could not be read as a book."
             }
         }
     }

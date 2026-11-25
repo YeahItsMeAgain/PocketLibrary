@@ -2,7 +2,8 @@
 //!
 //! The provider is deliberately separate from the catalog: it never writes to
 //! SQLite, and the UI reaches it through the same command API as everything
-//! else. Downloads are ticket 11; this module only resolves search results.
+//! else. The download queue lives in `crate::download`; this module only
+//! resolves search results.
 
 mod mirror;
 mod parse;

@@ -6,6 +6,7 @@
 pub mod acquisition;
 mod api;
 mod cover;
+mod download;
 mod error;
 mod identity;
 mod metadata;
@@ -18,17 +19,18 @@ pub use acquisition::{
     LibgenProvider, LibgenResult, MirrorHealth, MirrorLink, PAGE_SIZE, SearchPage, SearchQuery,
 };
 pub use api::Api;
+pub use download::{DownloadManager, DownloadSink, proposed_filename, unique_filename};
 pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
 pub use models::{
-    AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Label, LabelUsage, LibraryState,
-    LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport,
-    Shelf,
+    AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Download, DownloadRequest,
+    DownloadState, Label, LabelUsage, Landing, LibraryState, LibraryStatus, Placement, ReadingState,
+    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 
 /// The schema version this build knows how to create and read.
-pub const SCHEMA_VERSION: i64 = 2;
+pub const SCHEMA_VERSION: i64 = 3;
 
 /// User-facing application name.
 pub const APP_NAME: &str = "PocketLibrary";

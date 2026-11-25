@@ -302,3 +302,107 @@ pub struct LibraryStatus {
     /// Display name only; the URI never crosses the wire.
     pub folder_name: Option<String>,
 }
+
+
+/// A persisted download queue item. The queue survives relaunch; a row that was
+/// running when the app stopped is recovered to `queued` and resumed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DownloadState {
+    Queued,
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+impl DownloadState {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Queued => "queued",
+            Self::Running => "running",
+            Self::Completed => "completed",
+            Self::Failed => "failed",
+            Self::Cancelled => "cancelled",
+        }
+    }
+}
+
+impl ToSql for DownloadState {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+impl FromSql for DownloadState {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        match value.as_str()? {
+            "queued" => Ok(Self::Queued),
+            "running" => Ok(Self::Running),
+            "completed" => Ok(Self::Completed),
+            "failed" => Ok(Self::Failed),
+            "cancelled" => Ok(Self::Cancelled),
+            other => Err(FromSqlError::Other(
+                format!("unknown download state: {other}").into(),
+            )),
+        }
+    }
+}
+
+/// What the search result hands to the queue. Mirrors are the `ads.php` links
+/// printed on the result; the resolver follows them to the CDN.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadRequest {
+    pub md5: String,
+    pub title: String,
+    #[serde(default)]
+    pub authors: Vec<String>,
+    #[serde(default)]
+    pub year: Option<u16>,
+    pub format: BookFormat,
+    #[serde(default)]
+    pub source: String,
+    /// The `ads.php` mirror URLs, in the order printed by the result.
+    #[serde(default)]
+    pub mirror_urls: Vec<String>,
+}
+
+/// One download row as exposed to the UI.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Download {
+    pub id: i64,
+    pub md5: String,
+    pub title: String,
+    pub authors: Vec<String>,
+    pub year: Option<u16>,
+    pub format: BookFormat,
+    pub source: String,
+    /// Mirror URLs the resolver should try, in order. Kept for retry/resume.
+    pub mirror_urls: Vec<String>,
+    pub state: DownloadState,
+    pub bytes: u64,
+    pub total_bytes: Option<u64>,
+    pub error: Option<String>,
+    /// Stable reason code for a failure or a duplicate completion.
+    pub error_code: Option<String>,
+    /// The existing or newly landed book, when the download reached one.
+    pub book_id: Option<i64>,
+    pub filename: Option<String>,
+    pub created_at: i64,
+    pub finished_at: Option<i64>,
+}
+
+/// Where a downloaded file landed, or which existing book it matched.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Landing {
+    Added {
+        book_id: i64,
+        shelf_id: i64,
+        shelf_ordinal: i64,
+    },
+    Duplicate {
+        book_id: i64,
+    },
+}

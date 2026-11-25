@@ -17,7 +17,6 @@ fn fresh_database_migrates_to_the_current_schema() {
     let info = api.app_info().expect("app info");
 
     assert_eq!(info.schema_version, SCHEMA_VERSION);
-    assert_eq!(info.schema_version, 2);
 }
 
 #[test]
@@ -155,7 +154,7 @@ fn migrating_a_version_one_library_resets_books_but_keeps_shelves_labels_and_set
     }
 
     let api = Api::open(&path).expect("migrate v1 catalog");
-    assert_eq!(api.app_info().expect("app info").schema_version, 2);
+    assert_eq!(api.app_info().expect("app info").schema_version, SCHEMA_VERSION);
     assert!(
         api.list_books().expect("list books").is_empty(),
         "path-derived books are cleared for the launch scan"

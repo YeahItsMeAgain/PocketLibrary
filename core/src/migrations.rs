@@ -120,6 +120,35 @@ INSERT INTO settings (key, value, updated_at)
 VALUES ('shelf_capacity', '12', unixepoch());
 "#;
 
+/// Ticket 11 rebuilds the provisional downloads table with the queue fields the
+/// resolver and UI need. Pre-M2 rows had no history worth keeping.
+const MIGRATE_V2_TO_V3: &str = r#"
+DROP TABLE IF EXISTS downloads;
+CREATE TABLE downloads (
+    id          INTEGER PRIMARY KEY,
+    md5         TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    authors     TEXT NOT NULL DEFAULT '[]',
+    year        INTEGER,
+    format      TEXT NOT NULL CHECK (format IN ('epub', 'pdf')),
+    source      TEXT NOT NULL DEFAULT '',
+    mirror_urls TEXT NOT NULL DEFAULT '[]',
+    state       TEXT NOT NULL DEFAULT 'queued'
+                CHECK (state IN ('queued', 'running', 'completed', 'failed', 'cancelled')),
+    bytes       INTEGER NOT NULL DEFAULT 0,
+    total_bytes INTEGER,
+    error       TEXT,
+    error_code  TEXT,
+    book_id     INTEGER REFERENCES books(id) ON DELETE SET NULL,
+    filename    TEXT,
+    created_at  INTEGER NOT NULL,
+    updated_at  INTEGER NOT NULL,
+    finished_at INTEGER
+);
+CREATE INDEX idx_downloads_state ON downloads (state, created_at);
+CREATE INDEX idx_downloads_md5 ON downloads (md5);
+"#;
+
 /// Pre-release reset: path-derived hashes are invalid, so dependent book data
 /// goes with the books. Labels, shelves and settings are intentionally kept.
 const MIGRATE_V1_TO_V2: &str = r#"
@@ -155,6 +184,9 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         tx.execute_batch(SCHEMA_V2)?;
     } else if version == 1 {
         tx.execute_batch(MIGRATE_V1_TO_V2)?;
+    }
+    if version < 3 {
+        tx.execute_batch(MIGRATE_V2_TO_V3)?;
     }
     tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     tx.commit()?;

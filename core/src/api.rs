@@ -5,37 +5,51 @@
 //! depends on Tauri.
 
 use std::path::Path;
+use std::sync::Arc;
 
 use crate::acquisition::{LibgenProvider, SearchPage, SearchQuery};
+use crate::download::{DownloadManager, DownloadSink};
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
-    AppInfo, Book, BookDetail, Bookmark, Label, LabelUsage, LibraryStatus, ReadingState,
-    ReadingStatus, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest, Label, LabelUsage, LibraryStatus,
+    ReadingState, ReadingStatus, ScanReport, Shelf,
 };
 use crate::service::Service;
 use crate::source::FileSource;
 
 /// Handle to the catalog command API.
 pub struct Api {
-    service: Service,
+    service: Arc<Service>,
     acquisition: LibgenProvider,
+    downloads: DownloadManager,
 }
 
 impl Api {
     /// Open (creating if needed) the catalog database at `path`.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        Ok(Self {
-            service: Service::open(path)?,
-            acquisition: LibgenProvider::new()?,
-        })
+        let path = path.as_ref();
+        Self::build(path, LibgenProvider::new()?)
     }
 
     /// Open with an explicit search provider. Integration tests use this to
     /// point the five mirrors at a local fake HTTP server.
     pub fn open_with_search(path: impl AsRef<Path>, acquisition: LibgenProvider) -> Result<Self> {
+        let path = path.as_ref();
+        Self::build(path, acquisition)
+    }
+
+    fn build(path: &Path, acquisition: LibgenProvider) -> Result<Self> {
+        let service = Arc::new(Service::open(path)?);
+        let temp_dir = path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."))
+            .join("downloads");
+        let downloads = DownloadManager::new(Arc::clone(&service), temp_dir)?;
         Ok(Self {
-            service: Service::open(path)?,
+            service,
             acquisition,
+            downloads,
         })
     }
 
@@ -43,6 +57,39 @@ impl Api {
     pub async fn search_libgen(&self, query: SearchQuery) -> ApiResult<SearchPage> {
         self.acquisition
             .search(&query)
+            .await
+            .map_err(ApiError::from)
+    }
+
+    /// Queue a search result for download.
+    pub fn enqueue_download(&self, request: DownloadRequest) -> ApiResult<Download> {
+        self.downloads.enqueue(request).map_err(ApiError::from)
+    }
+
+    /// Every download row, newest first.
+    pub fn list_downloads(&self) -> ApiResult<Vec<Download>> {
+        self.downloads.list().map_err(ApiError::from)
+    }
+
+    /// Cancel a queued or running download.
+    pub fn cancel_download(&self, id: i64) -> ApiResult<()> {
+        self.downloads.cancel(id).map_err(ApiError::from)
+    }
+
+    /// Put a failed or cancelled download back in the queue.
+    pub fn retry_download(&self, id: i64) -> ApiResult<Download> {
+        self.downloads.retry(id).map_err(ApiError::from)
+    }
+
+    /// Return interrupted rows to the queue before the first process run.
+    pub fn recover_downloads(&self) -> ApiResult<()> {
+        self.service.recover_downloads().map_err(ApiError::from)
+    }
+
+    /// Run the queue to completion, two files at a time.
+    pub async fn process_downloads(&self, sink: &dyn DownloadSink) -> ApiResult<()> {
+        self.downloads
+            .process(sink)
             .await
             .map_err(ApiError::from)
     }
