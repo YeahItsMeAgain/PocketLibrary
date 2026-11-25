@@ -56,6 +56,18 @@ pub enum Error {
 
     #[error("bookmark {id} does not exist")]
     BookmarkNotFound { id: i64 },
+
+    #[error("a search needs at least one term")]
+    EmptySearch,
+
+    #[error("the network is unavailable")]
+    Offline,
+
+    #[error("no Libgen mirror answered after {attempts} attempts")]
+    AllMirrorsFailed { attempts: usize },
+
+    #[error("Libgen mirror {mirror} returned an unrecognised page")]
+    MirrorFormatChanged { mirror: String },
 }
 
 impl Error {
@@ -77,6 +89,10 @@ impl Error {
             Self::InvalidLabelColour { .. } => "invalid_label_colour",
             Self::InvalidReaderLocator => "invalid_reader_locator",
             Self::BookmarkNotFound { .. } => "bookmark_not_found",
+            Self::EmptySearch => "empty_search",
+            Self::Offline => "offline",
+            Self::AllMirrorsFailed { .. } => "all_mirrors_failed",
+            Self::MirrorFormatChanged { .. } => "mirror_format_changed",
         }
     }
 
@@ -102,6 +118,16 @@ impl Error {
             Self::InvalidLabelColour { .. } => "Choose one of the printed label colours.",
             Self::InvalidReaderLocator => "The reading position could not be saved.",
             Self::BookmarkNotFound { .. } => "That bookmark could not be found.",
+            Self::EmptySearch => "Enter a title, author, ISBN or MD5 to search.",
+            Self::Offline => {
+                "No network connection. Libgen search needs a connection; your shelf is still available."
+            }
+            Self::AllMirrorsFailed { .. } => {
+                "Every Libgen mirror refused or timed out. Try again in a moment."
+            }
+            Self::MirrorFormatChanged { .. } => {
+                "A Libgen mirror answered, but its results could not be read."
+            }
         }
     }
 }

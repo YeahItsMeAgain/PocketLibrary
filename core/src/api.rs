@@ -6,6 +6,7 @@
 
 use std::path::Path;
 
+use crate::acquisition::{LibgenProvider, SearchPage, SearchQuery};
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
     AppInfo, Book, BookDetail, Bookmark, Label, LabelUsage, LibraryStatus, ReadingState,
@@ -17,6 +18,7 @@ use crate::source::FileSource;
 /// Handle to the catalog command API.
 pub struct Api {
     service: Service,
+    acquisition: LibgenProvider,
 }
 
 impl Api {
@@ -24,7 +26,25 @@ impl Api {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             service: Service::open(path)?,
+            acquisition: LibgenProvider::new()?,
         })
+    }
+
+    /// Open with an explicit search provider. Integration tests use this to
+    /// point the five mirrors at a local fake HTTP server.
+    pub fn open_with_search(path: impl AsRef<Path>, acquisition: LibgenProvider) -> Result<Self> {
+        Ok(Self {
+            service: Service::open(path)?,
+            acquisition,
+        })
+    }
+
+    /// Search Libgen through the production provider.
+    pub async fn search_libgen(&self, query: SearchQuery) -> ApiResult<SearchPage> {
+        self.acquisition
+            .search(&query)
+            .await
+            .map_err(ApiError::from)
     }
 
     /// Identity and schema information for the running app.
@@ -152,9 +172,7 @@ impl Api {
 
     /// Delete a label and its associations, touching no book.
     pub fn delete_label(&self, label_id: i64) -> ApiResult<()> {
-        self.service
-            .delete_label(label_id)
-            .map_err(ApiError::from)
+        self.service.delete_label(label_id).map_err(ApiError::from)
     }
 
     /// Attach a label to a book.

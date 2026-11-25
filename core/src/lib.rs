@@ -3,6 +3,7 @@
 //! This crate deliberately has no Tauri dependency so it can be built and
 //! tested on a headless host.
 
+pub mod acquisition;
 mod api;
 mod cover;
 mod error;
@@ -13,6 +14,9 @@ mod models;
 mod service;
 mod source;
 
+pub use acquisition::{
+    LibgenProvider, LibgenResult, MirrorHealth, MirrorLink, PAGE_SIZE, SearchPage, SearchQuery,
+};
 pub use api::Api;
 pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
