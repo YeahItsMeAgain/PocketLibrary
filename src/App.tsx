@@ -26,9 +26,16 @@ import {
   type ScanReport,
   type Shelf,
 } from "./platform";
+import { useLayerExit } from "./navigation";
 import EpubReader from "./reader/EpubReader";
 import PdfReader from "./reader/PdfReader";
-import { loadReaderSettings, saveReaderSettings } from "./reader/settings";
+import {
+  READER_SIZES,
+  READER_THEMES,
+  loadReaderSettings,
+  saveReaderSettings,
+  type ReaderTheme,
+} from "./reader/settings";
 import "./App.css";
 
 const ROMAN_MARKS = [
@@ -431,6 +438,7 @@ function DetailPanel({
   const [labelMenu, setLabelMenu] = useState(false);
   const [labelNotice, setLabelNotice] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const close = useLayerExit(true, onClose);
 
   const refreshAvailableLabels = useCallback(async () => {
     try {
@@ -547,15 +555,7 @@ function DetailPanel({
 
   useEffect(() => {
     closeRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, []);
 
   const authors =
     detail && detail.authors.length > 0
@@ -589,7 +589,7 @@ function DetailPanel({
         type="button"
         className="detail-scrim"
         aria-label="Close book detail"
-        onClick={onClose}
+        onClick={close}
       />
       <section
         className="detail d3 d4 is-open"
@@ -603,7 +603,7 @@ function DetailPanel({
           type="button"
           className="close"
           aria-label="Back to shelf"
-          onClick={onClose}
+          onClick={close}
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -615,7 +615,7 @@ function DetailPanel({
                 className="btn-back"
                 data-testid="detail-back"
                 aria-label="Back to shelf"
-                onClick={onClose}
+                onClick={close}
               >
                 <span className="arrow" aria-hidden="true">←</span>
                 <span>Back to shelf</span>
@@ -872,7 +872,7 @@ function DetailPanel({
                   type="button"
                   className="btn-return"
                   data-testid="detail-return"
-                  onClick={onClose}
+                  onClick={close}
                 >
                   Return to shelf
                 </button>
@@ -1024,6 +1024,7 @@ function ManageLabels({ onClose, onChanged }: ManageLabelsProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const close = useLayerExit(true, onClose);
 
   const refresh = useCallback(async () => {
     try {
@@ -1036,15 +1037,7 @@ function ManageLabels({ onClose, onChanged }: ManageLabelsProps) {
   useEffect(() => {
     void refresh();
     closeRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [refresh, onClose]);
+  }, [refresh]);
 
   async function run(task: () => Promise<unknown>) {
     setBusy(true);
@@ -1070,7 +1063,7 @@ function ManageLabels({ onClose, onChanged }: ManageLabelsProps) {
         type="button"
         className="detail-scrim"
         aria-label="Close label manager"
-        onClick={onClose}
+        onClick={close}
       />
       <section
         className="book-detail manage-labels"
@@ -1084,7 +1077,7 @@ function ManageLabels({ onClose, onChanged }: ManageLabelsProps) {
           type="button"
           className="detail-close"
           aria-label="Close label manager"
-          onClick={onClose}
+          onClick={close}
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -2293,6 +2286,7 @@ interface SettingsViewProps {
   onRescan: () => void;
   onChoose: () => void;
   onSetCapacity: (capacity: number) => void;
+  onBack: () => void;
 }
 
 function SettingsView({
@@ -2303,113 +2297,265 @@ function SettingsView({
   onRescan,
   onChoose,
   onSetCapacity,
+  onBack,
 }: SettingsViewProps) {
   const reachable = status.state === "ready";
   const [draftCapacity, setDraftCapacity] = useState("");
-  const [readerMode, setReaderMode] = useState(
-    () => loadReaderSettings().mode,
-  );
+  const [reader, setReader] = useState(() => loadReaderSettings());
+  const [info, setInfo] = useState<AppInfo | null>(null);
 
   useEffect(() => {
     if (shelfCapacity !== null) setDraftCapacity(String(shelfCapacity));
   }, [shelfCapacity]);
 
-  const chooseReaderMode = useCallback((mode: "paginated" | "scrolled") => {
-    setReaderMode(mode);
-    saveReaderSettings({ ...loadReaderSettings(), mode });
+  useEffect(() => {
+    let alive = true;
+    platform
+      .appInfo()
+      .then((next) => {
+        if (alive) setInfo(next);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  const updateReader = useCallback(
+    (patch: Partial<typeof reader>) => {
+      setReader((current) => {
+        const next = { ...current, ...patch };
+        saveReaderSettings(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const parsedCapacity = Number(draftCapacity);
   const capacityValid =
     Number.isInteger(parsedCapacity) && parsedCapacity >= 1;
   return (
-    <main id="library-main" className="placeholder" data-testid="settings-view">
+    <main
+      id="library-main"
+      className="placeholder settings-main"
+      data-testid="settings-view"
+    >
       <section className="placeholder-card settings-card">
+        <button
+          type="button"
+          className="settings-back"
+          data-testid="settings-back"
+          onClick={onBack}
+        >
+          <span aria-hidden="true">←</span> Back to shelf
+        </button>
         <p className="kicker">The Keeper's Ledger</p>
         <h2>Settings</h2>
         <div className="rule" aria-hidden="true">
           <span>❧</span>
         </div>
-        <dl className="settings-list">
-          <div className="setting-row">
-            <dt>Library folder</dt>
-            <dd>{status.folderName ?? "Not chosen"}</dd>
-          </div>
-          <div className="setting-row">
-            <dt>Access</dt>
-            <dd>
-              {reachable
-                ? "Read and write"
-                : status.state === "disconnected"
-                  ? "Needs reconnecting"
-                  : "Not granted"}
-            </dd>
-          </div>
-          <div className="setting-row">
-            <dt>Reader pages</dt>
-            <dd className="setting-choice">
-              <button
-                type="button"
-                data-testid="settings-reader-paginated"
-                aria-pressed={readerMode === "paginated"}
-                onClick={() => chooseReaderMode("paginated")}
-              >
-                Paginated
-              </button>
-              <button
-                type="button"
-                data-testid="settings-reader-scrolled"
-                aria-pressed={readerMode === "scrolled"}
-                onClick={() => chooseReaderMode("scrolled")}
-              >
-                Scroll
-              </button>
-            </dd>
-          </div>
-        </dl>
-        <form
-          className="capacity-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (capacityValid) onSetCapacity(parsedCapacity);
-          }}
-        >
-          <label htmlFor="shelf-capacity">Shelf capacity</label>
-          <div className="capacity-controls">
-            <input
-              id="shelf-capacity"
-              data-testid="shelf-capacity"
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              value={draftCapacity}
-              onChange={(event) => setDraftCapacity(event.target.value)}
-              disabled={busy || shelfCapacity === null}
-            />
+
+        <section className="settings-section" aria-labelledby="settings-library">
+          <h3 id="settings-library">Library</h3>
+          <dl className="settings-list">
+            <div className="setting-row">
+              <dt>Library folder</dt>
+              <dd data-testid="settings-folder">
+                {status.folderName ?? "Not chosen"}
+              </dd>
+            </div>
+            <div className="setting-row">
+              <dt>Access</dt>
+              <dd>
+                {reachable
+                  ? "Read and write"
+                  : status.state === "disconnected"
+                    ? "Needs reconnecting"
+                    : "Not granted"}
+              </dd>
+            </div>
+          </dl>
+          <div className="settings-actions">
             <button
-              type="submit"
-              className="secondary-action"
-              data-testid="save-shelf-capacity"
-              disabled={busy || !capacityValid || shelfCapacity === null}
+              type="button"
+              className="primary-action"
+              onClick={onRescan}
+              disabled={busy || !reachable}
             >
-              Save
+              {busy ? "Scanning…" : "Rescan library"}
+            </button>
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={onChoose}
+            >
+              Change library folder
             </button>
           </div>
-        </form>
-        <div className="settings-actions">
-          <button
-            type="button"
-            className="primary-action"
-            onClick={onRescan}
-            disabled={busy || !reachable}
+        </section>
+
+        <section className="settings-section" aria-labelledby="settings-reader">
+          <h3 id="settings-reader">Reader defaults</h3>
+          <p className="settings-note">
+            New and resumed books open with these.
+          </p>
+          <dl className="settings-list">
+            <div className="setting-row">
+              <dt>Reading mode</dt>
+              <dd className="setting-choice">
+                <button
+                  type="button"
+                  data-testid="settings-reader-paginated"
+                  aria-pressed={reader.mode === "paginated"}
+                  onClick={() => updateReader({ mode: "paginated" })}
+                >
+                  Paginated
+                </button>
+                <button
+                  type="button"
+                  data-testid="settings-reader-scrolled"
+                  aria-pressed={reader.mode === "scrolled"}
+                  onClick={() => updateReader({ mode: "scrolled" })}
+                >
+                  Scroll
+                </button>
+              </dd>
+            </div>
+            <div className="setting-row">
+              <dt>Theme</dt>
+              <dd className="setting-choice">
+                {(Object.keys(READER_THEMES) as ReaderTheme[]).map((theme) => (
+                  <button
+                    key={theme}
+                    type="button"
+                    data-testid={`settings-reader-theme-${theme}`}
+                    aria-pressed={reader.theme === theme}
+                    onClick={() => updateReader({ theme })}
+                  >
+                    {READER_THEMES[theme].name}
+                  </button>
+                ))}
+              </dd>
+            </div>
+          </dl>
+          <fieldset className="settings-size">
+            <legend>Text size</legend>
+            <div className="size-choices">
+              {READER_SIZES.map((size, index) => (
+                <button
+                  key={size.name}
+                  type="button"
+                  data-testid={`settings-reader-size-${index}`}
+                  aria-pressed={reader.size === index}
+                  onClick={() => updateReader({ size: index })}
+                >
+                  {size.name}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </section>
+
+        <section className="settings-section" aria-labelledby="settings-shelf">
+          <h3 id="settings-shelf">Shelf</h3>
+          <form
+            className="capacity-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (capacityValid) onSetCapacity(parsedCapacity);
+            }}
           >
-            {busy ? "Scanning…" : "Rescan library"}
-          </button>
-          <button type="button" className="secondary-action" onClick={onChoose}>
-            Change library folder
-          </button>
-        </div>
+            <label htmlFor="shelf-capacity">Shelf capacity</label>
+            <div className="capacity-controls">
+              <input
+                id="shelf-capacity"
+                data-testid="shelf-capacity"
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                value={draftCapacity}
+                onChange={(event) => setDraftCapacity(event.target.value)}
+                disabled={busy || shelfCapacity === null}
+              />
+              <button
+                type="submit"
+                className="secondary-action"
+                data-testid="save-shelf-capacity"
+                disabled={busy || !capacityValid || shelfCapacity === null}
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section
+          className="settings-section"
+          aria-labelledby="settings-download"
+          data-testid="settings-download"
+        >
+          <h3 id="settings-download">Download naming</h3>
+          <p className="settings-value">Author - Title (Year)</p>
+          <p className="settings-note">
+            Placeholder until the download queue lands in ticket 11; naming is
+            not editable yet.
+          </p>
+        </section>
+
+        <section className="settings-section" aria-labelledby="settings-backup">
+          <h3 id="settings-backup">Export / import</h3>
+          <div className="settings-actions">
+            <button
+              type="button"
+              className="secondary-action"
+              data-testid="settings-export"
+              disabled
+            >
+              Export library data
+            </button>
+            <button
+              type="button"
+              className="secondary-action"
+              data-testid="settings-import"
+              disabled
+            >
+              Import library data
+            </button>
+          </div>
+          <p className="settings-note">
+            Placeholder until backup and restore lands in ticket 12.
+          </p>
+        </section>
+
+        <section className="settings-section" aria-labelledby="settings-about">
+          <h3 id="settings-about">About</h3>
+          <dl className="settings-list">
+            <div className="setting-row">
+              <dt>App</dt>
+              <dd>{info?.name ?? "PocketLibrary"}</dd>
+            </div>
+            <div className="setting-row">
+              <dt>Version</dt>
+              <dd data-testid="settings-version">
+                v{info?.appVersion ?? "…"}
+              </dd>
+            </div>
+            <div className="setting-row">
+              <dt>Schema</dt>
+              <dd data-testid="settings-schema">
+                {info?.schemaVersion ?? "…"}
+              </dd>
+            </div>
+          </dl>
+          <p className="settings-note settings-credits">
+            Typefaces: EB Garamond, Literata and Source Serif 4 under the SIL
+            Open Font License. Reader engines: foliate-js and PDF.js
+            (Apache-2.0). Built with Tauri.
+          </p>
+        </section>
+
         {notice ? (
           <p className="scan-notice" role="status">
             {notice}
@@ -2420,16 +2566,31 @@ function SettingsView({
   );
 }
 
-function SearchPlaceholder() {
+function SearchView({ onBack }: { onBack: () => void }) {
   return (
-    <main id="library-main" className="placeholder" data-testid="placeholder-view">
+    <main
+      id="library-main"
+      className="placeholder search-view"
+      data-testid="placeholder-view"
+    >
       <section className="placeholder-card">
+        <button
+          type="button"
+          className="settings-back"
+          data-testid="search-back"
+          onClick={onBack}
+        >
+          <span aria-hidden="true">←</span> Back to shelf
+        </button>
         <p className="kicker">The Acquisition Desk</p>
         <h2>Search</h2>
         <div className="rule" aria-hidden="true">
           <span>❧</span>
         </div>
-        <p>Searching the wider library is being bound in a later chapter.</p>
+        <p>
+          The front desk is being bound. Libgen search, mirrors and the
+          download queue arrive in ticket 10.
+        </p>
       </section>
     </main>
   );
@@ -2555,22 +2716,19 @@ export default function App() {
   const suppressRailRef = useRef(0);
   const lastHandleGestureRef = useRef(0);
   const drawerOpenedAtRef = useRef(0);
+  const drawerTrackingRef = useRef(false);
 
   const openDrawer = useCallback(() => {
     setShowDrawerHint(false);
     setDrawerOffset(null);
     setDrawerDragging(false);
     setDrawerOpen(true);
-    drawerOpenedAtRef.current = performance.now();
-  }, []);
-
-  const closeDrawer = useCallback((restoreFocus = true) => {
-    setDrawerOpen(false);
-    setDrawerOffset(null);
-    setDrawerDragging(false);
-    if (restoreFocus) {
-      pullRef.current?.focus();
+    try {
+      window.localStorage.setItem(DRAWER_HINT_KEY, "1");
+    } catch {
+      // A private WebView may refuse storage; the hint simply returns.
     }
+    drawerOpenedAtRef.current = performance.now();
   }, []);
 
   const dismissDrawerHint = useCallback(() => {
@@ -2582,6 +2740,18 @@ export default function App() {
     }
   }, []);
 
+  const closeView = useLayerExit(
+    view !== "library",
+    useCallback(() => setView("library"), []),
+  );
+
+  const closeDrawer = useLayerExit(drawerOpen, () => {
+    setDrawerOpen(false);
+    setDrawerOffset(null);
+    setDrawerDragging(false);
+    pullRef.current?.focus();
+  });
+
   useEffect(() => {
     let seen = false;
     try {
@@ -2590,7 +2760,16 @@ export default function App() {
       seen = false;
     }
     if (seen) return;
-    const show = window.setTimeout(() => setShowDrawerHint(true), 900);
+    const show = window.setTimeout(() => {
+      setShowDrawerHint(true);
+      // The hint is one-time: mark it as seen as soon as it appears, so a
+      // dismissal or a reload never brings it back.
+      try {
+        window.localStorage.setItem(DRAWER_HINT_KEY, "1");
+      } catch {
+        // A private WebView may refuse storage; the hint simply returns.
+      }
+    }, 900);
     const hide = window.setTimeout(() => setShowDrawerHint(false), 7100);
     return () => {
       window.clearTimeout(show);
@@ -2634,10 +2813,14 @@ export default function App() {
     if (!(event.target as HTMLElement).closest("button")) {
       event.preventDefault();
     }
+    trackDrawerDrag();
   }
 
-  useEffect(() => {
-    if (!drawerDragging) return;
+  // Attach the move/end listeners in the same turn as pointerdown. Waiting
+  // for a React effect would drop the first few pixels of a quick drag.
+  function trackDrawerDrag() {
+    if (drawerTrackingRef.current) return;
+    drawerTrackingRef.current = true;
     const onMove = (event: PointerEvent) => {
       const drag = drawerDragRef.current;
       if (!drag) return;
@@ -2651,6 +2834,10 @@ export default function App() {
       if (event.cancelable) event.preventDefault();
     };
     const onEnd = (event: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
+      drawerTrackingRef.current = false;
       const drag = drawerDragRef.current;
       drawerDragRef.current = null;
       setDrawerDragging(false);
@@ -2671,48 +2858,21 @@ export default function App() {
         if (!drag.moved && dt < 420) shouldOpen = true;
       }
       if (shouldOpen) openDrawer();
-      else closeDrawer(false);
+      else closeDrawer();
     };
     window.addEventListener("pointermove", onMove, { passive: false });
     window.addEventListener("pointerup", onEnd);
     window.addEventListener("pointercancel", onEnd);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onEnd);
-      window.removeEventListener("pointercancel", onEnd);
-    };
-  }, [drawerDragging, drawerOpen, openDrawer, closeDrawer]);
+  }
 
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeDrawer();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    const state = { pocketLibraryDrawer: true };
-    try {
-      window.history.pushState(state, "");
-    } catch {
-      // History is best-effort on older WebViews.
-    }
-    const onPop = () => closeDrawer(false);
-    window.addEventListener("popstate", onPop);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("popstate", onPop);
-    };
-  }, [drawerOpen, closeDrawer]);
-
-  const navigate = useCallback(
-    (next: View) => {
-      setView(next);
-      closeDrawer();
-    },
-    [closeDrawer],
-  );
+  const navigate = useCallback((next: View) => {
+    // Let the view's layer take over before the drawer's layer leaves, so the
+    // guard history entry is replaced rather than popped and re-pushed.
+    setView(next);
+    setDrawerOpen(false);
+    setDrawerOffset(null);
+    setDrawerDragging(false);
+  }, []);
 
   const initialLoadStarted = useRef(false);
 
@@ -2817,7 +2977,7 @@ export default function App() {
   }, [drawerOpen]);
 
   function renderMain() {
-    if (view === "search") return <SearchPlaceholder />;
+    if (view === "search") return <SearchView onBack={closeView} />;
     if (view === "settings") {
       if (status === null) {
         return (
@@ -2835,6 +2995,7 @@ export default function App() {
           onRescan={rescan}
           onChoose={chooseFolder}
           onSetCapacity={saveCapacity}
+          onBack={closeView}
         />
       );
     }

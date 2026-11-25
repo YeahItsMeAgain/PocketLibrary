@@ -1843,11 +1843,8 @@ html.is-book-dragging body {
   pointer-events: none;
 }
 
-.drawer.is-open {
-  pointer-events: auto;
-}
-
 .drawer-rail {
+  pointer-events: auto;
   position: absolute;
   right: 0;
   bottom: 0;
@@ -2328,6 +2325,114 @@ html.is-book-dragging body {
 
 .settings-card {
   width: min(370px, 100%);
+  text-align: left;
+}
+
+.settings-card h2,
+.settings-card .kicker {
+  text-align: center;
+}
+
+.settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 12px;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: #c8ab77;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.settings-back:active,
+.settings-back:focus-visible {
+  color: #f0dcaa;
+}
+
+.settings-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(201, 168, 106, 0.2);
+}
+
+.settings-section h3 {
+  margin: 0;
+  color: #b99c6b;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.settings-note {
+  margin: 9px 0 0 !important;
+  color: #97805d !important;
+  font-size: 11px !important;
+  line-height: 1.55;
+}
+
+.settings-value {
+  margin: 10px 0 0 !important;
+  padding: 9px 11px;
+  border: 1px dashed rgba(201, 168, 106, 0.3);
+  background: rgba(9, 5, 13, 0.45);
+  color: #e6d2ab !important;
+  font-size: 12px !important;
+  letter-spacing: 0.04em;
+}
+
+.settings-credits {
+  margin-top: 13px !important;
+}
+
+.settings-size {
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings-size legend {
+  padding: 0;
+  color: #9c825d;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.size-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.size-choices button,
+.setting-choice button {
+  padding: 7px 9px;
+  border: 1px solid rgba(201, 168, 106, 0.35);
+  background: rgba(9, 5, 13, 0.55);
+  color: #cbb48a;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.size-choices button[aria-pressed="true"],
+.setting-choice button[aria-pressed="true"] {
+  border-color: rgba(226, 201, 140, 0.8);
+  background: linear-gradient(180deg, rgba(201, 168, 106, 0.22), #17101d);
+  color: #f3e0b6;
+}
+
+.setting-choice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
 }
 
 .settings-list {
@@ -3046,11 +3151,6 @@ html.reader-open body {
 .reader-top-action:focus-visible,
 .reader-back:focus-visible {
   outline-color: var(--reader-accent);
-}
-
-.setting-choice {
-  display: flex;
-  gap: 5px;
 }
 
 .setting-choice button {
