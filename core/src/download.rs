@@ -21,6 +21,7 @@ use url::Url;
 use wreq::header::{ACCEPT_ENCODING, CONTENT_RANGE, LOCATION, RANGE};
 use wreq_util::Emulation;
 
+use crate::diagnostics::{Level, log_event};
 use crate::error::{Error, Result};
 use crate::models::{BookFormat, Download, DownloadRequest, Landing};
 use crate::service::Service;
@@ -84,13 +85,27 @@ impl DownloadManager {
     /// already-queued md5 is returned instead of being queued twice.
     pub fn enqueue(&self, request: DownloadRequest) -> Result<Download> {
         if let Some(completed) = self.service.completed_download_for_md5(&request.md5)? {
+            log_event(
+                Level::Info,
+                "download.duplicate",
+                &format!("{} is already complete", request.title),
+            );
             return self.service.insert_duplicate_download(
                 &request,
                 completed.book_id,
                 completed.filename.as_deref(),
             );
         }
-        self.service.insert_download(&request)
+        let download = self.service.insert_download(&request)?;
+        log_event(
+            Level::Info,
+            "download.queued",
+            &format!(
+                "{} ({:?} from {}) as download {}",
+                request.title, request.format, request.source, download.id
+            ),
+        );
+        Ok(download)
     }
 
     pub fn list(&self) -> Result<Vec<Download>> {
@@ -110,11 +125,22 @@ impl DownloadManager {
         if let Ok(mut map) = self.cancel.lock() {
             map.remove(&id);
         }
+        log_event(
+            Level::Info,
+            "download.cancelled",
+            &format!("download {id} cancelled"),
+        );
         Ok(())
     }
 
     pub fn retry(&self, id: i64) -> Result<Download> {
-        self.service.retry_download(id)
+        let download = self.service.retry_download(id)?;
+        log_event(
+            Level::Info,
+            "download.retried",
+            &format!("download {id} returned to the queue"),
+        );
+        Ok(download)
     }
 
     /// Run queued rows, at most two at a time, until the queue is empty.
@@ -159,17 +185,36 @@ impl DownloadManager {
         if flag.load(Ordering::SeqCst) {
             // Keep the `.part`: a retry resumes from it with a Range request.
             let _ = self.service.mark_download_cancelled(download.id);
+            log_event(
+                Level::Info,
+                "download.cancelled",
+                &format!("{} ({}) cancelled", download.title, download.id),
+            );
             return;
         }
-        if let Err(error) = outcome {
-            let code = error.code();
-            eprintln!(
-                "pocketlibrary: download {} failed ({code}): {error}",
-                download.id
-            );
-            let _ = self
-                .service
-                .fail_download(download.id, code, &message_for(&error));
+        match outcome {
+            Ok(()) => {
+                log_event(
+                    Level::Info,
+                    "download.completed",
+                    &format!("{} ({}) landed", download.title, download.id),
+                );
+            }
+            Err(error) => {
+                let code = error.code();
+                eprintln!(
+                    "pocketlibrary: download {} failed ({code}): {error}",
+                    download.id
+                );
+                log_event(
+                    Level::Error,
+                    "download.failed",
+                    &format!("{} ({}): {code}: {error}", download.title, download.id),
+                );
+                let _ = self
+                    .service
+                    .fail_download(download.id, code, &message_for(&error));
+            }
         }
     }
 

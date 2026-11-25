@@ -9,6 +9,7 @@
 use rusqlite::Connection;
 
 use crate::SCHEMA_VERSION;
+use crate::diagnostics::{Level, log_event};
 use crate::error::{Error, Result};
 
 const SCHEMA_V2: &str = r#"
@@ -179,10 +180,29 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         return Ok(());
     }
     if version > SCHEMA_VERSION {
+        log_event(
+            Level::Error,
+            "migrations",
+            &format!("database schema {version} is newer than supported {SCHEMA_VERSION}"),
+        );
         return Err(Error::UnsupportedSchema {
             found: version,
             supported: SCHEMA_VERSION,
         });
+    }
+
+    if version == 0 {
+        log_event(
+            Level::Info,
+            "migrations",
+            &format!("created a new schema at version {SCHEMA_VERSION}"),
+        );
+    } else {
+        log_event(
+            Level::Info,
+            "migrations",
+            &format!("upgraded database schema {version} -> {SCHEMA_VERSION}"),
+        );
     }
 
     let tx = conn.transaction()?;

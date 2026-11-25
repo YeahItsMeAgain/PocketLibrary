@@ -7,6 +7,7 @@ pub mod acquisition;
 mod api;
 mod backup;
 mod cover;
+pub mod diagnostics;
 mod download;
 mod error;
 mod identity;
