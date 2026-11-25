@@ -16,8 +16,9 @@
   /* Room reserved below content for the fixed brass drawer pull. */
   --drawer-pull-space: calc(32px + env(safe-area-inset-bottom));
   /* A pre-rasterised noise tile. The old feTurbulence filter was the most
-     expensive first-paint raster task; the look is unchanged. */
-  --noise: url("./assets/noise.png");
+     expensive first-paint raster task; WebP at 96px keeps the same grain at
+     9 kB instead of 82 kB. */
+  --noise: url("./assets/noise.webp");
   font-family: var(--body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -113,7 +114,7 @@ button:focus-visible {
     repeating-linear-gradient(45deg, rgba(201, 168, 106, 0.028) 0 1px, transparent 1px 26px),
     repeating-linear-gradient(-45deg, rgba(201, 168, 106, 0.024) 0 1px, transparent 1px 26px),
     var(--noise);
-  background-size: auto, auto, 180px 180px;
+  background-size: auto, auto, 96px 96px;
   opacity: 0.42;
   mix-blend-mode: overlay;
 }
@@ -378,6 +379,93 @@ button:focus-visible {
   contain-intrinsic-size: auto 328px;
 }
 
+/* Windowed wall: the container reserves the full wall height and mounted
+   cases are absolutely positioned into recycled slots. Placeholders keep the
+   exact height of every unmounted shelf, so the scrollbar never changes. */
+.shelf-window {
+  position: relative;
+}
+.shelf-slot {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flow-root;
+  height: 358px;
+}
+.v4-shelf-placeholder {
+  position: absolute;
+  right: 0;
+  left: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 328px;
+}
+
+/* First-paint skeleton: masthead, filter strip and shelf rhythm only. */
+.library-skeleton .wall-inner {
+  padding-top: 4px;
+}
+.skeleton-filter {
+  display: flex;
+  gap: 6px;
+  height: 44px;
+  padding: 12px 2px;
+  margin-bottom: 10px;
+}
+.skeleton-filter span {
+  height: 20px;
+  border-radius: 10px;
+  background: rgba(201, 168, 106, 0.1);
+}
+.skeleton-filter span:nth-child(1) { width: 74px; }
+.skeleton-filter span:nth-child(2) { width: 92px; }
+.skeleton-filter span:nth-child(3) { width: 61px; }
+.skeleton-shelf {
+  position: relative;
+  height: 328px;
+  margin: 30px 0 0;
+  opacity: 0.75;
+}
+.skeleton-crown {
+  display: block;
+  height: 27px;
+  margin: 0 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #35213f, #211228);
+}
+.skeleton-cavity {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 264px;
+  margin: 0 1px;
+  padding: 0 9px;
+  background: linear-gradient(180deg, #1b1022, #120b17);
+}
+.skeleton-cavity i {
+  flex: 1;
+  height: 72%;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(180deg, rgba(201, 168, 106, 0.12), rgba(201, 168, 106, 0.03));
+}
+.skeleton-cavity i:nth-child(2) { height: 84%; }
+.skeleton-cavity i:nth-child(3) { height: 66%; }
+.skeleton-cavity i:nth-child(4) { height: 78%; }
+.skeleton-board {
+  display: block;
+  height: 18px;
+  margin: 0 1px;
+  background: linear-gradient(180deg, #3d2846, #180d20);
+}
+.skeleton-shelf::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 10px;
+  height: 10px;
+  background: #0b060e;
+  border-radius: 0 0 2px 2px;
+}
+
 .v4-case {
   position: relative;
 }
@@ -506,7 +594,7 @@ button:focus-visible {
       transparent 6px 19px
     ),
     var(--noise);
-  background-size: auto, 180px 180px;
+  background-size: auto, 96px 96px;
   opacity: 0.38;
 }
 
@@ -758,12 +846,12 @@ button:focus-visible {
   transform: rotate(var(--lean)) translateY(-3px);
 }
 
-.spine.is-dim {
+.spine[data-dimmed="true"] {
   opacity: 0.24;
 }
 
-.spine.is-dim:hover,
-.spine.is-dim:focus-visible {
+.spine[data-dimmed="true"]:hover,
+.spine[data-dimmed="true"]:focus-visible {
   opacity: 0.4;
 }
 
@@ -2141,7 +2229,7 @@ html.is-book-dragging body {
   position: absolute;
   inset: 0;
   background-image: var(--noise);
-  background-size: 180px 180px;
+  background-size: 96px 96px;
   mix-blend-mode: overlay;
   opacity: 0.16;
   pointer-events: none;
@@ -2854,7 +2942,7 @@ html.is-book-dragging body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spine.is-dimmed,
+  .spine[data-dimmed="true"],
   .filter-chip,
   .filter-manage,
   .filter-clear {

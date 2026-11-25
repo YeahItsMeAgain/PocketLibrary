@@ -282,3 +282,101 @@ test("manage labels can rename and recolour without a free colour picker", async
     manager.getByRole("button", { name: "Indigo" }),
   ).toHaveCount(0);
 });
+
+test("filtering only touches data attributes; the wall and spines do not re-render", async ({
+  page,
+}) => {
+  const gothic = mockLabel(1, "Gothic", OXBLOOD);
+  await seed(page, {
+    state: "ready",
+    folderName: "PocketLibrary",
+    labels: [gothic],
+    books: [
+      mockBook(1, "Raven Hall", 0, "unread", [gothic]),
+      mockBook(2, "The Old Curiosity", 1, "unread"),
+      mockBook(3, "Snow Country", 2, "unread", [gothic]),
+      mockBook(4, "A Winter Tale", 3, "unread"),
+    ],
+  });
+
+  const spines = page.getByTestId("spine");
+  await expect(spines).toHaveCount(4);
+  const before = await spines.evaluateAll((elements) =>
+    elements.map((element) => ({
+      left: element.getBoundingClientRect().left,
+      top: element.getBoundingClientRect().top,
+    })),
+  );
+
+  await page.evaluate(() => {
+    const target = document.querySelector<HTMLElement>(
+      '[data-testid="spine"][data-book-id="2"]',
+    );
+    const wall = document.querySelector<HTMLElement>(
+      '[data-testid="library-wall"]',
+    );
+    const state = {
+      mutations: 0,
+      target: target,
+      wall: wall,
+      observer: null as MutationObserver | null,
+    };
+    state.observer = new MutationObserver((records) => {
+      state.mutations += records.filter(
+        (record) =>
+          record.type === "childList" || record.type === "characterData",
+      ).length;
+    });
+    if (target) {
+      state.observer.observe(target, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+    }
+    (
+      window as unknown as { __filterProbe: typeof state }
+    ).__filterProbe = state;
+  });
+
+  await page
+    .getByTestId("filter-label-chip")
+    .filter({ hasText: "Gothic" })
+    .click();
+  await expect(page.locator('[data-testid="spine"][data-dimmed="true"]')).toHaveCount(2);
+
+  const probe = await page.evaluate(() => {
+    const state = (
+      window as unknown as {
+        __filterProbe: {
+          mutations: number;
+          target: HTMLElement | null;
+          wall: HTMLElement | null;
+          observer: MutationObserver;
+        };
+      }
+    ).__filterProbe;
+    state.observer.disconnect();
+    return {
+      mutations: state.mutations,
+      sameTarget:
+        state.target ===
+        document.querySelector('[data-testid="spine"][data-book-id="2"]'),
+      sameWall:
+        state.wall === document.querySelector('[data-testid="library-wall"]'),
+    };
+  });
+  expect(probe).toEqual({
+    mutations: 0,
+    sameTarget: true,
+    sameWall: true,
+  });
+
+  const after = await spines.evaluateAll((elements) =>
+    elements.map((element) => ({
+      left: element.getBoundingClientRect().left,
+      top: element.getBoundingClientRect().top,
+    })),
+  );
+  expect(after).toEqual(before);
+});
