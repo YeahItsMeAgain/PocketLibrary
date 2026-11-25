@@ -155,6 +155,18 @@ impl Api {
             .map_err(ApiError::from)
     }
 
+    /// The pattern used to name downloaded files.
+    pub fn download_naming(&self) -> ApiResult<String> {
+        self.service.download_naming().map_err(ApiError::from)
+    }
+
+    /// Persist a new download naming pattern.
+    pub fn set_download_naming(&self, pattern: &str) -> ApiResult<String> {
+        self.service
+            .set_download_naming(pattern)
+            .map_err(ApiError::from)
+    }
+
     /// Move a book to a shelf and final slot index.
     ///
     /// The book keeps its identity, reading state, labels and progress; only

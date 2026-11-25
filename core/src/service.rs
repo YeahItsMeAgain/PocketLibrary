@@ -37,6 +37,10 @@ const LIBRARY_FOLDER_URI: &str = "library_folder_uri";
 const LIBRARY_FOLDER_NAME: &str = "library_folder_name";
 const SHELF_CAPACITY: &str = "shelf_capacity";
 const DEFAULT_SHELF_CAPACITY: i64 = 12;
+const DOWNLOAD_NAMING: &str = "download_naming";
+
+/// The naming pattern used when the user has not chosen one.
+pub const DEFAULT_DOWNLOAD_NAMING: &str = "{author} - {title} ({year})";
 
 /// The fixed eight-colour label palette. Every colour clears 5.56:1 against
 /// the cream label text, so the UI never needs a free colour picker.
@@ -407,6 +411,28 @@ impl Service {
         self.setting(LIBRARY_FOLDER_NAME)
     }
 
+    /// The pattern used to name newly downloaded files.
+    ///
+    /// Placeholders are `{author}`, `{title}` and `{year}`. A missing or blank
+    /// setting falls back to [`DEFAULT_DOWNLOAD_NAMING`].
+    pub fn download_naming(&self) -> Result<String> {
+        Ok(self
+            .setting(DOWNLOAD_NAMING)?
+            .map(|value| value.trim().to_owned())
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| DEFAULT_DOWNLOAD_NAMING.to_owned()))
+    }
+
+    /// Persist a new download naming pattern.
+    pub fn set_download_naming(&self, pattern: &str) -> Result<String> {
+        let pattern = pattern.trim();
+        if pattern.is_empty() {
+            return Err(Error::InvalidDownloadNaming);
+        }
+        self.put_setting(DOWNLOAD_NAMING, pattern)?;
+        Ok(pattern.to_owned())
+    }
+
     /// What the UI should show for the library folder right now.
     pub fn library_status(&self, grant_valid: bool) -> Result<LibraryStatus> {
         let folder_name = self.library_folder_name()?;
@@ -702,7 +728,7 @@ impl Service {
                 request.source,
                 serde_json::to_string(&request.mirror_urls).unwrap_or_else(|_| "[]".to_owned()),
                 book_id,
-                filename,
+                filename.and_then(download_basename),
                 now
             ],
         )?;
@@ -807,6 +833,9 @@ impl Service {
         } else {
             (None, None)
         };
+        // Only a bare filename may cross the command wire. A caller that hands
+        // us a library path (or nothing at all) records no filename.
+        let filename = download_basename(filename);
         conn.execute(
             "UPDATE downloads SET state = 'completed', book_id = ?1, filename = ?2,
                                   error = ?3, error_code = ?4, finished_at = ?5, updated_at = ?5
@@ -1514,7 +1543,12 @@ fn download_from_row(row: &Row<'_>) -> rusqlite::Result<Download> {
         error: row.get(12)?,
         error_code: row.get(13)?,
         book_id: row.get(14)?,
-        filename: row.get(15)?,
+        // Legacy rows may hold a library path; the wire never sees one.
+        filename: row
+            .get::<_, Option<String>>(15)?
+            .as_deref()
+            .and_then(download_basename)
+            .map(str::to_owned),
         created_at: row.get(16)?,
         finished_at: row.get(17)?,
     })
@@ -1698,6 +1732,16 @@ fn reassign_slots(conn: &Connection, ids: &[i64], shelf_id: i64) -> Result<()> {
         )?;
     }
     Ok(())
+}
+
+/// The last component of a path, or `None` when there is nothing to show.
+fn download_basename(value: &str) -> Option<&str> {
+    let name = value.rsplit(['/', '\\']).next().unwrap_or(value).trim();
+    if name.is_empty() || name == "." || name == ".." {
+        None
+    } else {
+        Some(name)
+    }
 }
 
 fn read_setting(conn: &Connection, key: &str) -> Result<Option<String>> {

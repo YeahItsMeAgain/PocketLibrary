@@ -32,6 +32,7 @@ pub use models::{
     LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport,
     Shelf,
 };
+pub use service::DEFAULT_DOWNLOAD_NAMING;
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 
 /// The schema version this build knows how to create and read.

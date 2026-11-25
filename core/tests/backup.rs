@@ -160,7 +160,12 @@ fn export_writes_a_versioned_manifest_and_no_book_files() {
     assert_eq!(manifest["kind"], "pocketlibrary-backup");
     assert_eq!(manifest["schemaVersion"], BACKUP_FORMAT_VERSION);
     assert!(manifest["exportedAt"].as_i64().unwrap_or(0) > 0);
-    assert_eq!(manifest["books"].as_array().expect("books").len(), 2);
+    let manifest_books = manifest["books"].as_array().expect("books");
+    assert_eq!(manifest_books.len(), 2);
+    assert!(
+        manifest_books.iter().all(|book| book.get("path").is_none()),
+        "device-local book paths must not travel in a backup"
+    );
     assert_eq!(manifest["labels"].as_array().expect("labels").len(), 1);
     assert_eq!(
         manifest["readingStates"].as_array().expect("states").len(),
@@ -257,6 +262,40 @@ fn export_wipe_and_replace_restore_metadata_and_covers() {
         source.bytes("alpha.epub"),
         before,
         "book bytes are untouched by export and restore"
+    );
+}
+
+#[test]
+fn an_imported_book_has_no_path_until_a_scan_matches_it_by_hash() {
+    let source = FakeDir::new().dir("Shelf").file("Shelf/alpha.epub");
+    let (_dir_a, api_a) = database();
+    api_a.scan(&source).expect("scan source");
+    let original = book(&api_a, "alpha");
+    let bytes = api_a.export_backup().expect("export");
+
+    let (_dir_b, api_b) = database();
+    api_b
+        .import_backup(&bytes, ImportMode::Replace)
+        .expect("replace import");
+    let restored = book(&api_b, "alpha");
+    assert_eq!(
+        api_b.book_path(restored.id).expect("restored path"),
+        "",
+        "an imported book waits for a scan to name its local file"
+    );
+
+    let report = api_b.scan(&source).expect("scan after restore");
+    assert_eq!(report.total, 1, "the scan matched by content hash");
+    assert_eq!(report.added, 0, "no second copy was created");
+    assert_eq!(report.removed, 0, "the restored book stayed live");
+    assert_eq!(
+        api_b.book_path(restored.id).expect("path after scan"),
+        "Shelf/alpha.epub"
+    );
+    assert_eq!(
+        book(&api_b, "alpha").content_hash,
+        original.content_hash,
+        "identity survives the pathless round trip"
     );
 }
 

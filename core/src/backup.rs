@@ -101,7 +101,6 @@ struct ManifestShelf {
 #[serde(rename_all = "camelCase")]
 struct ManifestBook {
     content_hash: String,
-    path: String,
     format: BookFormat,
     title: String,
     authors: Vec<String>,
@@ -313,7 +312,7 @@ fn build_manifest(conn: &Connection) -> Result<BackupManifest> {
     let mut books = Vec::new();
     {
         let mut statement = conn.prepare(
-            "SELECT b.content_hash, b.path, b.format, b.title, b.authors, b.series,
+            "SELECT b.content_hash, b.format, b.title, b.authors, b.series,
                     b.language, b.description, b.publisher, b.published_date, b.identifier,
                     b.page_count, b.cover_path, b.cover_source, b.added_at, s.ordinal,
                     b.slot_index
@@ -321,29 +320,28 @@ fn build_manifest(conn: &Connection) -> Result<BackupManifest> {
              ORDER BY b.shelf_id IS NULL, b.shelf_id, b.slot_index, b.id",
         )?;
         let rows = statement.query_map([], |row| {
-            let authors_json: String = row.get(4)?;
+            let authors_json: String = row.get(3)?;
             let content_hash: String = row.get(0)?;
-            let has_cover: Option<String> = row.get(12)?;
+            let has_cover: Option<String> = row.get(11)?;
             Ok(ManifestBook {
                 cover_file: has_cover
                     .as_ref()
                     .map(|_| format!("{COVERS_DIR}/{content_hash}.jpg")),
                 content_hash,
-                path: row.get(1)?,
-                format: row.get(2)?,
-                title: row.get(3)?,
+                format: row.get(1)?,
+                title: row.get(2)?,
                 authors: serde_json::from_str(&authors_json).unwrap_or_default(),
-                series: row.get(5)?,
-                language: row.get(6)?,
-                description: row.get(7)?,
-                publisher: row.get(8)?,
-                published_date: row.get(9)?,
-                identifier: row.get(10)?,
-                page_count: row.get(11)?,
-                cover_source: row.get(13)?,
-                added_at: row.get(14)?,
-                shelf_ordinal: row.get(15)?,
-                slot_index: row.get(16)?,
+                series: row.get(4)?,
+                language: row.get(5)?,
+                description: row.get(6)?,
+                publisher: row.get(7)?,
+                published_date: row.get(8)?,
+                identifier: row.get(9)?,
+                page_count: row.get(10)?,
+                cover_source: row.get(12)?,
+                added_at: row.get(13)?,
+                shelf_ordinal: row.get(14)?,
+                slot_index: row.get(15)?,
             })
         })?;
         for row in rows {
@@ -1046,14 +1044,15 @@ fn insert_book(
 ) -> Result<()> {
     let authors = serde_json::to_string(&book.authors).map_err(json_error)?;
     conn.execute(
+        // A restored book has no device-local path yet. The next scan matches it
+        // by content hash and fills the path from the file it actually finds.
         "INSERT INTO books (
              content_hash, quick_key, path, format, title, authors, series, language,
              description, publisher, published_date, identifier, page_count, cover_path,
              cover_source, added_at, shelf_id, slot_index
-         ) VALUES (?1, NULL, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)",
+         ) VALUES (?1, NULL, '', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
         params![
             book.content_hash,
-            book.path,
             book.format,
             book.title,
             authors,

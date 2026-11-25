@@ -38,6 +38,9 @@ pub enum Error {
     #[error("shelf capacity must be greater than zero")]
     InvalidCapacity,
 
+    #[error("a download naming pattern cannot be empty")]
+    InvalidDownloadNaming,
+
     #[error("book {book_id} cannot move to shelf {shelf_id} slot {slot_index}")]
     InvalidTarget {
         book_id: i64,
@@ -123,6 +126,7 @@ impl Error {
             Self::LockPoisoned => "lock",
             Self::BookNotFound { .. } => "book_not_found",
             Self::InvalidCapacity => "invalid_capacity",
+            Self::InvalidDownloadNaming => "invalid_download_naming",
             Self::InvalidTarget { .. } => "invalid_target",
             Self::ShelfFull { .. } => "shelf_full",
             Self::LabelNotFound { .. } => "label_not_found",
@@ -167,6 +171,7 @@ impl Error {
             Self::LockPoisoned => "The library is busy. Please try again.",
             Self::BookNotFound { .. } => "That book could not be found.",
             Self::InvalidCapacity => "Shelf capacity must be at least one book.",
+            Self::InvalidDownloadNaming => "Choose a pattern for downloaded file names.",
             Self::InvalidTarget { .. } => "That book cannot be placed there.",
             Self::ShelfFull { .. } => "That shelf is already full.",
             Self::LabelNotFound { .. } => "That label could not be found.",

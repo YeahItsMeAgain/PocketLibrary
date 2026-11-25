@@ -1,5 +1,6 @@
 use pocketlibrary_core::{
-    APP_NAME, Api, ApiError, Book, BookFormat, Error, ReadingStatus, SCHEMA_VERSION,
+    APP_NAME, Api, ApiError, Book, BookFormat, DEFAULT_DOWNLOAD_NAMING, Error, ReadingStatus,
+    SCHEMA_VERSION,
 };
 use tempfile::TempDir;
 
@@ -101,6 +102,38 @@ fn serialised_books_do_not_leak_filesystem_paths() {
         "coverPath must stay in the core model"
     );
     assert_eq!(object.get("id"), Some(&serde_json::json!(7)));
+}
+
+#[test]
+fn download_naming_defaults_is_persisted_and_rejects_blank_patterns() {
+    let (_dir, path) = database_path();
+    let api = Api::open(&path).expect("open fresh catalog");
+
+    assert_eq!(
+        api.download_naming().expect("default naming"),
+        DEFAULT_DOWNLOAD_NAMING
+    );
+
+    let saved = api
+        .set_download_naming("  {title} - {author}  ")
+        .expect("set naming");
+    assert_eq!(saved, "{title} - {author}");
+    assert_eq!(
+        api.download_naming().expect("saved naming"),
+        "{title} - {author}"
+    );
+
+    let error = api
+        .set_download_naming("   ")
+        .expect_err("blank pattern is invalid");
+    assert_eq!(error.code, "invalid_download_naming");
+
+    drop(api);
+    let reopened = Api::open(&path).expect("reopen catalog");
+    assert_eq!(
+        reopened.download_naming().expect("naming survives reopen"),
+        "{title} - {author}"
+    );
 }
 
 #[test]

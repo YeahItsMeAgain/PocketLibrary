@@ -250,26 +250,21 @@ impl DownloadManager {
             .service
             .find_book_by_hash(&crate::identity::content_hash(&bytes))?
         {
-            let filename = self
-                .service
-                .book_path(book_id)
-                .ok()
-                .or_else(|| download.filename.clone());
-            self.service.complete_download(
-                download.id,
-                book_id,
-                filename.as_deref().unwrap_or(""),
-                true,
-            )?;
+            // The book already exists; there is no new file to name. Never put
+            // the library path on the download row: it is serialised to the UI.
+            self.service
+                .complete_download(download.id, book_id, "", true)?;
             self.remove_part(download.id);
             return Ok(());
         }
 
+        let pattern = self.service.download_naming()?;
         let filename = {
             // Hold the lock across the write so two concurrent downloads
             // cannot both choose the same free name.
             let _guard = self.write_lock.lock().map_err(|_| Error::LockPoisoned)?;
-            let filename = unique_filename(sink.list_root()?, &proposed_filename(download));
+            let filename =
+                unique_filename(sink.list_root()?, &proposed_filename(download, &pattern));
             sink.write_file(&filename, &bytes)?;
             filename
         };
@@ -614,8 +609,10 @@ fn parse_content_range(value: &str) -> Option<(u64, u64, Option<u64>)> {
     Some((start, end.saturating_sub(start) + 1, total))
 }
 
-/// `Author - Title (Year).ext`, with a placeholder when fields are missing.
-pub fn proposed_filename(download: &Download) -> String {
+/// Apply the user's naming pattern to a download, with placeholders when
+/// fields are missing. Empty bracket pairs left by a missing year are dropped
+/// so `{author} - {title} ({year})` stays readable without a year.
+pub fn proposed_filename(download: &Download, pattern: &str) -> String {
     let author = download
         .authors
         .first()
@@ -624,16 +621,61 @@ pub fn proposed_filename(download: &Download) -> String {
         .unwrap_or("Unknown author");
     let title = download.title.trim();
     let title = if title.is_empty() { "Untitled" } else { title };
-    let year = download
-        .year
-        .map(|year| format!(" ({year})"))
-        .unwrap_or_default();
+    let year = download.year.map(|year| year.to_string());
     let extension = match download.format {
         BookFormat::Epub => "epub",
         BookFormat::Pdf => "pdf",
     };
-    let stem = sanitize(&format!("{author} - {title}{year}"));
+    let stem = substitute(pattern, author, title, year.as_deref());
+    let stem = tidy_missing_year(&stem);
+    let stem = sanitize(&stem);
     format!("{stem}.{extension}")
+}
+
+/// Replace the three placeholders in one pass so a title that itself contains
+/// `{year}` is never expanded twice.
+fn substitute(pattern: &str, author: &str, title: &str, year: Option<&str>) -> String {
+    let mut out = String::with_capacity(pattern.len() + author.len() + title.len());
+    let mut rest = pattern;
+    while let Some(start) = rest.find('{') {
+        out.push_str(&rest[..start]);
+        let after = &rest[start..];
+        if let Some(end) = after.find('}') {
+            let token = &after[1..end];
+            match token {
+                "author" => out.push_str(author),
+                "title" => out.push_str(title),
+                "year" => out.push_str(year.unwrap_or("")),
+                _ => out.push_str(&after[..=end]),
+            }
+            rest = &after[end + 1..];
+        } else {
+            out.push_str(after);
+            rest = "";
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Remove bracket pairs emptied by a missing placeholder and collapse the
+/// spaces/separators they leave behind.
+fn tidy_missing_year(value: &str) -> String {
+    let mut current = value.trim().to_owned();
+    loop {
+        let mut next = current
+            .replace("()", "")
+            .replace("[]", "")
+            .replace("{}", "");
+        while next.contains("  ") {
+            next = next.replace("  ", " ");
+        }
+        next = next.trim().to_owned();
+        if next == current {
+            return next;
+        }
+        current = next;
+    }
 }
 
 fn sanitize(value: &str) -> String {
@@ -696,14 +738,13 @@ mod tests {
     use super::*;
     use crate::models::DownloadState;
 
-    #[test]
-    fn filename_is_sanitised_and_year_is_optional() {
-        let download = Download {
+    fn download(title: &str, author: Option<&str>, year: Option<u16>) -> Download {
+        Download {
             id: 1,
             md5: "x".into(),
-            title: "A/B: C?".into(),
-            authors: vec!["Ada Lovelace".into()],
-            year: Some(1843),
+            title: title.into(),
+            authors: author.map(str::to_owned).into_iter().collect(),
+            year,
             format: BookFormat::Epub,
             source: "libgen.li".into(),
             mirror_urls: vec!["https://libgen.li/ads.php?md5=x".into()],
@@ -717,9 +758,64 @@ mod tests {
             filename: None,
             created_at: 0,
             finished_at: None,
-        };
+        }
+    }
+
+    #[test]
+    fn default_pattern_is_author_dash_title_and_year() {
         assert_eq!(
-            proposed_filename(&download),
+            proposed_filename(
+                &download("Rock Paper Scissors", Some("Alice Feeney"), Some(2021)),
+                crate::service::DEFAULT_DOWNLOAD_NAMING
+            ),
+            "Alice Feeney - Rock Paper Scissors (2021).epub"
+        );
+    }
+
+    #[test]
+    fn a_custom_pattern_reorders_and_omits_fields() {
+        assert_eq!(
+            proposed_filename(
+                &download("Dune", Some("Frank Herbert"), Some(1965)),
+                "{title} - {author}"
+            ),
+            "Dune - Frank Herbert.epub"
+        );
+        assert_eq!(
+            proposed_filename(
+                &download("Dune", Some("Frank Herbert"), Some(1965)),
+                "{year}/{author}/{title}"
+            ),
+            "1965 Frank Herbert Dune.epub",
+            "path separators are sanitised, not preserved"
+        );
+    }
+
+    #[test]
+    fn missing_year_drops_the_empty_brackets_and_missing_author_is_named() {
+        assert_eq!(
+            proposed_filename(
+                &download("Untitled Draft", Some("An Author"), None),
+                crate::service::DEFAULT_DOWNLOAD_NAMING
+            ),
+            "An Author - Untitled Draft.epub"
+        );
+        assert_eq!(
+            proposed_filename(
+                &download("Loose Book", None, None),
+                crate::service::DEFAULT_DOWNLOAD_NAMING
+            ),
+            "Unknown author - Loose Book.epub"
+        );
+    }
+
+    #[test]
+    fn filename_is_sanitised_and_year_is_optional() {
+        assert_eq!(
+            proposed_filename(
+                &download("A/B: C?", Some("Ada Lovelace"), Some(1843)),
+                crate::service::DEFAULT_DOWNLOAD_NAMING
+            ),
             "Ada Lovelace - A B C (1843).epub"
         );
     }

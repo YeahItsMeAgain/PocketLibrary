@@ -810,6 +810,99 @@ fn a_collision_gets_a_number_before_the_extension() {
 }
 
 #[test]
+fn a_custom_naming_pattern_names_the_landed_file() {
+    let server = TestServer::start(|request| {
+        if request.path.starts_with("/ads.php") {
+            Reply::html("<a href=\"/get.php?md5=abc&key=k1\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            Reply::file("application/epub+zip", EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let sink = FakeSink::default();
+    api.set_download_naming("{title} [{author}] {year}")
+        .expect("custom naming");
+    api.enqueue_download(request(&server, "abc", BookFormat::Epub))
+        .expect("enqueue");
+    run(&api, &sink);
+
+    let download = only_download(&api);
+    assert_eq!(
+        download.filename.as_deref(),
+        Some("Rock Paper Scissors [Alice Feeney] 2021.epub")
+    );
+    assert!(
+        sink.file("Rock Paper Scissors [Alice Feeney] 2021.epub")
+            .is_some()
+    );
+}
+
+#[test]
+fn duplicate_rows_never_serialise_a_library_path() {
+    let server = TestServer::start(|request| {
+        if request.path.starts_with("/ads.php") {
+            Reply::html("<a href=\"/get.php?md5=x&key=k1\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            Reply::file("application/epub+zip", EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let sink = FakeSink::default();
+    api.enqueue_download(request(&server, "first", BookFormat::Epub))
+        .expect("enqueue first");
+    run(&api, &sink);
+    let first = only_download(&api);
+    let library_path = "/storage/emulated/0/Books/Private/Alice.epub";
+    let conn = rusqlite::Connection::open(&path).expect("open database");
+    conn.execute(
+        "UPDATE books SET path = ?1 WHERE id = ?2",
+        rusqlite::params![library_path, first.book_id],
+    )
+    .expect("set library path");
+    conn.execute(
+        "UPDATE downloads SET filename = ?1 WHERE id = ?2",
+        rusqlite::params![library_path, first.id],
+    )
+    .expect("seed a legacy path row");
+
+    api.enqueue_download(request(&server, "second", BookFormat::Epub))
+        .expect("enqueue a second md5 with identical bytes");
+    run(&api, &sink);
+    let duplicate = api
+        .list_downloads()
+        .expect("list")
+        .into_iter()
+        .find(|download| download.md5 == "second")
+        .expect("duplicate row");
+    assert_eq!(duplicate.error_code.as_deref(), Some("duplicate"));
+    assert_eq!(
+        duplicate.filename, None,
+        "a duplicate has no new file to name"
+    );
+
+    let json = serde_json::to_string(&api.list_downloads().expect("list")).expect("serialise");
+    assert!(!json.contains("Private"), "no library path in {json}");
+    assert!(
+        !json.contains("storage/emulated"),
+        "no library path in {json}"
+    );
+    for download in api.list_downloads().expect("list") {
+        if let Some(filename) = download.filename {
+            assert!(
+                !filename.contains('/') && !filename.contains('\\'),
+                "filename leaks a path separator: {filename}"
+            );
+        }
+    }
+}
+
+#[test]
 fn a_second_book_lands_on_the_next_shelf_when_the_first_is_full() {
     let server = TestServer::start(|request| {
         if request.path.starts_with("/ads.php") {
