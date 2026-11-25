@@ -96,23 +96,6 @@ APK is built locally because it needs the SDK, NDK and release keystore.
 - **Storage.** Books stay in the user-granted folder through the Android Storage
   Access Framework; BLAKE3 hashes identify them across rescans.
 
-## Status
-
-**0.1.2 is the first public release.** Core tests, 102 Playwright tests, type
-check, build, perf gate and Android clippy pass. No physical-device pass has been
-run yet.
-
-Known limitations:
-
-- The updater installer, share sheet, SAF pickers, touch gestures and Android
-  back stack have only been verified by proxy.
-- First shelf is around 500 ms at 4× CPU throttle against a 400 ms proxy budget.
-- PDFs are transported whole; very large files can spike memory.
-- Annotations are EPUB-only.
-
-See [`docs/perf-shelf-benchmark.md`](docs/perf-shelf-benchmark.md) and the
-release notes for details.
-
 ## Documentation
 
 - [Release notes](docs/release-0.1.2.md) · [Diagnostics](docs/diagnostics.md) ·
