@@ -96,3 +96,8 @@ Run these on a real phone against the signed release, not a debug build:
 - **Annotations are EPUB-only.** PDF has no highlights or notes in this release.
 
 See [`docs/release-0.1.0.md`](docs/release-0.1.0.md) for the full release notes.
+
+## Licence
+
+MIT — see `LICENSE`. Third-party components and prototype assets are listed in
+`THIRD_PARTY_NOTICES.md`.
