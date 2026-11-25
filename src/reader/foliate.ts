@@ -47,10 +47,23 @@ export interface FoliateRenderer extends HTMLElement {
   getContents(): Array<{ doc: Document; index: number }>;
 }
 
+export interface FoliateSection {
+  id?: string;
+  cfi?: string;
+  createDocument?: () => Promise<Document>;
+}
+
+export interface FoliateSearchResult {
+  cfi?: string;
+  excerpt?: string;
+  label?: string;
+  subitems?: Array<{ cfi?: string }>;
+}
+
 export interface FoliateView extends HTMLElement {
   book?: {
     toc?: FoliateTocItem[];
-    sections?: unknown[];
+    sections?: FoliateSection[];
   };
   renderer?: FoliateRenderer;
   lastLocation?: FoliateRelocate;
@@ -63,19 +76,63 @@ export interface FoliateView extends HTMLElement {
   prev(): Promise<void>;
   next(): Promise<void>;
   goTo(target: unknown): Promise<unknown>;
-  resolveCFI(cfi: string): { index: number; anchor(doc: Document): Range };
+  resolveCFI(cfi: string): { index: number; anchor(doc: Document): unknown };
   getCFI(index: number, range: Range): string;
   search(options: {
     query: string;
-  }): AsyncGenerator<
-    { cfi?: string; excerpt?: string; label?: string; subitems?: unknown[] } | string
-  >;
+    index?: number;
+  }): AsyncGenerator<FoliateSearchResult | string>;
+  clearSearch(): void;
+  addAnnotation(
+    annotation: { value: string; colour?: string; kind?: string },
+    remove?: boolean,
+  ): Promise<unknown>;
+  deselect(): void;
 }
 
 export function createFoliateView(): FoliateView {
   const view = document.createElement("foliate-view") as FoliateView;
   view.className = "reader-book";
   return view;
+}
+
+/**
+ * Draw one saved highlight into foliate's overlay.
+ *
+ * Matches the vendored `Overlayer.highlight` shape, and adds a small wax-dot
+ * marker at the end of a note so a written annotation is visible in the text.
+ */
+export function drawAnnotationHighlight(
+  rects: ArrayLike<DOMRect>,
+  options: { color?: string; marker?: boolean } = {},
+): Element {
+  const svg = "http://www.w3.org/2000/svg";
+  const group = document.createElementNS(svg, "g");
+  const wash = document.createElementNS(svg, "g");
+  wash.setAttribute("fill", options.color ?? "#b08a45");
+  wash.style.opacity = "var(--overlayer-highlight-opacity, 0.38)";
+  wash.style.mixBlendMode = "multiply";
+  for (const rect of Array.from(rects)) {
+    const element = document.createElementNS(svg, "rect");
+    element.setAttribute("x", String(rect.left));
+    element.setAttribute("y", String(rect.top));
+    element.setAttribute("height", String(rect.height));
+    element.setAttribute("width", String(rect.width));
+    wash.append(element);
+  }
+  group.append(wash);
+  if (options.marker && rects.length > 0) {
+    const last = rects[rects.length - 1];
+    const dot = document.createElementNS(svg, "circle");
+    dot.setAttribute("cx", String(last.right - 4));
+    dot.setAttribute("cy", String(last.top + 4));
+    dot.setAttribute("r", "3.4");
+    dot.setAttribute("fill", options.color ?? "#b08a45");
+    dot.setAttribute("stroke", "rgba(250, 242, 222, 0.85)");
+    dot.setAttribute("stroke-width", "1");
+    group.append(dot);
+  }
+  return group;
 }
 
 export function flattenToc(

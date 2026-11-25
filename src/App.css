@@ -3241,6 +3241,186 @@ html.reader-open body {
   font-size: 12px;
 }
 
+.reader-selection-pop,
+.reader-annotation-pop {
+  position: fixed;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--reader-rule);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--reader-paper) 97%, transparent);
+  color: var(--reader-ink);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+}
+
+.reader-selection-pop {
+  width: 244px;
+  transform: translate(-50%, -100%);
+  animation: reader-pop-in 0.16s var(--ease-out);
+}
+
+.reader-annotation-pop {
+  right: 12px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  left: 12px;
+  margin: 0 auto;
+  max-width: 440px;
+  animation: reader-sheet-in 0.2s var(--ease-out);
+}
+
+.reader-selection-quote {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--reader-ink) 68%, transparent);
+  font-family: var(--display);
+  font-size: 10px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-swatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reader-swatch {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--reader-ink) 24%, transparent);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--reader-paper) 70%, transparent);
+}
+
+.reader-swatch[aria-pressed="true"] {
+  outline: 2px solid var(--reader-accent);
+  outline-offset: 2px;
+}
+
+.reader-note-action {
+  min-height: 38px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px solid var(--reader-rule);
+  border-radius: 2px;
+  color: var(--reader-ink);
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.reader-delete-action {
+  margin-left: 0;
+  color: var(--reader-accent);
+}
+
+.reader-pop-close {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  margin-left: 0;
+  border: 1px solid var(--reader-rule);
+  border-radius: 50%;
+  color: var(--reader-ink);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.reader-annotation-summary p {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.reader-annotation-summary .reader-annotation-note {
+  margin-top: 5px;
+  padding-left: 8px;
+  border-left: 2px solid var(--reader-accent);
+  color: color-mix(in srgb, var(--reader-ink) 74%, transparent);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.reader-note-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.reader-note-quote {
+  margin: 0;
+  padding: 7px 10px;
+  border-left: 2px solid var(--reader-accent);
+  color: color-mix(in srgb, var(--reader-ink) 72%, transparent);
+  font-family: var(--display);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.reader-note-input {
+  width: 100%;
+  min-height: 96px;
+  padding: 10px;
+  border: 1px solid var(--reader-rule);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--reader-paper) 88%, transparent);
+  color: var(--reader-ink);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.reader-note-input:focus-visible {
+  outline: 2px solid var(--reader-accent);
+  outline-offset: 1px;
+}
+
+.reader-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 3px;
+}
+
+.reader-note-marker {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--reader-accent);
+  vertical-align: middle;
+}
+
+.reader-annotations em {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--reader-ink) 66%, transparent);
+  font-size: 11px;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes reader-pop-in {
+  from {
+    transform: translate(-50%, calc(-100% + 6px));
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -100%);
+    opacity: 1;
+  }
+}
+
 .reader-bottom-action:focus-visible,
 .reader-top-action:focus-visible,
 .reader-back:focus-visible {

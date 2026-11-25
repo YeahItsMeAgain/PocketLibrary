@@ -73,6 +73,27 @@ export interface Bookmark {
   createdAt: number;
 }
 
+export type AnnotationKind = "highlight" | "note";
+
+/** Mirrors `pocketlibrary_core::Annotation`. */
+export interface Annotation {
+  id: number;
+  bookId: number;
+  kind: AnnotationKind;
+  colour: string | null;
+  note: string | null;
+  locator: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Fields an edit or anchor repair may change; absent fields are kept. */
+export interface AnnotationPatch {
+  colour?: string;
+  note?: string;
+  locator?: string;
+}
+
 /** The fixed label palette; no free colour picker. */
 export const LABEL_PALETTE: ReadonlyArray<{ name: string; colour: string }> = [
   { name: "Oxblood", colour: "#6e2630" },
@@ -309,6 +330,20 @@ export interface Platform {
   listBookmarks(bookId: number): Promise<Bookmark[]>;
   addBookmark(bookId: number, locator: string): Promise<Bookmark>;
   deleteBookmark(bookId: number, bookmarkId: number): Promise<void>;
+  listAnnotations(bookId: number): Promise<Annotation[]>;
+  createAnnotation(
+    bookId: number,
+    kind: AnnotationKind,
+    colour: string | null,
+    note: string | null,
+    locator: string,
+  ): Promise<Annotation>;
+  updateAnnotation(
+    bookId: number,
+    annotationId: number,
+    patch: AnnotationPatch,
+  ): Promise<Annotation>;
+  deleteAnnotation(bookId: number, annotationId: number): Promise<void>;
   exportBackup(): Promise<BackupExport | null>;
   previewBackup(): Promise<BackupSelection | null>;
   importBackup(token: string, mode: BackupMode): Promise<BackupReport>;
@@ -372,6 +407,24 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<Bookmark>("add_bookmark", { bookId, locator }),
     deleteBookmark: (bookId, bookmarkId) =>
       call<void>("delete_bookmark", { bookId, bookmarkId }),
+    listAnnotations: (bookId) =>
+      call<Annotation[]>("list_annotations", { bookId }),
+    createAnnotation: (bookId, kind, colour, note, locator) =>
+      call<Annotation>("create_annotation", {
+        bookId,
+        kind,
+        colour,
+        note,
+        locator,
+      }),
+    updateAnnotation: (bookId, annotationId, patch) =>
+      call<Annotation>("update_annotation", {
+        bookId,
+        annotationId,
+        ...patch,
+      }),
+    deleteAnnotation: (bookId, annotationId) =>
+      call<void>("delete_annotation", { bookId, annotationId }),
     exportBackup: () =>
       call<BackupExport | null>("export_backup"),
     previewBackup: () =>
@@ -440,6 +493,7 @@ export interface MockConfig {
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
 const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
+const MOCK_ANNOTATIONS_KEY = "pocketlibrary.mock.annotations";
 const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
 const MOCK_SAMPLE_PDF = "/test-assets/sample.pdf";
 
@@ -765,6 +819,17 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     Math.max(
       0,
       ...Object.values(bookmarkStore).flatMap((list) => list.map((b) => b.id)),
+    ) + 1;
+  const annotationStore = readStored<Record<number, Annotation[]>>(
+    MOCK_ANNOTATIONS_KEY,
+    {},
+  );
+  let nextAnnotationId =
+    Math.max(
+      0,
+      ...Object.values(annotationStore).flatMap((list) =>
+        list.map((annotation) => annotation.id),
+      ),
     ) + 1;
   let pendingBackup: { token: string; name: string } | null = null;
   let nextBackupToken = 1;
@@ -1339,6 +1404,70 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         (bookmark) => bookmark.id !== bookmarkId,
       );
       writeStored(MOCK_BOOKMARKS_KEY, bookmarkStore);
+    },
+    listAnnotations: async (bookId) => [
+      ...(annotationStore[bookId] ?? []).map((annotation) => ({
+        ...annotation,
+      })),
+    ],
+    createAnnotation: async (bookId, kind, colour, note, locator) => {
+      if (!locator.trim()) {
+        throw {
+          code: "invalid_reader_locator",
+          message: "The reading position could not be saved.",
+        };
+      }
+      const now = Math.floor(Date.now() / 1000);
+      const trimmed = note?.trim() ?? "";
+      const annotation: Annotation = {
+        id: nextAnnotationId++,
+        bookId,
+        kind: trimmed ? "note" : kind === "note" ? "note" : "highlight",
+        colour: colour?.trim() || null,
+        note: trimmed || null,
+        locator,
+        createdAt: now,
+        updatedAt: now,
+      };
+      annotationStore[bookId] = [...(annotationStore[bookId] ?? []), annotation];
+      writeStored(MOCK_ANNOTATIONS_KEY, annotationStore);
+      return { ...annotation };
+    },
+    updateAnnotation: async (bookId, annotationId, patch) => {
+      const list = annotationStore[bookId] ?? [];
+      const index = list.findIndex((annotation) => annotation.id === annotationId);
+      if (index < 0) {
+        throw {
+          code: "annotation_not_found",
+          message: "That annotation could not be found.",
+        };
+      }
+      const current = list[index];
+      const next: Annotation = {
+        ...current,
+        colour:
+          patch.colour === undefined
+            ? current.colour
+            : patch.colour.trim() || null,
+        note:
+          patch.note === undefined ? current.note : patch.note.trim() || null,
+        locator: patch.locator ?? current.locator,
+        updatedAt: Math.floor(Date.now() / 1000),
+      };
+      if (patch.note !== undefined) {
+        next.kind = next.note ? "note" : "highlight";
+      }
+      annotationStore[bookId] = list.map((annotation, at) =>
+        at === index ? next : annotation,
+      );
+      writeStored(MOCK_ANNOTATIONS_KEY, annotationStore);
+      return { ...next };
+    },
+    deleteAnnotation: async (bookId, annotationId) => {
+      annotationStore[bookId] = (annotationStore[bookId] ?? []).filter(
+        (annotation) => annotation.id !== annotationId,
+      );
+      writeStored(MOCK_ANNOTATIONS_KEY, annotationStore);
     },
     exportBackup: async () => {
       if ("backupExport" in config && config.backupExport === null) return null;
