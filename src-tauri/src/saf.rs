@@ -4,10 +4,13 @@
 //! adapter; the scan rules themselves live in `pocketlibrary_core`.
 
 use std::collections::HashMap;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use pocketlibrary_core::{Error, FileSource, QuickBytes, Result, SourceEntry, SourceKind};
+use pocketlibrary_core::{
+    DownloadSink, Error, FileSource, QuickBytes, Result, SourceEntry, SourceKind,
+};
 use tauri_plugin_android_fs::{Entry, FsUri};
 
 /// Lists a SAF tree one directory at a time.
@@ -171,5 +174,80 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
                 message: error.to_string(),
             })?;
         Ok(bytes)
+    }
+}
+
+
+/// Writes validated downloads into the granted library folder root.
+///
+/// The bytes are first written to a sibling `.part` document and then renamed,
+/// so a failure never exposes a half-written book. Providers that refuse the
+/// rename still never expose the partial file under the book's name.
+pub struct SafDownloadSink<'a, R: tauri::Runtime> {
+    fs: &'a tauri_plugin_android_fs::api::api_sync::AndroidFs<R>,
+    root: FsUri,
+}
+
+impl<'a, R: tauri::Runtime> SafDownloadSink<'a, R> {
+    pub fn new(
+        fs: &'a tauri_plugin_android_fs::api::api_sync::AndroidFs<R>,
+        root: FsUri,
+    ) -> Self {
+        Self { fs, root }
+    }
+}
+
+impl<R: tauri::Runtime> DownloadSink for SafDownloadSink<'_, R> {
+    fn list_root(&self) -> Result<Vec<String>> {
+        let entries = self
+            .fs
+            .read_dir(&self.root)
+            .map_err(|error| Error::SourceUnavailable {
+                message: error.to_string(),
+            })?;
+        Ok(entries
+            .into_iter()
+            .map(|entry| entry.name().to_owned())
+            .collect())
+    }
+
+    fn write_file(&self, name: &str, bytes: &[u8]) -> Result<()> {
+        let mime = if name.to_ascii_lowercase().ends_with(".pdf") {
+            "application/pdf"
+        } else {
+            "application/epub+zip"
+        };
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .unwrap_or(0);
+        let temp_name = format!(".pocketlibrary-{stamp}.part");
+        let temp = self
+            .fs
+            .create_new_file(&self.root, &temp_name, Some(mime))
+            .map_err(|error| Error::DownloadDisk {
+                message: error.to_string(),
+            })?;
+        let write = || -> std::io::Result<()> {
+            let mut file = self.fs.open_file_writable(&temp).map_err(|error| {
+                std::io::Error::other(error.to_string())
+            })?;
+            file.write_all(bytes)?;
+            file.flush()?;
+            Ok(())
+        };
+        if let Err(error) = write() {
+            let _ = self.fs.remove_file(&temp);
+            return Err(Error::DownloadDisk {
+                message: error.to_string(),
+            });
+        }
+        if let Err(error) = self.fs.rename(&temp, name) {
+            let _ = self.fs.remove_file(&temp);
+            return Err(Error::DownloadDisk {
+                message: error.to_string(),
+            });
+        }
+        Ok(())
     }
 }

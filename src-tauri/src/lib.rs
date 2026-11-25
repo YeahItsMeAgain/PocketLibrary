@@ -3,11 +3,14 @@
 //! The commands here are thin wrappers over `pocketlibrary_core::Api`; the web
 //! UI reaches them only through the typed platform adapter.
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use tauri::{AppHandle, Manager};
 
 use pocketlibrary_core::{
-    Api, ApiError, AppInfo, Book, BookDetail, Bookmark, Label, LabelUsage, LibraryStatus,
-    ReadingState, ReadingStatus, ScanReport, SearchPage, SearchQuery, Shelf,
+    Api, ApiError, AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest, DownloadSink,
+    Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus, ScanReport, SearchPage,
+    SearchQuery, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -17,12 +20,105 @@ mod saf;
 use tauri_plugin_android_fs::{AndroidFsExt, FsUri, UriPermission};
 
 #[cfg(target_os = "android")]
-use crate::saf::SafSource;
+use crate::saf::{SafDownloadSink, SafSource};
 
 /// Whole-file reads are the M1 transport; refuse files that would exhaust the
 /// WebView when Rust, IPC and PDF.js each hold a copy.
 #[cfg(target_os = "android")]
 const MAX_BOOK_BYTES: u64 = 100 * 1024 * 1024;
+
+static DOWNLOAD_WORKER_RUNNING: AtomicBool = AtomicBool::new(false);
+
+/// The Android library folder as a download destination.
+struct AppDownloadSink {
+    app: AppHandle,
+}
+
+#[cfg(target_os = "android")]
+fn android_library_uri(app: &AppHandle) -> pocketlibrary_core::Result<FsUri> {
+    let api = app.state::<Api>();
+    let token = api
+        .library_folder()
+        .map_err(|error| pocketlibrary_core::Error::SourceUnavailable {
+            message: error.message,
+        })?
+        .ok_or_else(|| pocketlibrary_core::Error::SourceUnavailable {
+            message: "No library folder has been chosen yet.".to_owned(),
+        })?;
+    let uri = parse_folder_token(&token);
+    if !grant_is_valid(app, &uri) {
+        return Err(pocketlibrary_core::Error::SourceUnavailable {
+            message: "The library folder is no longer accessible.".to_owned(),
+        });
+    }
+    Ok(uri)
+}
+
+impl DownloadSink for AppDownloadSink {
+    fn list_root(&self) -> pocketlibrary_core::Result<Vec<String>> {
+        #[cfg(target_os = "android")]
+        {
+            let uri = android_library_uri(&self.app)?;
+            let fs = self.app.android_fs();
+            SafDownloadSink::new(fs, uri).list_root()
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            Err(pocketlibrary_core::Error::SourceUnavailable {
+                message: "Downloads need the Android build.".to_owned(),
+            })
+        }
+    }
+
+    fn write_file(&self, name: &str, bytes: &[u8]) -> pocketlibrary_core::Result<()> {
+        #[cfg(target_os = "android")]
+        {
+            let uri = android_library_uri(&self.app)?;
+            let fs = self.app.android_fs();
+            SafDownloadSink::new(fs, uri).write_file(name, bytes)
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            let _ = (name, bytes);
+            Err(pocketlibrary_core::Error::SourceUnavailable {
+                message: "Downloads need the Android build.".to_owned(),
+            })
+        }
+    }
+}
+
+/// Start the queue worker if it is not already running. The worker drains the
+/// persisted queue at two files at a time; an enqueue during the final gap
+/// simply starts a fresh pass.
+fn spawn_download_worker(app: AppHandle) {
+    if DOWNLOAD_WORKER_RUNNING
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return;
+    }
+    tauri::async_runtime::spawn(async move {
+        {
+            let api = app.state::<Api>();
+            let sink = AppDownloadSink { app: app.clone() };
+            if let Err(error) = api.process_downloads(&sink).await {
+                eprintln!("pocketlibrary: download worker stopped ({:?})", error.code);
+            }
+        }
+        DOWNLOAD_WORKER_RUNNING.store(false, Ordering::SeqCst);
+        let api = app.state::<Api>();
+        let still_queued = api
+            .list_downloads()
+            .map(|rows| {
+                rows.iter()
+                    .any(|row| matches!(row.state, pocketlibrary_core::DownloadState::Queued))
+            })
+            .unwrap_or(false);
+        if still_queued {
+            spawn_download_worker(app);
+        }
+    });
+}
 
 fn api_error(code: &'static str, message: impl Into<String>) -> ApiError {
     ApiError {
@@ -210,6 +306,39 @@ fn read_book_response(_app: &AppHandle, _book_id: i64) -> Result<tauri::ipc::Res
         "unsupported",
         "Opening a book needs the Android build.",
     ))
+}
+
+#[tauri::command]
+fn enqueue_download(
+    app: AppHandle,
+    request: DownloadRequest,
+) -> Result<Download, ApiError> {
+    let download = {
+        let api = app.state::<Api>();
+        api.enqueue_download(request)?
+    };
+    spawn_download_worker(app);
+    Ok(download)
+}
+
+#[tauri::command]
+fn list_downloads(api: tauri::State<'_, Api>) -> Result<Vec<Download>, ApiError> {
+    api.list_downloads()
+}
+
+#[tauri::command]
+fn cancel_download(api: tauri::State<'_, Api>, id: i64) -> Result<(), ApiError> {
+    api.cancel_download(id)
+}
+
+#[tauri::command]
+fn retry_download(app: AppHandle, id: i64) -> Result<Download, ApiError> {
+    let download = {
+        let api = app.state::<Api>();
+        api.retry_download(id)?
+    };
+    spawn_download_worker(app);
+    Ok(download)
 }
 
 #[tauri::command]
@@ -403,6 +532,7 @@ pub fn run() {
             let data_dir = app.path().app_data_dir()?;
             let api = Api::open(data_dir.join("library.db"))?;
             app.manage(api);
+            spawn_download_worker(app.handle().clone());
             Ok(())
         });
 
@@ -417,6 +547,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             app_info,
             search_libgen,
+            enqueue_download,
+            list_downloads,
+            cancel_download,
+            retry_download,
             list_books,
             list_shelves,
             get_book_detail,
