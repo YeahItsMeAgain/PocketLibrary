@@ -47,3 +47,15 @@ DPR 3: first 506.2 ms, p95 18.6 / p99 25.8 ms, DOM 11.3 MB, filter 36.9 ms, swee
 2. **Long tasks (2, load only):** module evaluation and first wall commit. No scroll/interaction long tasks. Same next step if zero load tasks is mandatory.
 3. **Full-traversal memory:** the reported 11.3 MB is the benchmark's top-of-wall state. Nodes persist once mounted, so scrolling the entire 182-shelf wall grows renderer memory; the pre-hardening build also grew once every shelf had been painted. A hard cap needs the explicitly out-of-scope 8-shelf JS window.
 4. **Device pass:** `adb` is still unavailable here (`dumpsys meminfo`, real WebView bundle evaluation, compositor fling, progressive-mount boundary, touch drag/filter).
+
+
+## Proxy result (2026-11-25)
+
+- First shelf 1,393.5 → 475.7 ms (budget 400; acceptable miss, app-startup floor ~403 ms)
+- Scroll warm p95/p99 18.8/23.2 ms — pass; zero warm frames >50 ms
+- Long tasks 37 → 2, both load-only; zero during scroll/filter/drag
+- Renderer DOM 27.1 MB/24,758 → 11.3 MB/1,807 at the top of the wall — pass
+- Filter 1.5 → 35.3 ms — pass; lift sweep 1,998.7 → 6.6 ms (probe 2.5 ms)
+- Remaining: full-wall traversal memory (mount-once, no JS windowing), and the real Android WebView memory/frame pass.
+
+The first-paint miss is accepted rather than trading away the rich spine furniture; it is recorded for the device pass.

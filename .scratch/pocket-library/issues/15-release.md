@@ -4,7 +4,7 @@
 
 **Blocked by:** 08, 11, 12, 13, 14
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] App name, icon, splash, and version are settled and applied
 - [ ] A release APK is signed with the generated keystore without secrets entering the repo
