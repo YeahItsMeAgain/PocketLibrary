@@ -4,7 +4,7 @@
 
 **Blocked by:** 05, 06
 
-**Status:** claimed — wall/DOM/filter/drag work is in; all scroll and interaction budgets pass. Two load-only proxy misses remain: first shelf (475.7 ms vs 400) and zero long tasks (2, both during load). Device pass still outstanding.
+**Status:** awaiting-device-test
 
 - [x] Shelves use `content-visibility: auto` with an intrinsic size; no JS windowing, canvas, or WebGL
 - [x] Drag and filter never read whole-library geometry; shelf/slot lookup is arithmetic on the model
