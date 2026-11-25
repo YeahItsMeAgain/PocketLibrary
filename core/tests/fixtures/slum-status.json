@@ -1,0 +1,822 @@
+{
+  "generated_at": "2026-11-25T00:14:15.557129+00:00",
+  "instance_label": "US-East-Primary",
+  "sites": [
+    {
+      "id": "annas",
+      "name": "Anna's Archive",
+      "description": "",
+      "health": "UP",
+      "domains": [
+        {
+          "id": "annas.gl",
+          "url": "https://annas-archive.gl",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "core",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.748685+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.822302+00:00",
+            "http_status": 200,
+            "latency_ms": 1222,
+            "cert_expiry": "2027-01-15T11:36:18+00:00",
+            "body_contains_pass": false,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "annas.pk",
+          "url": "https://annas-archive.pk",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.127033+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.354423+00:00",
+            "http_status": 200,
+            "latency_ms": 786,
+            "cert_expiry": "2027-02-04T18:22:24+00:00",
+            "body_contains_pass": false,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "annas.gd",
+          "url": "https://annas-archive.gd",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.133881+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.578893+00:00",
+            "http_status": 200,
+            "latency_ms": 965,
+            "cert_expiry": "2027-02-08T09:12:25+00:00",
+            "body_contains_pass": false,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "annas.software",
+          "url": "https://software.annas-archive.gl",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.057523+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.479086+00:00",
+            "http_status": 200,
+            "latency_ms": 919,
+            "cert_expiry": "2027-01-18T00:14:29+00:00",
+            "body_contains_pass": false,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "annas.dl1",
+          "url": "https://yqrii5.org",
+          "name": null,
+          "description": null,
+          "section": "download",
+          "role": "supplementary",
+          "status": "UP",
+          "display_status": "UP",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:41.922268+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:18.699964+00:00",
+            "http_status": 403,
+            "latency_ms": 121,
+            "cert_expiry": "2027-02-02T11:05:30+00:00",
+            "body_contains_pass": true,
+            "protection_type": null
+          }
+        },
+        {
+          "id": "annas.dl2",
+          "url": "https://wbsg8v.xyz",
+          "name": null,
+          "description": null,
+          "section": "download",
+          "role": "supplementary",
+          "status": "UP",
+          "display_status": "UP",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.463243+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.183877+00:00",
+            "http_status": 403,
+            "latency_ms": 482,
+            "cert_expiry": "2027-02-03T23:06:14+00:00",
+            "body_contains_pass": true,
+            "protection_type": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "libgen",
+      "name": "Library Genesis",
+      "description": "",
+      "health": "UP",
+      "domains": [
+        {
+          "id": "libgen.bz",
+          "url": "https://libgen.bz",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "core",
+          "status": "UP",
+          "display_status": "UP",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.222720+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.616959+00:00",
+            "http_status": 200,
+            "latency_ms": 676,
+            "cert_expiry": "2027-02-08T03:52:47+00:00",
+            "body_contains_pass": true,
+            "protection_type": null
+          }
+        },
+        {
+          "id": "libgen.gl",
+          "url": "https://libgen.gl",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:44.906369+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.872517+00:00",
+            "http_status": 200,
+            "latency_ms": 973,
+            "cert_expiry": "2026-12-28T16:57:03+00:00",
+            "body_contains_pass": null,
+            "protection_type": "Cloudflare"
+          }
+        },
+        {
+          "id": "libgen.la",
+          "url": "https://libgen.la",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.395749+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.204273+00:00",
+            "http_status": 200,
+            "latency_ms": 634,
+            "cert_expiry": "2026-12-28T08:17:45+00:00",
+            "body_contains_pass": null,
+            "protection_type": "Cloudflare"
+          }
+        },
+        {
+          "id": "libgen.vg",
+          "url": "https://libgen.vg",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "UP",
+          "display_status": "UP",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.212583+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.342116+00:00",
+            "http_status": 200,
+            "latency_ms": 1418,
+            "cert_expiry": "2027-02-08T03:39:33+00:00",
+            "body_contains_pass": true,
+            "protection_type": null
+          }
+        },
+        {
+          "id": "libgen.li",
+          "url": "https://libgen.li",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "UP",
+          "display_status": "UP",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.593972+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.278342+00:00",
+            "http_status": 200,
+            "latency_ms": 696,
+            "cert_expiry": "2027-02-08T03:52:58+00:00",
+            "body_contains_pass": true,
+            "protection_type": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "zlibrary",
+      "name": "Z-Library",
+      "description": "",
+      "health": "UP",
+      "domains": [
+        {
+          "id": "zlibrary.sk",
+          "url": "https://z-library.sk",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.18,
+            "checks": 15919,
+            "first_seen": "2026-09-30T03:03:41.902679+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:11:18.675954+00:00",
+            "http_status": 513,
+            "latency_ms": 248,
+            "cert_expiry": "2027-02-12T10:21:52+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DiamWall"
+          }
+        },
+        {
+          "id": "zlibrary.zlib",
+          "url": "https://z-lib.sk",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "core",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 705.48,
+            "checks": 8348,
+            "first_seen": "2026-10-26T14:45:23.138684+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:11:18.662420+00:00",
+            "http_status": 513,
+            "latency_ms": 231,
+            "cert_expiry": "2027-02-16T12:12:34+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DiamWall"
+          }
+        },
+        {
+          "id": "zlibrary.1lib",
+          "url": "https://1lib.sk",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.18,
+            "checks": 15919,
+            "first_seen": "2026-09-30T03:03:41.882711+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:11:18.683735+00:00",
+            "http_status": 513,
+            "latency_ms": 239,
+            "cert_expiry": "2027-02-11T11:25:31+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DiamWall"
+          }
+        },
+        {
+          "id": "zlibrary.gl",
+          "url": "https://z-lib.gl",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.18,
+            "checks": 15919,
+            "first_seen": "2026-09-30T03:03:42.493716+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:11:19.273820+00:00",
+            "http_status": 503,
+            "latency_ms": 833,
+            "cert_expiry": "2027-01-22T12:35:59+00:00",
+            "body_contains_pass": null,
+            "protection_type": "Cloudflare"
+          }
+        },
+        {
+          "id": "zlibrary.gd",
+          "url": "https://z-lib.gd",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.18,
+            "checks": 15919,
+            "first_seen": "2026-09-30T03:03:43.334598+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:11:20.053390+00:00",
+            "http_status": 503,
+            "latency_ms": 777,
+            "cert_expiry": "2027-01-22T12:32:27+00:00",
+            "body_contains_pass": null,
+            "protection_type": "Cloudflare"
+          }
+        },
+        {
+          "id": "zlibrary.access",
+          "url": "https://go-to-library.sk",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.18,
+            "checks": 15919,
+            "first_seen": "2026-09-30T03:03:42.674662+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:11:19.603122+00:00",
+            "http_status": 513,
+            "latency_ms": 210,
+            "cert_expiry": "2027-02-16T11:50:46+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DiamWall"
+          }
+        },
+        {
+          "id": "zlibrary.access_alt",
+          "url": "https://library-access.sk",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.18,
+            "checks": 15919,
+            "first_seen": "2026-09-30T03:03:43.512749+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:11:19.997851+00:00",
+            "http_status": 429,
+            "latency_ms": 526,
+            "cert_expiry": "2027-02-01T12:33:03+00:00",
+            "body_contains_pass": null,
+            "protection_type": "rate-limit"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scihub",
+      "name": "Sci-Hub",
+      "description": "",
+      "health": "UP",
+      "domains": [
+        {
+          "id": "scihub.ru",
+          "url": "https://sci-hub.ru",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.036111+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.045607+00:00",
+            "http_status": 200,
+            "latency_ms": 730,
+            "cert_expiry": "2027-02-04T07:51:33+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "scihub.su",
+          "url": "https://sci-hub.su",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "core",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.639872+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.418020+00:00",
+            "http_status": 200,
+            "latency_ms": 1149,
+            "cert_expiry": "2026-12-24T01:10:56+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "scihub.st",
+          "url": "https://sci-hub.st",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.691339+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.533045+00:00",
+            "http_status": 403,
+            "latency_ms": 253,
+            "cert_expiry": "2026-12-19T07:17:57+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "scihub.box",
+          "url": "https://sci-hub.box",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.455414+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.355110+00:00",
+            "http_status": 200,
+            "latency_ms": 905,
+            "cert_expiry": "2026-12-18T16:26:33+00:00",
+            "body_contains_pass": false,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "scihub.scinet",
+          "url": "https://sci-net.xyz",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.852063+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.893209+00:00",
+            "http_status": 200,
+            "latency_ms": 411,
+            "cert_expiry": "2026-12-22T06:02:52+00:00",
+            "body_contains_pass": false,
+            "protection_type": "DDoS-Guard"
+          }
+        },
+        {
+          "id": "scihub.red",
+          "url": "https://sci-hub.red",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.009301+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.535426+00:00",
+            "http_status": 200,
+            "latency_ms": 942,
+            "cert_expiry": "2027-01-11T21:42:16+00:00",
+            "body_contains_pass": null,
+            "protection_type": "DDoS-Guard"
+          }
+        }
+      ]
+    },
+    {
+      "id": "Randombook",
+      "name": "Randombook",
+      "description": "",
+      "health": "UP",
+      "domains": [
+        {
+          "id": "Randombook.pw",
+          "url": "https://libgen.pw",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 705.48,
+            "checks": 40582,
+            "first_seen": "2026-10-26T14:45:24.983465+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.731682+00:00",
+            "http_status": 200,
+            "latency_ms": 151,
+            "cert_expiry": "2027-01-06T16:20:40+00:00",
+            "body_contains_pass": false,
+            "protection_type": null
+          }
+        },
+        {
+          "id": "Randombook.me",
+          "url": "https://libgen.me",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 705.48,
+            "checks": 40582,
+            "first_seen": "2026-10-26T14:45:25.238600+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.769966+00:00",
+            "http_status": 200,
+            "latency_ms": 151,
+            "cert_expiry": "2026-12-27T08:59:13+00:00",
+            "body_contains_pass": false,
+            "protection_type": null
+          }
+        },
+        {
+          "id": "Randombook.xyz",
+          "url": "https://libgen.xyz",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 705.48,
+            "checks": 40582,
+            "first_seen": "2026-10-26T14:45:25.123191+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.231540+00:00",
+            "http_status": 200,
+            "latency_ms": 498,
+            "cert_expiry": "2026-12-26T14:27:49+00:00",
+            "body_contains_pass": false,
+            "protection_type": null
+          }
+        },
+        {
+          "id": "Randombook.org",
+          "url": "https://Randombook.org",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 705.48,
+            "checks": 40582,
+            "first_seen": "2026-10-26T14:45:25.264655+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.930238+00:00",
+            "http_status": 200,
+            "latency_ms": 158,
+            "cert_expiry": "2027-02-01T14:10:46+00:00",
+            "body_contains_pass": false,
+            "protection_type": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "other",
+      "name": "Other",
+      "description": "",
+      "health": "UP",
+      "domains": [
+        {
+          "id": "other.welib",
+          "url": "https://welib.org",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:42.821062+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:19.961429+00:00",
+            "http_status": 403,
+            "latency_ms": 137,
+            "cert_expiry": "2027-01-13T20:07:33+00:00",
+            "body_contains_pass": null,
+            "protection_type": "Cloudflare"
+          }
+        },
+        {
+          "id": "other.fmhy",
+          "url": "https://fmhy.net",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "PROTECTED",
+          "display_status": "PROTECTED",
+          "collecting": false,
+          "coverage": {
+            "hours": 705.48,
+            "checks": 40582,
+            "first_seen": "2026-10-26T14:45:24.802610+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.018162+00:00",
+            "http_status": 200,
+            "latency_ms": 142,
+            "cert_expiry": "2027-01-12T15:50:06+00:00",
+            "body_contains_pass": false,
+            "protection_type": "Cloudflare"
+          }
+        },
+        {
+          "id": "other.liber3",
+          "url": "https://liber3.eth.limo",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "UP",
+          "display_status": "UP",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.305633+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.196797+00:00",
+            "http_status": 200,
+            "latency_ms": 301,
+            "cert_expiry": "2026-12-31T11:14:06+00:00",
+            "body_contains_pass": true,
+            "protection_type": null
+          }
+        },
+        {
+          "id": "other.motw",
+          "url": "https://library.memoryoftheworld.org",
+          "name": null,
+          "description": null,
+          "section": null,
+          "role": "supplementary",
+          "status": "UP",
+          "display_status": "UP",
+          "collecting": false,
+          "coverage": {
+            "hours": 1341.19,
+            "checks": 78175,
+            "first_seen": "2026-09-30T03:02:43.155033+00:00"
+          },
+          "last_check": {
+            "timestamp": "2026-11-25T00:13:20.578900+00:00",
+            "http_status": 200,
+            "latency_ms": 647,
+            "cert_expiry": "2027-02-19T06:05:58+00:00",
+            "body_contains_pass": true,
+            "protection_type": null
+          }
+        }
+      ]
+    }
+  ]
+}
