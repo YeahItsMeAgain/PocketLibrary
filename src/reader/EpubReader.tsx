@@ -134,7 +134,20 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
   const [currentHref, setCurrentHref] = useState<string | null>(null);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [bookmarkNotice, setBookmarkNotice] = useState<string | null>(null);
-  const [externalNote, setExternalNote] = useState(false);
+  const [externalNote, setExternalNote] = useState<string | null>(null);
+
+  const openExternally = useCallback(async () => {
+    try {
+      await platform.openBookExternally(book.id);
+      setExternalNote("Opened in another app. Your place is saved.");
+    } catch (error) {
+      setExternalNote(
+        isApiError(error)
+          ? error.message
+          : "No other reader could be opened for this book.",
+      );
+    }
+  }, [book.id]);
 
   const refreshBookmarks = useCallback(async () => {
     try {
@@ -465,7 +478,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
           type="button"
           className="reader-top-action"
           data-testid="reader-external"
-          onClick={() => setExternalNote(true)}
+          onClick={() => void openExternally()}
         >
           Open in another app
         </button>
@@ -508,7 +521,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
 
       {externalNote ? (
         <p className="reader-toast" role="status" data-testid="reader-external-note">
-          Opening in another app is deferred in this build. Your place is saved.
+          {externalNote}
         </p>
       ) : null}
       {bookmarkNotice ? (

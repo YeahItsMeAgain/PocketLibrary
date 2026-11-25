@@ -284,6 +284,6 @@ test("the wall carries no debug version text and Settings carries About", async 
   await expect(page.getByTestId("settings-download")).toContainText(
     "Author - Title (Year)",
   );
-  await expect(page.getByTestId("settings-export")).toBeDisabled();
-  await expect(page.getByTestId("settings-import")).toBeDisabled();
+  await expect(page.getByTestId("settings-export")).toBeEnabled();
+  await expect(page.getByTestId("settings-import")).toBeEnabled();
 });

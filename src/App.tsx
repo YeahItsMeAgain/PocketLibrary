@@ -16,6 +16,9 @@ import {
   platform,
   type ApiError,
   type AppInfo,
+  type BackupMode,
+  type BackupReport,
+  type BackupSelection,
   type Book,
   type BookDetail,
   type Download,
@@ -443,6 +446,7 @@ function DetailPanel({
   const [statusMenu, setStatusMenu] = useState(false);
   const [labelMenu, setLabelMenu] = useState(false);
   const [labelNotice, setLabelNotice] = useState<string | null>(null);
+  const [externalNotice, setExternalNotice] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const close = useLayerExit(true, onClose);
 
@@ -462,6 +466,7 @@ function DetailPanel({
     setStatusMenu(false);
     setLabelMenu(false);
     setLabelNotice(null);
+    setExternalNotice(null);
     Promise.all([
       platform.getBookDetail(bookId),
       platform.readingState(bookId),
@@ -558,6 +563,27 @@ function DetailPanel({
     },
     [detail, bookId, onBookChanged],
   );
+
+  const openExternally = useCallback(async () => {
+    if (!detail) return;
+    setExternalNotice(null);
+    try {
+      await platform.openBookExternally(bookId);
+      const state = await platform.readingState(bookId);
+      setReading(state);
+      setDetail({ ...detail, readingStatus: state.status });
+      onBookChanged({ id: bookId, readingStatus: state.status });
+      setExternalNotice(
+        "Opened in another app. Reading positions made there stay in that app.",
+      );
+    } catch (error) {
+      setExternalNotice(
+        isApiError(error)
+          ? error.message
+          : "No other reader could be opened for this book.",
+      );
+    }
+  }, [detail, bookId, onBookChanged]);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -874,6 +900,19 @@ function DetailPanel({
                   </svg>
                   <span>{readLabel}</span>
                 </button>
+                <button
+                  type="button"
+                  className="btn-return"
+                  data-testid="detail-open-external"
+                  onClick={() => void openExternally()}
+                >
+                  Open in another app
+                </button>
+                {externalNotice ? (
+                  <p className="detail-note" role="status" data-testid="external-notice">
+                    {externalNotice}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   className="btn-return"
@@ -2308,6 +2347,7 @@ interface SettingsViewProps {
   onRescan: () => void;
   onChoose: () => void;
   onSetCapacity: (capacity: number) => void;
+  onLibraryChanged: () => void;
   onBack: () => void;
 }
 
@@ -2319,6 +2359,7 @@ function SettingsView({
   onRescan,
   onChoose,
   onSetCapacity,
+  onLibraryChanged,
   onBack,
 }: SettingsViewProps) {
   const reachable = status.state === "ready";
@@ -2357,6 +2398,89 @@ function SettingsView({
   const parsedCapacity = Number(draftCapacity);
   const capacityValid =
     Number.isInteger(parsedCapacity) && parsedCapacity >= 1;
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupSelection, setBackupSelection] =
+    useState<BackupSelection | null>(null);
+  const [confirmReplace, setConfirmReplace] = useState(false);
+  const [backupNotice, setBackupNotice] = useState<string | null>(null);
+  const [backupError, setBackupError] = useState<string | null>(null);
+
+  const exportBackupNow = useCallback(async () => {
+    setBackupBusy(true);
+    setBackupError(null);
+    setBackupNotice(null);
+    try {
+      const written = await platform.exportBackup();
+      if (written === null) {
+        setBackupNotice("Export cancelled. Nothing was written.");
+      } else {
+        setBackupNotice(
+          `Exported ${written.books} ${written.books === 1 ? "book" : "books"} (${formatBackupSize(written.bytes)}) to ${written.fileName}. Book files were not copied.`,
+        );
+      }
+    } catch (error) {
+      setBackupError(
+        isApiError(error)
+          ? error.message
+          : "The backup could not be written. Please try again.",
+      );
+    } finally {
+      setBackupBusy(false);
+    }
+  }, []);
+
+  const chooseBackupNow = useCallback(async () => {
+    setBackupBusy(true);
+    setBackupError(null);
+    setBackupNotice(null);
+    setBackupSelection(null);
+    setConfirmReplace(false);
+    try {
+      const selection = await platform.previewBackup();
+      if (selection === null) {
+        setBackupNotice("Import cancelled. Nothing was changed.");
+      } else {
+        setBackupSelection(selection);
+      }
+    } catch (error) {
+      setBackupError(
+        isApiError(error)
+          ? error.message
+          : "That backup could not be read. Choose another file.",
+      );
+    } finally {
+      setBackupBusy(false);
+    }
+  }, []);
+
+  const applyBackupNow = useCallback(
+    async (mode: BackupMode) => {
+      if (!backupSelection) return;
+      setBackupBusy(true);
+      setBackupError(null);
+      setBackupNotice(null);
+      try {
+        const report = await platform.importBackup(
+          backupSelection.token,
+          mode,
+        );
+        setBackupSelection(null);
+        setConfirmReplace(false);
+        setBackupNotice(backupReportNotice(report));
+        onLibraryChanged();
+      } catch (error) {
+        setBackupError(
+          isApiError(error)
+            ? error.message
+            : "The backup could not be restored. Please try again.",
+        );
+      } finally {
+        setBackupBusy(false);
+      }
+    },
+    [backupSelection, onLibraryChanged],
+  );
+
   return (
     <main
       id="library-main"
@@ -2529,27 +2653,131 @@ function SettingsView({
 
         <section className="settings-section" aria-labelledby="settings-backup">
           <h3 id="settings-backup">Export / import</h3>
+          <p className="settings-note">
+            One versioned archive holds shelves, labels, reading positions,
+            annotations, settings and download history — never the books
+            themselves.
+          </p>
           <div className="settings-actions">
             <button
               type="button"
               className="secondary-action"
               data-testid="settings-export"
-              disabled
+              disabled={busy || backupBusy}
+              onClick={() => void exportBackupNow()}
             >
-              Export library data
+              {backupBusy && backupSelection === null ? "Working…" : "Export library data"}
             </button>
             <button
               type="button"
               className="secondary-action"
               data-testid="settings-import"
-              disabled
+              disabled={busy || backupBusy}
+              onClick={() => void chooseBackupNow()}
             >
               Import library data
             </button>
           </div>
-          <p className="settings-note">
-            Placeholder until backup and restore lands in ticket 12.
-          </p>
+
+          {backupSelection ? (
+            <div className="backup-panel" data-testid="backup-preview">
+              <p className="settings-value" data-testid="backup-file">
+                {backupSelection.fileName}
+              </p>
+              <dl className="backup-counts">
+                <div>
+                  <dt>Already here</dt>
+                  <dd data-testid="backup-preview-matched">
+                    {backupSelection.preview.matched}
+                  </dd>
+                </div>
+                <div>
+                  <dt>New to this library</dt>
+                  <dd data-testid="backup-preview-new">
+                    {backupSelection.preview.new}
+                  </dd>
+                </div>
+              </dl>
+              <p className="settings-note">
+                Merge is the safe default: it adds missing entries, keeps newer
+                reading positions and never deletes. Book files stay where they
+                are.
+              </p>
+              {confirmReplace ? (
+                <div className="backup-confirm" role="alert">
+                  <p>
+                    Replace clears this library's shelves, labels, reading
+                    state and history, then restores the archive. This cannot
+                    be undone. Book files are not moved.
+                  </p>
+                  <div className="backup-actions">
+                    <button
+                      type="button"
+                      className="danger-action"
+                      data-testid="backup-replace-confirm"
+                      disabled={backupBusy}
+                      onClick={() => void applyBackupNow("replace")}
+                    >
+                      Yes, replace library data
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-action"
+                      data-testid="backup-replace-cancel"
+                      disabled={backupBusy}
+                      onClick={() => setConfirmReplace(false)}
+                    >
+                      Keep current library
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="backup-actions">
+                  <button
+                    type="button"
+                    className="primary-action"
+                    data-testid="backup-merge"
+                    disabled={backupBusy}
+                    onClick={() => void applyBackupNow("merge")}
+                  >
+                    Merge into library
+                  </button>
+                  <button
+                    type="button"
+                    className="danger-action"
+                    data-testid="backup-replace"
+                    disabled={backupBusy}
+                    onClick={() => setConfirmReplace(true)}
+                  >
+                    Replace current library data…
+                  </button>
+                  <button
+                    type="button"
+                    className="settings-back backup-cancel"
+                    data-testid="backup-cancel"
+                    disabled={backupBusy}
+                    onClick={() => {
+                      setBackupSelection(null);
+                      setConfirmReplace(false);
+                    }}
+                  >
+                    Cancel import
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {backupError ? (
+            <p className="action-error" role="alert" data-testid="backup-error">
+              {backupError}
+            </p>
+          ) : null}
+          {backupNotice ? (
+            <p className="settings-note backup-notice" role="status" data-testid="backup-notice">
+              {backupNotice}
+            </p>
+          ) : null}
         </section>
 
         <section className="settings-section" aria-labelledby="settings-about">
@@ -3450,8 +3678,28 @@ const SCAN_REASON_LABELS: Record<ScanIssueReason, string> = {
   invalid_pdf: "not a valid PDF",
 };
 
-function scanNotice(report: ScanReport): string {
-  const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
+function formatBackupSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function backupReportNotice(report: BackupReport): string {
+  if (report.mode === "replace") {
+    const cleared =
+      report.replaced === 1
+        ? "1 previous book cleared"
+        : `${report.replaced} previous books cleared`;
+    return `Library data replaced: ${report.new} new, ${report.matched} matched, ${cleared}. No book files were moved.`;
+  }
+  const skipped =
+    report.skipped > 0
+      ? `, ${report.skipped} newer reading position${report.skipped === 1 ? "" : "s"} kept`
+      : "";
+  return `Merge complete: ${report.new} new, ${report.matched} matched${skipped}. Nothing was deleted.`;
+}
+
+function scanNotice(report: ScanReport): string {  const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
   const removed =
     report.removed === 0
       ? null
@@ -3841,6 +4089,7 @@ export default function App() {
           onRescan={rescan}
           onChoose={chooseFolder}
           onSetCapacity={saveCapacity}
+          onLibraryChanged={() => setReloadKey((key) => key + 1)}
           onBack={closeView}
         />
       );

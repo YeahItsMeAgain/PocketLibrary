@@ -282,7 +282,7 @@ test("reaching the end marks the book finished", async ({ page }) => {
   );
 });
 
-test("open in another app is an honest placeholder", async ({ page }) => {
+test("open in another app reports the real platform route", async ({ page }) => {
   await boot(page);
   await page.goto("/");
   await openReader(page);
@@ -290,7 +290,7 @@ test("open in another app is an honest placeholder", async ({ page }) => {
 
   await page.getByTestId("reader-external").click();
   await expect(page.getByTestId("reader-external-note")).toContainText(
-    "deferred",
+    "needs the Android build",
   );
 });
 

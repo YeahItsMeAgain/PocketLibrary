@@ -115,6 +115,37 @@ export interface LibraryStatus {
   folderName: string | null;
 }
 
+/** Mirrors `pocketlibrary_core::BackupPreview`. */
+export interface BackupPreview {
+  matched: number;
+  new: number;
+}
+
+export type BackupMode = "merge" | "replace";
+
+/** Mirrors `pocketlibrary_core::BackupReport`. */
+export interface BackupReport {
+  mode: BackupMode;
+  matched: number;
+  new: number;
+  skipped: number;
+  replaced: number;
+}
+
+/** What the shell wrote through the system save picker. */
+export interface BackupExport {
+  fileName: string;
+  bytes: number;
+  books: number;
+}
+
+/** An archive picked and inspected by the shell, kept behind an opaque token. */
+export interface BackupSelection {
+  token: string;
+  fileName: string;
+  preview: BackupPreview;
+}
+
 /** Mirrors `pocketlibrary_core::ScanReport`. */
 export interface ScanReport {
   total: number;
@@ -276,6 +307,10 @@ export interface Platform {
   listBookmarks(bookId: number): Promise<Bookmark[]>;
   addBookmark(bookId: number, locator: string): Promise<Bookmark>;
   deleteBookmark(bookId: number, bookmarkId: number): Promise<void>;
+  exportBackup(): Promise<BackupExport | null>;
+  previewBackup(): Promise<BackupSelection | null>;
+  importBackup(token: string, mode: BackupMode): Promise<BackupReport>;
+  openBookExternally(bookId: number): Promise<void>;
 }
 
 export type Invoke = typeof invoke;
@@ -335,6 +370,14 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<Bookmark>("add_bookmark", { bookId, locator }),
     deleteBookmark: (bookId, bookmarkId) =>
       call<void>("delete_bookmark", { bookId, bookmarkId }),
+    exportBackup: () =>
+      call<BackupExport | null>("export_backup"),
+    previewBackup: () =>
+      call<BackupSelection | null>("preview_backup"),
+    importBackup: (token, mode) =>
+      call<BackupReport>("import_backup", { token, mode }),
+    openBookExternally: (bookId) =>
+      call<void>("open_book_externally", { bookId }),
   };
 }
 
@@ -380,6 +423,15 @@ export interface MockConfig {
   downloadFail?: boolean;
   /** Force a typed failure reason. */
   downloadFailCode?: "mirror_failed" | "offline" | "truncated_file";
+  /** Result the mock save picker reports; `null` simulates cancelling. */
+  backupExport?: BackupExport | null;
+  /** What the next picked archive contains. */
+  backupPreview?: BackupPreview;
+  /** Reports returned by merge and replace. */
+  backupMergeReport?: BackupReport;
+  backupReplaceReport?: BackupReport;
+  /** Make preview (and import) fail with a typed archive error. */
+  backupError?: { code: string; message: string };
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
@@ -702,6 +754,8 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       0,
       ...Object.values(bookmarkStore).flatMap((list) => list.map((b) => b.id)),
     ) + 1;
+  let pendingBackup: { token: string; name: string } | null = null;
+  let nextBackupToken = 1;
   for (const book of books) {
     const stored = storedReading[book.id];
     if (stored) {
@@ -1252,6 +1306,59 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         (bookmark) => bookmark.id !== bookmarkId,
       );
       writeStored(MOCK_BOOKMARKS_KEY, bookmarkStore);
+    },
+    exportBackup: async () => {
+      if ("backupExport" in config && config.backupExport === null) return null;
+      return (
+        config.backupExport ?? {
+          fileName: "pocketlibrary-backup.pocketlibrary",
+          bytes: 18_432,
+          books: books.length,
+        }
+      );
+    },
+    previewBackup: async () => {
+      if (config.backupError) throw config.backupError;
+      const token = `mock-backup-${nextBackupToken++}`;
+      pendingBackup = { token, name: "pocketlibrary-backup.pocketlibrary" };
+      return {
+        token,
+        fileName: pendingBackup.name,
+        preview: config.backupPreview ?? { matched: 3, new: 2 },
+      };
+    },
+    importBackup: async (token, mode) => {
+      if (config.backupError) throw config.backupError;
+      if (!pendingBackup || pendingBackup.token !== token) {
+        throw {
+          code: "backup_selection_expired",
+          message: "That archive is no longer selected. Choose it again.",
+        };
+      }
+      pendingBackup = null;
+      const matched = config.backupPreview?.matched ?? 3;
+      const added = config.backupPreview?.new ?? 2;
+      return mode === "replace"
+        ? (config.backupReplaceReport ?? {
+            mode,
+            matched,
+            new: added,
+            skipped: 0,
+            replaced: books.length,
+          })
+        : (config.backupMergeReport ?? {
+            mode,
+            matched,
+            new: added,
+            skipped: 1,
+            replaced: 0,
+          });
+    },
+    openBookExternally: async () => {
+      throw {
+        code: "unsupported",
+        message: "Opening a book in another app needs the Android build.",
+      };
     },
   };
 }
