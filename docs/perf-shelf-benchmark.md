@@ -126,6 +126,17 @@ checkbox stays open. On device, check:
   and no scroll jump).
 - Lift/drop and filtering with the real touch pipeline.
 
+## v0.1.0 release run (2026-11-25)
+
+`PERF_LABEL=release-0.1.0 node perf/bench.mjs` on the release commit, same
+method: first shelf **481.3 ms** (miss), scroll warm p95/p99 **18.3 / 22.1 ms**
+(pass), scroll cold p95/p99 22.8 / 35.4 ms, **2** load-only long tasks (miss),
+DOM **11.3 MB / 1,807 nodes** (pass), filter apply **36 ms** sync / 74.1 ms
+settled (pass), filter clear **12.6 ms** sync / 47.6 ms settled (pass), lift
+sweep **0 / 6.5 ms** (pass). Raw:
+`perf/results/release-0.1.0.json`. The ranking is unchanged from the hardening
+run; the first-paint and load-long-task gaps remain accepted for the device pass.
+
 ## Reproduce
 
 ```bash
