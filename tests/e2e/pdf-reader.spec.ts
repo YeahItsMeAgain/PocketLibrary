@@ -198,21 +198,22 @@ async function persistentProgress(page: Page): Promise<number> {
   return Number(value ?? 0);
 }
 
-test("PDF persistent controls stay visible and return to the wall", async ({
+test("PDF persistent progress stays visible and the top bar returns", async ({
   page,
 }) => {
   await boot(page);
   await openReader(page);
 
   await expect(page.locator(".reader-top")).not.toHaveClass(/is-visible/);
-  await expect(page.getByTestId("reader-persistent-back")).toBeVisible();
+  await expect(page.getByTestId("reader-persistent-back")).toHaveCount(0);
   await expect(page.getByTestId("reader-persistent-progress")).toBeVisible();
   await expect(page.getByTestId("reader-persistent-percent")).toContainText(
     "1/3",
   );
   expect(await persistentProgress(page)).toBe(33);
 
-  await page.getByTestId("reader-persistent-back").click();
+  await showChrome(page);
+  await page.getByTestId("reader-back").click();
   await expect(page.getByTestId("reader")).toHaveCount(0);
   await expect(page.getByTestId("library-wall")).toBeVisible();
 });

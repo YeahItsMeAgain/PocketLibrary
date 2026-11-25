@@ -19,4 +19,4 @@ mocked in Playwright. See the README device checklist.
 - [x] After repeated failures, show a one-time gentle hint pointing to diagnostics.
 - [x] No support code and no verbose toggle.
 - [x] Tests: log write/rotation, export contents, crash/previous-session marker, JS error capture, share fallback, UI actions.
-- [x] Signed release APK; README/release notes updated.
+- [x] Signed release APK (SHA-256 `80ccd6cab3f2f814bc256b49386e15e37a1b88cf13c2980994b9b3dd33ea4de1`); README/release notes updated.

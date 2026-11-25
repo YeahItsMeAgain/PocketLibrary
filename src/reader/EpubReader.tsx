@@ -812,7 +812,6 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
       <ReaderPersistentChrome
         progress={progress}
         label={`${percent}%`}
-        onClose={close}
       />
 
       {!ready && !failed ? (

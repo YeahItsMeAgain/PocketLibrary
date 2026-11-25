@@ -59,6 +59,108 @@ async function choose(
   await expect(drawer(page)).toBeHidden();
 }
 
+async function watchRailAnimations(page: import("@playwright/test").Page) {
+  await page.evaluate(() => {
+    const state = window as unknown as { __railAnimations?: number };
+    state.__railAnimations = 0;
+    document.addEventListener(
+      "animationstart",
+      (event) => {
+        const target = event.target as Element | null;
+        if (
+          target?.classList?.contains("drawer-rail") &&
+          (event as AnimationEvent).animationName === "drawer-rail-in"
+        ) {
+          state.__railAnimations = (state.__railAnimations ?? 0) + 1;
+        }
+      },
+      true,
+    );
+  });
+}
+
+function railAnimations(page: import("@playwright/test").Page) {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __railAnimations?: number }).__railAnimations ?? 0,
+  );
+}
+
+test("a tap opens the drawer once, with one entrance animation", async ({
+  page,
+}) => {
+  await boot(page);
+  await watchRailAnimations(page);
+
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(drawer(page)).toBeVisible();
+
+  const rail = page.locator(".drawer-rail");
+  await expect(rail).toHaveCount(1);
+  await expect(rail).toHaveClass(/is-opening/);
+  await expect.poll(() => railAnimations(page)).toBe(1);
+
+  await expect(rail).not.toHaveClass(/is-opening/, { timeout: 2_000 });
+  expect(await railAnimations(page)).toBe(1);
+});
+
+test("an upward drag opens without replaying the entrance animation", async ({
+  page,
+}) => {
+  await boot(page);
+  await watchRailAnimations(page);
+
+  const pull = await page
+    .getByRole("button", { name: "Open navigation" })
+    .boundingBox();
+  expect(pull).not.toBeNull();
+  if (!pull) return;
+  const x = pull.x + pull.width / 2;
+  const y = pull.y + pull.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y - 140, { steps: 10 });
+  await page.mouse.up();
+
+  await expect(drawer(page)).toBeVisible();
+  const rail = page.locator(".drawer-rail");
+  await expect(rail).not.toHaveClass(/is-opening/);
+  await expect(rail).not.toHaveClass(/is-dragging/);
+  await page.waitForTimeout(550);
+  expect(await railAnimations(page)).toBe(0);
+});
+
+test("a downward drag that snaps back does not replay or flicker", async ({
+  page,
+}) => {
+  await boot(page);
+  await openDrawer(page);
+  await page.waitForTimeout(500);
+  await watchRailAnimations(page);
+
+  const rail = page.locator(".drawer-rail");
+  const box = await rail.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) return;
+  const x = box.x + box.width / 2;
+  const handleY = box.y + 18;
+
+  await page.mouse.move(x, handleY);
+  await page.mouse.down();
+  await page.waitForTimeout(30);
+  for (let step = 1; step <= 5; step += 1) {
+    await page.mouse.move(x, handleY + step * 5);
+    await page.waitForTimeout(30);
+  }
+  await page.mouse.up();
+
+  await expect(drawer(page)).toBeVisible();
+  await expect(rail).not.toHaveClass(/is-dragging/);
+  await expect(rail).not.toHaveClass(/is-opening/);
+  await page.waitForTimeout(550);
+  expect(await railAnimations(page)).toBe(0);
+});
+
 test("the drawer opens by tap and by a synthetic upward drag", async ({
   page,
 }) => {

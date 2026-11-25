@@ -329,7 +329,7 @@ async function persistentProgress(page: Page): Promise<number> {
   return Number(value ?? 0);
 }
 
-test("persistent Library pill and progress stay visible without chrome", async ({
+test("persistent progress stays visible without chrome", async ({
   page,
 }) => {
   await boot(page, { settings: { spacing: 2 } });
@@ -337,7 +337,7 @@ test("persistent Library pill and progress stay visible without chrome", async (
   await openReader(page);
 
   await expect(page.locator(".reader-top")).not.toHaveClass(/is-visible/);
-  await expect(page.getByTestId("reader-persistent-back")).toBeVisible();
+  await expect(page.getByTestId("reader-persistent-back")).toHaveCount(0);
   await expect(page.getByTestId("reader-persistent-progress")).toBeVisible();
   await expect(page.getByTestId("reader-persistent-percent")).toBeVisible();
   expect(await persistentProgress(page)).toBe(0);
@@ -346,7 +346,8 @@ test("persistent Library pill and progress stay visible without chrome", async (
   await expect.poll(() => persistentProgress(page)).toBeGreaterThan(0);
   await expect(page.locator(".reader-top")).not.toHaveClass(/is-visible/);
 
-  await page.getByTestId("reader-persistent-back").click();
+  await showChrome(page);
+  await page.getByTestId("reader-back").click();
   await expect(page.getByTestId("reader")).toHaveCount(0);
   await expect(page.getByTestId("library-wall")).toBeVisible();
 });

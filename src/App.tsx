@@ -4286,12 +4286,14 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerOffset, setDrawerOffset] = useState<number | null>(null);
   const [drawerDragging, setDrawerDragging] = useState(false);
+  const [drawerOpening, setDrawerOpening] = useState(false);
   const [showDrawerHint, setShowDrawerHint] = useState(false);
   const pullRef = useRef<HTMLButtonElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLButtonElement>(null);
   const drawerDragRef = useRef<{
     fromOpen: boolean;
+    opened: boolean;
     y0: number;
     t0: number;
     height: number;
@@ -4303,11 +4305,14 @@ export default function App() {
   const drawerOpenedAtRef = useRef(0);
   const drawerTrackingRef = useRef(false);
 
-  const openDrawer = useCallback(() => {
+  const openDrawer = useCallback((animate = false) => {
     setShowDrawerHint(false);
     setDrawerOffset(null);
     setDrawerDragging(false);
     setDrawerOpen(true);
+    // Only a genuine tap replays the rail entrance. Drags and snap-backs
+    // already track the finger, so animating them would flicker.
+    setDrawerOpening(animate);
     try {
       window.localStorage.setItem(DRAWER_HINT_KEY, "1");
     } catch {
@@ -4334,6 +4339,7 @@ export default function App() {
     setDrawerOpen(false);
     setDrawerOffset(null);
     setDrawerDragging(false);
+    setDrawerOpening(false);
     pullRef.current?.focus();
   });
 
@@ -4384,16 +4390,14 @@ export default function App() {
     dismissDrawerHint();
     drawerDragRef.current = {
       fromOpen,
+      opened: fromOpen,
       y0: event.clientY,
       t0: performance.now(),
       height,
       y: fromOpen ? 0 : height,
       moved: false,
     };
-    if (!fromOpen) {
-      setDrawerOpen(true);
-      drawerOpenedAtRef.current = performance.now();
-    }
+    setDrawerOpening(false);
     setDrawerDragging(true);
     setDrawerOffset(fromOpen ? 0 : height);
     try {
@@ -4417,6 +4421,13 @@ export default function App() {
       if (!drag) return;
       const dy = event.clientY - drag.y0;
       if (Math.abs(dy) > 6) drag.moved = true;
+      if (!drag.fromOpen && !drag.opened && drag.moved) {
+        // Mount the rail on the first real movement, not on pointerdown, so a
+        // tap has one render path: the animated open on pointerup.
+        drag.opened = true;
+        setDrawerOpen(true);
+        drawerOpenedAtRef.current = performance.now();
+      }
       const y = drag.fromOpen
         ? Math.max(0, Math.min(drag.height, dy))
         : Math.max(0, Math.min(drag.height, drag.height + dy));
@@ -4448,7 +4459,7 @@ export default function App() {
           drag.y < drag.height * 0.55 || velocity < -0.45;
         if (!drag.moved && dt < 420) shouldOpen = true;
       }
-      if (shouldOpen) openDrawer();
+      if (shouldOpen) openDrawer(!drag.fromOpen && !drag.moved);
       else closeDrawer();
     };
     window.addEventListener("pointermove", onMove, { passive: false });
@@ -4463,6 +4474,7 @@ export default function App() {
     setDrawerOpen(false);
     setDrawerOffset(null);
     setDrawerDragging(false);
+    setDrawerOpening(false);
   }, []);
 
   const initialLoadStarted = useRef(false);
@@ -4771,7 +4783,7 @@ export default function App() {
         onClick={() => {
           if (performance.now() - lastHandleGestureRef.current < 500) return;
           if (drawerOpen) closeDrawer();
-          else openDrawer();
+          else openDrawer(true);
         }}
       >
         <span className="pull-slot" aria-hidden="true" />
@@ -4794,7 +4806,7 @@ export default function App() {
           <div id="navigation-drawer" className="drawer is-open">
             <div
               ref={railRef}
-              className={`drawer-rail${drawerDragging ? " is-dragging" : ""}`}
+              className={`drawer-rail${drawerDragging ? " is-dragging" : ""}${drawerOpening ? " is-opening" : ""}`}
               role="dialog"
               aria-modal="true"
               aria-labelledby="drawer-title"
@@ -4804,6 +4816,11 @@ export default function App() {
                   : undefined
               }
               onPointerDown={(event) => startDrawerDrag(true, event)}
+              onAnimationEnd={(event) => {
+                if (event.animationName === "drawer-rail-in") {
+                  setDrawerOpening(false);
+                }
+              }}
               onClickCapture={(event) => {
                 if (performance.now() < suppressRailRef.current) {
                   event.preventDefault();

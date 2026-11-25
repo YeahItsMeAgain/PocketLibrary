@@ -525,7 +525,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
       <ReaderPersistentChrome
         progress={progress}
         label={`${percent}% · ${pageNumber}/${numPages || "—"}`}
-        onClose={close}
       />
 
       {!ready && !failed ? (

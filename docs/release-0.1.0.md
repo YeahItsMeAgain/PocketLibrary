@@ -25,13 +25,18 @@ Android-only, arm64-v8a, package `app.pocketlibrary`, version `0.1.1`
 - **Report actions.** Scan, download, import and reader failures offer the same
   export directly. After three failures in a session a gentle one-time hint
   points to Help & diagnostics.
+- **Reader chrome.** The persistent `← Library` pill is gone; the top-bar Back,
+  Escape and Android/browser back remain, along with the always-visible bottom
+  progress bar and readout.
+- **Drawer.** The entrance animation now runs only for a genuine tap, so
+  drag-opened drawers and snap-backs no longer replay it or flicker.
 
 ### Verification
 
 | Check | Result |
 |---|---|
 | `cargo test --manifest-path core/Cargo.toml` | pass |
-| `npm run test:e2e` | 79 passed |
+| `npm run test:e2e` | 82 passed |
 | `npm run build` | pass |
 | `npx tsc --noEmit` | pass |
 | Android `cargo clippy --all-targets -- -D warnings` | pass |
@@ -40,7 +45,7 @@ Android-only, arm64-v8a, package `app.pocketlibrary`, version `0.1.1`
 
 APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`
 · **35,359,638 bytes** · SHA-256
-`47bfeca71bee61f7e5f4f3596b6b225647715293b1183d189d47bddaea26ee12`
+`80ccd6cab3f2f814bc256b49386e15e37a1b88cf13c2980994b9b3dd33ea4de1`
 · certificate SHA-256
 `f2167c3918933cd2fe247fb5748e7b699f925d8f6f716eec04da9f862d1dcbdb`.
 Published path

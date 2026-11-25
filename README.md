@@ -23,6 +23,9 @@ build cannot be upgraded to it and vice versa; uninstall the other build first
 same key keeps the app's database, covers, and settings. Book files are never
 copied into the app and remain in your chosen folder.
 
+Release APK SHA-256:
+`80ccd6cab3f2f814bc256b49386e15e37a1b88cf13c2980994b9b3dd33ea4de1`.
+
 On first launch, choose or create a folder such as `Documents/PocketLibrary`.
 Android will not grant the storage root, `Download`, or a removable-storage
 root; pick a normal subfolder.

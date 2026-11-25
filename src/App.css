@@ -1890,6 +1890,9 @@ html.is-book-dragging body {
     inset 0 2px 0 rgba(0, 0, 0, 0.4);
   touch-action: none;
   will-change: transform;
+}
+
+.drawer-rail.is-opening {
   animation: drawer-rail-in 0.44s var(--ease-out);
 }
 
@@ -3004,43 +3007,6 @@ html.reader-open body {
 }
 
 /* Persistent reader controls: visible while the chrome is hidden. */
-.reader-float-back {
-  position: absolute;
-  z-index: 6;
-  top: max(8px, env(safe-area-inset-top));
-  left: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 30px;
-  padding: 4px 11px 4px 9px;
-  border: 1px solid color-mix(in srgb, var(--reader-ink) 18%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--reader-paper) 72%, transparent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  color: var(--reader-ink);
-  font-family: var(--display);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.74;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  transition: opacity 0.18s ease;
-}
-
-.reader-float-back:active,
-.reader-float-back:focus-visible {
-  opacity: 1;
-}
-
-/* The revealed top bar carries its own Library button. */
-.reader:has(.reader-top.is-visible) .reader-float-back {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
 .reader-float-progress {
   position: absolute;
   z-index: 6;
