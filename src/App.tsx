@@ -14,12 +14,14 @@ import {
 } from "react";
 
 import {
+  DEFAULT_DOWNLOAD_NAMING,
   LABEL_PALETTE,
   isApiError,
   isLibraryUnavailable,
   platform,
   type ApiError,
   type AppInfo,
+  type BackupImport,
   type BackupMode,
   type BackupReport,
   type BackupSelection,
@@ -553,7 +555,7 @@ function DetailPanel({
       setDetail({ ...detail, readingStatus: state.status });
       onBookChanged({ id: bookId, readingStatus: state.status });
       setExternalNotice(
-        "Opened in another app. Reading positions made there stay in that app.",
+        "Handed to the Android app chooser. The book is marked reading when you return; positions made there stay in that app.",
       );
     } catch (error) {
       setExternalNotice(
@@ -2519,10 +2521,51 @@ function SettingsView({
   const [draftCapacity, setDraftCapacity] = useState("");
   const [reader, setReader] = useState(() => loadReaderSettings());
   const [info, setInfo] = useState<AppInfo | null>(null);
+  const [naming, setNaming] = useState<string | null>(null);
+  const [namingDraft, setNamingDraft] = useState(DEFAULT_DOWNLOAD_NAMING);
+  const [namingBusy, setNamingBusy] = useState(false);
+  const [namingError, setNamingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (shelfCapacity !== null) setDraftCapacity(String(shelfCapacity));
   }, [shelfCapacity]);
+
+  useEffect(() => {
+    let alive = true;
+    platform
+      .getDownloadNaming()
+      .then((pattern) => {
+        if (!alive) return;
+        setNaming(pattern);
+        setNamingDraft(pattern);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setNaming(DEFAULT_DOWNLOAD_NAMING);
+        setNamingDraft(DEFAULT_DOWNLOAD_NAMING);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const saveNaming = useCallback(async (pattern: string) => {
+    setNamingBusy(true);
+    setNamingError(null);
+    try {
+      const saved = await platform.setDownloadNaming(pattern);
+      setNaming(saved);
+      setNamingDraft(saved);
+    } catch (error) {
+      setNamingError(
+        isApiError(error)
+          ? error.message
+          : "That naming pattern could not be saved.",
+      );
+    } finally {
+      setNamingBusy(false);
+    }
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -2613,13 +2656,13 @@ function SettingsView({
       setBackupError(null);
       setBackupNotice(null);
       try {
-        const report = await platform.importBackup(
+        const outcome = (await platform.importBackup(
           backupSelection.token,
           mode,
-        );
+        )) as BackupImport;
         setBackupSelection(null);
         setConfirmReplace(false);
-        setBackupNotice(backupReportNotice(report));
+        setBackupNotice(backupImportNotice(outcome));
         onLibraryChanged();
       } catch (error) {
         setBackupError(
@@ -2796,12 +2839,72 @@ function SettingsView({
           data-testid="settings-download"
         >
           <h3 id="settings-download">Download naming</h3>
-          <p className="settings-value">Author - Title (Year)</p>
+          <form
+            className="capacity-form naming-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!namingBusy) void saveNaming(namingDraft);
+            }}
+          >
+            <label htmlFor="download-naming">Pattern</label>
+            <div className="capacity-controls">
+              <input
+                id="download-naming"
+                data-testid="download-naming"
+                type="text"
+                value={namingDraft}
+                maxLength={160}
+                spellCheck={false}
+                onChange={(event) => setNamingDraft(event.target.value)}
+                disabled={namingBusy}
+              />
+              <button
+                type="submit"
+                className="secondary-action"
+                data-testid="save-download-naming"
+                disabled={namingBusy || !namingDraft.trim()}
+              >
+                Save
+              </button>
+            </div>
+            <div className="naming-reset-row">
+              <button
+                type="button"
+                className="settings-back"
+                data-testid="reset-download-naming"
+                disabled={namingBusy || naming === DEFAULT_DOWNLOAD_NAMING}
+                onClick={() => void saveNaming(DEFAULT_DOWNLOAD_NAMING)}
+              >
+                Reset to default
+              </button>
+            </div>
+          </form>
           <p className="settings-note">
-            Downloads land in the library folder root with this name, sanitised.
-            A second copy gets a numbered suffix. Editing the pattern follows
-            with the backup ticket.
+            Placeholders: <code>{"{author}"}</code>, <code>{"{title}"}</code> and{" "}
+            <code>{"{year}"}</code>. Only one placeholder per part; unknown or
+            unbalanced braces are rejected. A missing year drops its empty
+            brackets, and path separators are sanitised.
           </p>
+          <p
+            className="settings-value naming-example"
+            data-testid="download-naming-example"
+          >
+            {downloadNameExample(namingDraft)}
+          </p>
+          <p className="settings-note" data-testid="download-naming-saved">
+            {naming
+              ? `Saved pattern: ${naming}`
+              : "Using the default until the saved pattern loads."}
+          </p>
+          {namingError ? (
+            <p
+              className="action-error"
+              role="alert"
+              data-testid="download-naming-error"
+            >
+              {namingError}
+            </p>
+          ) : null}
         </section>
 
         <section className="settings-section" aria-labelledby="settings-backup">
@@ -3165,8 +3268,9 @@ function ResultDetail({
   const active =
     download?.state === "queued" || download?.state === "running";
   const supported = supportedBookFormat(result.extension) !== null;
+  const close = useLayerExit(true, onClose);
   return (
-    <div className="search-sheet-backdrop" onClick={onClose}>
+    <div className="search-sheet-backdrop" onClick={close}>
       <section
         className="search-sheet"
         role="dialog"
@@ -3188,7 +3292,7 @@ function ResultDetail({
             className="sheet-close"
             data-testid="result-detail-close"
             aria-label="Close result details"
-            onClick={onClose}
+            onClick={close}
           >
             ×
           </button>
@@ -3878,7 +3982,60 @@ function backupReportNotice(report: BackupReport): string {
   return `Merge complete: ${report.new} new, ${report.matched} matched${skipped}. Nothing was deleted.`;
 }
 
-function scanNotice(report: ScanReport): string {  const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
+function backupImportNotice(outcome: BackupImport): string {
+  const summary = backupReportNotice(outcome.report);
+  if (outcome.scanError) {
+    return `${summary} Rescan after import could not run: ${outcome.scanError}`;
+  }
+  if (!outcome.scan) return summary;
+  const linked =
+    outcome.scan.relinked > 0
+      ? outcome.scan.relinked === 1
+        ? "1 imported book linked to its file"
+        : `${outcome.scan.relinked} imported books linked to their files`
+      : null;
+  const details = [
+    linked,
+    outcome.scan.added > 0
+      ? `${outcome.scan.added} new book${outcome.scan.added === 1 ? "" : "s"} found`
+      : null,
+    outcome.scan.removed > 0
+      ? `${outcome.scan.removed} missing book${outcome.scan.removed === 1 ? "" : "s"} marked finished`
+      : null,
+  ].filter(Boolean);
+  const result =
+    details.length > 0
+      ? details.join(", ")
+      : `${outcome.scan.total} books on the shelves`;
+  return `${summary} Rescan after import: ${result}.`;
+}
+
+function downloadNameExample(pattern: string): string {
+  const author = "Ursula K. Le Guin";
+  const title = "The Left Hand of Darkness";
+  const year = "1969";
+  const stem = pattern.replace(
+    /\{(author|title|year)\}/g,
+    (_match, token: string) =>
+      token === "author" ? author : token === "title" ? title : year,
+  );
+  const cleaned = stem
+    .replace("()", "")
+    .replace("[]", "")
+    .replace("{}", "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return `${cleaned || "Untitled"}.epub`;
+}
+
+function scanNotice(report: ScanReport): string {
+  const added = report.added === 1 ? "1 new book" : `${report.added} new books`;
+  const relinked =
+    report.relinked > 0
+      ? report.relinked === 1
+        ? "1 book linked to its file"
+        : `${report.relinked} books linked to their files`
+      : null;
   const removed =
     report.removed === 0
       ? null
@@ -3901,7 +4058,7 @@ function scanNotice(report: ScanReport): string {  const added = report.added ==
           )
           .join(" · ")
       : null;
-  return [`Scan complete: ${report.total} books`, added, removed, duplicates, skipped]
+  return [`Scan complete: ${report.total} books`, relinked, added, removed, duplicates, skipped]
     .filter(Boolean)
     .join(" · ");
 }

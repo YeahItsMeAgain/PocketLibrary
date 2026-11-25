@@ -2620,6 +2620,27 @@ html.is-book-dragging body {
   gap: 8px;
 }
 
+.naming-reset-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.naming-reset-row .settings-back {
+  padding: 2px 0;
+  color: #b99c6b;
+  font-size: 9px;
+}
+
+.naming-example {
+  overflow-wrap: anywhere;
+}
+
+.settings-note code {
+  color: #d8c099;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+}
+
 .capacity-controls input {
   width: 100%;
   min-width: 0;

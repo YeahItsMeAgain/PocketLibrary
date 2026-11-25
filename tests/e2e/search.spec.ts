@@ -97,6 +97,25 @@ test("basic search lists results with honest counts and a read-only detail", asy
   await expect(sheet).toHaveCount(0);
 });
 
+test("browser back closes the result detail before the Search view", async ({
+  page,
+}) => {
+  await boot(page);
+
+  await page.getByTestId("search-query").fill("Rock Paper Scissors");
+  await page.getByTestId("search-submit").click();
+  await page.getByTestId("search-result").first().click();
+  await expect(page.getByTestId("result-detail")).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByTestId("result-detail")).toHaveCount(0);
+  await expect(page.getByTestId("search-view")).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByTestId("search-view")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+});
+
 test("advanced fields filter client-side and report what was hidden", async ({
   page,
 }) => {

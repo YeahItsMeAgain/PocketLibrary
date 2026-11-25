@@ -282,7 +282,10 @@ test("the wall carries no debug version text and Settings carries About", async 
     "SIL Open Font License",
   );
   await expect(page.getByTestId("settings-download")).toContainText(
-    "Author - Title (Year)",
+    "{author}",
+  );
+  await expect(page.getByTestId("download-naming")).toHaveValue(
+    "{author} - {title} ({year})",
   );
   await expect(page.getByTestId("settings-export")).toBeEnabled();
   await expect(page.getByTestId("settings-import")).toBeEnabled();

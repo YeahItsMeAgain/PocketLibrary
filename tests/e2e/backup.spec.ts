@@ -172,3 +172,33 @@ test("a corrupt archive is rejected with a clear reason", async ({ page }) => {
   await expect(page.getByTestId("backup-preview")).toHaveCount(0);
   await expect(page.getByTestId("backup-merge")).toHaveCount(0);
 });
+
+test("import runs a rescan and reports the books it linked or added", async ({
+  page,
+}) => {
+  const imported = mockBook(3, "The Returned Volume", 0);
+  const linked = mockBook(4, "A File With A Path", 1);
+  await boot(page, {
+    backupPreview: { matched: 1, new: 1 },
+    backupMergeReport: {
+      mode: "merge",
+      matched: 1,
+      new: 1,
+      skipped: 0,
+      replaced: 0,
+    },
+    // The mock import runs the same rescan seam as the native shell: a new
+    // file is added and a known book is re-linked to the file it matches.
+    backupScanAdds: [imported, { ...linked, contentHash: BOOKS[0].contentHash }],
+  });
+
+  await page.getByTestId("settings-import").click();
+  await page.getByTestId("backup-merge").click();
+
+  const notice = page.getByTestId("backup-notice");
+  await expect(notice).toContainText("Merge complete");
+  await expect(notice).toContainText("Rescan after import:");
+  await expect(notice).toContainText("1 imported book linked to its file");
+  await expect(notice).toContainText("1 new book found");
+  await expect(page.getByTestId("backup-preview")).toHaveCount(0);
+});
