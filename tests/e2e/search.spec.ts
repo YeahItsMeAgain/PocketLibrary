@@ -1,6 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-import type { LibgenResult } from "../../src/platform";
+import type { Book, LibgenResult, Shelf } from "../../src/platform";
+
+function book(index: number, shelfId: number, slotIndex: number): Book {
+  return {
+    id: index,
+    contentHash: `shelf-book-${index}`,
+    format: "epub",
+    title: `Shelf Volume ${index}`,
+    authors: ["Victorian Author"],
+    series: null,
+    language: "English",
+    description: null,
+    publisher: null,
+    publishedDate: "1899",
+    identifier: null,
+    pageCount: 200,
+    addedAt: 1,
+    shelfId,
+    slotIndex,
+    readingStatus: "unread",
+    labels: [],
+  };
+}
 
 function result(index: number, overrides: Partial<LibgenResult> = {}): LibgenResult {
   return {
@@ -116,6 +138,30 @@ test("paging reports 25 at a time and stops at the honest total", async ({
   await expect(page.getByTestId("search-page")).toHaveText("Page 1");
 });
 
+test("a page fully hidden by filters still pages forward", async ({ page }) => {
+  const rows = Array.from({ length: 30 }, (_, index) =>
+    result(index, { extension: "pdf" }),
+  );
+  await boot(page, { searchResults: rows, searchTotal: 30 });
+
+  await page.getByTestId("search-query").fill("Victorian");
+  await page.getByTestId("search-advanced-toggle").click();
+  await page.getByTestId("search-format").selectOption("epub");
+  await page.getByTestId("search-submit").click();
+
+  await expect(page.getByTestId("search-result")).toHaveCount(0);
+  await expect(page.getByTestId("search-empty")).toContainText(
+    "0 matches on this page",
+  );
+  await expect(page.getByTestId("search-clear-filters")).toBeVisible();
+  await expect(page.getByTestId("search-next")).toBeEnabled();
+  await page.getByTestId("search-next").click();
+
+  await expect(page.getByTestId("search-page")).toHaveText("Page 2");
+  await expect(page.getByTestId("search-prev")).toBeEnabled();
+  await expect(page.getByTestId("search-next")).toBeDisabled();
+});
+
 test("a genuine no-results answer is shown as such", async ({ page }) => {
   await boot(page, { searchMode: "empty" });
 
@@ -213,6 +259,25 @@ test("a completed download says Added to library and the wall shows a new spine"
   ).toHaveCount(1);
 });
 
+test("a running download shows the transient mirror failover note", async ({
+  page,
+}) => {
+  await boot(page, { downloadStepMs: 900, downloadFailover: true });
+  await page.getByTestId("search-query").fill("Rock Paper Scissors");
+  await page.getByTestId("search-submit").click();
+  await page.getByTestId("search-result").first().click();
+  await page.getByTestId("result-download").click();
+
+  await expect(page.getByTestId("download-status").first()).toContainText(
+    "Trying another mirror…",
+    { timeout: 5000 },
+  );
+  await expect(page.getByTestId("result-download-state")).toContainText(
+    "Trying another mirror…",
+  );
+  await expect(page.getByTestId("download-cancel")).toBeVisible();
+});
+
 test("a failed download shows the reason and a retry action", async ({
   page,
 }) => {
@@ -230,10 +295,26 @@ test("a failed download shows the reason and a retry action", async ({
   await expect(page.getByTestId("result-download-retry")).toBeVisible();
 });
 
-test("a download finishing after leaving search refreshes the wall", async ({
+test("a download finishing after leaving search refreshes and scrolls the wall", async ({
   page,
 }) => {
-  await boot(page, { downloadStepMs: 220 });
+  const shelves: Shelf[] = [1, 2, 3, 4].map((id, ordinal) => ({
+    id,
+    ordinal,
+    capacity: 12,
+  }));
+  const books: Book[] = [];
+  let nextId = 1;
+  for (const shelfId of [1, 2, 3]) {
+    for (let slotIndex = 0; slotIndex < 12; slotIndex += 1) {
+      books.push(book(nextId++, shelfId, slotIndex));
+    }
+  }
+  for (let slotIndex = 0; slotIndex < 3; slotIndex += 1) {
+    books.push(book(nextId++, 4, slotIndex));
+  }
+
+  await boot(page, { books, shelves, downloadStepMs: 220 });
   await page.getByTestId("search-query").fill("Rock Paper Scissors");
   await page.getByTestId("search-submit").click();
   await page.getByTestId("search-result").first().click();
@@ -244,4 +325,7 @@ test("a download finishing after leaving search refreshes the wall", async ({
   await expect(
     page.getByTestId("spine").filter({ hasText: "Rock Paper Scissors" }),
   ).toHaveCount(1, { timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 })
+    .toBeGreaterThan(0);
 });

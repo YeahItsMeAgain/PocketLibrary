@@ -21,6 +21,7 @@ import {
   type BackupSelection,
   type Book,
   type BookDetail,
+  type BookFormat,
   type Download,
   type DownloadRequest,
   type Label,
@@ -2853,7 +2854,13 @@ const SEARCH_LANGUAGES = [
   "Portuguese",
 ] as const;
 
-const SEARCH_FORMATS = ["epub", "pdf", "mobi", "azw3", "cbz", "cbr"] as const;
+const SEARCH_FORMATS = ["epub", "pdf"] as const;
+
+/** Pocket Library can only open EPUB and PDF; never coerce another format. */
+function supportedBookFormat(extension: string): BookFormat | null {
+  const value = extension.trim().toLowerCase();
+  return value === "epub" || value === "pdf" ? value : null;
+}
 
 function searchYear(value: string): number | null {
   const year = Number(value);
@@ -2958,7 +2965,7 @@ function downloadStatusText(download: Download): string {
     case "queued":
       return "Queued";
     case "running":
-      return `Downloading ${downloadPercent(download)}%`;
+      return download.error ?? `Downloading ${downloadPercent(download)}%`;
     case "completed":
       return download.errorCode === "duplicate"
         ? "Already in your library"
@@ -3005,6 +3012,7 @@ function ResultDetail({
 }) {
   const active =
     download?.state === "queued" || download?.state === "running";
+  const supported = supportedBookFormat(result.extension) !== null;
   return (
     <div className="search-sheet-backdrop" onClick={onClose}>
       <section
@@ -3085,7 +3093,15 @@ function ResultDetail({
           )}
         </section>
 
-        {download ? (
+        {!supported ? (
+          <p
+            className="settings-note result-unsupported"
+            data-testid="result-unsupported"
+          >
+            Pocket Library reads EPUB and PDF only. This edition is a{" "}
+            {result.extension.toUpperCase()} file, so it cannot be added here.
+          </p>
+        ) : download ? (
           <div
             className={`result-download-state is-${download.state}`}
             data-testid="result-download-state"
@@ -3138,7 +3154,17 @@ function ResultDetail({
   );
 }
 
-function SearchView({ onBack }: { onBack: () => void }) {
+interface SearchViewProps {
+  onBack: () => void;
+  downloads: Download[];
+  onRefreshDownloads: () => Promise<Download[]>;
+}
+
+function SearchView({
+  onBack,
+  downloads,
+  onRefreshDownloads,
+}: SearchViewProps) {
   const [form, setForm] = useState<SearchForm>(EMPTY_SEARCH_FORM);
   const [advanced, setAdvanced] = useState(false);
   const [submitted, setSubmitted] = useState<SearchQuery | null>(null);
@@ -3146,31 +3172,10 @@ function SearchView({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState<LibgenResult | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
-  const [downloads, setDownloads] = useState<Download[]>([]);
   const [queueOpen, setQueueOpen] = useState(true);
 
   const update = (field: keyof SearchForm, value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
-
-  useEffect(() => {
-    let alive = true;
-    const refresh = () => {
-      platform
-        .listDownloads()
-        .then((rows) => {
-          if (alive) setDownloads(rows);
-        })
-        .catch(() => {
-          // The queue is diagnostic here; a failed poll leaves the last rows.
-        });
-    };
-    refresh();
-    const timer = window.setInterval(refresh, 450);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-    };
-  }, []);
 
   const downloadFor = (result: LibgenResult) =>
     downloads.find(
@@ -3178,6 +3183,14 @@ function SearchView({ onBack }: { onBack: () => void }) {
     ) ?? null;
 
   const enqueue = async (result: LibgenResult) => {
+    const format = supportedBookFormat(result.extension);
+    if (!format) {
+      setError({
+        code: "unsupported_format",
+        message: `Pocket Library reads EPUB and PDF only. This edition is a ${result.extension.toUpperCase()} file.`,
+      });
+      return;
+    }
     const mirrors = result.mirrors
       .filter((link) => link.url.includes("ads.php"))
       .map((link) => link.url);
@@ -3186,16 +3199,13 @@ function SearchView({ onBack }: { onBack: () => void }) {
       title: result.title,
       authors: result.authors,
       year: result.year,
-      format: result.extension.toLowerCase() === "pdf" ? "pdf" : "epub",
+      format,
       source: result.source,
       mirrorUrls: mirrors.length > 0 ? mirrors : result.mirrors.map((link) => link.url),
     };
     try {
-      const row = await platform.enqueueDownload(request);
-      setDownloads((current) => [
-        row,
-        ...current.filter((download) => download.id !== row.id),
-      ]);
+      await platform.enqueueDownload(request);
+      await onRefreshDownloads().catch(() => {});
       setQueueOpen(true);
     } catch (rejection) {
       setError(
@@ -3212,11 +3222,7 @@ function SearchView({ onBack }: { onBack: () => void }) {
   const cancelDownload = async (download: Download) => {
     try {
       await platform.cancelDownload(download.id);
-      setDownloads((current) =>
-        current.map((row) =>
-          row.id === download.id ? { ...row, state: "cancelled" } : row,
-        ),
-      );
+      await onRefreshDownloads();
     } catch {
       // The next poll corrects the row.
     }
@@ -3224,12 +3230,8 @@ function SearchView({ onBack }: { onBack: () => void }) {
 
   const retryDownload = async (download: Download) => {
     try {
-      const row = await platform.retryDownload(download.id);
-      setDownloads((current) =>
-        current.map((candidate) =>
-          candidate.id === row.id ? row : candidate,
-        ),
-      );
+      await platform.retryDownload(download.id);
+      await onRefreshDownloads();
     } catch {
       // The next poll corrects the row.
     }
@@ -3292,6 +3294,37 @@ function SearchView({ onBack }: { onBack: () => void }) {
     pageData !== null && pageData.filtersApplied
       ? Math.max(0, pageData.onPageBeforeFilters - pageData.results.length)
       : 0;
+  const showPager =
+    pageData !== null && (pageData.page > 1 || hasNextPage);
+  const clearFilters = () => {
+    if (busy) return;
+    const next = { ...form, format: "", language: "", yearFrom: "", yearTo: "" };
+    setForm(next);
+    if (hasSearchTerm(next)) void runSearch(searchQueryFrom(next, 1));
+  };
+  const pager = pageData && showPager ? (
+    <nav className="search-pager" aria-label="Result pages">
+      <button
+        type="button"
+        className="secondary-action"
+        data-testid="search-prev"
+        disabled={busy || pageData.page <= 1}
+        onClick={() => turnPage(pageData.page - 1)}
+      >
+        Previous
+      </button>
+      <span data-testid="search-page">Page {pageData.page}</span>
+      <button
+        type="button"
+        className="secondary-action"
+        data-testid="search-next"
+        disabled={busy || !hasNextPage}
+        onClick={() => turnPage(pageData.page + 1)}
+      >
+        Next
+      </button>
+    </nav>
+  ) : null;
 
   return (
     <main
@@ -3464,20 +3497,34 @@ function SearchView({ onBack }: { onBack: () => void }) {
         ) : null}
 
         {!error && pageData && pageData.results.length === 0 ? (
-          <div className="search-state" data-testid="search-empty">
-            <h3>
-              {total === 0
-                ? "No files found"
-                : pageData.page > 1
-                  ? "No more results on this page"
-                  : "Nothing on this page matches"}
-            </h3>
-            <p>
-              {total === 0
-                ? "The mirrors answered honestly: nothing matches that search."
-                : "Turn back a page, widen the year range, or clear a format or language filter."}
-            </p>
-          </div>
+          <>
+            <div className="search-state" data-testid="search-empty">
+              <h3>
+                {total === 0 ? "No files found" : "0 matches on this page"}
+              </h3>
+              <p>
+                {total === 0
+                  ? "The mirrors answered honestly: nothing matches that search."
+                  : hiddenByFilters > 0
+                    ? `${hiddenByFilters} of ${pageData.onPageBeforeFilters} files on this page were hidden by your filters.`
+                    : pageData.page > 1
+                      ? "The mirrors listed more files, but this page arrived empty. Turn back a page."
+                      : "The mirrors listed more files, but this page arrived empty."}
+              </p>
+              {pageData.filtersApplied ? (
+                <button
+                  type="button"
+                  className="secondary-action"
+                  data-testid="search-clear-filters"
+                  onClick={clearFilters}
+                  disabled={busy}
+                >
+                  Clear format, language and year filters
+                </button>
+              ) : null}
+            </div>
+            {pager}
+          </>
         ) : null}
 
         {!error && pageData && pageData.results.length > 0 ? (
@@ -3504,27 +3551,7 @@ function SearchView({ onBack }: { onBack: () => void }) {
                 />
               ))}
             </ul>
-            <nav className="search-pager" aria-label="Result pages">
-              <button
-                type="button"
-                className="secondary-action"
-                data-testid="search-prev"
-                disabled={busy || pageData.page <= 1}
-                onClick={() => turnPage(pageData.page - 1)}
-              >
-                Previous
-              </button>
-              <span data-testid="search-page">Page {pageData.page}</span>
-              <button
-                type="button"
-                className="secondary-action"
-                data-testid="search-next"
-                disabled={busy || !hasNextPage}
-                onClick={() => turnPage(pageData.page + 1)}
-              >
-                Next
-              </button>
-            </nav>
+            {pager}
           </section>
         ) : null}
 
@@ -3752,6 +3779,7 @@ export default function App() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [shelfCapacity, setShelfCapacity] = useState<number | null>(null);
+  const [downloads, setDownloads] = useState<Download[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
   const [focusBookId, setFocusBookId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -3952,42 +3980,51 @@ export default function App() {
   }, []);
 
   const announcedDownloads = useRef(new Set<number>());
+  const refreshDownloads = useCallback(async () => {
+    const rows = await platform.listDownloads();
+    setDownloads(rows);
+    return rows;
+  }, []);
   useEffect(() => {
+    // The one download poller. Search reads the same rows, so leaving it
+    // cannot lose progress, and completions still refresh and focus the wall.
     let alive = true;
     let initialized = false;
     const check = async () => {
+      let rows: Download[];
       try {
-        const rows = await platform.listDownloads();
-        if (!alive) return;
-        if (!initialized) {
-          initialized = true;
-          for (const row of rows) announcedDownloads.current.add(row.id);
-          return;
-        }
-        const fresh = rows.filter(
-          (row) =>
-            row.state === "completed" &&
-            row.bookId !== null &&
-            !announcedDownloads.current.has(row.id),
-        );
-        for (const row of fresh) {
-          announcedDownloads.current.add(row.id);
-        }
-        if (fresh.length > 0) {
-          setFocusBookId(fresh[0].bookId);
-          setReloadKey((key) => key + 1);
-        }
+        rows = await refreshDownloads();
       } catch {
         // The queue is advisory here; the next tick retries.
+        return;
+      }
+      if (!alive) return;
+      if (!initialized) {
+        initialized = true;
+        for (const row of rows) announcedDownloads.current.add(row.id);
+        return;
+      }
+      const fresh = rows.filter(
+        (row) =>
+          row.state === "completed" &&
+          row.bookId !== null &&
+          !announcedDownloads.current.has(row.id),
+      );
+      for (const row of fresh) {
+        announcedDownloads.current.add(row.id);
+      }
+      if (fresh.length > 0) {
+        setFocusBookId(fresh[0].bookId);
+        setReloadKey((key) => key + 1);
       }
     };
     void check();
-    const timer = window.setInterval(check, 700);
+    const timer = window.setInterval(check, 450);
     return () => {
       alive = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [refreshDownloads]);
 
   useEffect(() => {
     let alive = true;
@@ -4071,7 +4108,15 @@ export default function App() {
   }, [drawerOpen]);
 
   function renderMain() {
-    if (view === "search") return <SearchView onBack={closeView} />;
+    if (view === "search") {
+      return (
+        <SearchView
+          onBack={closeView}
+          downloads={downloads}
+          onRefreshDownloads={refreshDownloads}
+        />
+      );
+    }
     if (view === "settings") {
       if (status === null) {
         return (

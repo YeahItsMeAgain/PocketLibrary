@@ -224,6 +224,8 @@ export interface Download {
   source: string;
   mirrorUrls: string[];
   state: DownloadState;
+  /** Host currently serving, or last tried by, this download. */
+  mirror: string | null;
   bytes: number;
   totalBytes: number | null;
   error: string | null;
@@ -421,6 +423,8 @@ export interface MockConfig {
   downloadStepMs?: number;
   /** Make the next mock download fail so the retry affordance is visible. */
   downloadFail?: boolean;
+  /** Show the transient failover note while a mock download runs. */
+  downloadFailover?: boolean;
   /** Force a typed failure reason. */
   downloadFailCode?: "mirror_failed" | "offline" | "truncated_file";
   /** Result the mock save picker reports; `null` simulates cancelling. */
@@ -652,6 +656,14 @@ function seedLabels(config: MockConfig, books: Book[]): Label[] {  const labels 
   );
 }
 
+function mirrorHostOf(url: string): string | null {
+  try {
+    return new URL(url).host || null;
+  } catch {
+    return null;
+  }
+}
+
 function mockSearch(config: MockConfig, query: SearchQuery): SearchPage {
   const mode = config.searchMode ?? "ok";
   if (mode === "offline") {
@@ -846,6 +858,8 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       ...current,
       state: "completed",
       bytes: current.totalBytes ?? current.bytes,
+      error: null,
+      errorCode: null,
       bookId,
       filename: `${current.authors[0] ?? "Unknown author"} - ${current.title} (${current.year ?? "n.d."}).${current.format}`,
       finishedAt: Math.floor(Date.now() / 1000),
@@ -857,7 +871,14 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       const index = downloads.findIndex((download) => download.id === id);
       if (index < 0) return;
       if (downloads[index].state !== "queued") return;
-      downloads[index] = { ...downloads[index], state: "running", totalBytes: downloads[index].totalBytes ?? 1_000_000 };
+      downloads[index] = {
+        ...downloads[index],
+        state: "running",
+        totalBytes: downloads[index].totalBytes ?? 1_000_000,
+        mirror:
+          mirrorHostOf(downloads[index].mirrorUrls[0] ?? "") ??
+          downloads[index].source,
+      };
       const tick = window.setInterval(() => {
         const current = downloads.findIndex((download) => download.id === id);
         if (current < 0) {
@@ -872,7 +893,16 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         }
         const total = row.totalBytes ?? 1_000_000;
         const next = Math.min(total, row.bytes + Math.ceil(total / 4));
-        downloads[current] = { ...row, bytes: next };
+        const failover = config.downloadFailover === true && next < total;
+        downloads[current] = {
+          ...row,
+          bytes: next,
+          error: failover ? "Trying another mirror…" : null,
+          mirror: failover
+            ? mirrorHostOf(row.mirrorUrls[1] ?? row.mirrorUrls[0] ?? "") ??
+              row.mirror
+            : row.mirror,
+        };
         if (next >= total) {
           window.clearInterval(tick);
           finishMockDownload(id);
@@ -988,6 +1018,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
           id: nextDownloadId++,
           ...request,
           state: "completed",
+          mirror: null,
           bytes: 0,
           totalBytes: null,
           error: "Already in your library",
@@ -1010,6 +1041,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         id: nextDownloadId++,
         ...request,
         state: "queued",
+        mirror: null,
         bytes: 0,
         totalBytes: null,
         error: null,
@@ -1053,6 +1085,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
           ? {
               ...download,
               state: "queued",
+              mirror: null,
               bytes: 0,
               totalBytes: null,
               error: null,
