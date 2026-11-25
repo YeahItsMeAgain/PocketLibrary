@@ -8,7 +8,7 @@ on fixed manual shelves, and adds labels, reading status, a built-in reader with
 EPUB annotations, Libgen search/downloads, one-file backup/restore, and a
 one-tap diagnostics export. There is no account, cloud sync, or telemetry.
 
-**Version:** 0.1.1 · **Package:** `app.pocketlibrary` · **Android 8.0+** (API 24;
+**Version:** 0.1.2 · **Package:** `app.pocketlibrary` · **Android 8.0+** (API 24;
 targets API 36, arm64-v8a).
 
 ## What it is
@@ -52,12 +52,13 @@ under `prototype/design/screenshots/release/` and are not linked here.
 
 ## Status
 
-**v0.1.1 is a release candidate.** The signed APK builds, the Rust core tests
-pass, the web build and type check pass, and 82 Playwright tests pass. The
+**v0.1.2 is the first public release.** The signed APK builds, the Rust core
+tests pass, the web build and type check pass, and 102 Playwright tests pass.
+It adds in-app updates, a windowed shelf lifecycle and first-paint work. The
 physical-device pass is still pending — no phone or emulator was attached for
-the release build — so treat storage, sharing and touch behaviour as verified
-only by proxy until the checklist below is run. Sideload only: there is no Play
-Store listing, desktop build or iOS build.
+the release build — so treat storage, sharing, touch and the Android installer
+as verified only by proxy until the checklist below is run. Sideload only:
+there is no Play Store listing, desktop build or iOS build.
 
 ## Architecture
 
@@ -85,10 +86,14 @@ Store listing, desktop build or iOS build.
   two-at-a-time download queue, progress/cancel/retry and failover. Backup is a
   versioned archive with merge-by-default restore, and diagnostics are a local
   rolling log with a one-tap export.
+- **Updates.** Settings checks the latest public GitHub Release, verifies the
+  APK's SHA-256 and version-bound minisign signature, then hands it to Android's
+  package installer. Downloads are explicit; installs are never silent. See
+  [`docs/updates.md`](docs/updates.md).
 
 ## Install
 
-The v0.1.1 release is a sideloaded, signed APK:
+The v0.1.2 release is a sideloaded, signed APK:
 
 ```bash
 adb install -r app-universal-release.apk
@@ -101,8 +106,8 @@ same key keeps the app's database, covers, and settings. Book files are never
 copied into the app and remain in your chosen folder.
 
 Release APK SHA-256:
-`80ccd6cab3f2f814bc256b49386e15e37a1b88cf13c2980994b9b3dd33ea4de1`.
-See [`docs/release-0.1.1.md`](docs/release-0.1.1.md) for the full notes and
+`837f8224797a8a64653f3230a6b977b85074fd5ee77ca280efe8a93ae47cf061`.
+See [`docs/release-0.1.2.md`](docs/release-0.1.2.md) for the full notes and
 upgrade guidance.
 
 On first launch, choose or create a folder such as `Documents/PocketLibrary`.
@@ -135,7 +140,7 @@ npx tsc --noEmit
 source scripts/android-env.sh
 cargo clippy --manifest-path src-tauri/Cargo.toml \
   --target aarch64-linux-android --all-targets -- -D warnings
-node perf/bench.mjs
+PERF_CHECK=1 node perf/bench.mjs
 ```
 
 GitHub Actions runs the core tests, type check, web build and Playwright suite
@@ -161,18 +166,24 @@ Run these on a real phone against the signed release, not a debug build:
       Android share sheet offers the zip to email/WhatsApp/Drive; if the WebView
       refuses file sharing, confirm the SAF save picker still writes it. Check
       `Copy summary` and `Clear logs`.
+- [ ] Settings → Updates: check, read the notes, download, allow installs, and
+      install over the previous build without losing data. Cancel the installer
+      once and retry.
 - [ ] Check Android back unwinds sheets, then the reader, then the app.
 - [ ] Scroll a large library, drag a book, filter by label and status, and check
       the first-paint and memory numbers from `docs/perf-shelf-benchmark.md`.
 
-## Known gaps in 0.1.1
+## Known gaps in 0.1.2
 
 - The checklist above is **pending on a physical device**; no phone or emulator
-  was attached during the release build.
+  was attached during the release build. This includes the updater's
+  unknown-apps consent, installer intent, install-over-upgrade and cancel paths.
 - **Share sheet is device-only.** The WebView share path is mocked in Playwright;
   verify the Android share sheet on a real phone, including the SAF fallback.
-- **First paint** misses the 400 ms proxy budget (475.7 ms at 4× CPU throttle);
-  scroll, filter and drag budgets pass. See `docs/perf-shelf-benchmark.md`.
+- **First paint** still misses the 400 ms proxy budget (495–532 ms at 4× CPU
+  throttle). The initial catalogue request is still whole-library and reader
+  fonts stay unsubsetted; scroll, filter and drag budgets pass. See
+  `docs/perf-shelf-benchmark.md`.
 - **External reader cancel:** Android does not report which app was chosen, so
   cancelling the open-with chooser after a handoff can still mark the book as
   reading on the next resume.
@@ -181,29 +192,29 @@ Run these on a real phone against the signed release, not a debug build:
   hold a copy). Streaming/range transport is future work.
 - **Annotations are EPUB-only.** PDF has no highlights or notes in this release.
 
-See [`docs/release-0.1.1.md`](docs/release-0.1.1.md) for what changed in 0.1.1
-and [`docs/release-0.1.0.md`](docs/release-0.1.0.md) for the first release.
+See [`docs/release-0.1.2.md`](docs/release-0.1.2.md) for this release,
+[`docs/release-0.1.1.md`](docs/release-0.1.1.md) for diagnostics and the reader
+fixes, and [`docs/release-0.1.0.md`](docs/release-0.1.0.md) for the first build.
 
 ## Roadmap
 
 - **Device verification.** Run the checklist on a physical phone against the
-  signed 0.1.1 APK, including install-over-upgrade and the diagnostics share
-  sheet fallback.
-- **Architecture and performance refactor (ticket 18).** Split the large
-  `App.tsx` into feature modules, window the shelf lifecycle, move filtering out
-  of React's render path, and shrink the first-paint payload — without changing
-  the design or migrating frameworks.
-- **GitHub Releases and auto-update.** Publish signed APKs and notes as GitHub
-  Releases, then add a Tauri updater with signature verification so upgrades do
-  not need a cable.
-- **Performance.** Meet the 400 ms first-shelf budget at 4× throttle, keep
-  full-wall traversal memory flat, and replace whole-file PDF transport with
-  streaming or range reads.
+  signed 0.1.2 APK, especially the updater's unknown-apps flow,
+  install-over-upgrade and cancel paths, plus the share-sheet fallback.
+- **First paint and IPC.** The initial catalogue request still loads the whole
+  library in one response. Trim it to the first window plus counts, then retry
+  the 400 ms first-shelf budget at 4× throttle; reader fonts stay lazy because
+  EPUB text is arbitrary.
+- **PDF streaming.** Replace whole-file transport with range reads so large PDFs
+  do not hold three copies in memory.
+- **Maintainer care.** Back up the release keystore and the separate updater
+  private key; losing either stops future installs or updates.
 
 ## Documentation
 
-- [0.1.1 release notes](docs/release-0.1.1.md) · [0.1.0 release notes](docs/release-0.1.0.md)
+- [0.1.2 release notes](docs/release-0.1.2.md) · [0.1.1](docs/release-0.1.1.md) · [0.1.0](docs/release-0.1.0.md)
 - [Diagnostics and log export](docs/diagnostics.md)
+- [Updates, signing and publishing](docs/updates.md)
 - [Android build guide](docs/build.md)
 - [Shelf performance benchmark](docs/perf-shelf-benchmark.md)
 - [Architecture decision records](docs/adr/)

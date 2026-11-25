@@ -664,7 +664,7 @@ export function createTauriPlatform(call: Invoke): Platform {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.1",
+  appVersion: "0.1.2",
   schemaVersion: 3,
 };
 

@@ -9,6 +9,28 @@ primary method; DPR 3 is a spot check. Raw results:
 This is a Chromium proxy, not Android System WebView on ARM. The device run is
 still outstanding.
 
+## 0.1.2 update — windowed shelves and deferred filtering (ticket 18 phase 2)
+
+The phase 2 wall mounts only the visible shelves plus one on each side, recycles
+them, memoises spines and applies filters outside React's render path. Canonical
+results are `perf/results/phase2-before.json` (phase 1 rerun) and
+`phase2-after.json` (phase 2), same 2,000 books / 4× method.
+
+| Metric | Phase 1 | Phase 2 | Gate |
+|---|---:|---:|---|
+| First shelf | 493.7 ms | **505.7 ms** | +2.4% (≤10%); 400 ms still missed |
+| Scroll warm p95 / p99 | 18.1 / 24.0 ms | **19.1 / 25.6 ms** | fixed 20 / 33 ms |
+| Filter sync / DOM pass | 37.2 / — ms | **9.5 / 0.7 ms** | DOM pass <20 ms |
+| Lift sweep p95 / max | 6.4 ms rect sweep | **1.9 / 1.9 ms** | <20 ms |
+| Renderer DOM | 11.3 MB / 1,807 nodes | **17.3 MB / 3,435 nodes** | fixed 5,000 nodes |
+| Full-wall traversal | not measured | **3,435 → 3,741 nodes (+8.9%)** | ≤15% growth |
+
+The 400 ms target remains a load-time miss (495–532 ms across runs). The initial
+`list_books` IPC still returns the whole catalogue; the renderer mounts only the
+window, but a first-window-only backend command is future work. Reader fonts are
+deliberately not subsetted because EPUB text is arbitrary; they stay lazy. The
+original ticket 13 report below is kept as the historical baseline.
+
 ## Headline
 
 Progressive mounting plus an imperative filter and model-arithmetic geometry

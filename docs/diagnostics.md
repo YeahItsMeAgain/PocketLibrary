@@ -54,7 +54,7 @@ points to Help & diagnostics.
 
 Include:
 
-1. the app version from **Settings → About** (for example `0.1.1`);
+1. the app version from **Settings → About** (for example `0.1.2`);
 2. the Android version and device model;
 3. the steps that led to the problem, the expected result and what happened;
 4. the diagnostics zip, attached to the issue or sent to the maintainer.

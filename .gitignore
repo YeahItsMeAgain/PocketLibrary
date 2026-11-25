@@ -57,3 +57,4 @@ latest.json
 *.njsproj
 *.sln
 *.sw?
+perf/results/current.json

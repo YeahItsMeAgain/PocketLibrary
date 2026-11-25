@@ -47,7 +47,7 @@ https://github.com/YeahItsMeAgain/PocketLibrary/releases/latest/download/latest.
   "pubDate": "2026-11-25T10:00:00Z",
   "url": "https://github.com/YeahItsMeAgain/PocketLibrary/releases/download/v0.1.2/PocketLibrary-0.1.2.apk",
   "size": 35359638,
-  "sha256": "80ccd6cab3f2f814bc256b49386e15e37a1b88cf13c2980994b9b3dd33ea4de1",
+  "sha256": "837f8224797a8a64653f3230a6b977b85074fd5ee77ca280efe8a93ae47cf061",
   "signature": "dW50cnVzdGVkIGNvbW1lbnQ6..."
 }
 ```
