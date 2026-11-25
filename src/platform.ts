@@ -14,6 +14,31 @@ export interface AppInfo {
   schemaVersion: number;
 }
 
+export type DiagnosticLevel = "error" | "warn" | "info";
+
+/** Mirrors `pocketlibrary_core::diagnostics::DiagnosticsSummary`. */
+export interface DiagnosticsSummary {
+  logBytes: number;
+  logLines: number;
+  errors: number;
+  warnings: number;
+  lastError: string | null;
+  lastErrorAt: string | null;
+}
+
+/** Where the diagnostics zip went, without exposing a filesystem path. */
+export interface DiagnosticsExport {
+  fileName: string;
+  bytes: number;
+  method: "share" | "save";
+  cancelled: boolean;
+}
+
+interface SavedDiagnostics {
+  fileName: string;
+  bytes: number;
+}
+
 export type BookFormat = "epub" | "pdf";
 export type ReadingStatus = "unread" | "reading" | "finished";
 export type ScanIssueReason = "unreadable" | "invalid_epub" | "invalid_pdf";
@@ -362,9 +387,115 @@ export interface Platform {
   previewBackup(): Promise<BackupSelection | null>;
   importBackup(token: string, mode: BackupMode): Promise<BackupImport>;
   openBookExternally(bookId: number): Promise<void>;
+  /** Add a JS-side event to the local diagnostics log. */
+  logDiagnostic(
+    level: DiagnosticLevel,
+    event: string,
+    message: string,
+  ): Promise<void>;
+  diagnosticsSummary(): Promise<DiagnosticsSummary>;
+  clearDiagnostics(): Promise<void>;
+  /** Export the zip through the share sheet, falling back to the save picker. */
+  sendDiagnostics(): Promise<DiagnosticsExport>;
 }
 
 export type Invoke = typeof invoke;
+
+function errorText(error: unknown): string {
+  if (isApiError(error)) return `${error.code}: ${error.message}`;
+  if (error instanceof Error) return `${error.name}: ${error.message}`;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+/**
+ * Wrap every platform method so a rejected command is written to the local log.
+ * Successful calls stay quiet. `logDiagnostic` is excluded to avoid a loop.
+ */
+function traced(
+  base: Platform,
+  onFailure: (method: string, error: unknown) => void,
+): Platform {
+  const wrapped: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(base)) {
+    if (typeof value !== "function" || name === "logDiagnostic") {
+      wrapped[name] = value;
+      continue;
+    }
+    wrapped[name] = (...args: unknown[]) => {
+      let result: unknown;
+      try {
+        result = (value as (...inner: unknown[]) => unknown).apply(base, args);
+      } catch (error) {
+        onFailure(name, error);
+        throw error;
+      }
+      if (result instanceof Promise) {
+        return result.catch((error: unknown) => {
+          onFailure(name, error);
+          throw error;
+        });
+      }
+      return result;
+    };
+  }
+  return wrapped as unknown as Platform;
+}
+
+function asArrayBuffer(value: ArrayBuffer | number[]): ArrayBuffer {
+  return value instanceof ArrayBuffer
+    ? value
+    : new Uint8Array(value).buffer;
+}
+
+/**
+ * Prefer the WebView share sheet with the zip as a File. When file sharing is
+ * unavailable or refused, fall back to the shell's system save picker. The
+ * caller never sees a raw path either way.
+ */
+async function shareOrSaveDiagnostics(
+  bytes: ArrayBuffer,
+  fileName: string,
+  save: () => Promise<SavedDiagnostics | null>,
+): Promise<DiagnosticsExport> {
+  const size = bytes.byteLength;
+  const nav = typeof navigator === "undefined" ? null : navigator;
+  if (nav && typeof nav.share === "function") {
+    try {
+      const file = new File([bytes], fileName, { type: "application/zip" });
+      if (typeof nav.canShare !== "function" || nav.canShare({ files: [file] })) {
+        await nav.share({
+          files: [file],
+          title: "PocketLibrary diagnostics",
+        });
+        return {
+          fileName,
+          bytes: size,
+          method: "share",
+          cancelled: false,
+        };
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return { fileName, bytes: size, method: "share", cancelled: true };
+      }
+      // A refused share falls through to the save picker.
+    }
+  }
+  const saved = await save();
+  if (!saved) {
+    return { fileName, bytes: size, method: "save", cancelled: true };
+  }
+  return {
+    fileName: saved.fileName,
+    bytes: saved.bytes,
+    method: "save",
+    cancelled: false,
+  };
+}
 
 /**
  * Build the Tauri adapter around an invoke function.
@@ -372,7 +503,7 @@ export type Invoke = typeof invoke;
  * Injecting the function lets tests drive the real adapter without a device.
  */
 export function createTauriPlatform(call: Invoke): Platform {
-  return {
+  const base: Platform = {
     appInfo: () => call<AppInfo>("app_info"),
     searchLibgen: (query) => call<SearchPage>("search_libgen", { query }),
     enqueueDownload: (request) =>
@@ -413,7 +544,7 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<void>("set_reading_status", { bookId, status }),
     readBook: async (bookId) => {
       const bytes = await call<ArrayBuffer>("read_book", { bookId });
-      return bytes instanceof ArrayBuffer ? bytes : new Uint8Array(bytes as number[]).buffer;
+      return asArrayBuffer(bytes as ArrayBuffer | number[]);
     },
     recordOpen: (bookId) => call<void>("record_open", { bookId }),
     recordProgress: (bookId, progress, locator) =>
@@ -450,12 +581,33 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<BackupImport>("import_backup", { token, mode }),
     openBookExternally: (bookId) =>
       call<void>("open_book_externally", { bookId }),
+    logDiagnostic: (level, event, message) =>
+      call<void>("log_diagnostic", { level, event, message }),
+    diagnosticsSummary: () =>
+      call<DiagnosticsSummary>("diagnostics_summary"),
+    clearDiagnostics: () => call<void>("clear_diagnostics"),
+    sendDiagnostics: async () => {
+      const raw = await call<ArrayBuffer | number[]>("export_diagnostics");
+      const bytes = asArrayBuffer(raw);
+      return shareOrSaveDiagnostics(
+        bytes,
+        "pocketlibrary-diagnostics.zip",
+        () => call<SavedDiagnostics | null>("save_diagnostics"),
+      );
+    },
   };
+  return traced(base, (method, error) => {
+    void call("log_diagnostic", {
+      level: "error",
+      event: "command_failed",
+      message: `${method}: ${errorText(error)}`,
+    }).catch(() => {});
+  });
 }
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.0",
+  appVersion: "0.1.1",
   schemaVersion: 3,
 };
 
@@ -510,14 +662,40 @@ export interface MockConfig {
   backupReplaceReport?: BackupReport;
   /** Make preview (and import) fail with a typed archive error. */
   backupError?: { code: string; message: string };
+  /** Diagnostics save-picker result; `null` simulates cancelling. */
+  diagnosticsSave?: SavedDiagnostics | null;
+  /** Byte size of the synthetic diagnostics zip. */
+  diagnosticsBytes?: number;
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
 const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
 const MOCK_ANNOTATIONS_KEY = "pocketlibrary.mock.annotations";
 const MOCK_DOWNLOAD_NAMING_KEY = "pocketlibrary.mock.downloadNaming";
+const MOCK_DIAGNOSTICS_KEY = "pocketlibrary.mock.diagnostics";
 const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
 const MOCK_SAMPLE_PDF = "/test-assets/sample.pdf";
+
+interface MockLogEntry {
+  at: number;
+  level: DiagnosticLevel;
+  event: string;
+  message: string;
+}
+
+function summarizeMockLog(entries: MockLogEntry[]): DiagnosticsSummary {
+  const errors = entries.filter((entry) => entry.level === "error");
+  const warnings = entries.filter((entry) => entry.level === "warn");
+  const last = errors.length > 0 ? errors[errors.length - 1] : null;
+  return {
+    logBytes: new Blob([JSON.stringify(entries)]).size,
+    logLines: entries.length,
+    errors: errors.length,
+    warnings: warnings.length,
+    lastError: last ? `${last.event}: ${last.message}` : null,
+    lastErrorAt: last ? new Date(last.at).toISOString() : null,
+  };
+}
 
 const MOCK_SEARCH_RESULTS: LibgenResult[] = [
   {
@@ -850,6 +1028,21 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       value,
     ]),
   );
+  const diagnosticEntries = readStored<MockLogEntry[]>(
+    MOCK_DIAGNOSTICS_KEY,
+    [],
+  );
+  const appendMockLog = (
+    level: DiagnosticLevel,
+    event: string,
+    message: string,
+  ) => {
+    diagnosticEntries.push({ at: Date.now(), level, event, message });
+    if (diagnosticEntries.length > 2000) {
+      diagnosticEntries.splice(0, diagnosticEntries.length - 2000);
+    }
+    writeStored(MOCK_DIAGNOSTICS_KEY, diagnosticEntries);
+  };
   const storedReading = readStored<Record<number, StoredReading>>(
     MOCK_READING_KEY,
     {},
@@ -1117,7 +1310,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     return report;
   }
 
-  return {
+  const base: Platform = {
     appInfo: async () => MOCK_APP_INFO,
     searchLibgen: async (query) => mockSearch(config, query),
     enqueueDownload: async (request) => {
@@ -1590,7 +1783,41 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         message: "Opening a book in another app needs the Android build.",
       };
     },
+    logDiagnostic: async (level, event, message) => {
+      appendMockLog(level, event, message);
+    },
+    diagnosticsSummary: async () => summarizeMockLog(diagnosticEntries),
+    clearDiagnostics: async () => {
+      diagnosticEntries.length = 0;
+      writeStored(MOCK_DIAGNOSTICS_KEY, diagnosticEntries);
+    },
+    sendDiagnostics: async () => {
+      const size = config.diagnosticsBytes ?? 2048;
+      const bytes = new Uint8Array(size).buffer;
+      return shareOrSaveDiagnostics(
+        bytes,
+        "pocketlibrary-diagnostics.zip",
+        async () => {
+          if ("diagnosticsSave" in config) {
+            return config.diagnosticsSave ?? null;
+          }
+          appendMockLog(
+            "info",
+            "diagnostics.export",
+            `saved pocketlibrary-diagnostics.zip (${size} bytes)`,
+          );
+          return {
+            fileName: "pocketlibrary-diagnostics.zip",
+            bytes: size,
+          };
+        },
+      );
+    },
   };
+
+  return traced(base, (method, error) => {
+    appendMockLog("error", "command_failed", `${method}: ${errorText(error)}`);
+  });
 }
 
 function runningInTauri(): boolean {

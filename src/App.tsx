@@ -28,6 +28,7 @@ import {
   type Book,
   type BookDetail,
   type BookFormat,
+  type DiagnosticsSummary,
   type Download,
   type DownloadRequest,
   type Label,
@@ -43,6 +44,14 @@ import {
   type Shelf,
 } from "./platform";
 import { useLayerExit } from "./navigation";
+import { ReportAction } from "./Diagnostics";
+import {
+  DIAGNOSTICS_HINT_EVENT,
+  copyDiagnosticsSummary,
+  diagnosticsResultNotice,
+  formatLogSize,
+  noteFailure,
+} from "./diagnostics";
 import {
   READER_SIZES,
   READER_THEMES,
@@ -1380,6 +1389,7 @@ interface LibraryWallProps {
   reloadKey: number;
   focusBookId: number | null;
   notice: string | null;
+  noticeFailed: boolean;
   onAddBooks: () => void;
   onFindBook: () => void;
 }
@@ -1518,6 +1528,7 @@ function LibraryWall({
   reloadKey,
   focusBookId,
   notice,
+  noticeFailed,
   onAddBooks,
   onFindBook,
 }: LibraryWallProps) {
@@ -2236,6 +2247,7 @@ function LibraryWall({
           <p className="kicker">The Keeper's Ledger</p>
           <h2>Library unavailable</h2>
           <p>The shelves could not be opened just now.</p>
+          <ReportAction testId="library-report" label="Report" />
         </section>
       </main>
     );
@@ -2345,13 +2357,18 @@ function LibraryWall({
         />
       ) : null}
       {notice ? (
-        <p
-          className="scan-notice library-notice"
-          role="status"
-          data-testid="library-notice"
-        >
-          {notice}
-        </p>
+        <>
+          <p
+            className="scan-notice library-notice"
+            role="status"
+            data-testid="library-notice"
+          >
+            {notice}
+          </p>
+          {noticeFailed ? (
+            <ReportAction testId="scan-report" label="Report" />
+          ) : null}
+        </>
       ) : null}
       {moveNotice ? (
         <p
@@ -2451,9 +2468,12 @@ function Onboarding({ busy, error, onChoose }: FolderActionProps) {
           {busy ? "Opening the folder picker…" : "Choose library folder"}
         </button>
         {error ? (
-          <p className="action-error" role="alert">
-            {error}
-          </p>
+          <>
+            <p className="action-error" role="alert">
+              {error}
+            </p>
+            <ReportAction testId="folder-report" label="Report" />
+          </>
         ) : null}
       </section>
     </main>
@@ -2489,9 +2509,12 @@ function Reconnect({
           {busy ? "Opening the folder picker…" : "Reconnect library folder"}
         </button>
         {error ? (
-          <p className="action-error" role="alert">
-            {error}
-          </p>
+          <>
+            <p className="action-error" role="alert">
+              {error}
+            </p>
+            <ReportAction testId="reconnect-report" label="Report" />
+          </>
         ) : null}
       </section>
     </main>
@@ -2604,6 +2627,69 @@ function SettingsView({
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [backupNotice, setBackupNotice] = useState<string | null>(null);
   const [backupError, setBackupError] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsSummary | null>(
+    null,
+  );
+  const [diagnosticsBusy, setDiagnosticsBusy] = useState(false);
+  const [diagnosticsNotice, setDiagnosticsNotice] = useState<string | null>(
+    null,
+  );
+
+  const refreshDiagnostics = useCallback(async () => {
+    try {
+      setDiagnostics(await platform.diagnosticsSummary());
+    } catch {
+      // The size/last-error line is informative; a failure leaves it blank.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshDiagnostics();
+  }, [refreshDiagnostics]);
+
+  const sendDiagnosticsNow = useCallback(async () => {
+    setDiagnosticsBusy(true);
+    setDiagnosticsNotice(null);
+    try {
+      const result = await platform.sendDiagnostics();
+      setDiagnosticsNotice(diagnosticsResultNotice(result));
+      await refreshDiagnostics();
+    } catch {
+      noteFailure();
+      setDiagnosticsNotice(
+        "Diagnostics could not be prepared. Please try again.",
+      );
+    } finally {
+      setDiagnosticsBusy(false);
+    }
+  }, [refreshDiagnostics]);
+
+  const copySummaryNow = useCallback(async () => {
+    setDiagnosticsBusy(true);
+    setDiagnosticsNotice(null);
+    try {
+      await copyDiagnosticsSummary();
+      setDiagnosticsNotice("Summary copied. Paste it into your message.");
+    } catch {
+      setDiagnosticsNotice("The summary could not be copied.");
+    } finally {
+      setDiagnosticsBusy(false);
+    }
+  }, []);
+
+  const clearLogsNow = useCallback(async () => {
+    setDiagnosticsBusy(true);
+    setDiagnosticsNotice(null);
+    try {
+      await platform.clearDiagnostics();
+      setDiagnosticsNotice("Logs cleared.");
+      await refreshDiagnostics();
+    } catch {
+      setDiagnosticsNotice("The logs could not be cleared.");
+    } finally {
+      setDiagnosticsBusy(false);
+    }
+  }, [refreshDiagnostics]);
 
   const exportBackupNow = useCallback(async () => {
     setBackupBusy(true);
@@ -2619,6 +2705,7 @@ function SettingsView({
         );
       }
     } catch (error) {
+      noteFailure();
       setBackupError(
         isApiError(error)
           ? error.message
@@ -2643,6 +2730,7 @@ function SettingsView({
         setBackupSelection(selection);
       }
     } catch (error) {
+      noteFailure();
       setBackupError(
         isApiError(error)
           ? error.message
@@ -2669,6 +2757,7 @@ function SettingsView({
         setBackupNotice(backupImportNotice(outcome));
         onLibraryChanged();
       } catch (error) {
+        noteFailure();
         setBackupError(
           isApiError(error)
             ? error.message
@@ -3029,13 +3118,89 @@ function SettingsView({
           ) : null}
 
           {backupError ? (
-            <p className="action-error" role="alert" data-testid="backup-error">
-              {backupError}
-            </p>
+            <>
+              <p className="action-error" role="alert" data-testid="backup-error">
+                {backupError}
+              </p>
+              <ReportAction testId="backup-report" label="Report" />
+            </>
           ) : null}
           {backupNotice ? (
             <p className="settings-note backup-notice" role="status" data-testid="backup-notice">
               {backupNotice}
+            </p>
+          ) : null}
+        </section>
+
+        <section
+          className="settings-section"
+          aria-labelledby="settings-help"
+          data-testid="settings-help"
+        >
+          <h3 id="settings-help">Help &amp; diagnostics</h3>
+          <p className="settings-note">
+            If something goes wrong, send a small report. It holds the app
+            version, device, folder names, book titles and recent errors —
+            never book contents, passwords or keys. Nothing is sent until you
+            choose Send diagnostics.
+          </p>
+          <dl className="settings-list">
+            <div className="setting-row">
+              <dt>Log size</dt>
+              <dd data-testid="diagnostics-size">
+                {diagnostics
+                  ? `${formatLogSize(diagnostics.logBytes)} · ${diagnostics.logLines} entries`
+                  : "…"}
+              </dd>
+            </div>
+            <div className="setting-row">
+              <dt>Last error</dt>
+              <dd
+                className="diagnostics-last-error"
+                data-testid="diagnostics-last-error"
+              >
+                {diagnostics?.lastError
+                  ? diagnostics.lastError
+                  : "None recorded"}
+              </dd>
+            </div>
+          </dl>
+          <div className="settings-actions">
+            <button
+              type="button"
+              className="primary-action"
+              data-testid="settings-send-diagnostics"
+              disabled={diagnosticsBusy}
+              onClick={() => void sendDiagnosticsNow()}
+            >
+              {diagnosticsBusy ? "Preparing…" : "Send diagnostics"}
+            </button>
+            <button
+              type="button"
+              className="secondary-action"
+              data-testid="settings-copy-summary"
+              disabled={diagnosticsBusy}
+              onClick={() => void copySummaryNow()}
+            >
+              Copy summary
+            </button>
+            <button
+              type="button"
+              className="settings-back"
+              data-testid="settings-clear-diagnostics"
+              disabled={diagnosticsBusy}
+              onClick={() => void clearLogsNow()}
+            >
+              Clear logs
+            </button>
+          </div>
+          {diagnosticsNotice ? (
+            <p
+              className="settings-note backup-notice"
+              role="status"
+              data-testid="diagnostics-notice"
+            >
+              {diagnosticsNotice}
             </p>
           ) : null}
         </section>
@@ -3385,14 +3550,22 @@ function ResultDetail({
                 Cancel
               </button>
             ) : download.state === "failed" || download.state === "cancelled" ? (
-              <button
-                type="button"
-                className="secondary-action"
-                data-testid="result-download-retry"
-                onClick={onRetry}
-              >
-                Retry
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="secondary-action"
+                  data-testid="result-download-retry"
+                  onClick={onRetry}
+                >
+                  Retry
+                </button>
+                {download.state === "failed" ? (
+                  <ReportAction
+                    testId="download-report"
+                    label="Report"
+                  />
+                ) : null}
+              </>
             ) : null}
           </div>
         ) : (
@@ -3468,6 +3641,7 @@ function SearchView({
       await onRefreshDownloads().catch(() => {});
       setQueueOpen(true);
     } catch (rejection) {
+      noteFailure();
       setError(
         isApiError(rejection)
           ? rejection
@@ -3508,6 +3682,7 @@ function SearchView({
         setSubmitted(query);
       } catch (rejection) {
         setPageData(null);
+        noteFailure();
         setError(
           isApiError(rejection)
             ? rejection
@@ -3753,6 +3928,7 @@ function SearchView({
             >
               Try again
             </button>
+            <ReportAction testId="search-report" label="Report" />
           </div>
         ) : null}
 
@@ -3882,14 +4058,23 @@ function SearchView({
                     </button>
                   ) : download.state === "failed" ||
                     download.state === "cancelled" ? (
-                    <button
-                      type="button"
-                      className="download-retry"
-                      data-testid="download-retry"
-                      onClick={() => void retryDownload(download)}
-                    >
-                      Retry
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="download-retry"
+                        data-testid="download-retry"
+                        onClick={() => void retryDownload(download)}
+                      >
+                        Retry
+                      </button>
+                      {download.state === "failed" ? (
+                        <ReportAction
+                          testId="download-queue-report"
+                          label="Report"
+                          className="download-report"
+                        />
+                      ) : null}
+                    </>
                   ) : null}
                 </li>
               ))}
@@ -4076,6 +4261,7 @@ async function runScan(): Promise<ScanOutcome> {
   try {
     return { kind: "report", report: await platform.rescanLibrary() };
   } catch (error) {
+    if (!isLibraryUnavailable(error)) noteFailure();
     return { kind: isLibraryUnavailable(error) ? "unavailable" : "failed" };
   }
 }
@@ -4091,6 +4277,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [noticeFailed, setNoticeFailed] = useState(false);
+  const [diagnosticsHint, setDiagnosticsHint] = useState(false);
   const [shelfCapacity, setShelfCapacity] = useState<number | null>(null);
   const [downloads, setDownloads] = useState<Download[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
@@ -4148,6 +4336,12 @@ export default function App() {
     setDrawerDragging(false);
     pullRef.current?.focus();
   });
+
+  useEffect(() => {
+    const showHint = () => setDiagnosticsHint(true);
+    window.addEventListener(DIAGNOSTICS_HINT_EVENT, showHint);
+    return () => window.removeEventListener(DIAGNOSTICS_HINT_EVENT, showHint);
+  }, []);
 
   useEffect(() => {
     let seen = false;
@@ -4293,6 +4487,7 @@ export default function App() {
   }, []);
 
   const announcedDownloads = useRef(new Set<number>());
+  const failedDownloads = useRef(new Set<number>());
   const refreshDownloads = useCallback(async () => {
     const rows = await platform.listDownloads();
     setDownloads(rows);
@@ -4314,8 +4509,17 @@ export default function App() {
       if (!alive) return;
       if (!initialized) {
         initialized = true;
-        for (const row of rows) announcedDownloads.current.add(row.id);
+        for (const row of rows) {
+          announcedDownloads.current.add(row.id);
+          if (row.state === "failed") failedDownloads.current.add(row.id);
+        }
         return;
+      }
+      for (const row of rows) {
+        if (row.state === "failed" && !failedDownloads.current.has(row.id)) {
+          failedDownloads.current.add(row.id);
+          noteFailure();
+        }
       }
       const fresh = rows.filter(
         (row) =>
@@ -4356,6 +4560,7 @@ export default function App() {
     setBusy(true);
     setActionError(null);
     setNotice(null);
+    setNoticeFailed(false);
     try {
       let next = await platform.chooseLibraryFolder();
       if (next.state === "ready") {
@@ -4371,6 +4576,7 @@ export default function App() {
       setStatus(next);
       setReloadKey((key) => key + 1);
     } catch {
+      noteFailure();
       setActionError("The folder picker could not be opened. Please try again.");
     } finally {
       setBusy(false);
@@ -4380,6 +4586,7 @@ export default function App() {
   const rescan = useCallback(async () => {
     setBusy(true);
     setNotice(null);
+    setNoticeFailed(false);
     try {
       const outcome = await runScan();
       if (outcome.kind === "report") {
@@ -4389,6 +4596,7 @@ export default function App() {
         setStatus((current) => (current ? disconnected(current) : current));
         setNotice(null);
       } else {
+        setNoticeFailed(true);
         setNotice("The scan could not be completed. Please try again.");
       }
     } finally {
@@ -4399,12 +4607,15 @@ export default function App() {
   const saveCapacity = useCallback(async (capacity: number) => {
     setBusy(true);
     setNotice(null);
+    setNoticeFailed(false);
     try {
       const applied = await platform.setShelfCapacity(capacity);
       setShelfCapacity(applied);
       setReloadKey((key) => key + 1);
       setNotice(`Shelf capacity set to ${applied}.`);
     } catch (error) {
+      noteFailure();
+      setNoticeFailed(true);
       setNotice(
         isApiError(error)
           ? error.message
@@ -4459,6 +4670,7 @@ export default function App() {
             <p className="kicker">The Keeper's Ledger</p>
             <h2>Library unavailable</h2>
             <p>The library folder state could not be read just now.</p>
+            <ReportAction testId="library-state-report" label="Report" />
           </section>
         </main>
       );
@@ -4495,6 +4707,7 @@ export default function App() {
         reloadKey={reloadKey}
         focusBookId={focusBookId}
         notice={notice}
+        noticeFailed={noticeFailed}
         onAddBooks={chooseFolder}
         onFindBook={() => setView("search")}
       />
@@ -4506,6 +4719,39 @@ export default function App() {
     <div className={`room v4-room${drawerOpen ? " is-drawer-open" : ""}`}>
       {!libraryReady ? <Masthead /> : null}
       <AppInfoFooter hidden={view !== "settings"} />
+
+      {diagnosticsHint ? (
+        <div
+          className="diagnostics-hint"
+          role="status"
+          data-testid="diagnostics-hint"
+        >
+          <p>
+            A few things have stumbled. A short diagnostics report can help
+            put them right.
+          </p>
+          <button
+            type="button"
+            className="secondary-action"
+            data-testid="diagnostics-hint-open"
+            onClick={() => {
+              setDiagnosticsHint(false);
+              navigate("settings");
+            }}
+          >
+            Help &amp; diagnostics
+          </button>
+          <button
+            type="button"
+            className="diagnostics-hint-close"
+            aria-label="Dismiss diagnostics hint"
+            data-testid="diagnostics-hint-dismiss"
+            onClick={() => setDiagnosticsHint(false)}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+      ) : null}
 
       {renderMain()}
 

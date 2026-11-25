@@ -14,6 +14,8 @@ import {
   type Book,
   type Bookmark,
 } from "../platform";
+import { ReportAction } from "../Diagnostics";
+import { noteFailure } from "../diagnostics";
 import {
   openPdf,
   pageSize,
@@ -207,11 +209,14 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         setReady(true);
       } catch (error) {
         if (cancelled) return;
-        setFailed(
-          isApiError(error)
-            ? error.message
-            : "This PDF could not be opened. It may be damaged or password protected.",
-        );
+        const message = isApiError(error)
+          ? error.message
+          : "This PDF could not be opened. It may be damaged or password protected.";
+        noteFailure();
+        void platform
+          .logDiagnostic("error", "reader.failed", `${book.title}: ${message}`)
+          .catch(() => {});
+        setFailed(message);
       }
     })();
 
@@ -534,6 +539,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           <p className="kicker">The reading room is dark</p>
           <h2>{book.title}</h2>
           <p>{failed}</p>
+          <ReportAction testId="reader-report" label="Report" />
           <button type="button" className="secondary-action" onClick={close}>
             Back to shelf
           </button>

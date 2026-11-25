@@ -16,6 +16,8 @@ import {
   type ReadingStatus,
 } from "../platform";
 import { useLayerExit } from "../navigation";
+import { ReportAction } from "../Diagnostics";
+import { noteFailure } from "../diagnostics";
 import {
   ANNOTATION_COLOURS,
   DEFAULT_ANNOTATION_COLOUR,
@@ -528,11 +530,14 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
         }
       } catch (error) {
         if (cancelled) return;
-        setFailed(
-          isApiError(error)
-            ? error.message
-            : "This book could not be opened. Please try again.",
-        );
+        const message = isApiError(error)
+          ? error.message
+          : "This book could not be opened. Please try again.";
+        noteFailure();
+        void platform
+          .logDiagnostic("error", "reader.failed", `${book.title}: ${message}`)
+          .catch(() => {});
+        setFailed(message);
       }
     })();
 
@@ -821,6 +826,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
           <p className="kicker">The reading room is dark</p>
           <h2>{book.title}</h2>
           <p>{failed}</p>
+          <ReportAction testId="reader-report" label="Report" />
           <button type="button" className="secondary-action" onClick={close}>
             Back to shelf
           </button>
