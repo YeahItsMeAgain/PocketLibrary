@@ -13,12 +13,15 @@ base64 = "0.22"
 blake3 = "1"
 hayro = "0.9.0"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+minisign-verify = "0.2"
 lopdf = "0.47.0"
 rbook = "0.7.13"
 rusqlite = { version = "0.41", features = ["bundled"] }
 scraper = "0.24"
+semver = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 thiserror = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 wreq = { version = "=0.16.5", default-features = false, features = ["tokio-rt", "webpki-roots", "gzip", "brotli", "deflate", "charset", "stream"] }

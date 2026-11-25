@@ -6,7 +6,7 @@
  * Playwright) the mock answers with the same types so the UI is testable
  * without a device.
  */
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
 
 export interface AppInfo {
   name: string;
@@ -33,6 +33,45 @@ export interface DiagnosticsExport {
   method: "share" | "save";
   cancelled: boolean;
 }
+
+/** Mirrors `src-tauri/src/updates::UpdateCheck` (camelCase on the wire). */
+export interface UpdateCheck {
+  currentVersion: string;
+  available: boolean;
+  latestVersion?: string | null;
+  notes?: string | null;
+  pubDate?: string | null;
+  size?: number | null;
+  sha256?: string | null;
+}
+
+/** A downloaded and verified update waiting for the user to install it. */
+export interface DownloadedUpdate {
+  version: string;
+  bytes: number;
+  sha256: string;
+}
+
+/** What the Android package installer reported. */
+export interface UpdateInstallResult {
+  started: boolean;
+}
+
+/** Mirrors `src-tauri/src/updates::DownloadEvent`. */
+export type UpdateDownloadEvent =
+  | {
+      event: "started";
+      data: { contentLength: number | null; total: number };
+    }
+  | {
+      event: "progress";
+      data: {
+        chunkLength: number;
+        downloaded: number;
+        contentLength: number | null;
+      };
+    }
+  | { event: "finished"; data: { bytes: number } };
 
 interface SavedDiagnostics {
   fileName: string;
@@ -397,6 +436,14 @@ export interface Platform {
   clearDiagnostics(): Promise<void>;
   /** Export the zip through the share sheet, falling back to the save picker. */
   sendDiagnostics(): Promise<DiagnosticsExport>;
+  /** Fetch update metadata only; nothing downloads until asked. */
+  checkForUpdate(): Promise<UpdateCheck>;
+  /** Download and verify the release from the most recent check. */
+  downloadUpdate(
+    onEvent: (event: UpdateDownloadEvent) => void,
+  ): Promise<DownloadedUpdate>;
+  /** Open the Android package installer for the verified download. */
+  installUpdate(): Promise<UpdateInstallResult>;
 }
 
 export type Invoke = typeof invoke;
@@ -595,6 +642,16 @@ export function createTauriPlatform(call: Invoke): Platform {
         () => call<SavedDiagnostics | null>("save_diagnostics"),
       );
     },
+    checkForUpdate: () => call<UpdateCheck>("updates_check"),
+    downloadUpdate: async (onEvent) => {
+      const channel = new Channel<UpdateDownloadEvent>();
+      channel.onmessage = onEvent;
+      return call<DownloadedUpdate>("updates_download", {
+        onEvent: channel,
+      });
+    },
+    installUpdate: () =>
+      call<UpdateInstallResult>("updates_install"),
   };
   return traced(base, (method, error) => {
     void call("log_diagnostic", {
@@ -668,6 +725,36 @@ export interface MockConfig {
   diagnosticsBytes?: number;
   /** Test-only delay before the wall's shelves and books arrive. */
   libraryDelayMs?: number;
+  /** Update flow scenario; defaults to `upToDate`. */
+  updates?: MockUpdateConfig;
+}
+
+/**
+ * Drives the mock updater without a network or device.
+ *
+ * `checkError` fails the metadata check; `downloadError` fails the first
+ * download attempt (then succeeds); `installPermission` rejects the first
+ * install with the Android permission code, then allows a retry.
+ */
+export interface MockUpdateConfig {
+  scenario?:
+    | "upToDate"
+    | "available"
+    | "checkError"
+    | "downloadError"
+    | "installPermission";
+  currentVersion?: string;
+  latestVersion?: string;
+  notes?: string;
+  pubDate?: string;
+  size?: number;
+  sha256?: string;
+  /** Milliseconds between simulated progress ticks. */
+  stepMs?: number;
+  /** How many download attempts fail before succeeding (default 1). */
+  downloadFailures?: number;
+  checkError?: ApiError;
+  downloadError?: ApiError;
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
@@ -1040,6 +1127,22 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     MOCK_DIAGNOSTICS_KEY,
     [],
   );
+  const updateConfig = config.updates ?? {};
+  const updateScenario = updateConfig.scenario ?? "upToDate";
+  const updateCurrentVersion =
+    updateConfig.currentVersion ?? MOCK_APP_INFO.appVersion;
+  const updateLatestVersion = updateConfig.latestVersion ?? "0.2.0";
+  const updateSize = updateConfig.size ?? 3_535_963;
+  const updateSha256 =
+    updateConfig.sha256 ??
+    "80ccd6cab3f2f814bc256b49386e15e37a1b88cf13c2980994b9b3dd33ea4de1";
+  const updateStepMs = updateConfig.stepMs ?? 60;
+  let updateDownloadFailuresLeft =
+    updateScenario === "downloadError"
+      ? (updateConfig.downloadFailures ?? 1)
+      : 0;
+  let updatePermissionPending = updateScenario === "installPermission";
+  let updateDownloaded = false;
   const appendMockLog = (
     level: DiagnosticLevel,
     event: string,
@@ -1826,6 +1929,93 @@ function createMockPlatform(config: MockConfig = {}): Platform {
           };
         },
       );
+    },
+    checkForUpdate: async () => {
+      if (updateScenario === "checkError") {
+        throw (
+          updateConfig.checkError ?? {
+            code: "network",
+            message:
+              "Couldn't reach the update server. Check your connection and try again.",
+          }
+        );
+      }
+      if (updateScenario === "upToDate") {
+        return {
+          currentVersion: updateCurrentVersion,
+          available: false,
+          latestVersion: updateCurrentVersion,
+          notes: null,
+          pubDate: null,
+          size: null,
+          sha256: null,
+        };
+      }
+      return {
+        currentVersion: updateCurrentVersion,
+        available: true,
+        latestVersion: updateLatestVersion,
+        notes:
+          updateConfig.notes ??
+          "Fixes shelf placement, speeds up imports and tidies the reader.",
+        pubDate: updateConfig.pubDate ?? "2026-11-25T10:00:00Z",
+        size: updateSize,
+        sha256: updateSha256,
+      };
+    },
+    downloadUpdate: async (onEvent) => {
+      if (updateScenario === "upToDate" || updateScenario === "checkError") {
+        throw { code: "noUpdate", message: "Check for updates first." };
+      }
+      const contentLength = updateSize;
+      onEvent({
+        event: "started",
+        data: { contentLength, total: updateSize },
+      });
+      const chunks = 5;
+      const chunkLength = Math.ceil(updateSize / chunks);
+      let downloaded = 0;
+      for (let step = 0; step < chunks; step += 1) {
+        await new Promise((resolve) =>
+          window.setTimeout(resolve, updateStepMs),
+        );
+        downloaded = Math.min(updateSize, downloaded + chunkLength);
+        onEvent({
+          event: "progress",
+          data: { chunkLength, downloaded, contentLength },
+        });
+        if (updateDownloadFailuresLeft > 0 && step === 1) {
+          updateDownloadFailuresLeft -= 1;
+          throw (
+            updateConfig.downloadError ?? {
+              code: "network",
+              message:
+                "The download stopped before it finished. Check your connection and try again.",
+            }
+          );
+        }
+      }
+      updateDownloaded = true;
+      onEvent({ event: "finished", data: { bytes: updateSize } });
+      return {
+        version: updateLatestVersion,
+        bytes: updateSize,
+        sha256: updateSha256,
+      };
+    },
+    installUpdate: async () => {
+      if (!updateDownloaded) {
+        throw { code: "noDownload", message: "Download the update first." };
+      }
+      if (updatePermissionPending) {
+        updatePermissionPending = false;
+        throw {
+          code: "installPermission",
+          message:
+            "Allow PocketLibrary to install unknown apps, then try again.",
+        };
+      }
+      return { started: true };
     },
   };
 

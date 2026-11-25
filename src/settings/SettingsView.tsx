@@ -23,6 +23,7 @@ import {
 } from "../reader/settings";
 import { BackupSection } from "./BackupSection";
 import { downloadNameExample } from "./naming";
+import { UpdateSection } from "./UpdateSection";
 
 interface SettingsViewProps {
   status: LibraryStatus;
@@ -420,6 +421,7 @@ export function SettingsView({
 
         <BackupSection busy={busy} onLibraryChanged={onLibraryChanged} />
 
+        <UpdateSection />
 
         <section
           className="settings-section"

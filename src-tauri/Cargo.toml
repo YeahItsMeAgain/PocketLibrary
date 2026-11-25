@@ -23,7 +23,13 @@ tauri-plugin-opener = "2"
 tauri-plugin-android-fs = "=30.2.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+futures-util = "0.3"
+url = "2"
+wreq = { version = "=0.16.5", default-features = false, features = ["tokio-rt", "webpki-roots", "stream"] }
 pocketlibrary_core = { path = "../core" }
+
+[dev-dependencies]
+tempfile = "3"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
