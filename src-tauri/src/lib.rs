@@ -65,6 +65,22 @@ struct PendingBackup {
     bytes: Vec<u8>,
 }
 
+/// A book handed to another app. It is marked reading only when PocketLibrary
+/// is resumed after the chooser/handoff, never when the chooser merely opens.
+#[derive(Default)]
+struct PendingExternal {
+    book_id: Mutex<Option<i64>>,
+}
+
+/// An import report plus the rescan that re-links restored pathless books.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ImportOutcome {
+    report: BackupReport,
+    scan: Option<ScanReport>,
+    scan_error: Option<String>,
+}
+
 #[derive(Default)]
 struct BackupExchange {
     pending: Mutex<Option<PendingBackup>>,
@@ -507,14 +523,26 @@ fn import_backup_response(
     app: &AppHandle,
     token: &str,
     mode: ImportMode,
-) -> Result<BackupReport, ApiError> {
+) -> Result<ImportOutcome, ApiError> {
     let bytes = app.state::<BackupExchange>().take(token).ok_or_else(|| {
         api_error(
             "backup_selection_expired",
             "That archive is no longer selected. Choose it again.",
         )
     })?;
-    app.state::<Api>().import_backup(&bytes, mode)
+    let report = app.state::<Api>().import_backup(&bytes, mode)?;
+    // Restored books arrive without a device-local path. A scan matches them
+    // to files by content hash and fills the path; a missing grant must not
+    // turn a successful import into an error.
+    let (scan, scan_error) = match rescan(app) {
+        Ok(report) => (Some(report), None),
+        Err(error) => (None, Some(error.message)),
+    };
+    Ok(ImportOutcome {
+        report,
+        scan,
+        scan_error,
+    })
 }
 
 #[cfg(not(target_os = "android"))]
@@ -522,7 +550,7 @@ fn import_backup_response(
     _app: &AppHandle,
     _token: &str,
     _mode: ImportMode,
-) -> Result<BackupReport, ApiError> {
+) -> Result<ImportOutcome, ApiError> {
     Err(api_error(
         "unsupported",
         "Restoring a backup needs the Android build.",
@@ -560,9 +588,12 @@ fn open_book_externally_response(app: &AppHandle, book_id: i64) -> Result<(), Ap
                 error,
             )
         })?;
-    // The chooser has been shown. Mark the book as started unless it is
-    // already finished; the other app owns the position from here.
-    api.record_open(book_id)?;
+    // The opener returns as soon as the chooser is requested. Remember the
+    // book and mark it reading on the next resume, so an opened chooser alone
+    // never changes the shelf.
+    if let Ok(mut pending) = app.state::<PendingExternal>().book_id.lock() {
+        *pending = Some(book_id);
+    }
     Ok(())
 }
 
@@ -589,7 +620,7 @@ async fn import_backup(
     app: AppHandle,
     token: String,
     mode: ImportMode,
-) -> Result<BackupReport, ApiError> {
+) -> Result<ImportOutcome, ApiError> {
     blocking(move || import_backup_response(&app, &token, mode)).await
 }
 
@@ -708,6 +739,16 @@ fn set_shelf_capacity(api: tauri::State<'_, Api>, capacity: i64) -> Result<i64, 
 }
 
 #[tauri::command]
+fn get_download_naming(api: tauri::State<'_, Api>) -> Result<String, ApiError> {
+    api.download_naming()
+}
+
+#[tauri::command]
+fn set_download_naming(api: tauri::State<'_, Api>, pattern: String) -> Result<String, ApiError> {
+    api.set_download_naming(&pattern)
+}
+
+#[tauri::command]
 fn label_usage(api: tauri::State<'_, Api>) -> Result<Vec<LabelUsage>, ApiError> {
     api.label_usage()
 }
@@ -783,10 +824,7 @@ fn delete_bookmark(
 }
 
 #[tauri::command]
-fn list_annotations(
-    api: tauri::State<'_, Api>,
-    book_id: i64,
-) -> Result<Vec<Annotation>, ApiError> {
+fn list_annotations(api: tauri::State<'_, Api>, book_id: i64) -> Result<Vec<Annotation>, ApiError> {
     api.list_annotations(book_id)
 }
 
@@ -799,13 +837,7 @@ fn create_annotation(
     note: Option<String>,
     locator: String,
 ) -> Result<Annotation, ApiError> {
-    api.create_annotation(
-        book_id,
-        kind,
-        colour.as_deref(),
-        note.as_deref(),
-        &locator,
-    )
+    api.create_annotation(book_id, kind, colour.as_deref(), note.as_deref(), &locator)
 }
 
 #[tauri::command]
@@ -873,6 +905,7 @@ pub fn run() {
             let api = Api::open(data_dir.join("library.db"))?;
             app.manage(api);
             app.manage(BackupExchange::default());
+            app.manage(PendingExternal::default());
             spawn_download_worker(app.handle().clone());
             Ok(())
         });
@@ -901,6 +934,8 @@ pub fn run() {
             move_book,
             get_shelf_capacity,
             set_shelf_capacity,
+            get_download_naming,
+            set_download_naming,
             label_usage,
             create_label,
             rename_label,
@@ -925,6 +960,28 @@ pub fn run() {
             import_backup,
             open_book_externally
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // Android resumes the activity after the external reader handoff
+            // (and after a cancelled chooser). Mark the pending book then,
+            // never at the moment the chooser opens.
+            if matches!(event, tauri::RunEvent::Resumed) {
+                let pending = app
+                    .state::<PendingExternal>()
+                    .book_id
+                    .lock()
+                    .ok()
+                    .and_then(|mut book_id| book_id.take());
+                if let Some(book_id) = pending {
+                    let api = app.state::<Api>();
+                    if let Err(error) = api.record_open(book_id) {
+                        eprintln!(
+                            "pocketlibrary: external reader status not saved ({:?})",
+                            error.code
+                        );
+                    }
+                }
+            }
+        });
 }

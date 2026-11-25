@@ -171,10 +171,22 @@ export interface BackupSelection {
 export interface ScanReport {
   total: number;
   added: number;
+  /** Known books whose local path was filled in or changed by this scan. */
+  relinked: number;
   removed: number;
   duplicates: number;
   skipped: ScanIssue[];
   placements: Placement[];
+}
+
+/** The naming pattern used until the user saves another one. */
+export const DEFAULT_DOWNLOAD_NAMING = "{author} - {title} ({year})";
+
+/** What an import changed, plus the rescan that re-linked imported books. */
+export interface BackupImport {
+  report: BackupReport;
+  scan: ScanReport | null;
+  scanError: string | null;
 }
 
 /** Mirrors `pocketlibrary_core::ApiError` (camelCase on the wire). */
@@ -310,6 +322,8 @@ export interface Platform {
   rescanLibrary(): Promise<ScanReport>;
   getShelfCapacity(): Promise<number>;
   setShelfCapacity(capacity: number): Promise<number>;
+  getDownloadNaming(): Promise<string>;
+  setDownloadNaming(pattern: string): Promise<string>;
   moveBook(bookId: number, shelfId: number, slotIndex: number): Promise<void>;
   listLabels(): Promise<LabelUsage[]>;
   createLabel(name: string, colour: string): Promise<Label>;
@@ -346,7 +360,7 @@ export interface Platform {
   deleteAnnotation(bookId: number, annotationId: number): Promise<void>;
   exportBackup(): Promise<BackupExport | null>;
   previewBackup(): Promise<BackupSelection | null>;
-  importBackup(token: string, mode: BackupMode): Promise<BackupReport>;
+  importBackup(token: string, mode: BackupMode): Promise<BackupImport>;
   openBookExternally(bookId: number): Promise<void>;
 }
 
@@ -376,6 +390,9 @@ export function createTauriPlatform(call: Invoke): Platform {
     getShelfCapacity: () => call<number>("get_shelf_capacity"),
     setShelfCapacity: (capacity) =>
       call<number>("set_shelf_capacity", { capacity }),
+    getDownloadNaming: () => call<string>("get_download_naming"),
+    setDownloadNaming: (pattern) =>
+      call<string>("set_download_naming", { pattern }),
     moveBook: (bookId, shelfId, slotIndex) =>
       call<void>("move_book", { bookId, shelfId, slotIndex }),
     listLabels: () => call<LabelUsage[]>("label_usage"),
@@ -430,7 +447,7 @@ export function createTauriPlatform(call: Invoke): Platform {
     previewBackup: () =>
       call<BackupSelection | null>("preview_backup"),
     importBackup: (token, mode) =>
-      call<BackupReport>("import_backup", { token, mode }),
+      call<BackupImport>("import_backup", { token, mode }),
     openBookExternally: (bookId) =>
       call<void>("open_book_externally", { bookId }),
   };
@@ -457,9 +474,13 @@ export interface MockConfig {
   folderName?: string | null;
   books?: Book[];
   shelfCapacity?: number;
+  /** Initial download naming pattern; defaults to `DEFAULT_DOWNLOAD_NAMING`. */
+  downloadNaming?: string;
   shelves?: Shelf[];
   /** Books a rescan should import, one shelf-placement at a time. */
   scanAdds?: Book[];
+  /** Files the post-import rescan finds, so the import summary can be tested. */
+  backupScanAdds?: Book[];
   /** Labels available before any are created through the UI. */
   labels?: Label[];
   /** Progress fractions for the detail sticker, keyed by book id. */
@@ -494,6 +515,7 @@ export interface MockConfig {
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
 const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
 const MOCK_ANNOTATIONS_KEY = "pocketlibrary.mock.annotations";
+const MOCK_DOWNLOAD_NAMING_KEY = "pocketlibrary.mock.downloadNaming";
 const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
 const MOCK_SAMPLE_PDF = "/test-assets/sample.pdf";
 
@@ -785,6 +807,20 @@ function mockSearch(config: MockConfig, query: SearchQuery): SearchPage {
   };
 }
 
+function validDownloadNaming(pattern: string): boolean {
+  if (!pattern.trim()) return false;
+  const supported = new Set(["author", "title", "year"]);
+  let rest = pattern;
+  while (true) {
+    const start = rest.indexOf("{");
+    if (start < 0) return !rest.includes("}");
+    const after = rest.slice(start + 1);
+    const end = after.indexOf("}");
+    if (end < 0 || !supported.has(after.slice(0, end))) return false;
+    rest = after.slice(end + 1);
+  }
+}
+
 function createMockPlatform(config: MockConfig = {}): Platform {
   let state: LibraryState = config.state ?? "needsFolder";
   let folderName = config.folderName ?? null;
@@ -792,7 +828,14 @@ function createMockPlatform(config: MockConfig = {}): Platform {
   let labels = seedLabels(config, books);
   let shelves = initialShelves(config, books);
   let capacity = config.shelfCapacity ?? 12;
+  let downloadNaming = readStored(
+    MOCK_DOWNLOAD_NAMING_KEY,
+    config.downloadNaming ?? DEFAULT_DOWNLOAD_NAMING,
+  );
   let scanAdds = config.scanAdds ? [...config.scanAdds] : [];
+  const backupScanAdds = config.backupScanAdds
+    ? [...config.backupScanAdds]
+    : [];
   let nextBookId = Math.max(0, ...books.map((book) => book.id)) + 1;
   let nextShelfId = Math.max(0, ...shelves.map((shelf) => shelf.id)) + 1;
   let nextLabelId = Math.max(0, ...labels.map((label) => label.id)) + 1;
@@ -1026,6 +1069,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     const report: ScanReport = {
       total: books.length,
       added: 0,
+      relinked: 0,
       removed: 0,
       duplicates: 0,
       skipped: [],
@@ -1033,6 +1077,10 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     };
 
     for (const add of scanAdds) {
+      if (books.some((book) => book.contentHash === add.contentHash)) {
+        report.relinked += 1;
+        continue;
+      }
       let shelf = shelves.find(
         (candidate) =>
           booksOnShelf(candidate.id).length < candidate.capacity,
@@ -1193,6 +1241,20 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       capacity = next;
       shelves = shelves.map((shelf) => ({ ...shelf, capacity: next }));
       return capacity;
+    },
+    getDownloadNaming: async () => downloadNaming,
+    setDownloadNaming: async (pattern) => {
+      const trimmed = pattern.trim();
+      if (!validDownloadNaming(trimmed)) {
+        throw {
+          code: "invalid_download_naming",
+          message:
+            "Choose a pattern using only {author}, {title} and {year}, with both braces.",
+        };
+      }
+      downloadNaming = trimmed;
+      writeStored(MOCK_DOWNLOAD_NAMING_KEY, downloadNaming);
+      return downloadNaming;
     },
     moveBook: async (bookId, shelfId, slotIndex) => {
       const book = books.find((candidate) => candidate.id === bookId);
@@ -1500,21 +1562,27 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       pendingBackup = null;
       const matched = config.backupPreview?.matched ?? 3;
       const added = config.backupPreview?.new ?? 2;
-      return mode === "replace"
-        ? (config.backupReplaceReport ?? {
-            mode,
-            matched,
-            new: added,
-            skipped: 0,
-            replaced: books.length,
-          })
-        : (config.backupMergeReport ?? {
-            mode,
-            matched,
-            new: added,
-            skipped: 1,
-            replaced: 0,
-          });
+      const report =
+        mode === "replace"
+          ? (config.backupReplaceReport ?? {
+              mode,
+              matched,
+              new: added,
+              skipped: 0,
+              replaced: books.length,
+            })
+          : (config.backupMergeReport ?? {
+              mode,
+              matched,
+              new: added,
+              skipped: 1,
+              replaced: 0,
+            });
+      // The native shell rescans right after an import so restored pathless
+      // books are matched to files. The mock runs the same rescan seam.
+      scanAdds = [...backupScanAdds];
+      const scan = rescan();
+      return { report, scan, scanError: null };
     },
     openBookExternally: async () => {
       throw {

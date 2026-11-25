@@ -24,6 +24,7 @@ test("the real Tauri adapter renders values from a mocked invoke", async ({
               return {
                 total: 0,
                 added: 0,
+                relinked: 0,
                 removed: 0,
                 duplicates: 0,
                 skipped: [],
