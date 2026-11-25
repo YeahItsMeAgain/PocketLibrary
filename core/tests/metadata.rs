@@ -2,8 +2,8 @@ mod common;
 
 use base64::Engine as _;
 use common::{
-    FakeDir, database, epub_with, epub_with_plain_image, epub2_with, minimal_epub, pdf_with,
-    pdf_with_info, pdf_with_title_page_then_cover, png_cover, rich_epub,
+    FakeDir, database, database_at, epub_with, epub_with_plain_image, epub2_with, minimal_epub,
+    pdf_with, pdf_with_info, pdf_with_title_page_then_cover, png_cover, rich_epub,
 };
 use pocketlibrary_core::{BookFormat, CoverSource};
 
@@ -156,6 +156,44 @@ fn pdf_cover_skips_a_text_title_page_for_the_coloured_jacket() {
     assert!(
         red > green.saturating_add(30) && red > blue.saturating_add(30),
         "cover came from the coloured second page, not the white title page: {red},{green},{blue}"
+    );
+}
+
+#[test]
+fn rescan_refreshes_a_cached_pdf_cover_after_the_rule_changes() {
+    use image::{GenericImageView, Rgb, RgbImage};
+
+    let (_dir, path, api) = database_at();
+    let source = FakeDir::new().file_with(
+        "Stephen King - Needful Things (1991).pdf",
+        pdf_with_title_page_then_cover("needful-refresh"),
+    );
+    api.scan(&source).expect("first scan");
+    let book = api.list_books().expect("books").remove(0);
+    let cover_path = book.cover_path.clone().expect("cached cover path");
+    let white =
+        image::DynamicImage::ImageRgb8(RgbImage::from_pixel(600, 900, Rgb([255, 255, 255])));
+    white
+        .save_with_format(&cover_path, image::ImageFormat::Jpeg)
+        .expect("write an old white cover");
+
+    let conn = rusqlite::Connection::open(&path).expect("open database");
+    conn.execute(
+        "DELETE FROM settings WHERE key = 'cover_renderer_version'",
+        [],
+    )
+    .expect("mark the cached cover stale");
+
+    api.scan(&source).expect("refresh scan");
+    let detail = api
+        .get_book_detail(book.id, Some(&source))
+        .expect("book detail");
+    let bytes = data_url_bytes(&detail.cover_data_url.expect("cover"));
+    let image = image::load_from_memory(&bytes).expect("decode refreshed cover");
+    let [red, green, blue, _] = image.get_pixel(image.width() / 10, image.height() / 10).0;
+    assert!(
+        red > green.saturating_add(30) && red > blue.saturating_add(30),
+        "the old white title-page cover was replaced: {red},{green},{blue}"
     );
 }
 

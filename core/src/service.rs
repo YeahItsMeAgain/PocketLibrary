@@ -38,6 +38,10 @@ const LIBRARY_FOLDER_NAME: &str = "library_folder_name";
 const SHELF_CAPACITY: &str = "shelf_capacity";
 const DEFAULT_SHELF_CAPACITY: i64 = 12;
 const DOWNLOAD_NAMING: &str = "download_naming";
+const COVER_RENDERER_VERSION: &str = "cover_renderer_version";
+/// Bump when cover extraction changes enough that cached covers must be made
+/// again. Version 2 skips PDF title pages in favour of a jacket-like page.
+const COVER_RENDERER_VERSION_CURRENT: &str = "2";
 
 /// The naming pattern used when the user has not chosen one.
 pub const DEFAULT_DOWNLOAD_NAMING: &str = "{author} - {title} ({year})";
@@ -572,20 +576,27 @@ impl Service {
         let mut conn = self.connection()?;
         let tx = conn.transaction()?;
 
-        let mut existing: HashMap<String, (i64, String, String)> = HashMap::new();
+        let needs_cover_refresh = read_setting(&tx, COVER_RENDERER_VERSION)?.as_deref()
+            != Some(COVER_RENDERER_VERSION_CURRENT);
+        let mut existing: HashMap<String, ExistingBook> = HashMap::new();
         {
-            let mut statement = tx.prepare("SELECT content_hash, id, path, title FROM books")?;
+            let mut statement = tx
+                .prepare("SELECT content_hash, id, path, title, format, cover_source FROM books")?;
             let rows = statement.query_map([], |row| {
                 Ok((
                     row.get::<_, String>(0)?,
-                    row.get::<_, i64>(1)?,
-                    row.get::<_, String>(2)?,
-                    row.get::<_, String>(3)?,
+                    ExistingBook {
+                        id: row.get(1)?,
+                        path: row.get(2)?,
+                        title: row.get(3)?,
+                        format: row.get(4)?,
+                        cover_source: row.get(5)?,
+                    },
                 ))
             })?;
             for row in rows {
-                let (hash, id, path, title) = row?;
-                existing.insert(hash, (id, path, title));
+                let (hash, book) = row?;
+                existing.insert(hash, book);
             }
         }
 
@@ -603,17 +614,46 @@ impl Service {
             duplicates += group.len().saturating_sub(1);
             let representative = &group[0];
 
-            if let Some((id, known_path, stored_title)) = existing.get(&hash) {
+            if let Some(known) = existing.get(&hash) {
                 touched.insert(hash.clone());
                 if let Some(title) =
-                    metadata::repaired_filename_title(stored_title, &representative.scanned.name)
+                    metadata::repaired_filename_title(&known.title, &representative.scanned.name)
                 {
                     tx.execute(
                         "UPDATE books SET title = ?1 WHERE id = ?2",
-                        params![title, id],
+                        params![title, known.id],
                     )?;
                 }
-                if !group.iter().any(|file| &file.scanned.path == known_path) {
+                if needs_cover_refresh
+                    && known.format == BookFormat::Pdf
+                    && known.cover_source == Some(CoverSource::Rendered)
+                    && let Ok(bytes) = source.read_file(&representative.scanned.handle)
+                    && let Ok(parsed) = metadata::extract(
+                        representative.scanned.format,
+                        &bytes,
+                        &representative.scanned.name,
+                    )
+                {
+                    let cached = cover::cover_path(&self.cover_dir, &hash);
+                    let _ = fs::remove_file(cached);
+                    let refreshed = cover::ensure(
+                        &self.cover_dir,
+                        &hash,
+                        parsed.cover.as_deref(),
+                        if parsed.cover_rendered {
+                            CoverSource::Rendered
+                        } else {
+                            CoverSource::Embedded
+                        },
+                    );
+                    if let Some((cover_path, cover_source)) = refreshed {
+                        tx.execute(
+                            "UPDATE books SET cover_path = ?1, cover_source = ?2 WHERE id = ?3",
+                            params![cover_path.to_string_lossy(), cover_source, known.id],
+                        )?;
+                    }
+                }
+                if !group.iter().any(|file| &file.scanned.path == &known.path) {
                     tx.execute(
                         "UPDATE books SET path = ?1, quick_key = ?2 WHERE content_hash = ?3",
                         params![representative.scanned.path, representative.quick_key, hash],
@@ -677,11 +717,13 @@ impl Service {
             let book_id = tx.last_insert_rowid();
             existing.insert(
                 hash.clone(),
-                (
-                    book_id,
-                    representative.scanned.path.clone(),
-                    parsed.title.clone().unwrap_or_default(),
-                ),
+                ExistingBook {
+                    id: book_id,
+                    path: representative.scanned.path.clone(),
+                    title: parsed.title.clone().unwrap_or_default(),
+                    format: representative.scanned.format,
+                    cover_source: cover.as_ref().map(|(_, source)| *source),
+                },
             );
             placements.push(Placement {
                 book_id,
@@ -693,7 +735,7 @@ impl Service {
             added += 1;
         }
 
-        for (hash, (id, _path, _title)) in &existing {
+        for (hash, known) in &existing {
             if touched.contains(hash) {
                 continue;
             }
@@ -707,9 +749,21 @@ impl Service {
                      status = 'finished',
                      finished_at = excluded.finished_at
                  WHERE reading_state.status <> 'finished'",
-                params![id, now],
+                params![known.id, now],
             )?;
             removed += changed;
+        }
+
+        if needs_cover_refresh {
+            tx.execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+                params![
+                    COVER_RENDERER_VERSION,
+                    COVER_RENDERER_VERSION_CURRENT,
+                    unix_timestamp()
+                ],
+            )?;
         }
 
         let total: i64 = tx.query_row("SELECT COUNT(*) FROM books", [], |row| row.get(0))?;
@@ -1758,6 +1812,14 @@ struct HashedFile {
     scanned: ScannedBook,
     content_hash: String,
     quick_key: String,
+}
+
+struct ExistingBook {
+    id: i64,
+    path: String,
+    title: String,
+    format: BookFormat,
+    cover_source: Option<CoverSource>,
 }
 
 struct ShelfSlots {
