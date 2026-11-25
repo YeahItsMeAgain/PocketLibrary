@@ -43,7 +43,9 @@ are kept in the JSON so the percentiles can be recomputed.
   `Memory.getDOMCounters`, read before the drag probe so skipped shelves stay
   skipped.
 - **Filter apply/clear** — the real label chip and clear button, measured to a
-  forced style/layout flush plus two rAFs.
+  forced style/layout flush plus two rAFs. The budget uses the synchronous
+  class/attribute pass plus flush (the spec metric); the settled number is a
+  diagnostic that also includes two compositor frames.
 - **Geometry sweep** — a diagnostic, not a budget: the lift-time
   `getBoundingClientRect()` sweep over all shelves, then all spines. It exposes
   the remaining O(library) drag measurement.

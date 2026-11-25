@@ -514,7 +514,10 @@ async function run() {
       scrollP99: result.scroll.warm.p99,
       longTasksOver50: result.longTasks.over50,
       domMb: result.memory.embedderHeapUsedMb,
-      filterMs: result.filter.applySettled,
+      // The spec measures filter apply as the class/attribute pass plus the
+      // forced style flush. `applySettled` additionally waits two compositor
+      // frames and is reported as a diagnostic.
+      filterMs: result.filter.applySync,
     };
     const pass =
       budget.firstShelfMs < 400 &&
