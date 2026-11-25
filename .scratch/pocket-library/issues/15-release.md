@@ -12,3 +12,5 @@
 - [ ] Device smoke passes: launch, scan a real folder, read an EPUB and a PDF, acquire a book, export and import a backup
 - [ ] `apksigner verify` passes and the APK size is recorded
 - [ ] The build is reproducible from the committed docs on a fresh machine
+
+Note: branding assets committed under `assets/branding/` and generated into `src-tauri/icons` + Android mipmaps.
