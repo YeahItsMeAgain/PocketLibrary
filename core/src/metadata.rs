@@ -41,14 +41,28 @@ pub fn extract(
     filename: &str,
 ) -> Result<ParsedMetadata, ScanIssueReason> {
     let hints = parse_filename(filename);
+    let hint_title = hints
+        .title
+        .as_deref()
+        .map(clean_text)
+        .filter(|value| !value.is_empty());
     let mut parsed = match format {
         BookFormat::Epub => parse_epub(bytes)?,
         BookFormat::Pdf => parse_pdf(bytes)?,
     };
 
-    if parsed.title.is_none() {
-        parsed.title = hints.title;
-    }
+    let embedded_title = parsed
+        .title
+        .as_deref()
+        .map(clean_text)
+        .filter(|value| !value.is_empty());
+    parsed.title = match (embedded_title, hint_title) {
+        (Some(embedded), Some(hint)) if filename_title_extends_short_embedded(&embedded, &hint) => {
+            Some(hint)
+        }
+        (Some(embedded), _) => Some(embedded),
+        (None, hint) => hint,
+    };
     if parsed.authors.is_empty()
         && let Some(author) = hints.author
     {
@@ -321,10 +335,11 @@ fn parse_filename(filename: &str) -> FilenameHints {
     }
 
     let (author, title) = match title_part.split_once(" - ") {
-        Some((author, title)) if !author.trim().is_empty() && !title.trim().is_empty() => {
-            (Some(collapse_spaces(author)), collapse_spaces(title))
-        }
-        _ => (None, collapse_spaces(&title_part)),
+        Some((author, title)) if !author.trim().is_empty() && !title.trim().is_empty() => (
+            Some(collapse_spaces(author)),
+            strip_trailing_acquisition_words(title),
+        ),
+        _ => (None, strip_trailing_acquisition_words(&title_part)),
     };
 
     FilenameHints {
@@ -332,6 +347,65 @@ fn parse_filename(filename: &str) -> FilenameHints {
         author,
         year,
     }
+}
+
+/// Drop trailing acquisition markers such as `ebook` from a filename title.
+///
+/// Libgen rows often append a format word to the title. A lone title that is
+/// itself the marker is kept, so a book genuinely named `Ebook` is untouched.
+fn strip_trailing_acquisition_words(value: &str) -> String {
+    let mut value = collapse_spaces(value);
+    loop {
+        let Some((before, last)) = value.rsplit_once(' ') else {
+            break;
+        };
+        let word =
+            last.trim_matches(|character: char| !character.is_alphanumeric() && character != '-');
+        if word.eq_ignore_ascii_case("ebook") || word.eq_ignore_ascii_case("e-book") {
+            value = before.trim_end().to_owned();
+        } else {
+            break;
+        }
+    }
+    value
+}
+
+/// Whether a filename title clearly completes a suspiciously short embedded
+/// title, as with an EPUB whose title is only `MAN` but whose filename says
+/// `The Whisper Man`.
+///
+/// Embedded metadata stays authoritative unless it is a whole-word suffix of a
+/// longer filename title and is at most two words long. That covers truncated
+/// or suffix-only titles without letting a filename override a real one.
+fn filename_title_extends_short_embedded(embedded: &str, hint: &str) -> bool {
+    let embedded_words = embedded.split_whitespace().count();
+    let hint_words = hint.split_whitespace().count();
+    if embedded_words == 0 || embedded_words > 2 || hint_words <= embedded_words {
+        return false;
+    }
+
+    let embedded = embedded.to_lowercase();
+    let hint = hint.to_lowercase();
+    if embedded == hint {
+        return false;
+    }
+    let Some(prefix) = hint.strip_suffix(&embedded) else {
+        return false;
+    };
+    prefix
+        .chars()
+        .next_back()
+        .is_some_and(|character| !character.is_alphanumeric())
+}
+
+/// The title a rescan should use for an already-indexed book, if the stored
+/// title is a truncated embedded title that the current filename completes.
+///
+/// Returns `None` for normal titles so a rescan never rewrites them.
+pub(crate) fn repaired_filename_title(current_title: &str, filename: &str) -> Option<String> {
+    let hint = parse_filename(filename).title?;
+    let current_title = clean_text(current_title);
+    filename_title_extends_short_embedded(&current_title, &hint).then_some(hint)
 }
 
 fn split_trailing_parenthetical(value: &str) -> Option<(&str, &str)> {
@@ -435,6 +509,26 @@ mod tests {
         assert_eq!(hints.title.as_deref(), Some("Real Title"));
         assert_eq!(hints.author.as_deref(), Some("Author"));
         assert_eq!(hints.year.as_deref(), Some("2001"));
+    }
+
+    #[test]
+    fn trailing_acquisition_words_are_stripped_from_filename_titles() {
+        assert_eq!(
+            parse_filename("Alex North - The Whisper Man ebook (2019).epub"),
+            FilenameHints {
+                title: Some("The Whisper Man".to_owned()),
+                author: Some("Alex North".to_owned()),
+                year: Some("2019".to_owned()),
+            }
+        );
+        assert_eq!(
+            parse_filename("Some Title e-book.epub"),
+            FilenameHints {
+                title: Some("Some Title".to_owned()),
+                author: None,
+                year: None,
+            }
+        );
     }
 
     #[test]

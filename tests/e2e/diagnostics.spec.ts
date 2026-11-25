@@ -81,7 +81,7 @@ test("settings shows log details, sends, copies and clears", async ({
   const copied = await page.evaluate(
     () => (window as unknown as { __copied?: string }).__copied,
   );
-  expect(copied).toContain("PocketLibrary v0.1.3");
+  expect(copied).toContain("PocketLibrary v0.1.4");
   expect(copied).toContain("1 error, 1 warning");
   expect(copied).toContain("Book One");
 
@@ -97,34 +97,37 @@ test("settings shows log details, sends, copies and clears", async ({
   );
 });
 
-test("send diagnostics prefers the share sheet when files are shareable", async ({
+test("send diagnostics hands the zip to the native share sheet", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, "canShare", {
-      configurable: true,
-      value: (data: ShareData) => Boolean(data?.files?.length),
-    });
-    Object.defineProperty(navigator, "share", {
-      configurable: true,
-      value: async (data: ShareData) => {
-        (
-          window as unknown as { __sharedFile?: string }
-        ).__sharedFile = data.files?.[0]?.name;
-      },
-    });
+  await boot(page, {
+    diagnosticsShare: {
+      fileName: "pocketlibrary-diagnostics.zip",
+      bytes: 4096,
+    },
+    diagnosticsSave: null,
   });
-  await boot(page);
   await openSettings(page);
 
   await page.getByTestId("settings-send-diagnostics").click();
   await expect(page.getByTestId("diagnostics-notice")).toContainText(
-    "share sheet",
+    "Diagnostics handed to the share sheet.",
   );
-  const file = await page.evaluate(
-    () => (window as unknown as { __sharedFile?: string }).__sharedFile,
+});
+
+test("send diagnostics falls back to the save picker when sharing is unavailable", async ({
+  page,
+}) => {
+  await boot(page, {
+    diagnosticsShare: null,
+    diagnosticsSave: { fileName: "fallback-diagnostics.zip", bytes: 2048 },
+  });
+  await openSettings(page);
+
+  await page.getByTestId("settings-send-diagnostics").click();
+  await expect(page.getByTestId("diagnostics-notice")).toContainText(
+    "Saved diagnostics to fallback-diagnostics.zip.",
   );
-  expect(file).toBe("pocketlibrary-diagnostics.zip");
 });
 
 test("a failed download offers the same report action", async ({ page }) => {

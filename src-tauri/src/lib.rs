@@ -80,6 +80,14 @@ struct SavedDiagnostics {
     bytes: usize,
 }
 
+/// A diagnostics zip handed to the Android share chooser.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SharedDiagnostics {
+    file_name: String,
+    bytes: usize,
+}
+
 /// A book handed to another app. It is marked reading only when PocketLibrary
 /// is resumed after the chooser/handoff, never when the chooser merely opens.
 #[derive(Default)]
@@ -788,6 +796,62 @@ fn save_diagnostics_response(_app: &AppHandle) -> Result<Option<SavedDiagnostics
     ))
 }
 
+/// Stage the zip as a readable in-memory content URI and open ACTION_SEND.
+///
+/// The URI stays registered for the life of the process so a share target can
+/// read it after this command returns. A failure here is reported as an error
+/// so the WebView can fall back to the save picker.
+#[cfg(target_os = "android")]
+fn share_diagnostics_response(app: &AppHandle) -> Result<Option<SharedDiagnostics>, ApiError> {
+    use tauri_plugin_android_fs::CustomFile;
+
+    let bytes = diagnostics_zip(app)?;
+    let file_name = diagnostics::export_file_name().to_owned();
+    let len = bytes.len() as u64;
+    let android_fs = app.android_fs();
+    let content = Arc::new(bytes);
+    let uri = android_fs
+        .register_simple_readonly_custom_file(
+            file_name.clone(),
+            Some("application/zip".to_owned()),
+            Some(len),
+            None,
+            move || Ok(CustomFile::from_arc_bytes(Arc::clone(&content))),
+        )
+        .map_err(|error| {
+            logged_error(
+                "diagnostics_share",
+                "Diagnostics could not be shared. Saving instead.",
+                error,
+            )
+        })?;
+    if let Err(error) = android_fs.opener().share_file(&uri) {
+        // Nothing can read the URI now, so release it before falling back.
+        let _ = android_fs.unregister_simple_custom_file(&uri);
+        return Err(logged_error(
+            "diagnostics_share",
+            "Diagnostics could not be shared. Saving instead.",
+            error,
+        ));
+    }
+    log_diag(
+        app,
+        Level::Info,
+        "diagnostics.export",
+        &format!("shared {file_name} ({len} bytes)"),
+    );
+    Ok(Some(SharedDiagnostics {
+        file_name,
+        bytes: len as usize,
+    }))
+}
+
+#[cfg(not(target_os = "android"))]
+fn share_diagnostics_response(_app: &AppHandle) -> Result<Option<SharedDiagnostics>, ApiError> {
+    // Desktop has no native share chooser; the caller falls back to save.
+    Ok(None)
+}
+
 #[tauri::command]
 fn log_diagnostic(
     diag: tauri::State<'_, Arc<Diagnostics>>,
@@ -834,6 +898,11 @@ async fn export_diagnostics(app: AppHandle) -> Result<tauri::ipc::Response, ApiE
 #[tauri::command]
 async fn save_diagnostics(app: AppHandle) -> Result<Option<SavedDiagnostics>, ApiError> {
     blocking(move || save_diagnostics_response(&app)).await
+}
+
+#[tauri::command]
+async fn share_diagnostics(app: AppHandle) -> Result<Option<SharedDiagnostics>, ApiError> {
+    blocking(move || share_diagnostics_response(&app)).await
 }
 
 #[cfg(target_os = "android")]
@@ -1277,7 +1346,8 @@ pub fn run() {
             diagnostics_summary,
             clear_diagnostics,
             export_diagnostics,
-            save_diagnostics
+            save_diagnostics,
+            share_diagnostics
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

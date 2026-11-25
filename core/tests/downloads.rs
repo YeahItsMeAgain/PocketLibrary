@@ -1170,6 +1170,130 @@ fn concurrent_downloads_with_the_same_name_get_distinct_files() {
 }
 
 #[test]
+fn a_mirror_that_fails_once_then_serves_the_file_completes_without_a_manual_retry() {
+    let ads_attempts = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&ads_attempts);
+    let server = TestServer::start(move |request| {
+        if request.path.starts_with("/ads.php") {
+            if counter.fetch_add(1, Ordering::SeqCst) == 0 {
+                Reply::status(500, "Internal Server Error")
+            } else {
+                Reply::html("<a href=\"/get.php?md5=abc&key=k1\">GET</a>")
+            }
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            Reply::file("application/epub+zip", EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let sink = FakeSink::default();
+    api.enqueue_download(request(&server, "abc", BookFormat::Epub))
+        .expect("enqueue");
+    run(&api, &sink);
+
+    let download = only_download(&api);
+    assert_eq!(download.state, DownloadState::Completed);
+    assert!(
+        ads_attempts.load(Ordering::SeqCst) >= 2,
+        "the transient 500 was retried"
+    );
+    assert_eq!(
+        sink.file("Alice Feeney - Rock Paper Scissors (2021).epub"),
+        Some(EPUB.to_vec())
+    );
+}
+
+#[test]
+fn exhausting_every_mirror_on_every_pass_still_fails_with_the_existing_message() {
+    let first_attempts = Arc::new(AtomicUsize::new(0));
+    let second_attempts = Arc::new(AtomicUsize::new(0));
+    let first_counter = Arc::clone(&first_attempts);
+    let second_counter = Arc::clone(&second_attempts);
+    let first = TestServer::start(move |_request| {
+        first_counter.fetch_add(1, Ordering::SeqCst);
+        Reply::status(500, "Internal Server Error")
+    });
+    let second = TestServer::start(move |_request| {
+        second_counter.fetch_add(1, Ordering::SeqCst);
+        Reply::status(503, "Service Unavailable")
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let sink = FakeSink::default();
+    let mut download_request = request(&first, "abc", BookFormat::Epub);
+    download_request.mirror_urls = vec![
+        format!("{}/ads.php?md5=abc", first.base),
+        format!("{}/ads.php?md5=abc", second.base),
+    ];
+    api.enqueue_download(download_request).expect("enqueue");
+    run(&api, &sink);
+
+    let download = only_download(&api);
+    assert_eq!(download.state, DownloadState::Failed);
+    assert_eq!(download.error_code.as_deref(), Some("mirror_failed"));
+    assert_eq!(
+        download.error.as_deref(),
+        Some("Trying another mirror failed. Try again in a moment.")
+    );
+    assert!(
+        first_attempts.load(Ordering::SeqCst) >= 2,
+        "the first mirror was included in another pass"
+    );
+    assert!(
+        second_attempts.load(Ordering::SeqCst) >= 2,
+        "the second mirror was included in another pass"
+    );
+}
+
+#[test]
+fn cancelling_while_waiting_to_retry_stops_promptly_without_another_request() {
+    let seen = Arc::new((Mutex::new(false), Condvar::new()));
+    let seen_handler = Arc::clone(&seen);
+    let attempts = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&attempts);
+    let server = TestServer::start(move |_request| {
+        counter.fetch_add(1, Ordering::SeqCst);
+        let (lock, ready) = &*seen_handler;
+        *lock.lock().expect("seen") = true;
+        ready.notify_all();
+        Reply::status(500, "Internal Server Error")
+    });
+    let (_dir, path) = database();
+    let api = Arc::new(api(&path));
+    let download = api
+        .enqueue_download(request(&server, "abc", BookFormat::Epub))
+        .expect("enqueue");
+
+    let worker_api = Arc::clone(&api);
+    let worker = thread::spawn(move || {
+        let sink = FakeSink::default();
+        tokio::runtime::Runtime::new()
+            .expect("runtime")
+            .block_on(worker_api.process_downloads(&sink))
+            .expect("process queue");
+    });
+
+    let (lock, ready) = &*seen;
+    let mut started = lock.lock().expect("seen");
+    while !*started {
+        started = ready.wait(started).expect("seen wait");
+    }
+    drop(started);
+    let cancelled_at = std::time::Instant::now();
+    api.cancel_download(download.id).expect("cancel");
+    worker.join().expect("worker");
+
+    assert!(
+        cancelled_at.elapsed() < Duration::from_millis(150),
+        "cancellation waited out the retry backoff"
+    );
+    assert_eq!(attempts.load(Ordering::SeqCst), 1, "no retry pass ran");
+    assert_eq!(only_download(&api).state, DownloadState::Cancelled);
+}
+
+#[test]
 fn a_cancelled_row_is_not_overwritten_by_a_late_completion() {
     let server = TestServer::start(|request| {
         if request.path.starts_with("/ads.php") {

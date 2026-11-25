@@ -78,6 +78,12 @@ interface SavedDiagnostics {
   bytes: number;
 }
 
+/** Mirrors the shell's native-share result; `null` means unsupported. */
+interface SharedDiagnostics {
+  fileName: string;
+  bytes: number;
+}
+
 export type BookFormat = "epub" | "pdf";
 export type ReadingStatus = "unread" | "reading" | "finished";
 export type ScanIssueReason = "unreadable" | "invalid_epub" | "invalid_pdf";
@@ -501,42 +507,33 @@ function asArrayBuffer(value: ArrayBuffer | number[]): ArrayBuffer {
 }
 
 /**
- * Prefer the WebView share sheet with the zip as a File. When file sharing is
- * unavailable or refused, fall back to the shell's system save picker. The
- * caller never sees a raw path either way.
+ * Let the native shell open its share chooser first. When it reports that
+ * sharing is unsupported (desktop) or fails, fall back to the shell's system
+ * save picker. The caller never sees a raw path either way.
  */
 async function shareOrSaveDiagnostics(
-  bytes: ArrayBuffer,
   fileName: string,
+  fallbackBytes: number,
+  share: () => Promise<SharedDiagnostics | null>,
   save: () => Promise<SavedDiagnostics | null>,
 ): Promise<DiagnosticsExport> {
-  const size = bytes.byteLength;
-  const nav = typeof navigator === "undefined" ? null : navigator;
-  if (nav && typeof nav.share === "function") {
-    try {
-      const file = new File([bytes], fileName, { type: "application/zip" });
-      if (typeof nav.canShare !== "function" || nav.canShare({ files: [file] })) {
-        await nav.share({
-          files: [file],
-          title: "PocketLibrary diagnostics",
-        });
-        return {
-          fileName,
-          bytes: size,
-          method: "share",
-          cancelled: false,
-        };
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return { fileName, bytes: size, method: "share", cancelled: true };
-      }
-      // A refused share falls through to the save picker.
-    }
+  let shared: SharedDiagnostics | null = null;
+  try {
+    shared = await share();
+  } catch {
+    // A refused native share falls through to the save picker.
+  }
+  if (shared) {
+    return {
+      fileName: shared.fileName,
+      bytes: shared.bytes,
+      method: "share",
+      cancelled: false,
+    };
   }
   const saved = await save();
   if (!saved) {
-    return { fileName, bytes: size, method: "save", cancelled: true };
+    return { fileName, bytes: fallbackBytes, method: "save", cancelled: true };
   }
   return {
     fileName: saved.fileName,
@@ -635,15 +632,13 @@ export function createTauriPlatform(call: Invoke): Platform {
     diagnosticsSummary: () =>
       call<DiagnosticsSummary>("diagnostics_summary"),
     clearDiagnostics: () => call<void>("clear_diagnostics"),
-    sendDiagnostics: async () => {
-      const raw = await call<ArrayBuffer | number[]>("export_diagnostics");
-      const bytes = asArrayBuffer(raw);
-      return shareOrSaveDiagnostics(
-        bytes,
+    sendDiagnostics: () =>
+      shareOrSaveDiagnostics(
         "pocketlibrary-diagnostics.zip",
+        0,
+        () => call<SharedDiagnostics | null>("share_diagnostics"),
         () => call<SavedDiagnostics | null>("save_diagnostics"),
-      );
-    },
+      ),
     checkForUpdate: () => call<UpdateCheck>("updates_check"),
     downloadUpdate: async (onEvent) => {
       const channel = new Channel<UpdateDownloadEvent>();
@@ -666,7 +661,7 @@ export function createTauriPlatform(call: Invoke): Platform {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.3",
+  appVersion: "0.1.4",
   schemaVersion: 3,
 };
 
@@ -731,6 +726,8 @@ export interface MockConfig {
   backupError?: { code: string; message: string };
   /** Diagnostics save-picker result; `null` simulates cancelling. */
   diagnosticsSave?: SavedDiagnostics | null;
+  /** Native share result; `null` (or absent) simulates no native share. */
+  diagnosticsShare?: SharedDiagnostics | null;
   /** Byte size of the synthetic diagnostics zip. */
   diagnosticsBytes?: number;
   /** Test-only delay before the wall's shelves and books arrive. */
@@ -1926,10 +1923,21 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     },
     sendDiagnostics: async () => {
       const size = config.diagnosticsBytes ?? 2048;
-      const bytes = new Uint8Array(size).buffer;
+      const share =
+        "diagnosticsShare" in config ? (config.diagnosticsShare ?? null) : null;
       return shareOrSaveDiagnostics(
-        bytes,
         "pocketlibrary-diagnostics.zip",
+        size,
+        async () => {
+          if (share) {
+            appendMockLog(
+              "info",
+              "diagnostics.export",
+              `shared pocketlibrary-diagnostics.zip (${share.bytes} bytes)`,
+            );
+          }
+          return share;
+        },
         async () => {
           if ("diagnosticsSave" in config) {
             return config.diagnosticsSave ?? null;

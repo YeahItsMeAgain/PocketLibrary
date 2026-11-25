@@ -2,7 +2,7 @@ mod common;
 
 use std::collections::HashSet;
 
-use common::{FakeDir, database, database_at};
+use common::{FakeDir, database, database_at, epub_with};
 use pocketlibrary_core::{BookFormat, ReadingStatus};
 
 #[test]
@@ -301,6 +301,58 @@ fn identical_bytes_at_two_paths_produce_one_book() {
     assert_eq!(again.added, 0);
     assert_eq!(again.duplicates, 1);
     assert_eq!(api.list_books().expect("list books").len(), 1);
+}
+
+#[test]
+fn a_rescan_repairs_a_truncated_title_without_touching_normal_titles() {
+    let (_dir, db_path, api) = database_at();
+    let filename = "Alex North - The Whisper Man ebook (2019).epub";
+    let source = FakeDir::new()
+        .file_with(
+            filename,
+            epub_with(
+                "whisper-man",
+                &["<dc:title>MAN</dc:title>".to_owned()],
+                None,
+            ),
+        )
+        .file_with(
+            "normal.epub",
+            epub_with(
+                "normal-book",
+                &["<dc:title>The Dispossessed</dc:title>".to_owned()],
+                None,
+            ),
+        );
+    api.scan(&source).expect("first scan");
+
+    // Simulate a catalog written by an older version that kept the truncated
+    // embedded title even though the filename already carried the full one.
+    {
+        let conn = rusqlite::Connection::open(&db_path).expect("open catalog directly");
+        let changed = conn
+            .execute("UPDATE books SET title = 'MAN' WHERE path = ?1", [filename])
+            .expect("seed legacy title");
+        assert_eq!(changed, 1);
+    }
+
+    let report = api.scan(&source).expect("repair scan");
+    let books = api.list_books().expect("list books");
+
+    assert_eq!(report.added, 0);
+    assert_eq!(report.relinked, 0);
+    assert!(
+        books.iter().any(|book| book.title == "The Whisper Man"),
+        "the rescan replaces the truncated title: {books:?}"
+    );
+    assert!(
+        books.iter().any(|book| book.title == "The Dispossessed"),
+        "a normal embedded title is left alone"
+    );
+    assert!(
+        books.iter().all(|book| book.title != "MAN"),
+        "no truncated title survives: {books:?}"
+    );
 }
 
 #[test]

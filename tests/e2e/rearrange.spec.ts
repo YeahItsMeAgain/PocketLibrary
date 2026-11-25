@@ -107,6 +107,105 @@ test("long-press dragging within a shelf reorders and persists in the wall", asy
   await expect(page.getByTestId("book-detail")).toHaveCount(0);
 });
 
+test("a partly filled shelf packs books from the left", async ({ page }) => {
+  await seed(page, {
+    state: "ready",
+    folderName: "PocketLibrary",
+    shelves: [mockShelf(1, 0, 6)],
+    books: [
+      mockBook(1, "Alpha", 1, 0),
+      mockBook(2, "Beta", 1, 1),
+      mockBook(3, "Gamma", 1, 2),
+      mockBook(4, "Delta", 1, 3),
+      mockBook(5, "Epsilon", 1, 4),
+    ],
+  });
+
+  await expect(page.getByTestId("spine")).toHaveCount(5);
+  const layout = await page.evaluate(() => {
+    const strip = document.querySelector<HTMLElement>(
+      'section[data-shelf-id="1"] .spines',
+    );
+    if (!strip) throw new Error("shelf strip is missing");
+    const spines = Array.from(
+      strip.querySelectorAll<HTMLElement>(":scope > .spine"),
+    );
+    return {
+      stripWidth: strip.getBoundingClientRect().width,
+      spines: spines.map((spine) => ({
+        left: spine.offsetLeft,
+        width: spine.offsetWidth,
+      })),
+    };
+  });
+
+  expect(layout.spines).toHaveLength(5);
+  // The first book sits against the left of the shelf, not its centre.
+  expect(layout.spines[0].left).toBeLessThanOrEqual(1);
+  // Spines are separated by the normal gap, not stretched over the board.
+  for (let index = 1; index < layout.spines.length; index += 1) {
+    const gap =
+      layout.spines[index].left -
+      (layout.spines[index - 1].left + layout.spines[index - 1].width);
+    expect(gap).toBeLessThanOrEqual(4);
+  }
+  const last = layout.spines[layout.spines.length - 1];
+  const emptyRight = layout.stripWidth - (last.left + last.width);
+  expect(emptyRight).toBeGreaterThan(60);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("dragging a book into the middle inserts it before the next book", async ({
+  page,
+}) => {
+  await seed(page, {
+    state: "ready",
+    folderName: "PocketLibrary",
+    shelves: [mockShelf(1, 0, 6)],
+    books: [
+      mockBook(1, "Alpha", 1, 0),
+      mockBook(2, "Beta", 1, 1),
+      mockBook(3, "Gamma", 1, 2),
+      mockBook(4, "Delta", 1, 3),
+      mockBook(5, "Epsilon", 1, 4),
+    ],
+  });
+
+  const spines = page.getByTestId("spine");
+  await expect(spines).toHaveCount(5);
+  const start = await longPress(page, spine(page, "Alpha"));
+
+  const gammaBox = await spine(page, "Gamma").boundingBox();
+  const deltaBox = await spine(page, "Delta").boundingBox();
+  expect(gammaBox).not.toBeNull();
+  expect(deltaBox).not.toBeNull();
+  if (!gammaBox || !deltaBox) return;
+  const y = gammaBox.y + gammaBox.height / 2;
+  // Past Gamma's centre and before Delta's, so Alpha belongs third.
+  await page.mouse.move(start.x, y, { steps: 4 });
+  await page.mouse.move(deltaBox.x + 2, y, { steps: 8 });
+  const expected = ["Beta", "Gamma", "Alpha", "Delta", "Epsilon"];
+  await expect(spines).toHaveText(expected);
+
+  // Follow the gap the preview opened: the dragged source still occupies its
+  // new slot invisibly. Moving onto it must not flip the insertion point.
+  const gap = await page
+    .locator('[data-testid="spine"][data-dragging="true"]')
+    .boundingBox();
+  expect(gap).not.toBeNull();
+  if (!gap) return;
+  await page.mouse.move(gap.x + gap.width / 2, y, { steps: 4 });
+  await expect(spines).toHaveText(expected);
+  await page.mouse.up();
+
+  await expect(spines).toHaveText(expected);
+  await expect(page.getByTestId("book-detail")).toHaveCount(0);
+});
+
 test("cross-shelf drag with edge auto-scroll lands on the next shelf", async ({
   page,
 }) => {

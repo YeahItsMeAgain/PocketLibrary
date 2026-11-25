@@ -69,3 +69,73 @@ test("the Tauri adapter accepts an injected invoke function", async ({
 
   expect(version).toBe("1.2.3");
 });
+
+test("the Tauri adapter uses the native share result without saving", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const result = await page.evaluate(async () => {
+    const { createTauriPlatform } = await import("/src/platform.ts");
+    const commands: string[] = [];
+    const fakeInvoke = async (command: string) => {
+      commands.push(command);
+      if (command === "share_diagnostics") {
+        return {
+          fileName: "pocketlibrary-diagnostics.zip",
+          bytes: 4096,
+        };
+      }
+      throw new Error(`unexpected command: ${command}`);
+    };
+    const adapter = createTauriPlatform(
+      fakeInvoke as Parameters<typeof createTauriPlatform>[0],
+    );
+
+    return { exported: await adapter.sendDiagnostics(), commands };
+  });
+
+  expect(result.exported).toEqual({
+    fileName: "pocketlibrary-diagnostics.zip",
+    bytes: 4096,
+    method: "share",
+    cancelled: false,
+  });
+  expect(result.commands).toEqual(["share_diagnostics"]);
+});
+
+test("the Tauri adapter falls back to saving when native sharing fails", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const result = await page.evaluate(async () => {
+    const { createTauriPlatform } = await import("/src/platform.ts");
+    const commands: string[] = [];
+    const fakeInvoke = async (command: string) => {
+      commands.push(command);
+      if (command === "share_diagnostics") {
+        throw { code: "diagnostics_share", message: "Sharing failed." };
+      }
+      if (command === "log_diagnostic") return undefined;
+      if (command === "save_diagnostics") {
+        return { fileName: "saved-diagnostics.zip", bytes: 3072 };
+      }
+      throw new Error(`unexpected command: ${command}`);
+    };
+    const adapter = createTauriPlatform(
+      fakeInvoke as Parameters<typeof createTauriPlatform>[0],
+    );
+
+    return { exported: await adapter.sendDiagnostics(), commands };
+  });
+
+  expect(result.exported).toEqual({
+    fileName: "saved-diagnostics.zip",
+    bytes: 3072,
+    method: "save",
+    cancelled: false,
+  });
+  expect(result.commands).toContain("share_diagnostics");
+  expect(result.commands).toContain("save_diagnostics");
+});

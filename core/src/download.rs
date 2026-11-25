@@ -26,6 +26,15 @@ use crate::error::{Error, Result};
 use crate::models::{BookFormat, Download, DownloadRequest, Landing};
 use crate::service::Service;
 
+/// How many times the whole mirror list is walked for a transient failure:
+/// the initial pass plus two retries.
+const MIRROR_PASSES: usize = 3;
+/// Bounded waits between mirror-list passes: short enough to feel like a tap,
+/// long enough to outlast a momentary 5xx.
+const MIRROR_BACKOFF: [Duration; 2] = [Duration::from_millis(200), Duration::from_millis(500)];
+/// How often a backoff checks the cancel flag.
+const CANCEL_POLL: Duration = Duration::from_millis(25);
+
 /// Where validated book bytes can be written. Implemented by the Android SAF
 /// adapter; tests use a fake that can fail or pre-seed collisions.
 pub trait DownloadSink: Send + Sync {
@@ -234,42 +243,66 @@ impl DownloadManager {
         };
         let mut last_error = None;
         let mut landed = false;
-        for (index, mirror) in mirrors.into_iter().enumerate() {
-            if cancel.load(Ordering::SeqCst) {
-                return Ok(());
+        // A 5xx from one owner can lift seconds later, so give the whole list a
+        // couple more passes after short backoffs. Only transient mirror
+        // failures are worth repeating; offline, disk, truncated and
+        // wrong-magic failures stay terminal.
+        for pass in 0..MIRROR_PASSES {
+            if pass > 0 {
+                let delay = MIRROR_BACKOFF[(pass - 1).min(MIRROR_BACKOFF.len() - 1)];
+                if !sleep_unless_cancelled(cancel, delay).await {
+                    return Ok(());
+                }
+                log_event(
+                    Level::Info,
+                    "download.mirror_retry",
+                    &format!(
+                        "download {} retrying the mirror list (pass {}/{MIRROR_PASSES})",
+                        download.id,
+                        pass + 1
+                    ),
+                );
             }
-            let host = mirror_host(&mirror);
-            let note = (index > 0).then_some("Trying another mirror…");
-            let _ = self
-                .service
-                .update_download_attempt(download.id, &host, note);
-            // The key can expire between minting and fetching; one fresh mint
-            // per mirror is enough before failing over.
-            for _attempt in 0..2 {
+            for (index, mirror) in mirrors.iter().enumerate() {
                 if cancel.load(Ordering::SeqCst) {
                     return Ok(());
                 }
-                let result = async {
-                    let url = self.resolve(&mirror).await?;
-                    self.fetch_to_part(download, &url, &part, cancel).await
+                let host = mirror_host(mirror);
+                let note = (index > 0).then_some("Trying another mirror…");
+                let _ = self
+                    .service
+                    .update_download_attempt(download.id, &host, note);
+                // The key can expire between minting and fetching; one fresh
+                // mint per mirror is enough before failing over.
+                for _attempt in 0..2 {
+                    if cancel.load(Ordering::SeqCst) {
+                        return Ok(());
+                    }
+                    let result = async {
+                        let url = self.resolve(mirror).await?;
+                        self.fetch_to_part(download, &url, &part, cancel).await
+                    }
+                    .await;
+                    match result {
+                        Ok(()) => {
+                            landed = true;
+                            break;
+                        }
+                        Err(Error::DownloadExpiredKey) => {
+                            last_error = Some(Error::DownloadExpiredKey);
+                            continue;
+                        }
+                        Err(error) => {
+                            last_error = Some(error);
+                            break;
+                        }
+                    }
                 }
-                .await;
-                match result {
-                    Ok(()) => {
-                        landed = true;
-                        break;
-                    }
-                    Err(Error::DownloadExpiredKey) => {
-                        last_error = Some(Error::DownloadExpiredKey);
-                        continue;
-                    }
-                    Err(error) => {
-                        last_error = Some(error);
-                        break;
-                    }
+                if landed {
+                    break;
                 }
             }
-            if landed {
+            if landed || !matches!(last_error, Some(Error::DownloadMirrorFailed { .. })) {
                 break;
             }
         }
@@ -552,6 +585,21 @@ impl DownloadManager {
     fn validate_magic(&self, format: BookFormat, bytes: &[u8]) -> Result<()> {
         validate_magic(format, bytes)
     }
+}
+
+/// Wait for `delay`, waking regularly so a cancel is noticed within one poll
+/// instead of after the whole backoff. Returns `false` when cancelled.
+async fn sleep_unless_cancelled(cancel: &AtomicBool, delay: Duration) -> bool {
+    let mut waited = Duration::ZERO;
+    while waited < delay {
+        if cancel.load(Ordering::SeqCst) {
+            return false;
+        }
+        let step = (delay - waited).min(CANCEL_POLL);
+        tokio::time::sleep(step).await;
+        waited += step;
+    }
+    !cancel.load(Ordering::SeqCst)
 }
 
 fn message_for(error: &Error) -> String {

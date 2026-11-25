@@ -2,8 +2,8 @@ mod common;
 
 use base64::Engine as _;
 use common::{
-    FakeDir, database, epub_with_plain_image, epub2_with, minimal_epub, pdf_with, pdf_with_info,
-    png_cover, rich_epub,
+    FakeDir, database, epub_with, epub_with_plain_image, epub2_with, minimal_epub, pdf_with,
+    pdf_with_info, png_cover, rich_epub,
 };
 use pocketlibrary_core::{BookFormat, CoverSource};
 
@@ -52,6 +52,45 @@ fn epub_metadata_and_embedded_cover_reach_the_detail_view() {
     assert!(bytes.starts_with(&[0xff, 0xd8]), "cover is a JPEG");
     let decoded = image::load_from_memory(&bytes).expect("decode cover");
     assert!(decoded.width() <= 600 && decoded.height() <= 900);
+}
+
+#[test]
+fn a_short_embedded_title_yields_to_the_full_filename_title() {
+    let (_dir, api) = database();
+    let source = FakeDir::new().file_with(
+        "Alex North - The Whisper Man ebook (2019).epub",
+        epub_with(
+            "whisper-man",
+            &[
+                "<dc:title>MAN</dc:title>".to_owned(),
+                "<dc:creator>Alex North</dc:creator>".to_owned(),
+            ],
+            None,
+        ),
+    );
+    api.scan(&source).expect("scan truncated title");
+
+    let book = api.list_books().expect("list books").remove(0);
+    assert_eq!(book.title, "The Whisper Man");
+    assert_eq!(book.authors, vec!["Alex North"]);
+    assert_eq!(book.published_date.as_deref(), Some("2019"));
+}
+
+#[test]
+fn a_normal_embedded_title_beats_an_acquired_filename() {
+    let (_dir, api) = database();
+    let source = FakeDir::new().file_with(
+        "Alex North - Wrong Filename ebook (2019).epub",
+        epub_with(
+            "whisper-man-normal",
+            &["<dc:title>The Whisper Man</dc:title>".to_owned()],
+            None,
+        ),
+    );
+    api.scan(&source).expect("scan normal title");
+
+    let book = api.list_books().expect("list books").remove(0);
+    assert_eq!(book.title, "The Whisper Man");
 }
 
 #[test]

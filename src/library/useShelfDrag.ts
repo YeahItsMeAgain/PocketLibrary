@@ -13,7 +13,6 @@ import {
 
 import { isApiError, platform, type Book, type Shelf } from "../platform";
 import { moveBookInList } from "./placement";
-import { spineStyle } from "./spine";
 import { SHELF_UNIT_PX } from "./window";
 
 const LONG_PRESS_MS = 380;
@@ -107,9 +106,7 @@ export function useShelfDrag({
   );
   const suppressClickRef = useRef(0);
   const shelvesRef = useRef<Shelf[]>(shelves ?? []);
-  const booksByIdRef = useRef<Map<number, Book>>(new Map());
   shelvesRef.current = shelves ?? [];
-  booksByIdRef.current = new Map(books.map((book) => [book.id, book]));
 
   const measureWall = useCallback(() => {
     const wall = wallRef.current;
@@ -154,43 +151,21 @@ export function useShelfDrag({
       if (!section) continue;
       const rect = section.getBoundingClientRect();
       if (rect.bottom < -240 || rect.top > viewport + 240) continue;
+      // Derive slot centres from the laid-out spines themselves instead of
+      // re-deriving the flex distribution. That keeps drag geometry in step
+      // with the packed-left shelf, with flex shrink, and with the preview
+      // reorder that replaces the DOM order mid-gesture. offsetLeft and
+      // offsetWidth are layout values, so the lean rotation and the FLIP
+      // transforms never skew the measurement.
       const strip = section.querySelector<HTMLElement>(".spines");
       const stripRect = strip ? strip.getBoundingClientRect() : rect;
       const elements = strip
         ? Array.from(strip.querySelectorAll<HTMLElement>(":scope > .spine"))
         : [];
-      const bookIds = elements.map((element) => Number(element.dataset.bookId));
-      const nominal = bookIds.map((bookId) => {
-        const book = booksByIdRef.current.get(bookId);
-        return book ? spineStyle(book).width : 30;
-      });
-      const count = nominal.length;
-      let widths = nominal;
-      if (count > 1) {
-        const total = nominal.reduce((sum, width) => sum + width, 0);
-        const available = stripRect.width;
-        if (total + (count - 1) > available) {
-          const scale = Math.max(0, (available - (count - 1)) / total);
-          widths = nominal.map((width) => width * scale);
-        }
-      }
-      const widthTotal = widths.reduce((sum, width) => sum + width, 0);
-      const gap =
-        count > 1
-          ? Math.max(
-              0,
-              (stripRect.width - widthTotal - (count - 1)) / (count - 1),
-            ) + 1
-          : 0;
-      const slots: ShelfGeometry["slots"] = [];
-      let cursor = count === 1 ? (stripRect.width - widths[0]) / 2 : 0;
-      for (let slot = 0; slot < count; slot += 1) {
-        slots.push({
-          bookId: bookIds[slot],
-          center: stripRect.left + cursor + widths[slot] / 2,
-        });
-        cursor += widths[slot] + gap;
-      }
+      const slots: ShelfGeometry["slots"] = elements.map((element) => ({
+        bookId: Number(element.dataset.bookId),
+        center: stripRect.left + element.offsetLeft + element.offsetWidth / 2,
+      }));
       next.set(shelf.id, {
         left: rect.left,
         top: rect.top,
@@ -228,6 +203,14 @@ export function useShelfDrag({
       });
     return positions;
   }, []);
+
+  useLayoutEffect(() => {
+    // A preview reorders the spines that are already mounted, so the slot
+    // centres cached at lift no longer describe the screen. Re-measure before
+    // the FLIP effect applies its visual offsets; the next pointer move and
+    // the drop then use the geometry the user can actually see.
+    if (preview && gestureRef.current?.lifted) measureWall();
+  }, [preview, measureWall]);
 
   useLayoutEffect(() => {
     const before = flipRef.current;
@@ -301,6 +284,20 @@ export function useShelfDrag({
     return null;
   }
 
+  /** Insertion index for a pointer x, counting the other books to its left. */
+  function insertionIndex(
+    geometry: ShelfGeometry,
+    bookId: number,
+    x: number,
+  ): number {
+    let index = 0;
+    for (const slot of geometry.slots) {
+      if (slot.bookId === bookId) continue;
+      if (x > slot.center) index += 1;
+    }
+    return index;
+  }
+
   function updateTarget(gesture: DragGesture) {
     if (!gesture.lifted) return;
     const shelfId = shelfAtPoint(gesture.lastX, gesture.lastY);
@@ -333,13 +330,7 @@ export function useShelfDrag({
       return;
     }
 
-    const others = geometry.slots.filter(
-      (slot) => slot.bookId !== gesture.book.id,
-    );
-    let index = 0;
-    for (const slot of others) {
-      if (gesture.lastX > slot.center) index += 1;
-    }
+    const index = insertionIndex(geometry, gesture.book.id, gesture.lastX);
     if (
       gesture.previewShelfId === shelfId &&
       gesture.previewIndex === index
@@ -546,13 +537,13 @@ export function useShelfDrag({
       returnBook(gesture);
       return;
     }
-    const others = geometry.slots.filter(
-      (slot) => slot.bookId !== moving.id,
-    );
-    let index = 0;
-    for (const slot of others) {
-      if (gesture.lastX > slot.center) index += 1;
-    }
+    // The preview is what the user is aiming at, so commit exactly there.
+    // Only fall back to a fresh hit test if the pointer ended on a different
+    // shelf from the one the preview was showing.
+    const index =
+      gesture.previewShelfId === shelfId
+        ? gesture.previewIndex
+        : insertionIndex(geometry, moving.id, gesture.lastX);
     commitMove(gesture, shelfId, index);
   }
 

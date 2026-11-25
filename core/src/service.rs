@@ -525,19 +525,20 @@ impl Service {
         let mut conn = self.connection()?;
         let tx = conn.transaction()?;
 
-        let mut existing: HashMap<String, (i64, String)> = HashMap::new();
+        let mut existing: HashMap<String, (i64, String, String)> = HashMap::new();
         {
-            let mut statement = tx.prepare("SELECT content_hash, id, path FROM books")?;
+            let mut statement = tx.prepare("SELECT content_hash, id, path, title FROM books")?;
             let rows = statement.query_map([], |row| {
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, i64>(1)?,
                     row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
                 ))
             })?;
             for row in rows {
-                let (hash, id, path) = row?;
-                existing.insert(hash, (id, path));
+                let (hash, id, path, title) = row?;
+                existing.insert(hash, (id, path, title));
             }
         }
 
@@ -555,8 +556,16 @@ impl Service {
             duplicates += group.len().saturating_sub(1);
             let representative = &group[0];
 
-            if let Some((_id, known_path)) = existing.get(&hash) {
+            if let Some((id, known_path, stored_title)) = existing.get(&hash) {
                 touched.insert(hash.clone());
+                if let Some(title) =
+                    metadata::repaired_filename_title(stored_title, &representative.scanned.name)
+                {
+                    tx.execute(
+                        "UPDATE books SET title = ?1 WHERE id = ?2",
+                        params![title, id],
+                    )?;
+                }
                 if !group.iter().any(|file| &file.scanned.path == known_path) {
                     tx.execute(
                         "UPDATE books SET path = ?1, quick_key = ?2 WHERE content_hash = ?3",
@@ -619,7 +628,14 @@ impl Service {
                 },
             )?;
             let book_id = tx.last_insert_rowid();
-            existing.insert(hash.clone(), (book_id, representative.scanned.path.clone()));
+            existing.insert(
+                hash.clone(),
+                (
+                    book_id,
+                    representative.scanned.path.clone(),
+                    parsed.title.clone().unwrap_or_default(),
+                ),
+            );
             placements.push(Placement {
                 book_id,
                 shelf_id,
@@ -630,7 +646,7 @@ impl Service {
             added += 1;
         }
 
-        for (hash, (id, _path)) in &existing {
+        for (hash, (id, _path, _title)) in &existing {
             if touched.contains(hash) {
                 continue;
             }
