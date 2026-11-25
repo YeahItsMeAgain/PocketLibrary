@@ -13,7 +13,9 @@
   --paper: #f4e9cf;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-io: cubic-bezier(0.65, 0.05, 0.36, 1);
-  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  /* A pre-rasterised noise tile. The old feTurbulence filter was the most
+     expensive first-paint raster task; the look is unchanged. */
+  --noise: url("./assets/noise.png");
   font-family: var(--body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -354,7 +356,19 @@ button:focus-visible {
   position: relative;
   margin: 30px 0 0;
   content-visibility: auto;
-  contain-intrinsic-size: auto 350px;
+  contain-intrinsic-size: auto 328px;
+}
+
+/* A not-yet-mounted case reserves exactly the height of a rendered shelf, so
+   progressive mounting never shifts the scroll position. One spacer keeps the
+   layout box count (and the filter's forced style flush) small. */
+.v4-shelf-sentinel {
+  height: 0;
+}
+.v4-shelf-spacer {
+  margin: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 328px;
 }
 
 .v4-case {
@@ -413,9 +427,37 @@ button:focus-visible {
   position: absolute;
   top: 8px;
   left: 50%;
-  color: #c9a86a;
+  width: 62px;
+  height: 17px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='18' viewBox='0 0 64 18' fill='none'%3E%3Cpath d='M2 15h18M44 15h18' stroke='%23c9a86a' opacity='.5'/%3E%3Cpath d='M32 2c-3 4-6.5 6-11 6 4 1.8 6.8 4.6 8.2 8 1.1-2.4 2-2.8 2.8-4.2.8 1.4 1.7 1.8 2.8 4.2C36.2 12.6 39 9.8 43 8c-4.5 0-8-2-11-6z' fill='%23c9a86a' opacity='.9'/%3E%3Ccircle cx='32' cy='16' r='1.1' fill='%23c9a86a'/%3E%3C/svg%3E")
+    center / 62px 17px no-repeat;
   filter: drop-shadow(0 1px 0 #120814);
   transform: translateX(-50%);
+}
+
+/* Brackets are a single background image rather than two inline SVGs, saving
+   ten DOM nodes per case while keeping the same drawing. */
+.v4-case::before,
+.v4-case::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  z-index: 0;
+  width: 30px;
+  height: 30px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34' fill='none'%3E%3Cpath d='M3 3c0 16 7 25 27 28' stroke='%239a8058' stroke-width='1.2'/%3E%3Cpath d='M8 4c.5 12 5.5 19 20 22' stroke='%239a8058' stroke-width='1' opacity='.55'/%3E%3Cpath d='M13 5c.6 8 3.6 13 12 15' stroke='%239a8058' stroke-width='1' opacity='.4'/%3E%3Ccircle cx='5' cy='5' r='2' fill='%239a8058' opacity='.7'/%3E%3C/svg%3E")
+    center / 30px 30px no-repeat;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.v4-case::before {
+  left: -8px;
+}
+
+.v4-case::after {
+  right: -8px;
+  transform: scaleX(-1);
 }
 
 .v4-cavity {
@@ -631,26 +673,6 @@ button:focus-visible {
 .v4-full {
   right: 13px;
   color: #efd9a6;
-}
-
-.v4-brk {
-  position: absolute;
-  bottom: 3px;
-  z-index: 0;
-  width: 30px;
-  height: 30px;
-  color: #9a8058;
-  opacity: 0.75;
-  pointer-events: none;
-}
-
-.v4-brk-l {
-  left: -8px;
-}
-
-.v4-brk-r {
-  right: -8px;
-  transform: scaleX(-1);
 }
 
 /* --------------------------------------------------------------- spines */

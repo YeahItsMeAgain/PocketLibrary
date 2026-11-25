@@ -1,4 +1,8 @@
 import {
+  Suspense,
+  lazy,
+  memo,
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -37,8 +41,6 @@ import {
   type Shelf,
 } from "./platform";
 import { useLayerExit } from "./navigation";
-import EpubReader from "./reader/EpubReader";
-import PdfReader from "./reader/PdfReader";
 import {
   READER_SIZES,
   READER_THEMES,
@@ -47,6 +49,11 @@ import {
   type ReaderTheme,
 } from "./reader/settings";
 import "./App.css";
+
+// The readers (and pdf.js/foliate behind them) are only needed after a tap.
+// Keeping them out of the startup chunk protects first shelf time.
+const EpubReader = lazy(() => import("./reader/EpubReader"));
+const PdfReader = lazy(() => import("./reader/PdfReader"));
 
 const ROMAN_MARKS = [
   "I",
@@ -187,44 +194,6 @@ function CrestMark({ className = "mast-orn" }: { className?: string }) {
   );
 }
 
-function CrownCrest() {
-  return (
-    <svg
-      className="v4-crest"
-      width="62"
-      height="17"
-      viewBox="0 0 64 18"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path d="M2 15h18M44 15h18" stroke="currentColor" opacity=".5" />
-      <path
-        d="M32 2c-3 4-6.5 6-11 6 4 1.8 6.8 4.6 8.2 8 1.1-2.4 2-2.8 2.8-4.2.8 1.4 1.7 1.8 2.8 4.2C36.2 12.6 39 9.8 43 8c-4.5 0-8-2-11-6z"
-        fill="currentColor"
-        opacity=".9"
-      />
-      <circle cx="32" cy="16" r="1.1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function Bracket({ side }: { side: "l" | "r" }) {
-  const flip = side === "r" ? ' transform="scale(-1,1) translate(-34,0)"' : "";
-  return (
-    <svg
-      className={`v4-brk v4-brk-${side}`}
-      width="30"
-      height="30"
-      viewBox="0 0 34 34"
-      fill="none"
-      aria-hidden="true"
-      dangerouslySetInnerHTML={{
-        __html: `<path d="M3 3c0 16 7 25 27 28" stroke="currentColor" stroke-width="1.2"/><path d="M8 4c.5 12 5.5 19 20 22" stroke="currentColor" stroke-width="1" opacity=".55"/><path d="M13 5c.6 8 3.6 13 12 15" stroke="currentColor" stroke-width="1" opacity=".4"/><circle cx="5" cy="5" r="2" fill="currentColor" opacity=".7"/><g${flip}></g>`,
-      }}
-    />
-  );
-}
-
 function Masthead({
   volumeCount,
   caseCount,
@@ -255,7 +224,6 @@ interface ShelfCaseProps {
   shelf: Shelf;
   books: Book[];
   draggedBookId: number | null;
-  dimmedBookIds: Set<number>;
   onOpen: (book: Book) => void;
   onPress: (book: Book, event: ReactPointerEvent<HTMLLIElement>) => void;
 }
@@ -279,31 +247,33 @@ function SpineFace({ book }: { book: Book }) {
           ✦
         </span>
       ) : null}
-      <span className="bands">
-        {bands.map((label) => (
-          <span
-            key={label.id}
-            className="lb"
-            data-testid="spine-label-band"
-            data-short={spineLabelAbbr(label.name)}
-            style={
-              {
-                "--lc": label.colour,
-                "--li": "#f8edd6",
-                backgroundColor: label.colour,
-              } as CSSProperties
-            }
-            title={label.name}
-          >
-            <span className="visually-hidden">{label.name}</span>
-          </span>
-        ))}
-        {hiddenLabels > 0 ? (
-          <span className="lb more" data-testid="spine-label-more">
-            +{hiddenLabels}
-          </span>
-        ) : null}
-      </span>
+      {book.labels.length > 0 ? (
+        <span className="bands">
+          {bands.map((label) => (
+            <span
+              key={label.id}
+              className="lb"
+              data-testid="spine-label-band"
+              data-short={spineLabelAbbr(label.name)}
+              style={
+                {
+                  "--lc": label.colour,
+                  "--li": "#f8edd6",
+                  backgroundColor: label.colour,
+                } as CSSProperties
+              }
+              title={label.name}
+            >
+              <span className="visually-hidden">{label.name}</span>
+            </span>
+          ))}
+          {hiddenLabels > 0 ? (
+            <span className="lb more" data-testid="spine-label-more">
+              +{hiddenLabels}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       {book.readingStatus === "reading" ? (
         <span
           className="ribbon"
@@ -315,11 +285,10 @@ function SpineFace({ book }: { book: Book }) {
   );
 }
 
-function ShelfCase({
+const ShelfCase = memo(function ShelfCase({
   shelf,
   books,
   draggedBookId,
-  dimmedBookIds,
   onOpen,
   onPress,
 }: ShelfCaseProps) {
@@ -337,10 +306,8 @@ function ShelfCase({
       }
     >
       <div className="v4-case">
-        <Bracket side="l" />
-        <Bracket side="r" />
         <div className="v4-crown" aria-hidden="true">
-          <CrownCrest />
+          <span className="v4-crest" />
         </div>
         <div className="v4-cavity">
           <div className="v4-back" aria-hidden="true" />
@@ -357,19 +324,15 @@ function ShelfCase({
               {books.map((book) => {
                 const statusLabel = STATUS_LABELS[book.readingStatus];
                 const dragging = draggedBookId === book.id;
-                const dimmed = dimmedBookIds.has(book.id);
                 const style = spineStyle(book);
                 return (
                   <li
                     key={book.id}
-                    className={`spine book${dragging ? " is-dragging-source" : ""}${
-                      dimmed ? " is-dim" : ""
-                    }`}
+                    className={`spine book${dragging ? " is-dragging-source" : ""}`}
                     data-testid="spine"
                     data-book-id={book.id}
                     data-slot={book.slotIndex ?? undefined}
                     data-status={book.readingStatus}
-                    data-dimmed={dimmed || undefined}
                     data-dragging={dragging || undefined}
                     title={`${book.title} — ${statusLabel}`}
                     aria-label={`${book.title}, ${statusLabel}`}
@@ -417,6 +380,21 @@ function ShelfCase({
       </div>
     </section>
   );
+}, areShelfCaseEqual);
+
+function areShelfCaseEqual(prev: ShelfCaseProps, next: ShelfCaseProps): boolean {
+  if (prev.shelf !== next.shelf) return false;
+  if (prev.books.length !== next.books.length) return false;
+  for (let index = 0; index < prev.books.length; index += 1) {
+    if (prev.books[index] !== next.books[index]) return false;
+  }
+  const prevHasDragged =
+    prev.draggedBookId !== null &&
+    prev.books.some((book) => book.id === prev.draggedBookId);
+  const nextHasDragged =
+    next.draggedBookId !== null &&
+    next.books.some((book) => book.id === next.draggedBookId);
+  return prevHasDragged === nextHasDragged;
 }
 
 interface DetailPanelProps {
@@ -934,31 +912,109 @@ function DetailPanel({
 
 interface FilterStripProps {
   labels: LabelUsage[];
-  selectedLabelIds: number[];
-  status: ReadingStatus | null;
-  matchingCount: number;
-  totalCount: number;
-  onToggleLabel: (labelId: number) => void;
-  onStatus: (status: ReadingStatus | null) => void;
-  onClear: () => void;
+  books: Book[];
+  onApply: (selected: number[], status: ReadingStatus | null) => void;
   onManage: () => void;
 }
 
-function FilterStrip({
-  labels,
-  selectedLabelIds,
-  status,
-  matchingCount,
-  totalCount,
-  onToggleLabel,
-  onStatus,
-  onClear,
-  onManage,
-}: FilterStripProps) {
-  const active = selectedLabelIds.length > 0 || status !== null;
+/**
+ * Filter state is kept in refs and applied to the strip/spines imperatively.
+ * A chip click never re-renders the wall, so dimming 2,000 spines is one
+ * class/attribute pass rather than a React reconciliation of every spine.
+ */
+function FilterStrip({ labels, books, onApply, onManage }: FilterStripProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const selectedRef = useRef<number[]>([]);
+  const statusRef = useRef<ReadingStatus | null>(null);
+
+  const apply = useCallback(
+    (nextSelected: number[], nextStatus: ReadingStatus | null) => {
+      selectedRef.current = nextSelected;
+      statusRef.current = nextStatus;
+      const active = nextSelected.length > 0 || nextStatus !== null;
+      let matchingCount = 0;
+      if (active) {
+        for (const book of books) {
+          const worn = book.labels ?? [];
+          if (
+            nextSelected.every((labelId) =>
+              worn.some((label) => label.id === labelId),
+            ) &&
+            (nextStatus === null || book.readingStatus === nextStatus)
+          ) {
+            matchingCount += 1;
+          }
+        }
+      }
+      const root = sectionRef.current;
+      if (root) {
+        root
+          .querySelectorAll<HTMLElement>("[data-label-id]")
+          .forEach((button) => {
+            button.setAttribute(
+              "aria-pressed",
+              String(nextSelected.includes(Number(button.dataset.labelId))),
+            );
+          });
+        root
+          .querySelectorAll<HTMLElement>("[data-status-filter]")
+          .forEach((button) => {
+            button.setAttribute(
+              "aria-pressed",
+              String(button.dataset.statusFilter === nextStatus),
+            );
+          });
+        const clear = root.querySelector<HTMLElement>(
+          '[data-testid="filter-clear"]',
+        );
+        if (clear) clear.hidden = !active;
+        const count = root.querySelector<HTMLElement>(".fb-count b");
+        if (count) count.textContent = String(active ? matchingCount : books.length);
+        const live = root.querySelector<HTMLElement>(
+          '[data-testid="filter-count"]',
+        );
+        if (live) {
+          live.textContent = active
+            ? `${matchingCount} of ${books.length} books match`
+            : `${books.length} books on the wall`;
+        }
+      }
+      onApply(nextSelected, nextStatus);
+    },
+    [books, onApply],
+  );
+  const applyRef = useRef(apply);
+  applyRef.current = apply;
+
+  useEffect(() => {
+    const next = selectedRef.current.filter((id) =>
+      labels.some((label) => label.id === id),
+    );
+    if (next.length !== selectedRef.current.length) {
+      applyRef.current(next, statusRef.current);
+    }
+  }, [labels]);
+
+  const active = selectedRef.current.length > 0 || statusRef.current !== null;
+  let matchingCount = books.length;
+  if (active) {
+    matchingCount = 0;
+    for (const book of books) {
+      const worn = book.labels ?? [];
+      if (
+        selectedRef.current.every((labelId) =>
+          worn.some((label) => label.id === labelId),
+        ) &&
+        (statusRef.current === null ||
+          book.readingStatus === statusRef.current)
+      ) {
+        matchingCount += 1;
+      }
+    }
+  }
   const countText = active
-    ? `${matchingCount} of ${totalCount} books match`
-    : `${totalCount} books on the wall`;
+    ? `${matchingCount} of ${books.length} books match`
+    : `${books.length} books on the wall`;
   const statusColour: Record<ReadingStatus, string> = {
     unread: "#7c7364",
     reading: "#a83238",
@@ -966,6 +1022,7 @@ function FilterStrip({
   };
   return (
     <section
+      ref={sectionRef}
       className="filterbar fb-1"
       data-testid="filter-strip"
       aria-label="Shelf filters"
@@ -982,8 +1039,14 @@ function FilterStrip({
                 type="button"
                 className="chip filter-label-chip"
                 data-testid="filter-label-chip"
-                aria-pressed={selectedLabelIds.includes(label.id)}
-                onClick={() => onToggleLabel(label.id)}
+                data-label-id={label.id}
+                aria-pressed={selectedRef.current.includes(label.id)}
+                onClick={() => {
+                  const next = selectedRef.current.includes(label.id)
+                    ? selectedRef.current.filter((id) => id !== label.id)
+                    : [...selectedRef.current, label.id];
+                  apply(next, statusRef.current);
+                }}
               >
                 <span
                   className="dot"
@@ -999,7 +1062,7 @@ function FilterStrip({
             type="button"
             className="chip clear"
             data-testid="filter-clear"
-            onClick={onClear}
+            onClick={() => apply([], null)}
             hidden={!active}
             aria-label="Clear filters"
           >
@@ -1007,7 +1070,7 @@ function FilterStrip({
           </button>
         </div>
         <div className="fb-count" aria-hidden="true">
-          <b>{active ? matchingCount : totalCount}</b>
+          <b>{matchingCount}</b>
           <span>vols</span>
         </div>
         <span className="visually-hidden" data-testid="filter-count" aria-live="polite">
@@ -1028,8 +1091,14 @@ function FilterStrip({
                 type="button"
                 className="chip filter-status-chip"
                 data-testid={`filter-status-${value}`}
-                aria-pressed={status === value}
-                onClick={() => onStatus(status === value ? null : value)}
+                data-status-filter={value}
+                aria-pressed={statusRef.current === value}
+                onClick={() =>
+                  apply(
+                    selectedRef.current,
+                    statusRef.current === value ? null : value,
+                  )
+                }
               >
                 <span
                   className="dot status-dot"
@@ -1313,6 +1382,13 @@ const LONG_PRESS_MS = 380;
 const DRAG_THRESHOLD = 8;
 const EDGE_ZONE = 88;
 const EDGE_MAX_SPEED = 14;
+// Progressive mount: the first few shelves paint immediately, the rest mount
+// just ahead of the viewport. Nodes are kept once mounted, so scroll position
+// and drag geometry stay stable; `content-visibility` keeps far shelves cheap.
+const INITIAL_SHELVES = 1;
+const MOUNT_BATCH = 1;
+const MOUNT_AHEAD_PX = 0;
+const SHELF_UNIT_PX = 358;
 const HINT_KEY = "pocketlibrary.dragHintSeen";
 const DRAWER_HINT_KEY = "pocketlibrary.drawerHintSeen";
 
@@ -1442,8 +1518,6 @@ function LibraryWall({
   const [shelves, setShelves] = useState<Shelf[] | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [labels, setLabels] = useState<LabelUsage[]>([]);
-  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
-  const [statusFilter, setStatusFilter] = useState<ReadingStatus | null>(null);
   const [showLabelManager, setShowLabelManager] = useState(false);
   const [failed, setFailed] = useState(false);
   const [openBookId, setOpenBookId] = useState<number | null>(null);
@@ -1451,6 +1525,7 @@ function LibraryWall({
   const [preview, setPreview] = useState<DragPreview | null>(null);
   const [lift, setLift] = useState<LiftVisual | null>(null);
   const [moveNotice, setMoveNotice] = useState<string | null>(null);
+  const [mountedShelves, setMountedShelves] = useState(INITIAL_SHELVES);
   const [showHint, setShowHint] = useState(() => {
     try {
       return window.localStorage.getItem(HINT_KEY) !== "1";
@@ -1469,9 +1544,15 @@ function LibraryWall({
   const suppressClickRef = useRef(0);
   const booksRef = useRef<Book[]>(books);
   const shelvesRef = useRef<Shelf[]>(shelves ?? []);
+  const booksByIdRef = useRef<Map<number, Book>>(new Map());
+  const filterRef = useRef<{
+    selected: number[];
+    status: ReadingStatus | null;
+  }>({ selected: [], status: null });
   const focusedBookRef = useRef<number | null>(null);
   booksRef.current = books;
   shelvesRef.current = shelves ?? [];
+  booksByIdRef.current = new Map(books.map((book) => [book.id, book]));
 
   const dismissHint = useCallback(() => {
     setShowHint(false);
@@ -1484,11 +1565,7 @@ function LibraryWall({
 
   const refreshLabels = useCallback(async () => {
     try {
-      const next = await platform.listLabels();
-      setLabels(next);
-      setSelectedLabelIds((current) =>
-        current.filter((id) => next.some((label) => label.id === id)),
-      );
+      setLabels(await platform.listLabels());
     } catch {
       // Keep the labels already on screen; the next reload retries.
     }
@@ -1497,7 +1574,10 @@ function LibraryWall({
   const refreshWallData = useCallback(async () => {
     await refreshLabels();
     try {
-      setBooks(await platform.listBooks());
+      const next = await platform.listBooks();
+      // The platform may return the same objects it mutated (the mock does);
+      // memoised shelves need fresh references to pick up reader progress.
+      setBooks(next.map((book) => ({ ...book })));
     } catch {
       // A failed refresh leaves the current wall in place.
     }
@@ -1527,6 +1607,7 @@ function LibraryWall({
   useEffect(() => {
     let alive = true;
     setFailed(false);
+    setMountedShelves(INITIAL_SHELVES);
     Promise.all([
       platform.listShelves(),
       platform.listBooks(),
@@ -1534,6 +1615,9 @@ function LibraryWall({
     ])
       .then(([nextShelves, nextBooks, nextLabels]) => {
         if (!alive) return;
+        setMountedShelves(
+          nextShelves.length <= 12 ? nextShelves.length : INITIAL_SHELVES,
+        );
         setShelves(nextShelves);
         setBooks(nextBooks);
         setLabels(nextLabels);
@@ -1545,6 +1629,29 @@ function LibraryWall({
       alive = false;
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (!shelves || mountedShelves >= shelves.length) return;
+    const sentinel = wallRef.current?.querySelector("[data-shelf-sentinel]");
+    if (!sentinel) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setMountedShelves(shelves.length);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        startTransition(() => {
+          setMountedShelves((current) =>
+            Math.min(shelves.length, current + MOUNT_BATCH),
+          );
+        });
+      },
+      { rootMargin: `${MOUNT_AHEAD_PX}px 0px` },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [shelves, mountedShelves]);
 
   useEffect(() => {
     if (focusBookId === null || focusedBookRef.current === focusBookId) return;
@@ -1570,67 +1677,89 @@ function LibraryWall({
     if (!wall) return;
     const startedAt = performance.now();
     const next = new Map<number, ShelfGeometry>();
-    // Ticket 16: only the shelf containers are measured. Slot centres are
-    // derived from the deterministic spine widths plus the flex gap, so a
-    // lift never forces layout for every spine on the wall.
-    wall
-      .querySelectorAll<HTMLElement>("section[data-shelf-id]")
-      .forEach((section) => {
-        const shelfId = Number(section.dataset.shelfId);
-        const rect = section.getBoundingClientRect();
-        const viewport = window.innerHeight || 844;
-        if (rect.bottom < -240 || rect.top > viewport + 240) return;
-        const strip = section.querySelector<HTMLElement>(".spines");
-        const stripRect = strip ? strip.getBoundingClientRect() : rect;
-        const elements = strip
-          ? Array.from(
-              strip.querySelectorAll<HTMLElement>(":scope > .spine"),
-            )
-          : [];
-        const bookIds = elements.map((element) =>
-          Number(element.dataset.bookId),
-        );
-        const nominal = bookIds.map((bookId) => {
-          const book = booksRef.current.find(
-            (candidate) => candidate.id === bookId,
-          );
-          return book ? spineStyle(book).width : 30;
-        });
-        const count = nominal.length;
-        let widths = nominal;
-        if (count > 1) {
-          const total = nominal.reduce((sum, width) => sum + width, 0);
-          const available = stripRect.width;
-          if (total + (count - 1) > available) {
-            const scale = Math.max(0, (available - (count - 1)) / total);
-            widths = nominal.map((width) => width * scale);
-          }
-        }
-        const widthTotal = widths.reduce((sum, width) => sum + width, 0);
-        const gap =
-          count > 1
-            ? Math.max(
-                0,
-                (stripRect.width - widthTotal - (count - 1)) / (count - 1),
-              ) + 1
-            : 0;
-        const slots: ShelfGeometry["slots"] = [];
-        let cursor = count === 1 ? (stripRect.width - widths[0]) / 2 : 0;
-        for (let index = 0; index < count; index += 1) {
-          slots.push({
-            bookId: bookIds[index],
-            center: stripRect.left + cursor + widths[index] / 2,
-          });
-          cursor += widths[index] + gap;
-        }
-        next.set(shelfId, {
-          left: rect.left,
-          top: rect.top,
-          right: rect.right,
-          bottom: rect.bottom,
-          slots,
-        });
+    const shelfList = shelvesRef.current;
+    const firstSection = wall.querySelector<HTMLElement>(
+      "section[data-shelf-id]",
+    );
+    if (!firstSection || shelfList.length === 0) {
+      geometryRef.current = next;
+      return;
+    }
+    const firstId = Number(firstSection.dataset.shelfId);
+    const firstIndex = Math.max(
+      0,
+      shelfList.findIndex((shelf) => shelf.id === firstId),
+    );
+    const scrollY = window.scrollY;
+    const viewport = window.innerHeight || 844;
+    const firstTop = firstSection.getBoundingClientRect().top + scrollY;
+    // Shelf heights are fixed for a non-empty case, so the visible window can
+    // be selected arithmetically. Only those few sections are measured; the
+    // former whole-library sweep forced layout for every skipped shelf.
+    const startIndex = Math.max(
+      0,
+      firstIndex + Math.floor((scrollY - firstTop) / SHELF_UNIT_PX) - 1,
+    );
+    const endIndex = Math.min(
+      shelfList.length,
+      firstIndex +
+        Math.ceil((scrollY + viewport - firstTop) / SHELF_UNIT_PX) +
+        2,
+    );
+    for (let index = startIndex; index < endIndex; index += 1) {
+      const shelf = shelfList[index];
+      if (!shelf) continue;
+      const section = wall.querySelector<HTMLElement>(
+        `section[data-shelf-id="${shelf.id}"]`,
+      );
+      if (!section) continue;
+      const rect = section.getBoundingClientRect();
+      if (rect.bottom < -240 || rect.top > viewport + 240) continue;
+      const strip = section.querySelector<HTMLElement>(".spines");
+      const stripRect = strip ? strip.getBoundingClientRect() : rect;
+      const elements = strip
+        ? Array.from(strip.querySelectorAll<HTMLElement>(":scope > .spine"))
+        : [];
+      const bookIds = elements.map((element) => Number(element.dataset.bookId));
+      const nominal = bookIds.map((bookId) => {
+        const book = booksByIdRef.current.get(bookId);
+        return book ? spineStyle(book).width : 30;
       });
+      const count = nominal.length;
+      let widths = nominal;
+      if (count > 1) {
+        const total = nominal.reduce((sum, width) => sum + width, 0);
+        const available = stripRect.width;
+        if (total + (count - 1) > available) {
+          const scale = Math.max(0, (available - (count - 1)) / total);
+          widths = nominal.map((width) => width * scale);
+        }
+      }
+      const widthTotal = widths.reduce((sum, width) => sum + width, 0);
+      const gap =
+        count > 1
+          ? Math.max(
+              0,
+              (stripRect.width - widthTotal - (count - 1)) / (count - 1),
+            ) + 1
+          : 0;
+      const slots: ShelfGeometry["slots"] = [];
+      let cursor = count === 1 ? (stripRect.width - widths[0]) / 2 : 0;
+      for (let slot = 0; slot < count; slot += 1) {
+        slots.push({
+          bookId: bookIds[slot],
+          center: stripRect.left + cursor + widths[slot] / 2,
+        });
+        cursor += widths[slot] + gap;
+      }
+      next.set(shelf.id, {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        slots,
+      });
+    }
     geometryRef.current = next;
     try {
       performance.measure("pocketlibrary:measure-wall", {
@@ -1710,6 +1839,62 @@ function LibraryWall({
       preview.index,
     );
   }, [books, shelves, preview]);
+
+  const applyFilterToDom = useCallback(
+    (selected: number[], status: ReadingStatus | null) => {
+      const wall = wallRef.current;
+      if (!wall) return;
+      const active = selected.length > 0 || status !== null;
+      const matching = new Set<number>();
+      if (active) {
+        for (const book of booksRef.current) {
+          const worn = book.labels ?? [];
+          if (
+            selected.every((labelId) =>
+              worn.some((label) => label.id === labelId),
+            ) &&
+            (status === null || book.readingStatus === status)
+          ) {
+            matching.add(book.id);
+          }
+        }
+      }
+      wall.querySelectorAll<HTMLElement>(".spine[data-book-id]").forEach(
+        (element) => {
+          const dimmed =
+            active && !matching.has(Number(element.dataset.bookId));
+          element.classList.toggle("is-dim", dimmed);
+          if (dimmed) element.dataset.dimmed = "true";
+          else delete element.dataset.dimmed;
+        },
+      );
+    },
+    [],
+  );
+
+  const handleFilter = useCallback(
+    (selected: number[], status: ReadingStatus | null) => {
+      filterRef.current = { selected, status };
+      applyFilterToDom(selected, status);
+    },
+    [applyFilterToDom],
+  );
+
+  useLayoutEffect(() => {
+    const { selected, status } = filterRef.current;
+    applyFilterToDom(selected, status);
+  }, [books, mountedShelves, applyFilterToDom]);
+
+  const booksByShelf = useMemo(() => {
+    const grouped = new Map<number, Book[]>();
+    for (const book of displayBooks) {
+      if (book.shelfId === null) continue;
+      const shelfBooks = grouped.get(book.shelfId);
+      if (shelfBooks) shelfBooks.push(book);
+      else grouped.set(book.shelfId, [book]);
+    }
+    return grouped;
+  }, [displayBooks]);
 
   function updateGhost(gesture: DragGesture) {
     const ghost = ghostRef.current;
@@ -2063,36 +2248,6 @@ function LibraryWall({
     );
   }
 
-  const filterActive = selectedLabelIds.length > 0 || statusFilter !== null;
-  const matchingIds = new Set(
-    books
-      .filter((book) => {
-        const worn = book.labels ?? [];
-        return (
-          selectedLabelIds.every((labelId) =>
-            worn.some((label) => label.id === labelId),
-          ) &&
-          (statusFilter === null || book.readingStatus === statusFilter)
-        );
-      })
-      .map((book) => book.id),
-  );
-  const dimmedBookIds = filterActive
-    ? new Set(
-        books
-          .filter((book) => !matchingIds.has(book.id))
-          .map((book) => book.id),
-      )
-    : new Set<number>();
-
-  const booksByShelf = new Map<number, Book[]>();
-  for (const book of displayBooks) {
-    if (book.shelfId === null) continue;
-    const shelfBooks = booksByShelf.get(book.shelfId);
-    if (shelfBooks) shelfBooks.push(book);
-    else booksByShelf.set(book.shelfId, [book]);
-  }
-
   return (
     <main
       ref={wallRef}
@@ -2107,31 +2262,16 @@ function LibraryWall({
       <div className="wall-inner">
         <FilterStrip
           labels={labels}
-          selectedLabelIds={selectedLabelIds}
-          status={statusFilter}
-          matchingCount={matchingIds.size}
-          totalCount={books.length}
-          onToggleLabel={(labelId) =>
-            setSelectedLabelIds((current) =>
-              current.includes(labelId)
-                ? current.filter((id) => id !== labelId)
-                : [...current, labelId],
-            )
-          }
-          onStatus={setStatusFilter}
-          onClear={() => {
-            setSelectedLabelIds([]);
-            setStatusFilter(null);
-          }}
+          books={books}
+          onApply={handleFilter}
           onManage={() => setShowLabelManager(true)}
         />
-        {shelves.map((shelf) => (
+        {shelves.slice(0, mountedShelves).map((shelf) => (
           <ShelfCase
             key={shelf.id}
             shelf={shelf}
             books={booksByShelf.get(shelf.id) ?? []}
             draggedBookId={lift?.book.id ?? null}
-            dimmedBookIds={dimmedBookIds}
             onOpen={(book) => {
               if (performance.now() < suppressClickRef.current) return;
               setOpenBookId(book.id);
@@ -2139,6 +2279,16 @@ function LibraryWall({
             onPress={startPress}
           />
         ))}
+        {mountedShelves < shelves.length ? (
+          <>
+            <div className="v4-shelf-sentinel" data-shelf-sentinel="true" aria-hidden="true" />
+            <div
+              className="v4-shelf-spacer"
+              style={{ height: (shelves.length - mountedShelves) * SHELF_UNIT_PX }}
+              aria-hidden="true"
+            />
+          </>
+        ) : null}
       </div>
       {openBookId !== null ? (
         <DetailPanel
@@ -2162,23 +2312,25 @@ function LibraryWall({
         />
       ) : null}
       {readerBook ? (
-        readerBook.format === "pdf" ? (
-          <PdfReader
-            book={readerBook}
-            onClose={() => {
-              setReaderBook(null);
-              void refreshWallData();
-            }}
-          />
-        ) : (
-          <EpubReader
-            book={readerBook}
-            onClose={() => {
-              setReaderBook(null);
-              void refreshWallData();
-            }}
-          />
-        )
+        <Suspense fallback={null}>
+          {readerBook.format === "pdf" ? (
+            <PdfReader
+              book={readerBook}
+              onClose={() => {
+                setReaderBook(null);
+                void refreshWallData();
+              }}
+            />
+          ) : (
+            <EpubReader
+              book={readerBook}
+              onClose={() => {
+                setReaderBook(null);
+                void refreshWallData();
+              }}
+            />
+          )}
+        </Suspense>
       ) : null}
       {showLabelManager ? (
         <ManageLabels
