@@ -5,6 +5,7 @@
 
 pub mod acquisition;
 mod api;
+mod backup;
 mod cover;
 mod download;
 mod error;
@@ -19,13 +20,16 @@ pub use acquisition::{
     LibgenProvider, LibgenResult, MirrorHealth, MirrorLink, PAGE_SIZE, SearchPage, SearchQuery,
 };
 pub use api::Api;
+pub use backup::{
+    BACKUP_EXTENSION, BACKUP_FORMAT_VERSION, BackupPreview, BackupReport, ImportMode,
+};
 pub use download::{DownloadManager, DownloadSink, proposed_filename, unique_filename};
 pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
 pub use models::{
     AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Download, DownloadRequest,
-    DownloadState, Label, LabelUsage, Landing, LibraryState, LibraryStatus, Placement, ReadingState,
-    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    DownloadState, Label, LabelUsage, Landing, LibraryState, LibraryStatus, Placement,
+    ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 

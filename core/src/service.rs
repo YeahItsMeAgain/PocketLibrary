@@ -9,12 +9,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use base64::Engine as _;
 use rusqlite::{Connection, OptionalExtension, Row, params};
 
+use crate::backup::{self, BackupPreview, BackupReport, ImportMode};
 use crate::error::{Error, Result};
 use crate::migrations;
 use crate::models::{
-    AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Download, DownloadRequest,
-    Label, LabelUsage, Landing, LibraryStatus, Placement, ReadingState,
-    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Download, DownloadRequest, Label,
+    LabelUsage, Landing, LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue,
+    ScanIssueReason, ScanReport, Shelf,
 };
 use crate::source::{FileSource, ScannedBook, collect_books};
 use crate::{APP_NAME, SCHEMA_VERSION, cover, identity, metadata};
@@ -102,6 +103,33 @@ impl Service {
             app_version: env!("CARGO_PKG_VERSION").to_owned(),
             schema_version: self.schema_version()?,
         })
+    }
+
+    /// Serialise the catalogue into a `.pocketlibrary` archive.
+    ///
+    /// The read runs inside one transaction so the manifest is a consistent
+    /// snapshot. Covers are optional; books are never included.
+    pub fn export_backup(&self) -> Result<Vec<u8>> {
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+        let bytes = backup::export(&tx, &self.cover_dir)?;
+        tx.commit()?;
+        Ok(bytes)
+    }
+
+    /// Inspect an archive and report matched/new books before applying it.
+    pub fn preview_backup(&self, bytes: &[u8]) -> Result<BackupPreview> {
+        let conn = self.connection()?;
+        backup::preview(&conn, bytes)
+    }
+
+    /// Apply an archive as a merge or a replace, all in one transaction.
+    pub fn import_backup(&self, bytes: &[u8], mode: ImportMode) -> Result<BackupReport> {
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+        let report = backup::import(&tx, &self.cover_dir, bytes, mode)?;
+        tx.commit()?;
+        Ok(report)
     }
 
     fn schema_version(&self) -> Result<i64> {
@@ -743,7 +771,12 @@ impl Service {
             "UPDATE downloads SET bytes = ?1, total_bytes = COALESCE(?2, total_bytes),
                                   updated_at = ?3
              WHERE id = ?4 AND state = 'running'",
-            params![bytes as i64, total.map(|value| value as i64), unix_timestamp(), id],
+            params![
+                bytes as i64,
+                total.map(|value| value as i64),
+                unix_timestamp(),
+                id
+            ],
         )?;
         Ok(())
     }
@@ -857,8 +890,7 @@ impl Service {
         let tx = conn.transaction()?;
         let mut shelves = load_shelf_slots(&tx)?;
         let capacity = shelf_capacity(&tx)?;
-        let (shelf_id, slot_index, shelf_ordinal, _) =
-            allocate_slot(&tx, &mut shelves, capacity)?;
+        let (shelf_id, slot_index, shelf_ordinal, _) = allocate_slot(&tx, &mut shelves, capacity)?;
         insert_book(
             &tx,
             NewBook {
@@ -1029,11 +1061,9 @@ impl Service {
     pub fn book_path(&self, book_id: i64) -> Result<String> {
         let conn = self.connection()?;
         ensure_book(&conn, book_id)?;
-        let path = conn.query_row(
-            "SELECT path FROM books WHERE id = ?1",
-            [book_id],
-            |row| row.get(0),
-        )?;
+        let path = conn.query_row("SELECT path FROM books WHERE id = ?1", [book_id], |row| {
+            row.get(0)
+        })?;
         Ok(path)
     }
 
@@ -1276,9 +1306,11 @@ impl Service {
 fn find_book_by_hash(service: &Service, hash: &str) -> Result<Option<i64>> {
     let conn = service.connection()?;
     let id = conn
-        .query_row("SELECT id FROM books WHERE content_hash = ?1", [hash], |row| {
-            row.get(0)
-        })
+        .query_row(
+            "SELECT id FROM books WHERE content_hash = ?1",
+            [hash],
+            |row| row.get(0),
+        )
         .optional()?;
     Ok(id)
 }

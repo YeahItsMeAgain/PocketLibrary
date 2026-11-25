@@ -25,7 +25,7 @@ wreq = { version = "=0.16.5", default-features = false, features = ["tokio-rt", 
 wreq-util = { version = "=0.2.1", default-features = false, features = ["emulation"] }
 futures-util = "0.3"
 url = "2"
+zip = { version = "9.8.2", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 tempfile = "3"
-zip = { version = "9.8.2", default-features = false, features = ["deflate"] }

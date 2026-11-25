@@ -8,11 +8,12 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::acquisition::{LibgenProvider, SearchPage, SearchQuery};
+use crate::backup::{BackupPreview, BackupReport, ImportMode};
 use crate::download::{DownloadManager, DownloadSink};
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
-    AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest, Label, LabelUsage, LibraryStatus,
-    ReadingState, ReadingStatus, ScanReport, Shelf,
+    AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest, Label, LabelUsage,
+    LibraryStatus, ReadingState, ReadingStatus, ScanReport, Shelf,
 };
 use crate::service::Service;
 use crate::source::FileSource;
@@ -88,15 +89,30 @@ impl Api {
 
     /// Run the queue to completion, two files at a time.
     pub async fn process_downloads(&self, sink: &dyn DownloadSink) -> ApiResult<()> {
-        self.downloads
-            .process(sink)
-            .await
-            .map_err(ApiError::from)
+        self.downloads.process(sink).await.map_err(ApiError::from)
     }
 
     /// Identity and schema information for the running app.
     pub fn app_info(&self) -> ApiResult<AppInfo> {
         self.service.app_info().map_err(ApiError::from)
+    }
+
+    /// Export catalogue metadata and optional covers as a `.pocketlibrary`
+    /// archive. Book files are never included.
+    pub fn export_backup(&self) -> ApiResult<Vec<u8>> {
+        self.service.export_backup().map_err(ApiError::from)
+    }
+
+    /// Inspect an archive without changing the library.
+    pub fn preview_backup(&self, bytes: &[u8]) -> ApiResult<BackupPreview> {
+        self.service.preview_backup(bytes).map_err(ApiError::from)
+    }
+
+    /// Apply an archive as a merge or a replace.
+    pub fn import_backup(&self, bytes: &[u8], mode: ImportMode) -> ApiResult<BackupReport> {
+        self.service
+            .import_backup(bytes, mode)
+            .map_err(ApiError::from)
     }
 
     /// Every book known to the library, in shelf order.

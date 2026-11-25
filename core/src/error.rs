@@ -17,6 +17,15 @@ pub enum Error {
     #[error("database schema version {found} is newer than this app supports ({supported})")]
     UnsupportedSchema { found: i64, supported: i64 },
 
+    #[error("the backup archive is corrupt: {message}")]
+    ArchiveCorrupt { message: String },
+
+    #[error("backup format version {found} is not supported (this app supports {supported})")]
+    ArchiveUnsupportedVersion { found: i64, supported: i64 },
+
+    #[error("this file is not a PocketLibrary backup")]
+    ArchiveWrongSchema,
+
     #[error("library folder is unavailable: {message}")]
     SourceUnavailable { message: String },
 
@@ -101,6 +110,9 @@ impl Error {
             Self::Database(_) => "database",
             Self::Io(_) => "io",
             Self::UnsupportedSchema { .. } => "unsupported_schema",
+            Self::ArchiveCorrupt { .. } => "archive_corrupt",
+            Self::ArchiveUnsupportedVersion { .. } => "archive_unsupported_version",
+            Self::ArchiveWrongSchema => "archive_wrong_schema",
             Self::SourceUnavailable { .. } => "library_unavailable",
             Self::LockPoisoned => "lock",
             Self::BookNotFound { .. } => "book_not_found",
@@ -136,6 +148,11 @@ impl Error {
             Self::UnsupportedSchema { .. } => {
                 "This library was created by a newer version of PocketLibrary."
             }
+            Self::ArchiveCorrupt { .. } => "That backup file is damaged and cannot be restored.",
+            Self::ArchiveUnsupportedVersion { .. } => {
+                "This backup was made by a different version of PocketLibrary."
+            }
+            Self::ArchiveWrongSchema => "That file is not a PocketLibrary backup.",
             Self::SourceUnavailable { .. } => {
                 "The library folder is unavailable. Reconnect it and try again."
             }
@@ -163,23 +180,17 @@ impl Error {
             Self::DownloadMirrorFailed { .. } => {
                 "The download mirror refused or timed out. Try again."
             }
-            Self::DownloadExpiredKey => {
-                "The download key expired. Try again to mint a fresh one."
-            }
+            Self::DownloadExpiredKey => "The download key expired. Try again to mint a fresh one.",
             Self::DownloadTruncated => {
                 "The file arrived incomplete. Retry to resume where it stopped."
             }
             Self::DownloadWrongMagic { .. } => {
                 "The mirror sent a file that is not the requested book."
             }
-            Self::DownloadDisk { .. } => {
-                "The book could not be written to the library folder."
-            }
+            Self::DownloadDisk { .. } => "The book could not be written to the library folder.",
             Self::DownloadDuplicate { .. } => "That book is already in your library.",
             Self::DownloadNotFound { .. } => "That download could not be found.",
-            Self::DownloadInvalidBook => {
-                "The downloaded file could not be read as a book."
-            }
+            Self::DownloadInvalidBook => "The downloaded file could not be read as a book.",
         }
     }
 }

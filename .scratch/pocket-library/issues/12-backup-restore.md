@@ -4,7 +4,7 @@
 
 **Blocked by:** 06, 07, 09
 
-**Status:** ready-for-agent
+**Status:** claimed
 
 - [ ] Export writes one versioned archive containing the metadata and optional covers, not the books, via the system file picker
 - [ ] Import inspects the archive and reports matched and new entries before applying
@@ -12,3 +12,5 @@
 - [ ] "Replace current library data" is available behind an explicit confirmation
 - [ ] A corrupt, older, or wrong-schema archive is rejected with a clear reason
 - [ ] No book files are copied or moved by export or import
+
+**Core archive done (2026-11-25):** versioned zip + manifest, preview, merge-by-hash, replace, cover handling and corruption rejection are implemented and covered by 7 core tests. SAF transport, Settings UI and the external-reader handoff remain for the second pass.
