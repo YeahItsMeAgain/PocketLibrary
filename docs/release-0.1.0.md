@@ -1,4 +1,60 @@
-# PocketLibrary 0.1.0
+# PocketLibrary release notes
+
+## 0.1.1 — Diagnostics and log export
+
+Patch release focused on making a family member's problem report one tap away.
+Android-only, arm64-v8a, package `app.pocketlibrary`, version `0.1.1`
+(versionCode `1001`), Android 8.0+ (API 24, targets API 36).
+
+### Included
+
+- **Diagnostics log.** A rolling `diagnostics.log` in app data records startup
+  (version/schema), folder grant and scan results, import/export, download
+  transitions and failures, reader opens/failures, migrations, Rust panics and
+  JS errors/unhandled rejections. Capped near 2 MB and 7 days; no command
+  details are redacted because the log stays on the family's device, but
+  keystore secrets, passwords, tokens and book contents are never written.
+- **Session marker.** Each launch writes a session-start line and a clean
+  shutdown marker. A missing marker on the next launch is logged as
+  "previous session ended unexpectedly".
+- **One-tap export.** Settings → Help & diagnostics offers **Send diagnostics**
+  (Android share sheet with `pocketlibrary-diagnostics.zip`, falling back to the
+  system save picker), **Copy summary**, log size, last error and **Clear logs**.
+  The zip holds `diagnostics.txt`, `summary.json` (app/schema/Android/device and
+  library counts) and `recent-failures.txt` (last 20). No network calls.
+- **Report actions.** Scan, download, import and reader failures offer the same
+  export directly. After three failures in a session a gentle one-time hint
+  points to Help & diagnostics.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `cargo test --manifest-path core/Cargo.toml` | pass |
+| `npm run test:e2e` | 79 passed |
+| `npm run build` | pass |
+| `npx tsc --noEmit` | pass |
+| Android `cargo clippy --all-targets -- -D warnings` | pass |
+| `apksigner verify` | `CN=PocketLibrary, O=Personal, C=US` |
+| `aapt2 dump badging` | `app.pocketlibrary`, 0.1.1, code 1001, min 24, target 36 |
+
+APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`
+· **35,359,638 bytes** · SHA-256
+`47bfeca71bee61f7e5f4f3596b6b225647715293b1183d189d47bddaea26ee12`
+· certificate SHA-256
+`f2167c3918933cd2fe247fb5748e7b699f925d8f6f716eec04da9f862d1dcbdb`.
+Published path
+`https://tunnel.invalid/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`
+returned HTTP 200.
+
+### Device-only check
+
+The real Android WebView share sheet was not exercised on a phone. Verify on
+device that **Send diagnostics** opens the Android share sheet with
+`pocketlibrary-diagnostics.zip` (one tap to email, WhatsApp or Drive), and that
+refusing file sharing falls back to the SAF save picker.
+
+## 0.1.0
 
 First sideloadable release. Android-only, arm64-v8a, package
 `app.pocketlibrary`, version `0.1.0` (versionCode `1000`), Android 8.0+ (API 24,

@@ -3,15 +3,15 @@
 PocketLibrary is a private, Android-only reading room for an existing EPUB and
 PDF library. It reads the books where they already live, lets you arrange them
 on fixed manual shelves, and adds labels, reading status, a built-in reader with
-EPUB annotations, Libgen search/downloads, and one-file backup/restore. There is
-no account, cloud sync, or telemetry.
+EPUB annotations, Libgen search/downloads, one-file backup/restore, and a
+one-tap diagnostics export. There is no account, cloud sync, or telemetry.
 
-**Version:** 0.1.0 · **Package:** `app.pocketlibrary` · **Android 8.0+** (API 24;
+**Version:** 0.1.1 · **Package:** `app.pocketlibrary` · **Android 8.0+** (API 24;
 targets API 36, arm64-v8a).
 
 ## Install
 
-The v0.1.0 release is a sideloaded, signed APK:
+The v0.1.1 release is a sideloaded, signed APK:
 
 ```bash
 adb install -r app-universal-release.apk
@@ -71,14 +71,20 @@ Run these on a real phone against the signed release, not a debug build:
 - [ ] Export a backup to Downloads, import it, and confirm matched/new counts;
       try the explicit replace path on a throwaway library.
 - [ ] Open a book in another app, return, and confirm it is marked reading.
+- [ ] In Settings → Help & diagnostics, tap **Send diagnostics** and confirm the
+      Android share sheet offers the zip to email/WhatsApp/Drive; if the WebView
+      refuses file sharing, confirm the SAF save picker still writes it. Check
+      `Copy summary` and `Clear logs`.
 - [ ] Check Android back unwinds sheets, then the reader, then the app.
 - [ ] Scroll a large library, drag a book, filter by label and status, and check
       the first-paint and memory numbers from `docs/perf-shelf-benchmark.md`.
 
-## Known gaps in 0.1.0
+## Known gaps in 0.1.1
 
 - The checklist above is **pending on a physical device**; no phone or emulator
   was attached during the release build.
+- **Share sheet is device-only.** The WebView share path is mocked in Playwright;
+  verify the Android share sheet on a real phone, including the SAF fallback.
 - **First paint** misses the 400 ms proxy budget (475.7 ms at 4× CPU throttle);
   scroll, filter and drag budgets pass. See `docs/perf-shelf-benchmark.md`.
 - **External reader cancel:** Android does not report which app was chosen, so
