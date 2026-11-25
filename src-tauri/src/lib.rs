@@ -3,14 +3,19 @@
 //! The commands here are thin wrappers over `pocketlibrary_core::Api`; the web
 //! UI reaches them only through the typed platform adapter.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(target_os = "android")]
+use std::io::{Read, Write};
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
 use pocketlibrary_core::{
-    Api, ApiError, AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest, DownloadSink,
-    Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus, ScanReport, SearchPage,
-    SearchQuery, Shelf,
+    Api, ApiError, AppInfo, BackupPreview, BackupReport, Book, BookDetail, Bookmark, Download,
+    DownloadRequest, DownloadSink, ImportMode, Label, LabelUsage, LibraryStatus, ReadingState,
+    ReadingStatus, ScanReport, SearchPage, SearchQuery, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -27,7 +32,70 @@ use crate::saf::{SafDownloadSink, SafSource};
 #[cfg(target_os = "android")]
 const MAX_BOOK_BYTES: u64 = 100 * 1024 * 1024;
 
+/// Metadata archives carry only the manifest and cached covers. This ceiling
+/// is generous for covers but stops a mistakenly picked book or video from
+/// being loaded whole into memory.
+const MAX_BACKUP_BYTES: u64 = 64 * 1024 * 1024;
+
 static DOWNLOAD_WORKER_RUNNING: AtomicBool = AtomicBool::new(false);
+
+/// A user-facing result of writing an archive through the system picker.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BackupExport {
+    file_name: String,
+    bytes: usize,
+    books: usize,
+}
+
+/// An inspected archive, held in memory between preview and import.
+///
+/// The picker's content URI never leaves the shell: the WebView only sees an
+/// opaque token, so no raw path can be passed back in as a command argument.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BackupSelection {
+    token: String,
+    file_name: String,
+    preview: BackupPreview,
+}
+
+struct PendingBackup {
+    token: String,
+    bytes: Vec<u8>,
+}
+
+#[derive(Default)]
+struct BackupExchange {
+    pending: Mutex<Option<PendingBackup>>,
+    next_token: AtomicU64,
+}
+
+impl BackupExchange {
+    fn stash(&self, bytes: Vec<u8>) -> String {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_millis())
+            .unwrap_or(0);
+        let sequence = self.next_token.fetch_add(1, Ordering::Relaxed);
+        let token = format!("backup-{stamp}-{sequence}");
+        if let Ok(mut pending) = self.pending.lock() {
+            *pending = Some(PendingBackup {
+                token: token.clone(),
+                bytes,
+            });
+        }
+        token
+    }
+
+    fn take(&self, token: &str) -> Option<Vec<u8>> {
+        let mut pending = self.pending.lock().ok()?;
+        match pending.as_ref() {
+            Some(backup) if backup.token == token => pending.take().map(|backup| backup.bytes),
+            _ => None,
+        }
+    }
+}
 
 /// The Android library folder as a download destination.
 struct AppDownloadSink {
@@ -308,11 +376,230 @@ fn read_book_response(_app: &AppHandle, _book_id: i64) -> Result<tauri::ipc::Res
     ))
 }
 
+#[cfg(target_os = "android")]
+fn export_backup_response(app: &AppHandle) -> Result<Option<BackupExport>, ApiError> {
+    let (bytes, books) = {
+        let api = app.state::<Api>();
+        let bytes = api.export_backup()?;
+        let books = api.list_books()?.len();
+        (bytes, books)
+    };
+
+    let fs = app.android_fs();
+    let picked = fs
+        .picker()
+        .save_file(
+            None,
+            "pocketlibrary-backup.pocketlibrary",
+            Some("application/zip"),
+            false,
+        )
+        .map_err(|error| {
+            logged_error(
+                "backup_picker",
+                "The file picker could not be opened. Please try again.",
+                error,
+            )
+        })?;
+    let Some(uri) = picked else {
+        return Ok(None);
+    };
+    let file_name = fs
+        .get_name(&uri)
+        .unwrap_or_else(|_| "pocketlibrary-backup.pocketlibrary".to_owned());
+    let mut file = fs.open_file_writable(&uri).map_err(|error| {
+        logged_error(
+            "backup_write",
+            "That backup could not be written. Choose another destination.",
+            error,
+        )
+    })?;
+    file.write_all(&bytes)
+        .and_then(|_| file.flush())
+        .map_err(|error| {
+            logged_error(
+                "backup_write",
+                "That backup could not be written. Choose another destination.",
+                error,
+            )
+        })?;
+
+    Ok(Some(BackupExport {
+        file_name,
+        bytes: bytes.len(),
+        books,
+    }))
+}
+
+#[cfg(not(target_os = "android"))]
+fn export_backup_response(_app: &AppHandle) -> Result<Option<BackupExport>, ApiError> {
+    Err(api_error(
+        "unsupported",
+        "Exporting a backup needs the Android build.",
+    ))
+}
+
+#[cfg(target_os = "android")]
+fn preview_backup_response(app: &AppHandle) -> Result<Option<BackupSelection>, ApiError> {
+    let fs = app.android_fs();
+    // An explicit MIME filter would hide `.pocketlibrary` files on providers
+    // that report them as octet-stream, so let the user pick any document and
+    // reject the wrong schema with a typed error instead.
+    let picked = fs.picker().pick_file(None, &[], false).map_err(|error| {
+        logged_error(
+            "backup_picker",
+            "The file picker could not be opened. Please try again.",
+            error,
+        )
+    })?;
+    let Some(uri) = picked else {
+        return Ok(None);
+    };
+    let file_name = fs
+        .get_name(&uri)
+        .unwrap_or_else(|_| "PocketLibrary backup".to_owned());
+    let file = fs.open_file_readable(&uri).map_err(|error| {
+        logged_error(
+            "backup_read",
+            "That file could not be read. Choose another backup.",
+            error,
+        )
+    })?;
+    let mut bytes = Vec::new();
+    file.take(MAX_BACKUP_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| {
+            logged_error(
+                "backup_read",
+                "That file could not be read. Choose another backup.",
+                error,
+            )
+        })?;
+    if bytes.len() as u64 > MAX_BACKUP_BYTES {
+        return Err(api_error(
+            "backup_too_large",
+            "That file is too large to be a PocketLibrary backup.",
+        ));
+    }
+
+    let preview = {
+        let api = app.state::<Api>();
+        api.preview_backup(&bytes)?
+    };
+    let token = app.state::<BackupExchange>().stash(bytes);
+    Ok(Some(BackupSelection {
+        token,
+        file_name,
+        preview,
+    }))
+}
+
+#[cfg(not(target_os = "android"))]
+fn preview_backup_response(_app: &AppHandle) -> Result<Option<BackupSelection>, ApiError> {
+    Err(api_error(
+        "unsupported",
+        "Inspecting a backup needs the Android build.",
+    ))
+}
+
+#[cfg(target_os = "android")]
+fn import_backup_response(
+    app: &AppHandle,
+    token: &str,
+    mode: ImportMode,
+) -> Result<BackupReport, ApiError> {
+    let bytes = app.state::<BackupExchange>().take(token).ok_or_else(|| {
+        api_error(
+            "backup_selection_expired",
+            "That archive is no longer selected. Choose it again.",
+        )
+    })?;
+    app.state::<Api>().import_backup(&bytes, mode)
+}
+
+#[cfg(not(target_os = "android"))]
+fn import_backup_response(
+    _app: &AppHandle,
+    _token: &str,
+    _mode: ImportMode,
+) -> Result<BackupReport, ApiError> {
+    Err(api_error(
+        "unsupported",
+        "Restoring a backup needs the Android build.",
+    ))
+}
+
+#[cfg(target_os = "android")]
+fn open_book_externally_response(app: &AppHandle, book_id: i64) -> Result<(), ApiError> {
+    let api = app.state::<Api>();
+    let token = api.library_folder()?.ok_or_else(|| {
+        api_error(
+            "library_unavailable",
+            "No library folder has been chosen yet.",
+        )
+    })?;
+    let uri = parse_folder_token(&token);
+    if !grant_is_valid(app, &uri) {
+        return Err(api_error(
+            "library_unavailable",
+            "The library folder is no longer accessible.",
+        ));
+    }
+    let path = api.book_path(book_id)?;
+    let source = SafSource::new(app.android_fs(), uri);
+    let file_uri = source
+        .uri_for_path(&path)?
+        .ok_or_else(|| api_error("book_not_found", "That book could not be found."))?;
+    app.android_fs()
+        .opener()
+        .open_file(&file_uri)
+        .map_err(|error| {
+            logged_error(
+                "external_reader",
+                "No other reader could be opened for this book.",
+                error,
+            )
+        })?;
+    // The chooser has been shown. Mark the book as started unless it is
+    // already finished; the other app owns the position from here.
+    api.record_open(book_id)?;
+    Ok(())
+}
+
+#[cfg(not(target_os = "android"))]
+fn open_book_externally_response(_app: &AppHandle, _book_id: i64) -> Result<(), ApiError> {
+    Err(api_error(
+        "unsupported",
+        "Opening a book in another app needs the Android build.",
+    ))
+}
+
 #[tauri::command]
-fn enqueue_download(
+async fn export_backup(app: AppHandle) -> Result<Option<BackupExport>, ApiError> {
+    blocking(move || export_backup_response(&app)).await
+}
+
+#[tauri::command]
+async fn preview_backup(app: AppHandle) -> Result<Option<BackupSelection>, ApiError> {
+    blocking(move || preview_backup_response(&app)).await
+}
+
+#[tauri::command]
+async fn import_backup(
     app: AppHandle,
-    request: DownloadRequest,
-) -> Result<Download, ApiError> {
+    token: String,
+    mode: ImportMode,
+) -> Result<BackupReport, ApiError> {
+    blocking(move || import_backup_response(&app, &token, mode)).await
+}
+
+#[tauri::command]
+async fn open_book_externally(app: AppHandle, book_id: i64) -> Result<(), ApiError> {
+    blocking(move || open_book_externally_response(&app, book_id)).await
+}
+
+#[tauri::command]
+fn enqueue_download(app: AppHandle, request: DownloadRequest) -> Result<Download, ApiError> {
     let download = {
         let api = app.state::<Api>();
         api.enqueue_download(request)?
@@ -532,6 +819,7 @@ pub fn run() {
             let data_dir = app.path().app_data_dir()?;
             let api = Api::open(data_dir.join("library.db"))?;
             app.manage(api);
+            app.manage(BackupExchange::default());
             spawn_download_worker(app.handle().clone());
             Ok(())
         });
@@ -574,7 +862,11 @@ pub fn run() {
             record_open,
             record_progress,
             reading_state,
-            set_reading_status
+            set_reading_status,
+            export_backup,
+            preview_backup,
+            import_backup,
+            open_book_externally
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

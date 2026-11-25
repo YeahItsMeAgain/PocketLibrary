@@ -69,6 +69,16 @@ impl<'a, R: tauri::Runtime> SafSource<'a, R> {
         walk(self, None, target)
     }
 
+    /// Resolve a library-relative path to the document URI other apps need.
+    ///
+    /// The URI stays inside the shell; commands hand it straight to the system
+    /// chooser rather than returning it to the WebView.
+    pub fn uri_for_path(&self, target: &str) -> Result<Option<FsUri>> {
+        Ok(self
+            .find_handle(target)?
+            .map(|handle| self.uri_for(Some(&handle))))
+    }
+
     /// Read a whole book, refusing anything above `limit` bytes.
     ///
     /// The reader receives the entire file over IPC, so a very large PDF would
@@ -177,7 +187,6 @@ impl<R: tauri::Runtime> FileSource for SafSource<'_, R> {
     }
 }
 
-
 /// Writes validated downloads into the granted library folder root.
 ///
 /// The bytes are first written to a sibling `.part` document and then renamed,
@@ -189,10 +198,7 @@ pub struct SafDownloadSink<'a, R: tauri::Runtime> {
 }
 
 impl<'a, R: tauri::Runtime> SafDownloadSink<'a, R> {
-    pub fn new(
-        fs: &'a tauri_plugin_android_fs::api::api_sync::AndroidFs<R>,
-        root: FsUri,
-    ) -> Self {
+    pub fn new(fs: &'a tauri_plugin_android_fs::api::api_sync::AndroidFs<R>, root: FsUri) -> Self {
         Self { fs, root }
     }
 }
@@ -229,9 +235,10 @@ impl<R: tauri::Runtime> DownloadSink for SafDownloadSink<'_, R> {
                 message: error.to_string(),
             })?;
         let write = || -> std::io::Result<()> {
-            let mut file = self.fs.open_file_writable(&temp).map_err(|error| {
-                std::io::Error::other(error.to_string())
-            })?;
+            let mut file = self
+                .fs
+                .open_file_writable(&temp)
+                .map_err(|error| std::io::Error::other(error.to_string()))?;
             file.write_all(bytes)?;
             file.flush()?;
             Ok(())
