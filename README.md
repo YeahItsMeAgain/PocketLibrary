@@ -1,5 +1,7 @@
 # PocketLibrary
 
+[![CI](https://github.com/YeahItsMeAgain/PocketLibrary/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/YeahItsMeAgain/PocketLibrary/actions/workflows/ci.yml)
+
 PocketLibrary is a private, Android-only reading room for an existing EPUB and
 PDF library. It reads the books where they already live, lets you arrange them
 on fixed manual shelves, and adds labels, reading status, a built-in reader with
@@ -8,6 +10,81 @@ one-tap diagnostics export. There is no account, cloud sync, or telemetry.
 
 **Version:** 0.1.1 · **Package:** `app.pocketlibrary` · **Android 8.0+** (API 24;
 targets API 36, arm64-v8a).
+
+## What it is
+
+PocketLibrary is for the reader who already has a folder of books and does not
+want a store, an account or a sync service between them and the page. Point it
+at a folder, and it scans EPUBs and PDFs in place, builds covers and metadata,
+and lays them out as fixed wooden shelves you arrange by hand. Labels and
+reading status appear as cues on the spines; filters dim rather than reshuffle.
+A built-in reader remembers your place and supports highlights and notes in
+EPUB, Libgen search can fetch a missing volume into the same folder, and the
+whole library — shelves, labels, progress, annotations and settings — can be
+exported to one archive. Everything stays on the device; diagnostics are local
+and only leave when you choose to share them.
+
+## A look inside
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="docs/assets/wall.webp" width="180" alt="PocketLibrary wall with two populated wooden shelves, spine labels and reading-status pips">
+      <br><sub>The wall</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="docs/assets/book-detail.webp" width="240" alt="Book detail sheet showing a cover, metadata, reading status and action buttons">
+      <br><sub>Book detail</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="docs/assets/drawer.webp" width="240" alt="Navigation drawer open over the library wall">
+      <br><sub>The drawer</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="docs/assets/epub-reader.webp" width="240" alt="EPUB reader in the Paper theme with chapter text, type controls and a progress readout">
+      <br><sub>EPUB reader</sub>
+    </td>
+  </tr>
+</table>
+
+These are compressed copies of the release screenshots; the originals remain
+under `prototype/design/screenshots/release/` and are not linked here.
+
+## Status
+
+**v0.1.1 is a release candidate.** The signed APK builds, the Rust core tests
+pass, the web build and type check pass, and 82 Playwright tests pass. The
+physical-device pass is still pending — no phone or emulator was attached for
+the release build — so treat storage, sharing and touch behaviour as verified
+only by proxy until the checklist below is run. Sideload only: there is no Play
+Store listing, desktop build or iOS build.
+
+## Architecture
+
+- **Tauri 2 shell (Rust).** `src-tauri/` exposes thin commands over the core
+  catalog, owns Android integration (SAF, share sheet, file pickers, back
+  handling) and hosts the WebView.
+- **Headless Rust core.** `core/` holds the SQLite catalog, scanning, metadata,
+  covers, backup, downloads and diagnostics with no Tauri dependency, so it is
+  tested on a normal Linux host.
+- **SQLite catalog.** `rusqlite` with bundled SQLite and versioned migrations
+  stores shelves, placements, labels, reading state, annotations, bookmarks and
+  download history.
+- **React UI.** React 19 + Vite renders the wall, detail sheets, search,
+  downloads, settings, backup and the reader shell; styles are plain CSS.
+- **One platform boundary.** Components never invoke Tauri commands directly.
+  The typed adapter in `src/platform.ts` is the only native seam and is mocked
+  in tests.
+- **Storage Access Framework.** A user-granted folder is read in place through
+  `tauri-plugin-android-fs`; books are never copied into app storage, and BLAKE3
+  content hashes provide identity across rescans and relinks.
+- **Readers.** EPUB uses vendored [foliate-js](src/vendor/foliate/) with
+  highlights, notes, bookmarks and remembered position; PDF uses PDF.js with
+  fit-width, pinch zoom, page jump and outline.
+- **Acquisition and care.** Libgen search runs against several mirrors, with a
+  two-at-a-time download queue, progress/cancel/retry and failover. Backup is a
+  versioned archive with merge-by-default restore, and diagnostics are a local
+  rolling log with a one-tap export.
 
 ## Install
 
@@ -25,6 +102,8 @@ copied into the app and remain in your chosen folder.
 
 Release APK SHA-256:
 `80ccd6cab3f2f814bc256b49386e15e37a1b88cf13c2980994b9b3dd33ea4de1`.
+See [`docs/release-0.1.1.md`](docs/release-0.1.1.md) for the full notes and
+upgrade guidance.
 
 On first launch, choose or create a folder such as `Documents/PocketLibrary`.
 Android will not grant the storage root, `Download`, or a removable-storage
@@ -58,6 +137,10 @@ cargo clippy --manifest-path src-tauri/Cargo.toml \
   --target aarch64-linux-android --all-targets -- -D warnings
 node perf/bench.mjs
 ```
+
+GitHub Actions runs the core tests, type check, web build and Playwright suite
+on every push and pull request. The Android APK is not built in CI because it
+needs the SDK, NDK and a local keystore; build and sign it locally.
 
 ## Device test checklist
 
@@ -98,7 +181,33 @@ Run these on a real phone against the signed release, not a debug build:
   hold a copy). Streaming/range transport is future work.
 - **Annotations are EPUB-only.** PDF has no highlights or notes in this release.
 
-See [`docs/release-0.1.0.md`](docs/release-0.1.0.md) for the full release notes.
+See [`docs/release-0.1.1.md`](docs/release-0.1.1.md) for what changed in 0.1.1
+and [`docs/release-0.1.0.md`](docs/release-0.1.0.md) for the first release.
+
+## Roadmap
+
+- **Device verification.** Run the checklist on a physical phone against the
+  signed 0.1.1 APK, including install-over-upgrade and the diagnostics share
+  sheet fallback.
+- **Architecture and performance refactor (ticket 18).** Split the large
+  `App.tsx` into feature modules, window the shelf lifecycle, move filtering out
+  of React's render path, and shrink the first-paint payload — without changing
+  the design or migrating frameworks.
+- **GitHub Releases and auto-update.** Publish signed APKs and notes as GitHub
+  Releases, then add a Tauri updater with signature verification so upgrades do
+  not need a cable.
+- **Performance.** Meet the 400 ms first-shelf budget at 4× throttle, keep
+  full-wall traversal memory flat, and replace whole-file PDF transport with
+  streaming or range reads.
+
+## Documentation
+
+- [0.1.1 release notes](docs/release-0.1.1.md) · [0.1.0 release notes](docs/release-0.1.0.md)
+- [Diagnostics and log export](docs/diagnostics.md)
+- [Android build guide](docs/build.md)
+- [Shelf performance benchmark](docs/perf-shelf-benchmark.md)
+- [Architecture decision records](docs/adr/)
+- [Contributing](CONTRIBUTING.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 ## Licence
 
