@@ -19,15 +19,16 @@
 
 - **SAF transport.** `export_backup` opens the Android create-document picker, writes the archive bytes through the returned content URI and reports the chosen name, size and book count. `preview_backup` opens the open-document picker, reads the archive into the shell, inspects it, and holds it behind an opaque token; `import_backup` accepts only that token plus `merge`/`replace`. No path or content URI crosses the command wire.
 - **UI.** Settings exports with a success summary, and imports into an inline preview showing matched/new counts. Merge is the default primary action; replace opens a second explicit confirmation that names what is cleared. Archive errors use the core's typed messages (`archive_corrupt`, `archive_unsupported_version`, `archive_wrong_schema`).
-- **External reader.** The book detail and EPUB reader now invoke `open_book_externally`, which resolves the SAF document URI in the shell and shows the Android open-with chooser, then marks the book reading unless already finished. The browser mock returns the real unsupported error rather than pretending success.
+- **External reader.** The book detail and EPUB reader now invoke `open_book_externally`, which resolves the SAF document URI in the shell and shows the Android open-with chooser. The shell no longer marks the book when the chooser opens: it remembers the handoff and marks the book reading on the next Android resume. That is best effort — Android does not report which app was chosen, so cancelling the chooser can still count as a return — but nothing is marked while the chooser is merely open. The browser mock still returns the real unsupported error rather than pretending success.
+- **Post-import rescan (2026-11-25).** The import command now runs a rescan immediately after merge/replace and returns it with the report. Restored pathless books are matched by content hash, get their local path back, and are counted as `relinked`; Settings shows linked, new and missing counts in the import summary. A missing folder grant leaves the import successful and reports the rescan reason instead of failing the restore. Playwright covers the summary and core keeps the pathless-to-linked test.
 - **Tests.** Playwright covers export success, import preview + merge, replace confirmation, corrupt archive rejection, and asserts no `.epub`/`.pdf` request occurs during any backup flow. Core tests still own archive semantics.
 
 ## Verification
 
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android -- -D warnings` — pass.
-- `npm run test:e2e` — 64 pass.
+- `npm run test:e2e` — 73 pass (final integration).
 - `npm run build`, `npx tsc --noEmit` — pass.
-- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 34,996,126 bytes, SHA-256 `d01025dfc3221860133327ad10d63886a4e2b86cb2667110d76ba2c45fbdfdfb`. Signer DN `CN=PocketLibrary, O=Personal, C=US`.
+- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 35,117,598 bytes, SHA-256 `6514a0c6e941e0771d8fc2b070a125fd5a4c3c3f4b17c1de2bca1a2239652ff8`. Signer DN `CN=PocketLibrary, O=Personal, C=US`. Published path returns HTTP 200.
 
 ## Device-only checks
 

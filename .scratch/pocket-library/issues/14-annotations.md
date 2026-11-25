@@ -15,6 +15,7 @@
 
 ## Device-only checks
 
+- **Final integration (2026-11-25).** The reader's Contents, Type/Zoom, Annotations and note-editor sheets now register with the shared layer guard. Escape and Android/browser back close the open sheet first and the reader on the next press, with no extra history entries; Playwright covers the EPUB Contents and Type sheets. Naming, backup-rescan and the rest of the reader/annotation behaviour remain intact (73 Playwright tests). Release APK 35,117,598 bytes, SHA-256 `6514a0c6e941e0771d8fc2b070a125fd5a4c3c3f4b17c1de2bca1a2239652ff8`, signed `CN=PocketLibrary`; published path HTTP 200.
 - Real finger selection inside the Android WebView, including the selection handles
   and the popover placement above the selection. Playwright drives the same DOM
   selection and `selectionchange` path programmatically because browser selection
