@@ -3,8 +3,11 @@
 //! The commands here are thin wrappers over `pocketlibrary_core::Api`; the web
 //! UI reaches them only through the typed platform adapter.
 
+use std::collections::BTreeMap;
+use std::fs;
 #[cfg(target_os = "android")]
 use std::io::{Read, Write};
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -12,6 +15,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
+use pocketlibrary_core::diagnostics::{
+    self, Diagnostics, DiagnosticsEnvironment, DiagnosticsSummary, Level,
+};
 use pocketlibrary_core::{
     Annotation, AnnotationKind, Api, ApiError, AppInfo, BackupPreview, BackupReport, Book,
     BookDetail, Bookmark, Download, DownloadRequest, DownloadSink, ImportMode, Label, LabelUsage,
@@ -63,6 +69,14 @@ struct BackupSelection {
 struct PendingBackup {
     token: String,
     bytes: Vec<u8>,
+}
+
+/// A diagnostics zip written through the system save picker.
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SavedDiagnostics {
+    file_name: String,
+    bytes: usize,
 }
 
 /// A book handed to another app. It is marked reading only when PocketLibrary
@@ -218,7 +232,86 @@ fn logged_error(
     detail: impl std::fmt::Display,
 ) -> ApiError {
     eprintln!("pocketlibrary error ({code}): {detail}");
+    pocketlibrary_core::diagnostics::log_event(
+        Level::Error,
+        "command.failed",
+        &format!("{code}: {detail}"),
+    );
     api_error(code, user_message)
+}
+
+fn diagnostics_of(app: &AppHandle) -> Arc<Diagnostics> {
+    app.state::<Arc<Diagnostics>>().inner().clone()
+}
+
+fn log_diag(app: &AppHandle, level: Level, event: &str, message: &str) {
+    diagnostics_of(app).append(level, event, message);
+}
+
+#[cfg(target_os = "android")]
+fn android_identity() -> (String, String) {
+    fn property(name: &str) -> Option<String> {
+        std::process::Command::new("getprop")
+            .arg(name)
+            .output()
+            .ok()
+            .filter(|output| output.status.success())
+            .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_owned())
+            .filter(|value| !value.is_empty())
+    }
+    (
+        property("ro.build.version.release").unwrap_or_else(|| "Android".to_owned()),
+        property("ro.product.model").unwrap_or_else(|| "Android device".to_owned()),
+    )
+}
+
+#[cfg(not(target_os = "android"))]
+fn android_identity() -> (String, String) {
+    (
+        "not Android".to_owned(),
+        format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
+    )
+}
+
+fn diagnostics_environment(app: &AppHandle) -> Result<DiagnosticsEnvironment, ApiError> {
+    let api = app.state::<Api>();
+    let info = api.app_info()?;
+    let books = api.list_books()?.len() as i64;
+    let shelves = api.list_shelves()?.len() as i64;
+    let labels = api.list_labels()?.len() as i64;
+    let downloads = api.list_downloads()?;
+    let failed = downloads
+        .iter()
+        .filter(|row| matches!(row.state, pocketlibrary_core::DownloadState::Failed))
+        .count() as i64;
+    let (android, device) = android_identity();
+    Ok(DiagnosticsEnvironment {
+        app_name: info.name,
+        app_version: info.app_version,
+        schema_version: info.schema_version,
+        android,
+        device,
+        counts: BTreeMap::from([
+            ("books".to_owned(), books),
+            ("shelves".to_owned(), shelves),
+            ("labels".to_owned(), labels),
+            ("downloads".to_owned(), downloads.len() as i64),
+            ("failedDownloads".to_owned(), failed),
+        ]),
+    })
+}
+
+fn diagnostics_zip(app: &AppHandle) -> Result<Vec<u8>, ApiError> {
+    let environment = diagnostics_environment(app)?;
+    diagnostics_of(app)
+        .export_zip(&environment)
+        .map_err(|error| {
+            logged_error(
+                "diagnostics_export",
+                "Diagnostics could not be prepared. Please try again.",
+                error,
+            )
+        })
 }
 
 async fn blocking<T, F>(task: F) -> Result<T, ApiError>
@@ -308,6 +401,12 @@ fn choose_folder(app: &AppHandle) -> Result<LibraryStatus, ApiError> {
 
     let api = app.state::<Api>();
     api.set_library_folder(&token, &name)?;
+    log_diag(
+        app,
+        Level::Info,
+        "folder.granted",
+        &format!("{name}: {token}"),
+    );
     api.library_status(true)
 }
 
@@ -330,6 +429,12 @@ fn rescan(app: &AppHandle) -> Result<ScanReport, ApiError> {
     };
     let uri = parse_folder_token(&token);
     if !grant_is_valid(app, &uri) {
+        log_diag(
+            app,
+            Level::Warn,
+            "folder.scan",
+            "grant is no longer valid; scan skipped",
+        );
         return Err(api_error(
             "library_unavailable",
             "The library folder is no longer accessible.",
@@ -337,7 +442,22 @@ fn rescan(app: &AppHandle) -> Result<ScanReport, ApiError> {
     }
 
     let source = SafSource::new(app.android_fs(), uri);
-    api.scan(&source)
+    let report = api.scan(&source)?;
+    log_diag(
+        app,
+        Level::Info,
+        "folder.scanned",
+        &format!(
+            "total {} add {} relink {} remove {} duplicate {} skipped {}",
+            report.total,
+            report.added,
+            report.relinked,
+            report.removed,
+            report.duplicates,
+            report.skipped.len()
+        ),
+    );
+    Ok(report)
 }
 
 #[cfg(not(target_os = "android"))]
@@ -374,13 +494,33 @@ fn read_book_response(app: &AppHandle, book_id: i64) -> Result<tauri::ipc::Respo
     let source = SafSource::new(app.android_fs(), uri);
     let bytes = source
         .read_path_limited(&path, MAX_BOOK_BYTES)
-        .map_err(|error| logged_error("read_book", "That book could not be read.", error))?
+        .map_err(|error| {
+            log_diag(
+                app,
+                Level::Error,
+                "reader.failed",
+                &format!("book {book_id} at {path}: {error}"),
+            );
+            logged_error("read_book", "That book could not be read.", error)
+        })?
         .ok_or_else(|| {
+            log_diag(
+                app,
+                Level::Warn,
+                "reader.refused",
+                &format!("book {book_id} at {path} is larger than {MAX_BOOK_BYTES} bytes"),
+            );
             api_error(
                 "book_too_large",
                 "This book is larger than 100 MB and cannot be held in memory on this device. Open it in another app instead.",
             )
         })?;
+    log_diag(
+        app,
+        Level::Info,
+        "reader.opened",
+        &format!("book {book_id} at {path} ({} bytes)", bytes.len()),
+    );
     Ok(tauri::ipc::Response::new(bytes))
 }
 
@@ -440,6 +580,12 @@ fn export_backup_response(app: &AppHandle) -> Result<Option<BackupExport>, ApiEr
             )
         })?;
 
+    log_diag(
+        app,
+        Level::Info,
+        "backup.exported",
+        &format!("{file_name} ({} books, {} bytes)", books, bytes.len()),
+    );
     Ok(Some(BackupExport {
         file_name,
         bytes: bytes.len(),
@@ -503,6 +649,15 @@ fn preview_backup_response(app: &AppHandle) -> Result<Option<BackupSelection>, A
         api.preview_backup(&bytes)?
     };
     let token = app.state::<BackupExchange>().stash(bytes);
+    log_diag(
+        app,
+        Level::Info,
+        "backup.previewed",
+        &format!(
+            "{file_name}: {} matched, {} new",
+            preview.matched, preview.new
+        ),
+    );
     Ok(Some(BackupSelection {
         token,
         file_name,
@@ -538,6 +693,19 @@ fn import_backup_response(
         Ok(report) => (Some(report), None),
         Err(error) => (None, Some(error.message)),
     };
+    log_diag(
+        app,
+        Level::Info,
+        "backup.imported",
+        &format!(
+            "{mode:?}: matched {} new {} skipped {} replaced {}; scan {}",
+            report.matched,
+            report.new,
+            report.skipped,
+            report.replaced,
+            if scan.is_some() { "ok" } else { "failed" }
+        ),
+    );
     Ok(ImportOutcome {
         report,
         scan,
@@ -555,6 +723,116 @@ fn import_backup_response(
         "unsupported",
         "Restoring a backup needs the Android build.",
     ))
+}
+
+#[cfg(target_os = "android")]
+fn save_diagnostics_response(app: &AppHandle) -> Result<Option<SavedDiagnostics>, ApiError> {
+    let bytes = diagnostics_zip(app)?;
+    let android_fs = app.android_fs();
+    let picked = android_fs
+        .picker()
+        .save_file(
+            None,
+            diagnostics::export_file_name(),
+            Some("application/zip"),
+            false,
+        )
+        .map_err(|error| {
+            logged_error(
+                "diagnostics_picker",
+                "The file picker could not be opened. Please try again.",
+                error,
+            )
+        })?;
+    let Some(uri) = picked else {
+        log_diag(app, Level::Info, "diagnostics.export", "save cancelled");
+        return Ok(None);
+    };
+    let file_name = android_fs
+        .get_name(&uri)
+        .unwrap_or_else(|_| diagnostics::export_file_name().to_owned());
+    let mut file = android_fs.open_file_writable(&uri).map_err(|error| {
+        logged_error(
+            "diagnostics_write",
+            "Diagnostics could not be saved. Choose another destination.",
+            error,
+        )
+    })?;
+    file.write_all(&bytes)
+        .and_then(|_| file.flush())
+        .map_err(|error| {
+            logged_error(
+                "diagnostics_write",
+                "Diagnostics could not be saved. Choose another destination.",
+                error,
+            )
+        })?;
+    log_diag(
+        app,
+        Level::Info,
+        "diagnostics.export",
+        &format!("saved {file_name} ({} bytes)", bytes.len()),
+    );
+    Ok(Some(SavedDiagnostics {
+        file_name,
+        bytes: bytes.len(),
+    }))
+}
+
+#[cfg(not(target_os = "android"))]
+fn save_diagnostics_response(_app: &AppHandle) -> Result<Option<SavedDiagnostics>, ApiError> {
+    Err(api_error(
+        "unsupported",
+        "Saving diagnostics needs the Android build.",
+    ))
+}
+
+#[tauri::command]
+fn log_diagnostic(
+    diag: tauri::State<'_, Arc<Diagnostics>>,
+    level: String,
+    event: String,
+    message: String,
+) {
+    diag.append(Level::parse(&level), &event, &message);
+}
+
+#[tauri::command]
+fn diagnostics_summary(diag: tauri::State<'_, Arc<Diagnostics>>) -> DiagnosticsSummary {
+    diag.summary()
+}
+
+#[tauri::command]
+fn clear_diagnostics(diag: tauri::State<'_, Arc<Diagnostics>>) {
+    diag.clear();
+}
+
+#[tauri::command]
+async fn export_diagnostics(app: AppHandle) -> Result<tauri::ipc::Response, ApiError> {
+    blocking(move || {
+        let bytes = diagnostics_zip(&app)?;
+        // A cache copy is the staging point for sharing. The path stays in the
+        // shell; the WebView only ever sees the bytes it hands to the share
+        // sheet or the save picker.
+        if let Ok(cache) = app.path().app_cache_dir() {
+            let staging = cache.join("diagnostics");
+            let _ = fs::create_dir_all(&staging);
+            let _ = fs::write(staging.join(diagnostics::export_file_name()), &bytes);
+        }
+        log_diag(
+            &app,
+            Level::Info,
+            "diagnostics.export",
+            &format!("prepared {} bytes for sharing", bytes.len()),
+        );
+        Ok(tauri::ipc::Response::new(bytes))
+    })
+    .await
+}
+
+#[tauri::command]
+async fn save_diagnostics(app: AppHandle) -> Result<Option<SavedDiagnostics>, ApiError> {
+    blocking(move || save_diagnostics_response(&app)).await
 }
 
 #[cfg(target_os = "android")]
@@ -594,6 +872,12 @@ fn open_book_externally_response(app: &AppHandle, book_id: i64) -> Result<(), Ap
     if let Ok(mut pending) = app.state::<PendingExternal>().book_id.lock() {
         *pending = Some(book_id);
     }
+    log_diag(
+        app,
+        Level::Info,
+        "reader.external",
+        &format!("book {book_id} handed to another app at {path}"),
+    );
     Ok(())
 }
 
@@ -902,7 +1186,29 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
+            let diagnostics = Arc::new(Diagnostics::new(data_dir.join("diagnostics.log")));
+            diagnostics::install_global(Arc::clone(&diagnostics));
+            diagnostics::install_panic_hook(Arc::clone(&diagnostics));
+            app.manage(Arc::clone(&diagnostics));
+            let unexpected = diagnostics.start_session()?;
             let api = Api::open(data_dir.join("library.db"))?;
+            let info = api.app_info().map_err(|error| {
+                std::io::Error::other(format!("app info: {} {}", error.code, error.message))
+            })?;
+            diagnostics.append(
+                Level::Info,
+                "startup",
+                &format!(
+                    "PocketLibrary {} schema {}{}",
+                    info.app_version,
+                    info.schema_version,
+                    if unexpected {
+                        "; previous session ended unexpectedly"
+                    } else {
+                        ""
+                    }
+                ),
+            );
             app.manage(api);
             app.manage(BackupExchange::default());
             app.manage(PendingExternal::default());
@@ -958,11 +1264,21 @@ pub fn run() {
             export_backup,
             preview_backup,
             import_backup,
-            open_book_externally
+            open_book_externally,
+            log_diagnostic,
+            diagnostics_summary,
+            clear_diagnostics,
+            export_diagnostics,
+            save_diagnostics
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Exit)
+                && let Some(diagnostics) = app.try_state::<Arc<Diagnostics>>()
+            {
+                diagnostics.end_session();
+            }
             // Android resumes the activity after the external reader handoff
             // (and after a cancelled chooser). Mark the pending book then,
             // never at the moment the chooser opens.
