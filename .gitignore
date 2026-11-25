@@ -32,12 +32,16 @@ playwright/.cache
 *.pem
 *.key
 *.pass
+*.sig
 .android-keys/
 .env
 .env.*
 local.properties
 keystore.properties
 key.properties
+
+# Generated updater manifest (release artifact)
+latest.json
 
 # Android build outputs
 *.apk

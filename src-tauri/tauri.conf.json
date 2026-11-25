@@ -31,5 +31,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQwOEI0RDZGRUNGRjhBOEYKUldTUGl2L3NiMDJMME9SMDZCMUVIR2puTkttMk9BY0E3d0YzWkYzQklIS29GZmorbWMxeW56WWoK",
+      "endpoints": [
+        "https://github.com/YeahItsMeAgain/PocketLibrary/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

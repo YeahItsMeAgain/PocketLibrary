@@ -49,3 +49,16 @@ fi
 # The Rust Android targets are installed by `tauri android init` (aarch64 is
 # the only one needed for a phone APK). To install manually:
 #   rustup target add aarch64-linux-android
+
+# Updater signing (minisign), separate from the APK keystore. Release helpers
+# read these; the private key and password stay outside the repo.
+POCKETLIBRARY_UPDATER_KEY="${POCKETLIBRARY_UPDATER_KEY:-$HOME/.android-keys/pocketlibrary-updater.key}"
+POCKETLIBRARY_UPDATER_KEY_PASS_FILE="${POCKETLIBRARY_UPDATER_KEY_PASS_FILE:-$HOME/.android-keys/pocketlibrary-updater.pass}"
+
+if [[ -f "$POCKETLIBRARY_UPDATER_KEY" && -r "$POCKETLIBRARY_UPDATER_KEY_PASS_FILE" ]]; then
+  POCKETLIBRARY_UPDATER_KEY_PASS="$(<"$POCKETLIBRARY_UPDATER_KEY_PASS_FILE")"
+  export POCKETLIBRARY_UPDATER_KEY POCKETLIBRARY_UPDATER_KEY_PASS
+  unset POCKETLIBRARY_UPDATER_KEY_PASS_FILE
+else
+  unset POCKETLIBRARY_UPDATER_KEY POCKETLIBRARY_UPDATER_KEY_PASS_FILE
+fi
