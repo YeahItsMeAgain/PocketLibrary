@@ -31,4 +31,4 @@
 - `npm run test:e2e` — 40 pass (reader shell, CSP, existing suites).
 - `npm run build` / `npx tsc --noEmit` — pass.
 - Android clippy: `cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android -- -D warnings` — pass (no Rust changes this session).
-- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 18,499,150 bytes, SHA-256 `0dad4eff8081f08b837df9c526d4b619c89b5b0cb0df37c7a8d8fdb7b6e08377`, signer `CN=PocketLibrary`. Download: `https://tunnel.invalid/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`.
+- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 18,499,150 bytes, SHA-256 `0dad4eff8081f08b837df9c526d4b619c89b5b0cb0df37c7a8d8fdb7b6e08377`, signer `CN=PocketLibrary`. Served over a temporary tunnel for the device test (URL not retained).

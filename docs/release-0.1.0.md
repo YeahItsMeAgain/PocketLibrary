@@ -45,9 +45,9 @@ APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universa
 `cdb2461256adaf19d0b9f83b9edec87d517d8ddb1512699bcb3684fac9cf786f`
 · certificate SHA-256
 `f2167c3918933cd2fe247fb5748e7b699f925d8f6f716eec04da9f862d1dcbdb`.
-Published path
-`https://tunnel.invalid/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`
-returned HTTP 200.
+Published locally from
+`src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`
+and served over a temporary tunnel for the device test (URL not retained).
 
 ### 2,000-book benchmark (release run)
 

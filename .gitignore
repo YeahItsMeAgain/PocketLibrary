@@ -24,6 +24,25 @@ playwright-report
 blob-report
 playwright/.cache
 
+# Signing material and secrets — must never be committed
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+*.pass
+.android-keys/
+.env
+.env.*
+local.properties
+keystore.properties
+key.properties
+
+# Android build outputs
+*.apk
+*.aab
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

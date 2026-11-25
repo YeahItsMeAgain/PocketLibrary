@@ -36,4 +36,4 @@
 
 **Release APK.** `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 15,795,654 bytes, SHA-256 `80469da796138abe69b770b6f9c41d196fe2e1b5a7d7ae9fcc9c41d57ff94147`, signer `CN=PocketLibrary`.
 
-**Public URL.** `https://tunnel.invalid/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk` returns 200 with the same 15,795,654-byte file.
+**Public URL.** Served over a temporary tunnel for the device test (URL not retained); it returned HTTP 200 with the same 15,795,654-byte file.

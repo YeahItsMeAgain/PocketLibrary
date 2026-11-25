@@ -31,7 +31,7 @@
 - `npm run test:e2e` — 56 pass, including six new front-desk tests (results/detail, advanced filters, paging, no results, offline/all-mirrors, back).
 - `npm run build`, `npx tsc --noEmit` — pass.
 - Android clippy: `cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android -- -D warnings` — pass, including `wreq`/BoringSSL.
-- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 34,401,750 bytes, SHA-256 `b71f1d5c5bb9e3ab83ce35705777645d257c997413a778b907bd856bf4733ec0`, signer DN `CN=PocketLibrary, O=Personal, C=US`. The published `tunnel.invalid` path returns HTTP 200 and the same byte size.
+- Release APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`, 34,401,750 bytes, SHA-256 `b71f1d5c5bb9e3ab83ce35705777645d257c997413a778b907bd856bf4733ec0`, signer DN `CN=PocketLibrary, O=Personal, C=US`. Served over a temporary tunnel for the device test (URL not retained) with the same byte size.
 
 ## Device-only checks
 
