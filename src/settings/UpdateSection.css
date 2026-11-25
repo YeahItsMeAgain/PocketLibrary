@@ -1,0 +1,98 @@
+/* Update panel: a wax-sealed ledger entry inside Settings. */
+
+.update-section .update-status {
+  margin: 14px 0 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(201, 168, 106, 0.24);
+  background: rgba(9, 5, 13, 0.5);
+  color: #e6d2ab;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+.update-section .update-error {
+  border-left: 2px solid rgba(196, 110, 96, 0.7);
+  padding-left: 10px;
+}
+
+.update-notes {
+  margin-top: 13px;
+  padding: 11px 12px 13px;
+  border: 1px dashed rgba(201, 168, 106, 0.3);
+  background: rgba(9, 5, 13, 0.45);
+}
+
+.update-notes-title {
+  margin: 0;
+  color: #b99c6b;
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.update-notes-body {
+  margin: 8px 0 0;
+  color: #cbb48a;
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.update-download {
+  margin-top: 14px;
+}
+
+.update-progress {
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 168, 106, 0.4);
+  background: rgba(9, 5, 13, 0.8);
+}
+
+.update-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #8a6a3c, #e2c68f);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 214, 0.45);
+  transition: width 0.18s ease-out;
+}
+
+.update-progress-text {
+  margin-top: 7px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-permission {
+  margin-top: 14px;
+  padding: 11px 12px 13px;
+  border: 1px solid rgba(201, 168, 106, 0.45);
+  background:
+    linear-gradient(180deg, rgba(201, 168, 106, 0.1), transparent),
+    rgba(62, 40, 18, 0.35);
+}
+
+.update-permission p {
+  margin: 0;
+  color: #e6d2ab;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.update-permission .primary-action {
+  width: 100%;
+  margin-top: 11px;
+}
+
+.update-notice {
+  color: #d8c099 !important;
+}
+
+.update-actions .primary-action,
+.update-actions .secondary-action {
+  width: 100%;
+  margin-top: 0;
+}
