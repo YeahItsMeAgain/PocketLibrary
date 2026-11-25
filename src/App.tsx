@@ -9,7 +9,6 @@ import {
 import {
   isApiError,
   platform,
-  type AppInfo,
   type Download,
   type LibraryStatus,
 } from "./platform";
@@ -19,6 +18,8 @@ import { DIAGNOSTICS_HINT_EVENT, noteFailure } from "./diagnostics";
 import "./App.css";
 
 import { Masthead } from "./shell/Masthead";
+import { AppInfoFooter } from "./shell/AppInfoFooter";
+import { Onboarding, Reconnect } from "./shell/LibraryGate";
 import { LibraryWall } from "./library/LibraryWall";
 import { SearchView } from "./search/SearchView";
 import { SettingsView } from "./settings/SettingsView";
@@ -35,130 +36,6 @@ const NAV_ITEMS: ReadonlyArray<{ view: View; label: string; note: string }> = [
 ];
 
 
-interface FolderActionProps {
-  busy: boolean;
-  error: string | null;
-  onChoose: () => void;
-}
-
-function Onboarding({ busy, error, onChoose }: FolderActionProps) {
-  return (
-    <main id="library-main" className="placeholder" data-testid="onboarding">
-      <section className="placeholder-card">
-        <p className="kicker">Before the shelves can fill</p>
-        <h2>Choose a library folder</h2>
-        <div className="rule" aria-hidden="true">
-          <span>❧</span>
-        </div>
-        <p>
-          Android gives apps access to one folder at a time. PocketLibrary reads
-          your EPUBs and PDFs where they already live; nothing is copied.
-        </p>
-        <p className="folder-hint">
-          In the picker, choose or create <strong>Documents/PocketLibrary</strong>.
-        </p>
-        <button
-          type="button"
-          className="primary-action"
-          onClick={onChoose}
-          disabled={busy}
-        >
-          {busy ? "Opening the folder picker…" : "Choose library folder"}
-        </button>
-        {error ? (
-          <>
-            <p className="action-error" role="alert">
-              {error}
-            </p>
-            <ReportAction testId="folder-report" label="Report" />
-          </>
-        ) : null}
-      </section>
-    </main>
-  );
-}
-
-function Reconnect({
-  folderName,
-  busy,
-  error,
-  onChoose,
-}: FolderActionProps & { folderName: string | null }) {
-  return (
-    <main id="library-main" className="placeholder" data-testid="reconnect">
-      <section className="placeholder-card">
-        <p className="kicker">The door is locked</p>
-        <h2>Reconnect library folder</h2>
-        <div className="rule" aria-hidden="true">
-          <span>❧</span>
-        </div>
-        <p>
-          PocketLibrary cannot reach{" "}
-          {folderName ? <strong>{folderName}</strong> : "your library folder"}.
-          Android may have revoked access, or the folder was moved or renamed.
-          Your books, shelves and progress are safe.
-        </p>
-        <button
-          type="button"
-          className="primary-action"
-          onClick={onChoose}
-          disabled={busy}
-        >
-          {busy ? "Opening the folder picker…" : "Reconnect library folder"}
-        </button>
-        {error ? (
-          <>
-            <p className="action-error" role="alert">
-              {error}
-            </p>
-            <ReportAction testId="reconnect-report" label="Report" />
-          </>
-        ) : null}
-      </section>
-    </main>
-  );
-}
-
-function AppInfoFooter({ hidden = false }: { hidden?: boolean }) {
-  const [info, setInfo] = useState<AppInfo | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    platform
-      .appInfo()
-      .then((next) => {
-        if (alive) setInfo(next);
-      })
-      .catch(() => {
-        if (alive) setFailed(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  return (
-    <footer
-      className={`app-info${hidden ? " app-info-hidden" : ""}`}
-      data-testid="app-info"
-      aria-live="polite"
-      aria-hidden={hidden || undefined}
-    >
-      {failed ? (
-        <span>App information unavailable</span>
-      ) : (
-        <>
-          <span>{info?.name ?? "PocketLibrary"}</span>
-          <span aria-hidden="true">·</span>
-          <span>v{info?.appVersion ?? "…"}</span>
-          <span aria-hidden="true">·</span>
-          <span>schema {info?.schemaVersion ?? "…"}</span>
-        </>
-      )}
-    </footer>
-  );
-}
 
 export default function App() {
   const [view, setView] = useState<View>("library");
