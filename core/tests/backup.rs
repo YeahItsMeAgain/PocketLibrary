@@ -287,6 +287,10 @@ fn an_imported_book_has_no_path_until_a_scan_matches_it_by_hash() {
     let report = api_b.scan(&source).expect("scan after restore");
     assert_eq!(report.total, 1, "the scan matched by content hash");
     assert_eq!(report.added, 0, "no second copy was created");
+    assert_eq!(
+        report.relinked, 1,
+        "the pathless import was linked to its file"
+    );
     assert_eq!(report.removed, 0, "the restored book stayed live");
     assert_eq!(
         api_b.book_path(restored.id).expect("path after scan"),

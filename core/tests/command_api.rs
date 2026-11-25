@@ -128,6 +128,18 @@ fn download_naming_defaults_is_persisted_and_rejects_blank_patterns() {
         .expect_err("blank pattern is invalid");
     assert_eq!(error.code, "invalid_download_naming");
 
+    for invalid in ["{series} - {title}", "{author - {title}", "done}"] {
+        let error = api
+            .set_download_naming(invalid)
+            .expect_err("malformed pattern is invalid");
+        assert_eq!(error.code, "invalid_download_naming", "{invalid}");
+    }
+    assert_eq!(
+        api.download_naming()
+            .expect("rejected patterns do not persist"),
+        "{title} - {author}"
+    );
+
     drop(api);
     let reopened = Api::open(&path).expect("reopen catalog");
     assert_eq!(

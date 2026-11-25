@@ -329,6 +329,9 @@ pub struct ScanReport {
     pub total: usize,
     /// Files that were not in the catalog before this scan.
     pub added: usize,
+    /// Known books whose local file path was filled in or changed. A restored
+    /// book starts pathless and is re-linked by content hash on the next scan.
+    pub relinked: usize,
     /// Known books whose file is gone; they are now marked finished.
     pub removed: usize,
     /// Repeated copies of bytes already in the library; only one book is kept.

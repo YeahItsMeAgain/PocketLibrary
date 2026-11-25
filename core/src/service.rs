@@ -424,9 +424,13 @@ impl Service {
     }
 
     /// Persist a new download naming pattern.
+    ///
+    /// Only `{author}`, `{title}` and `{year}` are placeholders. Blank
+    /// patterns, unknown placeholders and unbalanced braces are rejected with
+    /// `invalid_download_naming` instead of silently producing odd filenames.
     pub fn set_download_naming(&self, pattern: &str) -> Result<String> {
         let pattern = pattern.trim();
-        if pattern.is_empty() {
+        if pattern.is_empty() || !valid_download_naming(pattern) {
             return Err(Error::InvalidDownloadNaming);
         }
         self.put_setting(DOWNLOAD_NAMING, pattern)?;
@@ -540,6 +544,8 @@ impl Service {
         let mut shelves = load_shelf_slots(&tx)?;
         let capacity = shelf_capacity(&tx)?;
         let mut added = 0usize;
+        let mut removed = 0usize;
+        let mut relinked = 0usize;
         let mut duplicates = 0usize;
         let mut placements = Vec::new();
         let mut touched: HashSet<String> = HashSet::new();
@@ -556,6 +562,7 @@ impl Service {
                         "UPDATE books SET path = ?1, quick_key = ?2 WHERE content_hash = ?3",
                         params![representative.scanned.path, representative.quick_key, hash],
                     )?;
+                    relinked += 1;
                 }
                 continue;
             }
@@ -623,7 +630,6 @@ impl Service {
             added += 1;
         }
 
-        let mut removed = 0usize;
         for (hash, (id, _path)) in &existing {
             if touched.contains(hash) {
                 continue;
@@ -649,6 +655,7 @@ impl Service {
         Ok(ScanReport {
             total: total as usize,
             added,
+            relinked,
             removed,
             duplicates,
             skipped,
@@ -1732,6 +1739,23 @@ fn reassign_slots(conn: &Connection, ids: &[i64], shelf_id: i64) -> Result<()> {
         )?;
     }
     Ok(())
+}
+
+/// A naming pattern may use only the three documented placeholders, and every
+/// opening brace needs a matching close.
+fn valid_download_naming(pattern: &str) -> bool {
+    let mut rest = pattern;
+    while let Some(start) = rest.find('{') {
+        let after = &rest[start + 1..];
+        let Some(end) = after.find('}') else {
+            return false;
+        };
+        if !matches!(&after[..end], "author" | "title" | "year") {
+            return false;
+        }
+        rest = &after[end + 1..];
+    }
+    !rest.contains('}')
 }
 
 /// The last component of a path, or `None` when there is nothing to show.
