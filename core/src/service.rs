@@ -30,8 +30,8 @@ const BOOK_COLUMNS: &str =
 const BOOK_SOURCE: &str = "FROM books b LEFT JOIN reading_state r ON r.book_id = b.id";
 
 const DOWNLOAD_COLUMNS: &str =
-    "id, md5, title, authors, year, format, source, mirror_urls, state, bytes, total_bytes,
-     error, error_code, book_id, filename, created_at, finished_at";
+    "id, md5, title, authors, year, format, source, mirror_urls, state, mirror, bytes,
+     total_bytes, error, error_code, book_id, filename, created_at, finished_at";
 
 const LIBRARY_FOLDER_URI: &str = "library_folder_uri";
 const LIBRARY_FOLDER_NAME: &str = "library_folder_name";
@@ -781,6 +781,18 @@ impl Service {
         Ok(())
     }
 
+    /// Record which mirror a running row is using, and optionally a transient
+    /// note that the UI can show while failover is in progress.
+    pub fn update_download_attempt(&self, id: i64, mirror: &str, note: Option<&str>) -> Result<()> {
+        let conn = self.connection()?;
+        conn.execute(
+            "UPDATE downloads SET mirror = ?1, error = ?2, updated_at = ?3
+             WHERE id = ?4 AND state = 'running'",
+            params![mirror, note, unix_timestamp(), id],
+        )?;
+        Ok(())
+    }
+
     pub fn complete_download(
         &self,
         id: i64,
@@ -798,7 +810,7 @@ impl Service {
         conn.execute(
             "UPDATE downloads SET state = 'completed', book_id = ?1, filename = ?2,
                                   error = ?3, error_code = ?4, finished_at = ?5, updated_at = ?5
-             WHERE id = ?6",
+             WHERE id = ?6 AND state <> 'cancelled'",
             params![book_id, filename, error, code, now, id],
         )?;
         Ok(())
@@ -832,7 +844,7 @@ impl Service {
         let conn = self.connection()?;
         let changed = conn.execute(
             "UPDATE downloads SET state = 'queued', error = NULL, error_code = NULL,
-                                  finished_at = NULL, updated_at = ?1
+                                  mirror = NULL, finished_at = NULL, updated_at = ?1
              WHERE id = ?2 AND state IN ('failed', 'cancelled')",
             params![unix_timestamp(), id],
         )?;
@@ -1351,14 +1363,15 @@ fn download_from_row(row: &Row<'_>) -> rusqlite::Result<Download> {
         source: row.get(6)?,
         mirror_urls: serde_json::from_str(&row.get::<_, String>(7)?).unwrap_or_default(),
         state: row.get(8)?,
-        bytes: row.get::<_, i64>(9)? as u64,
-        total_bytes: row.get::<_, Option<i64>>(10)?.map(|value| value as u64),
-        error: row.get(11)?,
-        error_code: row.get(12)?,
-        book_id: row.get(13)?,
-        filename: row.get(14)?,
-        created_at: row.get(15)?,
-        finished_at: row.get(16)?,
+        mirror: row.get(9)?,
+        bytes: row.get::<_, i64>(10)? as u64,
+        total_bytes: row.get::<_, Option<i64>>(11)?.map(|value| value as u64),
+        error: row.get(12)?,
+        error_code: row.get(13)?,
+        book_id: row.get(14)?,
+        filename: row.get(15)?,
+        created_at: row.get(16)?,
+        finished_at: row.get(17)?,
     })
 }
 

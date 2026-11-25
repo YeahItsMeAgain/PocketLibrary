@@ -141,9 +141,7 @@ impl DownloadManager {
             if batch.is_empty() {
                 break;
             }
-            let work = batch
-                .iter()
-                .map(|download| self.run_one(download, sink));
+            let work = batch.iter().map(|download| self.run_one(download, sink));
             futures_util::future::join_all(work).await;
         }
         Ok(())
@@ -159,7 +157,7 @@ impl DownloadManager {
             map.remove(&download.id);
         }
         if flag.load(Ordering::SeqCst) {
-            self.remove_part(download.id);
+            // Keep the `.part`: a retry resumes from it with a Range request.
             let _ = self.service.mark_download_cancelled(download.id);
             return;
         }
@@ -169,7 +167,9 @@ impl DownloadManager {
                 "pocketlibrary: download {} failed ({code}): {error}",
                 download.id
             );
-            let _ = self.service.fail_download(download.id, code, &message_for(&error));
+            let _ = self
+                .service
+                .fail_download(download.id, code, &message_for(&error));
         }
     }
 
@@ -189,10 +189,15 @@ impl DownloadManager {
         };
         let mut last_error = None;
         let mut landed = false;
-        for mirror in mirrors {
+        for (index, mirror) in mirrors.into_iter().enumerate() {
             if cancel.load(Ordering::SeqCst) {
                 return Ok(());
             }
+            let host = mirror_host(&mirror);
+            let note = (index > 0).then_some("Trying another mirror…");
+            let _ = self
+                .service
+                .update_download_attempt(download.id, &host, note);
             // The key can expire between minting and fetching; one fresh mint
             // per mirror is enough before failing over.
             for _attempt in 0..2 {
@@ -235,27 +240,49 @@ impl DownloadManager {
         let bytes = fs::read(&part).map_err(|error| Error::DownloadDisk {
             message: error.to_string(),
         })?;
-        self.validate_magic(download.format, &bytes)?;
+        if let Err(error) = self.validate_magic(download.format, &bytes) {
+            // Never let a retry append to bytes that are not this book.
+            self.remove_part(download.id);
+            return Err(error);
+        }
 
-        if let Some(book_id) = self.service.find_book_by_hash(&crate::identity::content_hash(&bytes))? {
+        if let Some(book_id) = self
+            .service
+            .find_book_by_hash(&crate::identity::content_hash(&bytes))?
+        {
             let filename = self
                 .service
                 .book_path(book_id)
                 .ok()
                 .or_else(|| download.filename.clone());
-            self.service
-                .complete_download(download.id, book_id, filename.as_deref().unwrap_or(""), true)?;
+            self.service.complete_download(
+                download.id,
+                book_id,
+                filename.as_deref().unwrap_or(""),
+                true,
+            )?;
             self.remove_part(download.id);
             return Ok(());
         }
 
         let filename = {
+            // Hold the lock across the write so two concurrent downloads
+            // cannot both choose the same free name.
             let _guard = self.write_lock.lock().map_err(|_| Error::LockPoisoned)?;
-            unique_filename(sink.list_root()?, &proposed_filename(download))
+            let filename = unique_filename(sink.list_root()?, &proposed_filename(download));
+            sink.write_file(&filename, &bytes)?;
+            filename
         };
-        sink.write_file(&filename, &bytes)?;
 
-        match self.service.land_download(&filename, &bytes)? {
+        let landing = match self.service.land_download(&filename, &bytes) {
+            Ok(landing) => landing,
+            Err(error @ Error::DownloadInvalidBook) => {
+                self.remove_part(download.id);
+                return Err(error);
+            }
+            Err(error) => return Err(error),
+        };
+        match landing {
             Landing::Added { book_id, .. } => {
                 self.service
                     .complete_download(download.id, book_id, &filename, false)?;
@@ -407,24 +434,27 @@ impl DownloadManager {
                         existing = 0;
                         let _ = fs::remove_file(part);
                     }
-                    total = full.or_else(|| Some(start + length));
+                    total = full.unwrap_or(start + length);
                 }
                 None => {
                     return Err(Error::DownloadTruncated);
                 }
             }
         } else {
-            // A full response replaces any partial file.
+            // A full response replaces any partial file. Without a declared
+            // length we cannot distinguish a complete body from a truncated
+            // one, so reject it rather than trusting the local file size.
             existing = 0;
-            total = response.content_length();
+            let Some(length) = response.content_length() else {
+                return Err(Error::DownloadTruncated);
+            };
+            total = length;
         }
 
-        if let Some(total) = total {
-            self.service
-                .update_download_progress(download.id, existing, Some(total))?;
-            if existing > 0 && existing == total {
-                return Ok(());
-            }
+        self.service
+            .update_download_progress(download.id, existing, Some(total))?;
+        if existing > 0 && existing == total {
+            return Ok(());
         }
 
         let mut file = OpenOptions::new()
@@ -443,25 +473,15 @@ impl DownloadManager {
             if cancel.load(Ordering::SeqCst) {
                 return Ok(());
             }
-            let chunk = chunk.map_err(|_| {
-                if total.is_some() {
-                    Error::DownloadTruncated
-                } else {
-                    Error::DownloadMirrorFailed {
-                        message: "the file connection dropped".to_owned(),
-                    }
-                }
-            })?;
+            let chunk = chunk.map_err(|_| Error::DownloadTruncated)?;
             file.write_all(&chunk)
                 .map_err(|error| Error::DownloadDisk {
                     message: error.to_string(),
                 })?;
             written += chunk.len() as u64;
             self.service
-                .update_download_progress(download.id, written, total)?;
-            if let Some(total) = total
-                && written > total
-            {
+                .update_download_progress(download.id, written, Some(total))?;
+            if written > total {
                 return Err(Error::DownloadTruncated);
             }
         }
@@ -470,9 +490,6 @@ impl DownloadManager {
         })?;
         drop(file);
 
-        let Some(total) = total.or_else(|| fs::metadata(part).ok().map(|meta| meta.len())) else {
-            return Err(Error::DownloadTruncated);
-        };
         if written != total {
             return Err(Error::DownloadTruncated);
         }
@@ -483,7 +500,12 @@ impl DownloadManager {
             message: error.to_string(),
         })?;
         let read = head_file.read(&mut head).unwrap_or(0);
-        validate_magic(download.format, &head[..read])?;
+        if let Err(error) = validate_magic(download.format, &head[..read]) {
+            // Wrong magic means HTML, a parked page, or another book. Drop the
+            // partial so a retry cannot append a clean file to garbage.
+            let _ = fs::remove_file(part);
+            return Err(error);
+        }
         Ok(())
     }
 
@@ -497,7 +519,9 @@ fn message_for(error: &Error) -> String {
         Error::DownloadMirrorFailed { .. } => {
             "Trying another mirror failed. Try again in a moment.".to_owned()
         }
-        Error::DownloadExpiredKey => "The download key expired. Retry to mint a new one.".to_owned(),
+        Error::DownloadExpiredKey => {
+            "The download key expired. Retry to mint a new one.".to_owned()
+        }
         Error::DownloadTruncated => {
             "The file arrived incomplete. Retry to resume where it stopped.".to_owned()
         }
@@ -531,6 +555,13 @@ fn validate_magic(format: BookFormat, bytes: &[u8]) -> Result<()> {
 
 fn is_get_url(url: &str) -> bool {
     url.contains("get.php")
+}
+
+fn mirror_host(url: &str) -> String {
+    Url::parse(url)
+        .ok()
+        .and_then(|url| url.host_str().map(str::to_owned))
+        .unwrap_or_else(|| "unknown mirror".to_owned())
 }
 
 fn header(response: &wreq::Response, name: wreq::header::HeaderName) -> Result<String> {
@@ -677,6 +708,7 @@ mod tests {
             source: "libgen.li".into(),
             mirror_urls: vec!["https://libgen.li/ads.php?md5=x".into()],
             state: DownloadState::Queued,
+            mirror: None,
             bytes: 0,
             total_bytes: None,
             error: None,
@@ -709,7 +741,10 @@ mod tests {
 
     #[test]
     fn content_range_is_parsed() {
-        assert_eq!(parse_content_range("bytes 100-199/500"), Some((100, 100, Some(500))));
+        assert_eq!(
+            parse_content_range("bytes 100-199/500"),
+            Some((100, 100, Some(500)))
+        );
         assert_eq!(parse_content_range("bytes 0-9/*"), Some((0, 10, None)));
     }
 }

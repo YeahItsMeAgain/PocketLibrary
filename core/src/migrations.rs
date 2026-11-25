@@ -149,6 +149,12 @@ CREATE INDEX idx_downloads_state ON downloads (state, created_at);
 CREATE INDEX idx_downloads_md5 ON downloads (md5);
 "#;
 
+/// Ticket 11 follow-up: remember which mirror a row is using so failover is
+/// visible in the queue instead of only surfacing as a terminal error.
+const MIGRATE_V3_TO_V4: &str = r#"
+ALTER TABLE downloads ADD COLUMN mirror TEXT;
+"#;
+
 /// Pre-release reset: path-derived hashes are invalid, so dependent book data
 /// goes with the books. Labels, shelves and settings are intentionally kept.
 const MIGRATE_V1_TO_V2: &str = r#"
@@ -187,6 +193,9 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
     }
     if version < 3 {
         tx.execute_batch(MIGRATE_V2_TO_V3)?;
+    }
+    if version < 4 {
+        tx.execute_batch(MIGRATE_V3_TO_V4)?;
     }
     tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     tx.commit()?;

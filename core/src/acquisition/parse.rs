@@ -7,6 +7,7 @@
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 
+use super::mirror::BOOTSTRAP_MIRRORS;
 use crate::error::{Error, Result};
 
 /// One mirror link attached to a search result.
@@ -357,7 +358,7 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
             .and_then(parse_file_id);
         let extension = normalize(&cells[7].text().collect::<String>()).to_ascii_lowercase();
 
-        if title.is_empty() || extension.is_empty() {
+        if title.is_empty() || !matches!(extension.as_str(), "epub" | "pdf") {
             continue;
         }
 
@@ -367,8 +368,9 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
             let Some(href) = anchor.value().attr("href") else {
                 continue;
             };
-            if href.contains("annas-archive") || href.contains("annas.") {
-                // No Anna's Archive path is part of acquisition.
+            // Only the LG+ ads.php endpoint is an in-app acquisition path.
+            // Randombook, libgen.pw, libgen.me and Anna's Archive are dropped.
+            if !href.contains("ads.php") {
                 continue;
             }
             let url = absolute(base, href);
@@ -385,6 +387,7 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
         let Some(md5) = md5 else {
             continue;
         };
+        expand_libgen_mirrors(&mut links, base, &md5);
 
         results.push(LibgenResult {
             md5,
@@ -416,6 +419,32 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
         total,
         total_is_exact,
     })
+}
+
+/// A live LG+ result only prints the ads link for the host that answered. The
+/// md5 is portable, so expand it to every compiled mirror in failover order and
+/// let the download queue retry the file on each one.
+fn expand_libgen_mirrors(links: &mut Vec<MirrorLink>, base: &str, md5: &str) {
+    if !BOOTSTRAP_MIRRORS
+        .iter()
+        .any(|mirror| host_label(mirror) == host_label(base))
+    {
+        return;
+    }
+    let mut ordered = Vec::with_capacity(BOOTSTRAP_MIRRORS.len());
+    for mirror in BOOTSTRAP_MIRRORS {
+        let label = host_label(mirror);
+        let link = links
+            .iter()
+            .find(|link| host_label(&link.url) == label)
+            .cloned()
+            .unwrap_or_else(|| MirrorLink {
+                label: label.clone(),
+                url: format!("{}/ads.php?md5={md5}", mirror.trim_end_matches('/')),
+            });
+        ordered.push(link);
+    }
+    *links = ordered;
 }
 
 fn text_of(cell: &scraper::ElementRef<'_>) -> Option<String> {
@@ -561,5 +590,39 @@ mod tests {
         assert_eq!(parse_size("3 MB"), Some(3_000_000));
         assert_eq!(parse_size("783 kB"), Some(783_000));
         assert_eq!(parse_size("1.2 GB"), Some(1_200_000_000));
+    }
+
+    #[test]
+    fn a_live_result_expands_to_every_compiled_download_mirror() {
+        let body = include_str!("../../tests/fixtures/libgen-rock-paper-scissors.html");
+        let ParseOutcome::Page(page) = parse_search_page(body, "https://libgen.li") else {
+            panic!("expected a search page");
+        };
+        let result = page
+            .results
+            .iter()
+            .find(|result| result.md5 == "a1423442916f2f3def9517a3bf4dee48")
+            .expect("the Flatiron EPUB");
+        assert_eq!(result.mirrors.len(), 5);
+        let hosts: Vec<&str> = result
+            .mirrors
+            .iter()
+            .map(|mirror| mirror.label.as_str())
+            .collect();
+        assert_eq!(
+            hosts,
+            vec![
+                "libgen.li",
+                "libgen.bz",
+                "libgen.vg",
+                "libgen.la",
+                "libgen.gl"
+            ]
+        );
+        assert!(result.mirrors.iter().all(|mirror| {
+            mirror
+                .url
+                .contains("ads.php?md5=a1423442916f2f3def9517a3bf4dee48")
+        }));
     }
 }

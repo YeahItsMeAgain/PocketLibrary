@@ -1,10 +1,12 @@
 //! Offline download-queue tests against a fake HTTP mirror and a fake sink.
 
 use std::collections::HashMap;
+use std::fs;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -14,6 +16,7 @@ use pocketlibrary_core::{
 use tempfile::TempDir;
 
 const EPUB: &[u8] = include_bytes!("../../test-assets/sample.epub");
+const SCRIPTED_EPUB: &[u8] = include_bytes!("../../test-assets/scripted.epub");
 const PDF: &[u8] = include_bytes!("../../test-assets/sample.pdf");
 
 #[derive(Clone, Debug)]
@@ -35,6 +38,7 @@ struct Reply {
     headers: Vec<(String, String)>,
     body: Vec<u8>,
     declared_length: Option<usize>,
+    omit_length: bool,
 }
 
 impl Reply {
@@ -45,6 +49,7 @@ impl Reply {
             headers: vec![("Content-Type".into(), "text/html".into())],
             body: body.as_bytes().to_vec(),
             declared_length: None,
+            omit_length: false,
         }
     }
 
@@ -55,6 +60,18 @@ impl Reply {
             headers: vec![("Content-Type".into(), content_type.into())],
             body: body.to_vec(),
             declared_length: None,
+            omit_length: false,
+        }
+    }
+
+    fn file_without_length(content_type: &str, body: &[u8]) -> Self {
+        Self {
+            status: 200,
+            reason: "OK",
+            headers: vec![("Content-Type".into(), content_type.into())],
+            body: body.to_vec(),
+            declared_length: None,
+            omit_length: true,
         }
     }
 
@@ -65,6 +82,7 @@ impl Reply {
             headers: vec![("Location".into(), location.into())],
             body: Vec::new(),
             declared_length: None,
+            omit_length: false,
         }
     }
 
@@ -75,6 +93,7 @@ impl Reply {
             headers: Vec::new(),
             body: Vec::new(),
             declared_length: None,
+            omit_length: false,
         }
     }
 
@@ -85,10 +104,14 @@ impl Reply {
             reason: "Partial Content",
             headers: vec![
                 ("Content-Type".into(), "application/epub+zip".into()),
-                ("Content-Range".into(), format!("bytes {start}-{end}/{total}")),
+                (
+                    "Content-Range".into(),
+                    format!("bytes {start}-{end}/{total}"),
+                ),
             ],
             body: body.to_vec(),
             declared_length: None,
+            omit_length: false,
         }
     }
 
@@ -99,6 +122,7 @@ impl Reply {
             headers: vec![("Content-Type".into(), content_type.into())],
             body: body.to_vec(),
             declared_length: Some(declared),
+            omit_length: false,
         }
     }
 }
@@ -180,10 +204,11 @@ fn handle(
 
     let reply = handler(request);
     let length = reply.declared_length.unwrap_or(reply.body.len());
-    let mut response = format!(
-        "HTTP/1.1 {} {}\r\nContent-Length: {length}\r\nConnection: close\r\n",
-        reply.status, reply.reason
-    );
+    let mut response = format!("HTTP/1.1 {} {}\r\n", reply.status, reply.reason);
+    if !reply.omit_length {
+        response.push_str(&format!("Content-Length: {length}\r\n"));
+    }
+    response.push_str("Connection: close\r\n");
     for (name, value) in reply.headers {
         response.push_str(&format!("{name}: {value}\r\n"));
     }
@@ -197,6 +222,7 @@ fn handle(
 struct FakeSink {
     files: Mutex<HashMap<String, Vec<u8>>>,
     writes: AtomicUsize,
+    write_delay_ms: AtomicUsize,
 }
 
 impl FakeSink {
@@ -209,6 +235,10 @@ impl FakeSink {
         sink
     }
 
+    fn slow(&self, millis: usize) {
+        self.write_delay_ms.store(millis, Ordering::SeqCst);
+    }
+
     fn names(&self) -> Vec<String> {
         self.files.lock().expect("files").keys().cloned().collect()
     }
@@ -216,7 +246,6 @@ impl FakeSink {
     fn file(&self, name: &str) -> Option<Vec<u8>> {
         self.files.lock().expect("files").get(name).cloned()
     }
-
 
     fn writes(&self) -> usize {
         self.writes.load(Ordering::SeqCst)
@@ -229,6 +258,10 @@ impl DownloadSink for FakeSink {
     }
 
     fn write_file(&self, name: &str, bytes: &[u8]) -> pocketlibrary_core::Result<()> {
+        let delay = self.write_delay_ms.load(Ordering::SeqCst);
+        if delay > 0 {
+            thread::sleep(Duration::from_millis(delay as u64));
+        }
         self.writes.fetch_add(1, Ordering::SeqCst);
         self.files
             .lock()
@@ -238,10 +271,35 @@ impl DownloadSink for FakeSink {
     }
 }
 
+struct CancelOnWriteSink {
+    inner: FakeSink,
+    db: PathBuf,
+    id: i64,
+}
+
+impl DownloadSink for CancelOnWriteSink {
+    fn list_root(&self) -> pocketlibrary_core::Result<Vec<String>> {
+        self.inner.list_root()
+    }
+
+    fn write_file(&self, name: &str, bytes: &[u8]) -> pocketlibrary_core::Result<()> {
+        let api = Api::open(&self.db).expect("open cancelling API");
+        api.cancel_download(self.id).expect("cancel during write");
+        self.inner.write_file(name, bytes)
+    }
+}
+
 fn database() -> (TempDir, std::path::PathBuf) {
     let dir = TempDir::new().expect("temporary directory");
     let path = dir.path().join("library.db");
     (dir, path)
+}
+
+fn part_path(db: &Path, id: i64) -> PathBuf {
+    db.parent()
+        .expect("database parent")
+        .join("downloads")
+        .join(format!("{id}.part"))
 }
 
 fn api(path: &std::path::Path) -> Api {
@@ -262,7 +320,7 @@ fn request(server: &TestServer, md5: &str, format: BookFormat) -> DownloadReques
     }
 }
 
-fn run(api: &Api, sink: &FakeSink) {
+fn run(api: &Api, sink: &dyn DownloadSink) {
     tokio::runtime::Runtime::new()
         .expect("runtime")
         .block_on(api.process_downloads(sink))
@@ -302,7 +360,10 @@ fn a_result_downloads_through_the_307_chain_and_lands_on_the_lowest_shelf() {
 
     let download = only_download(&api);
     assert_eq!(download.state, DownloadState::Completed);
-    assert_eq!(download.filename.as_deref(), Some("Alice Feeney - Rock Paper Scissors (2021).epub"));
+    assert_eq!(
+        download.filename.as_deref(),
+        Some("Alice Feeney - Rock Paper Scissors (2021).epub")
+    );
     assert!(download.book_id.is_some());
     assert_eq!(download.bytes, EPUB.len() as u64);
 
@@ -313,14 +374,21 @@ fn a_result_downloads_through_the_307_chain_and_lands_on_the_lowest_shelf() {
 
     let books = api.list_books().expect("books");
     assert_eq!(books.len(), 1);
-    assert!(!books[0].title.is_empty(), "landed through metadata extraction");
+    assert!(
+        !books[0].title.is_empty(),
+        "landed through metadata extraction"
+    );
     let shelves = api.list_shelves().expect("shelves");
     assert_eq!(shelves[0].ordinal, 0);
     assert_eq!(books[0].shelf_id, Some(shelves[0].id));
 
     let paths = server.paths();
     assert!(paths.iter().any(|path| path.starts_with("/ads.php")));
-    assert!(paths.iter().any(|path| path.contains("get.php") && path.contains("key=k1")));
+    assert!(
+        paths
+            .iter()
+            .any(|path| path.contains("get.php") && path.contains("key=k1"))
+    );
     assert!(paths.iter().any(|path| path.contains("/cdn/book.epub")));
     let cdn = server
         .requests()
@@ -371,10 +439,93 @@ fn a_truncated_download_fails_then_resumes_with_range() {
     let completed = only_download(&api);
     assert_eq!(completed.state, DownloadState::Completed);
     assert!(server.requests().iter().any(|request| {
-        request.path.contains("/cdn/book.epub")
-            && request.range() == Some("bytes=100-")
+        request.path.contains("/cdn/book.epub") && request.range() == Some("bytes=100-")
     }));
-    assert_eq!(sink.file("Alice Feeney - Rock Paper Scissors (2021).epub"), Some(EPUB.to_vec()));
+    assert_eq!(
+        sink.file("Alice Feeney - Rock Paper Scissors (2021).epub"),
+        Some(EPUB.to_vec())
+    );
+}
+
+#[test]
+fn cancel_keeps_the_partial_and_retry_resumes_with_range() {
+    let entered = Arc::new((Mutex::new(false), Condvar::new()));
+    let release = Arc::new((Mutex::new(false), Condvar::new()));
+    let entered_handler = Arc::clone(&entered);
+    let release_handler = Arc::clone(&release);
+    let server = TestServer::start(move |request| {
+        if request.path.starts_with("/ads.php") {
+            Reply::html("<a href=\"/get.php?md5=abc&key=k1\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            let (lock, ready) = &*entered_handler;
+            *lock.lock().expect("entered") = true;
+            ready.notify_all();
+            let (lock, ready) = &*release_handler;
+            let mut released = lock.lock().expect("release");
+            while !*released {
+                released = ready.wait(released).expect("release wait");
+            }
+            if let Some(range) = request.range() {
+                let start = range
+                    .strip_prefix("bytes=")
+                    .and_then(|value| value.strip_suffix('-'))
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .expect("range start");
+                Reply::partial(&EPUB[start..], start, EPUB.len())
+            } else {
+                Reply::file("application/epub+zip", EPUB)
+            }
+        }
+    });
+    let (_dir, path) = database();
+    let api = Arc::new(api(&path));
+    let download = api
+        .enqueue_download(request(&server, "abc", BookFormat::Epub))
+        .expect("enqueue");
+    let part = part_path(&path, download.id);
+    fs::create_dir_all(part.parent().expect("part parent")).expect("part dir");
+    fs::write(&part, &EPUB[..100]).expect("seed partial");
+
+    let worker_api = Arc::clone(&api);
+    let worker = thread::spawn(move || {
+        let sink = FakeSink::default();
+        tokio::runtime::Runtime::new()
+            .expect("runtime")
+            .block_on(worker_api.process_downloads(&sink))
+            .expect("process queue");
+    });
+
+    let (lock, ready) = &*entered;
+    let mut started = lock.lock().expect("entered");
+    while !*started {
+        started = ready.wait(started).expect("entered wait");
+    }
+    drop(started);
+    api.cancel_download(download.id).expect("cancel");
+    let (lock, ready) = &*release;
+    *lock.lock().expect("release") = true;
+    ready.notify_all();
+    worker.join().expect("worker");
+
+    assert_eq!(only_download(&api).state, DownloadState::Cancelled);
+    assert_eq!(
+        fs::metadata(&part).expect("partial survives cancel").len(),
+        100
+    );
+
+    api.retry_download(download.id).expect("retry");
+    let sink = FakeSink::default();
+    run(&api, &sink);
+    assert_eq!(only_download(&api).state, DownloadState::Completed);
+    assert!(server.requests().iter().any(|request| {
+        request.path.contains("/cdn/book.epub") && request.range() == Some("bytes=100-")
+    }));
+    assert_eq!(
+        sink.file("Alice Feeney - Rock Paper Scissors (2021).epub"),
+        Some(EPUB.to_vec())
+    );
 }
 
 #[test]
@@ -415,13 +566,42 @@ fn wrong_magic_bytes_are_rejected() {
     let (_dir, path) = database();
     let api = api(&path);
     let sink = FakeSink::default();
-    api.enqueue_download(request(&server, "abc", BookFormat::Epub))
+    let queued = api
+        .enqueue_download(request(&server, "abc", BookFormat::Epub))
         .expect("enqueue");
     run(&api, &sink);
 
     let download = only_download(&api);
     assert_eq!(download.state, DownloadState::Failed);
     assert_eq!(download.error_code.as_deref(), Some("wrong_magic"));
+    assert_eq!(sink.writes(), 0);
+    assert!(
+        !part_path(&path, queued.id).exists(),
+        "a wrong-magic part must be deleted so a retry starts clean"
+    );
+}
+
+#[test]
+fn a_missing_content_length_is_rejected_as_truncated() {
+    let server = TestServer::start(|request| {
+        if request.path.starts_with("/ads.php") {
+            Reply::html("<a href=\"/get.php?md5=abc&key=k1\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            Reply::file_without_length("application/epub+zip", EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let sink = FakeSink::default();
+    api.enqueue_download(request(&server, "abc", BookFormat::Epub))
+        .expect("enqueue");
+    run(&api, &sink);
+
+    let download = only_download(&api);
+    assert_eq!(download.state, DownloadState::Failed);
+    assert_eq!(download.error_code.as_deref(), Some("truncated_file"));
     assert_eq!(sink.writes(), 0);
 }
 
@@ -432,9 +612,7 @@ fn an_expired_key_is_reminted_from_the_ads_page() {
     let server = TestServer::start(move |request| {
         if request.path.starts_with("/ads.php") {
             let mint = ads_handler.fetch_add(1, Ordering::SeqCst) + 1;
-            Reply::html(&format!(
-                "<a href=\"/get.php?md5=abc&key=k{mint}\">GET</a>"
-            ))
+            Reply::html(&format!("<a href=\"/get.php?md5=abc&key=k{mint}\">GET</a>"))
         } else if request.path.starts_with("/get.php") {
             if request.path.contains("key=k1") {
                 Reply::redirect("/cdn/k1")
@@ -486,7 +664,11 @@ fn a_completed_md5_is_answered_from_history_without_fetching_again() {
     assert_eq!(duplicate.state, DownloadState::Completed);
     assert_eq!(duplicate.error_code.as_deref(), Some("duplicate"));
     assert_eq!(duplicate.book_id, first.book_id);
-    assert_eq!(server.requests().len(), requests_before, "pre-check touches no network");
+    assert_eq!(
+        server.requests().len(),
+        requests_before,
+        "pre-check touches no network"
+    );
     assert_eq!(api.list_books().expect("books").len(), 1);
 }
 
@@ -520,7 +702,11 @@ fn identical_bytes_from_another_md5_are_discarded_after_the_blake3_check() {
     assert_eq!(second.state, DownloadState::Completed);
     assert_eq!(second.error_code.as_deref(), Some("duplicate"));
     assert_eq!(second.book_id, first.book_id);
-    assert_eq!(sink.writes(), 1, "the duplicate was never written to the folder");
+    assert_eq!(
+        sink.writes(),
+        1,
+        "the duplicate was never written to the folder"
+    );
     assert_eq!(api.list_books().expect("books").len(), 1);
 }
 
@@ -540,7 +726,10 @@ fn queued_rows_survive_a_restart_and_still_run() {
         let api = api(&path);
         api.enqueue_download(request(&server, "abc", BookFormat::Epub))
             .expect("enqueue");
-        assert_eq!(api.list_downloads().expect("list")[0].state, DownloadState::Queued);
+        assert_eq!(
+            api.list_downloads().expect("list")[0].state,
+            DownloadState::Queued
+        );
     }
 
     let reopened = api(&path);
@@ -581,7 +770,11 @@ fn at_most_two_downloads_run_at_once() {
     assert_eq!(peak.load(Ordering::SeqCst), 2, "two concurrent downloads");
     let downloads = api.list_downloads().expect("list");
     assert_eq!(downloads.len(), 3);
-    assert!(downloads.iter().all(|download| download.state == DownloadState::Completed));
+    assert!(
+        downloads
+            .iter()
+            .all(|download| download.state == DownloadState::Completed)
+    );
 }
 
 #[test]
@@ -610,9 +803,10 @@ fn a_collision_gets_a_number_before_the_extension() {
         download.filename.as_deref(),
         Some("Alice Feeney - Rock Paper Scissors (2021) (2).epub")
     );
-    assert!(sink
-        .file("Alice Feeney - Rock Paper Scissors (2021) (2).epub")
-        .is_some());
+    assert!(
+        sink.file("Alice Feeney - Rock Paper Scissors (2021) (2).epub")
+            .is_some()
+    );
 }
 
 #[test]
@@ -696,5 +890,214 @@ fn a_broken_download_mirror_fails_over_to_the_next_one() {
 
     assert_eq!(only_download(&api).state, DownloadState::Completed);
     assert!(!broken.requests().is_empty(), "the first mirror was tried");
-    assert!(!healthy.requests().is_empty(), "the second mirror served it");
+    assert!(
+        !healthy.requests().is_empty(),
+        "the second mirror served it"
+    );
+    let download = only_download(&api);
+    assert_eq!(
+        download.mirror.as_deref(),
+        healthy.base.trim_start_matches("http://").split(':').next(),
+        "the row remembers the mirror that served it"
+    );
+}
+
+#[test]
+fn failover_exposes_a_transient_reason_and_the_mirror_in_use() {
+    let entered = Arc::new((Mutex::new(false), Condvar::new()));
+    let release = Arc::new((Mutex::new(false), Condvar::new()));
+    let entered_handler = Arc::clone(&entered);
+    let release_handler = Arc::clone(&release);
+    let broken = TestServer::start(|_request| Reply::status(503, "Service Unavailable"));
+    let healthy = TestServer::start(move |request| {
+        if request.path.starts_with("/ads.php") {
+            let (lock, ready) = &*entered_handler;
+            *lock.lock().expect("entered") = true;
+            ready.notify_all();
+            let (lock, ready) = &*release_handler;
+            let mut released = lock.lock().expect("release");
+            while !*released {
+                released = ready.wait(released).expect("release wait");
+            }
+            Reply::html("<a href=\"/get.php?md5=abc&key=k1\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            Reply::file("application/epub+zip", EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = Arc::new(api(&path));
+    let mut download_request = request(&healthy, "abc", BookFormat::Epub);
+    download_request.mirror_urls = vec![
+        format!("{}/ads.php?md5=abc", broken.base),
+        format!("{}/ads.php?md5=abc", healthy.base),
+    ];
+    let download = api.enqueue_download(download_request).expect("enqueue");
+
+    let worker_api = Arc::clone(&api);
+    let worker = thread::spawn(move || {
+        let sink = FakeSink::default();
+        tokio::runtime::Runtime::new()
+            .expect("runtime")
+            .block_on(worker_api.process_downloads(&sink))
+            .expect("process queue");
+    });
+
+    let (lock, ready) = &*entered;
+    let mut started = lock.lock().expect("entered");
+    while !*started {
+        started = ready.wait(started).expect("entered wait");
+    }
+    drop(started);
+    let row = api
+        .list_downloads()
+        .expect("list")
+        .into_iter()
+        .find(|row| row.id == download.id)
+        .expect("row");
+    assert_eq!(row.state, DownloadState::Running);
+    assert_eq!(row.error.as_deref(), Some("Trying another mirror…"));
+    assert_eq!(
+        row.mirror.as_deref(),
+        healthy.base.trim_start_matches("http://").split(':').next()
+    );
+
+    let (lock, ready) = &*release;
+    *lock.lock().expect("release") = true;
+    ready.notify_all();
+    worker.join().expect("worker");
+    assert_eq!(only_download(&api).state, DownloadState::Completed);
+}
+
+#[test]
+fn a_mirror_that_fails_mid_file_is_replaced_by_a_fresh_mint() {
+    let first = TestServer::start(|request| {
+        if request.path.starts_with("/ads.php") {
+            Reply::html("<a href=\"/get.php?md5=abc&key=first\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/missing")
+        } else {
+            Reply::status(503, "Service Unavailable")
+        }
+    });
+    let second = TestServer::start(|request| {
+        if request.path.starts_with("/ads.php") {
+            Reply::html("<a href=\"/get.php?md5=abc&key=second\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            Reply::file("application/epub+zip", EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let sink = FakeSink::default();
+    let mut download_request = request(&second, "abc", BookFormat::Epub);
+    download_request.mirror_urls = vec![
+        format!("{}/ads.php?md5=abc", first.base),
+        format!("{}/ads.php?md5=abc", second.base),
+    ];
+    api.enqueue_download(download_request).expect("enqueue");
+    run(&api, &sink);
+
+    assert_eq!(only_download(&api).state, DownloadState::Completed);
+    assert!(
+        first.paths().iter().any(|path| path.contains("key=first")),
+        "the first mirror minted its own key"
+    );
+    assert!(
+        second
+            .paths()
+            .iter()
+            .any(|path| path.contains("key=second")),
+        "the second mirror was asked for a fresh key"
+    );
+    assert_eq!(
+        sink.file("Alice Feeney - Rock Paper Scissors (2021).epub"),
+        Some(EPUB.to_vec())
+    );
+}
+
+#[test]
+fn concurrent_downloads_with_the_same_name_get_distinct_files() {
+    let server = TestServer::start(|request| {
+        if request.path.starts_with("/ads.php") {
+            let md5 = request
+                .path
+                .split("md5=")
+                .nth(1)
+                .unwrap_or("x")
+                .split('&')
+                .next()
+                .unwrap_or("x");
+            Reply::html(&format!("<a href=\"/get.php?md5={md5}&key=k\">GET</a>"))
+        } else if request.path.starts_with("/get.php") {
+            let md5 = request
+                .path
+                .split("md5=")
+                .nth(1)
+                .unwrap_or("x")
+                .split('&')
+                .next()
+                .unwrap_or("x");
+            Reply::redirect(&format!("/cdn/{md5}"))
+        } else if request.path.contains("/cdn/one") {
+            Reply::file("application/epub+zip", EPUB)
+        } else {
+            Reply::file("application/epub+zip", SCRIPTED_EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let sink = FakeSink::default();
+    sink.slow(150);
+    api.enqueue_download(request(&server, "one", BookFormat::Epub))
+        .expect("enqueue first");
+    api.enqueue_download(request(&server, "two", BookFormat::Epub))
+        .expect("enqueue second");
+    run(&api, &sink);
+
+    let downloads = api.list_downloads().expect("list");
+    assert_eq!(downloads.len(), 2);
+    assert!(
+        downloads
+            .iter()
+            .all(|download| download.state == DownloadState::Completed)
+    );
+    let mut names = sink.names();
+    names.sort();
+    assert_eq!(
+        names,
+        vec![
+            "Alice Feeney - Rock Paper Scissors (2021) (2).epub".to_owned(),
+            "Alice Feeney - Rock Paper Scissors (2021).epub".to_owned(),
+        ]
+    );
+}
+
+#[test]
+fn a_cancelled_row_is_not_overwritten_by_a_late_completion() {
+    let server = TestServer::start(|request| {
+        if request.path.starts_with("/ads.php") {
+            Reply::html("<a href=\"/get.php?md5=abc&key=k1\">GET</a>")
+        } else if request.path.starts_with("/get.php") {
+            Reply::redirect("/cdn/book.epub")
+        } else {
+            Reply::file("application/epub+zip", EPUB)
+        }
+    });
+    let (_dir, path) = database();
+    let api = api(&path);
+    let download = api
+        .enqueue_download(request(&server, "abc", BookFormat::Epub))
+        .expect("enqueue");
+    let sink = CancelOnWriteSink {
+        inner: FakeSink::default(),
+        db: path.clone(),
+        id: download.id,
+    };
+    run(&api, &sink);
+
+    assert_eq!(only_download(&api).state, DownloadState::Cancelled);
 }

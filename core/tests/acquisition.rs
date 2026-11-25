@@ -113,8 +113,13 @@ fn parses_the_live_fixture_and_extracts_every_field() {
     assert_eq!(page.total, 43);
     assert!(page.total_is_exact);
     assert_eq!(page.per_page, 25);
-    assert_eq!(page.results.len(), 25);
+    assert_eq!(page.results.len(), 18, "only EPUB and PDF rows are offered");
     assert_eq!(page.source_mirror, server.host);
+    assert!(
+        page.results
+            .iter()
+            .all(|result| matches!(result.extension.as_str(), "epub" | "pdf"))
+    );
 
     let flatiron = page
         .results
@@ -149,7 +154,32 @@ fn parses_the_live_fixture_and_extracts_every_field() {
 }
 
 #[test]
-fn page_two_has_18_rows_and_no_overlap() {
+fn unsupported_formats_and_non_libgen_mirrors_are_dropped_at_parse_time() {
+    let server = FakeServer::start(vec![Reply::Html(PAGE_ONE.to_owned())]);
+    let runtime = tokio::runtime::Runtime::new().expect("runtime");
+    let page = runtime
+        .block_on(provider(vec![&server]).search(&rock_paper_scissors()))
+        .expect("search");
+
+    assert!(
+        page.results
+            .iter()
+            .all(|result| matches!(result.extension.as_str(), "epub" | "pdf")),
+        "mobi, azw3 and other formats never enter the download queue"
+    );
+    assert!(page.results.iter().all(|result| {
+        result.mirrors.iter().all(|mirror| {
+            mirror.url.contains("ads.php")
+                && !mirror.url.contains("randombook")
+                && !mirror.url.contains("libgen.pw")
+                && !mirror.url.contains("libgen.me")
+                && !mirror.url.contains("annas")
+        })
+    }));
+}
+
+#[test]
+fn page_two_has_8_supported_rows_and_no_overlap() {
     let first = FakeServer::start(vec![Reply::Html(PAGE_ONE.to_owned())]);
     let second = FakeServer::start(vec![Reply::Html(PAGE_TWO.to_owned())]);
     let runtime = tokio::runtime::Runtime::new().expect("runtime");
@@ -163,8 +193,8 @@ fn page_two_has_18_rows_and_no_overlap() {
         .block_on(provider(vec![&second]).search(&query))
         .expect("page two");
 
-    assert_eq!(page_one.results.len(), 25);
-    assert_eq!(page_two.results.len(), 18);
+    assert_eq!(page_one.results.len(), 18);
+    assert_eq!(page_two.results.len(), 8);
     assert_eq!(page_two.total, 43);
     assert!(
         page_two
@@ -198,10 +228,10 @@ fn client_filters_are_applied_after_parsing_with_honest_counts() {
         .expect("filtered search");
 
     assert_eq!(page.total, 43, "the mirror's unfiltered count");
-    assert_eq!(page.on_page_before_filters, 25);
+    assert_eq!(page.on_page_before_filters, 18);
     assert!(page.filters_applied);
     assert!(!page.results.is_empty());
-    assert!(page.results.len() < 25);
+    assert!(page.results.len() < 18);
     assert!(page.results.iter().all(|row| {
         row.extension == "epub"
             && row.year == Some(2021)
@@ -218,7 +248,7 @@ fn a_failed_mirror_fails_over_to_the_next_one() {
         .block_on(provider(vec![&broken, &healthy]).search(&rock_paper_scissors()))
         .expect("failover search");
 
-    assert_eq!(page.results.len(), 25);
+    assert_eq!(page.results.len(), 18);
     assert!(!broken.requests().is_empty());
     assert!(!healthy.requests().is_empty());
     let broken_health = page
@@ -319,7 +349,7 @@ fn slum_hint_prefers_a_tier_zero_mirror_over_a_down_one() {
 
     assert_eq!(down.requests().len(), 0, "DOWN mirror is tried last");
     assert_eq!(healthy.requests().len(), 1);
-    assert_eq!(page.results.len(), 18, "the healthy mirror answered first");
+    assert_eq!(page.results.len(), 8, "the healthy mirror answered first");
 }
 
 #[test]

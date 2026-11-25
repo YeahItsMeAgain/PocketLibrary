@@ -303,7 +303,6 @@ pub struct LibraryStatus {
     pub folder_name: Option<String>,
 }
 
-
 /// A persisted download queue item. The queue survives relaunch; a row that was
 /// running when the app stopped is recovered to `queued` and resumed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -382,8 +381,12 @@ pub struct Download {
     /// Mirror URLs the resolver should try, in order. Kept for retry/resume.
     pub mirror_urls: Vec<String>,
     pub state: DownloadState,
+    /// Host currently serving, or last tried by, this download.
+    pub mirror: Option<String>,
     pub bytes: u64,
     pub total_bytes: Option<u64>,
+    /// Terminal failure text, or a transient note such as
+    /// "Trying another mirror…" while a row is still running.
     pub error: Option<String>,
     /// Stable reason code for a failure or a duplicate completion.
     pub error_code: Option<String>,
