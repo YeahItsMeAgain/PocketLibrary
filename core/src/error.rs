@@ -66,6 +66,12 @@ pub enum Error {
     #[error("bookmark {id} does not exist")]
     BookmarkNotFound { id: i64 },
 
+    #[error("annotation {id} does not exist")]
+    AnnotationNotFound { id: i64 },
+
+    #[error("annotation kind {kind:?} is not a highlight or note")]
+    InvalidAnnotationKind { kind: String },
+
     #[error("a search needs at least one term")]
     EmptySearch,
 
@@ -125,6 +131,8 @@ impl Error {
             Self::InvalidLabelColour { .. } => "invalid_label_colour",
             Self::InvalidReaderLocator => "invalid_reader_locator",
             Self::BookmarkNotFound { .. } => "bookmark_not_found",
+            Self::AnnotationNotFound { .. } => "annotation_not_found",
+            Self::InvalidAnnotationKind { .. } => "invalid_annotation_kind",
             Self::EmptySearch => "empty_search",
             Self::Offline => "offline",
             Self::AllMirrorsFailed { .. } => "all_mirrors_failed",
@@ -167,6 +175,8 @@ impl Error {
             Self::InvalidLabelColour { .. } => "Choose one of the printed label colours.",
             Self::InvalidReaderLocator => "The reading position could not be saved.",
             Self::BookmarkNotFound { .. } => "That bookmark could not be found.",
+            Self::AnnotationNotFound { .. } => "That annotation could not be found.",
+            Self::InvalidAnnotationKind { .. } => "That annotation could not be saved.",
             Self::EmptySearch => "Enter a title, author, ISBN or MD5 to search.",
             Self::Offline => {
                 "No network connection. Libgen search needs a connection; your shelf is still available."

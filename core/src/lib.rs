@@ -27,9 +27,10 @@ pub use download::{DownloadManager, DownloadSink, proposed_filename, unique_file
 pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
 pub use models::{
-    AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Download, DownloadRequest,
-    DownloadState, Label, LabelUsage, Landing, LibraryState, LibraryStatus, Placement,
-    ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource,
+    Download, DownloadRequest, DownloadState, Label, LabelUsage, Landing, LibraryState,
+    LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport,
+    Shelf,
 };
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 

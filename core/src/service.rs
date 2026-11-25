@@ -13,9 +13,9 @@ use crate::backup::{self, BackupPreview, BackupReport, ImportMode};
 use crate::error::{Error, Result};
 use crate::migrations;
 use crate::models::{
-    AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource, Download, DownloadRequest, Label,
-    LabelUsage, Landing, LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue,
-    ScanIssueReason, ScanReport, Shelf,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource,
+    Download, DownloadRequest, Label, LabelUsage, Landing, LibraryStatus, Placement, ReadingState,
+    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 use crate::source::{FileSource, ScannedBook, collect_books};
 use crate::{APP_NAME, SCHEMA_VERSION, cover, identity, metadata};
@@ -1140,6 +1140,151 @@ impl Service {
         Ok(())
     }
 
+    /// Every highlight and note for a book, oldest first.
+    pub fn list_annotations(&self, book_id: i64) -> Result<Vec<Annotation>> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let mut statement = conn.prepare(
+            "SELECT id, book_id, kind, colour, note, locator, created_at, updated_at
+             FROM annotations
+             WHERE book_id = ?1 AND kind IN ('highlight', 'note')
+             ORDER BY created_at, id",
+        )?;
+        let annotations = statement
+            .query_map([book_id], annotation_from_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        Ok(annotations)
+    }
+
+    /// Create a highlight or note. Bookmarks keep their separate route.
+    pub fn create_annotation(
+        &self,
+        book_id: i64,
+        kind: AnnotationKind,
+        colour: Option<&str>,
+        note: Option<&str>,
+        locator: &str,
+    ) -> Result<Annotation> {
+        if kind == AnnotationKind::Bookmark {
+            return Err(Error::InvalidAnnotationKind {
+                kind: kind.as_str().to_owned(),
+            });
+        }
+        let locator = locator.trim();
+        if locator.is_empty() {
+            return Err(Error::InvalidReaderLocator);
+        }
+        let note = note.map(str::trim).filter(|value| !value.is_empty());
+        let colour = colour.map(str::trim).filter(|value| !value.is_empty());
+        let kind = if note.is_some() {
+            AnnotationKind::Note
+        } else {
+            kind
+        };
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let now = unix_timestamp();
+        conn.execute(
+            "INSERT INTO annotations
+                 (book_id, kind, colour, note, locator, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)",
+            params![book_id, kind, colour, note, locator, now],
+        )?;
+        let id = conn.last_insert_rowid();
+        Ok(Annotation {
+            id,
+            book_id,
+            kind,
+            colour: colour.map(str::to_owned),
+            note: note.map(str::to_owned),
+            locator: locator.to_owned(),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    /// Update a highlight or note.
+    ///
+    /// `None` keeps a field, an empty string clears it. Setting note text turns
+    /// the annotation into a note; clearing it turns it back into a highlight.
+    pub fn update_annotation(
+        &self,
+        book_id: i64,
+        annotation_id: i64,
+        colour: Option<&str>,
+        note: Option<&str>,
+        locator: Option<&str>,
+    ) -> Result<Annotation> {
+        let locator = match locator {
+            Some(value) if value.trim().is_empty() => return Err(Error::InvalidReaderLocator),
+            Some(value) => Some(value.trim().to_owned()),
+            None => None,
+        };
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let mut annotation = conn
+            .query_row(
+                "SELECT id, book_id, kind, colour, note, locator, created_at, updated_at
+                 FROM annotations
+                 WHERE id = ?1 AND book_id = ?2 AND kind IN ('highlight', 'note')",
+                params![annotation_id, book_id],
+                annotation_from_row,
+            )
+            .optional()?
+            .ok_or(Error::AnnotationNotFound { id: annotation_id })?;
+
+        if let Some(value) = colour {
+            annotation.colour = Some(value.trim())
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned);
+        }
+        if let Some(value) = note {
+            let trimmed = value.trim();
+            annotation.note = Some(trimmed)
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned);
+            annotation.kind = if annotation.note.is_some() {
+                AnnotationKind::Note
+            } else {
+                AnnotationKind::Highlight
+            };
+        }
+        if let Some(value) = locator {
+            annotation.locator = value;
+        }
+        annotation.updated_at = unix_timestamp();
+        conn.execute(
+            "UPDATE annotations
+             SET kind = ?1, colour = ?2, note = ?3, locator = ?4, updated_at = ?5
+             WHERE id = ?6 AND book_id = ?7",
+            params![
+                annotation.kind,
+                annotation.colour,
+                annotation.note,
+                annotation.locator,
+                annotation.updated_at,
+                annotation_id,
+                book_id
+            ],
+        )?;
+        Ok(annotation)
+    }
+
+    /// Delete one highlight or note. Bookmarks are untouched.
+    pub fn delete_annotation(&self, book_id: i64, annotation_id: i64) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        let changed = conn.execute(
+            "DELETE FROM annotations
+             WHERE id = ?1 AND book_id = ?2 AND kind IN ('highlight', 'note')",
+            params![annotation_id, book_id],
+        )?;
+        if changed == 0 {
+            return Err(Error::AnnotationNotFound { id: annotation_id });
+        }
+        Ok(())
+    }
+
     /// Every label, in creation order.
     pub fn list_labels(&self) -> Result<Vec<Label>> {
         let conn = self.connection()?;
@@ -1424,6 +1569,19 @@ fn label_name_taken(conn: &Connection, name: &str, excluding: Option<i64>) -> Re
         |row| row.get(0),
     )?;
     Ok(count > 0)
+}
+
+fn annotation_from_row(row: &Row<'_>) -> rusqlite::Result<Annotation> {
+    Ok(Annotation {
+        id: row.get(0)?,
+        book_id: row.get(1)?,
+        kind: row.get(2)?,
+        colour: row.get(3)?,
+        note: row.get(4)?,
+        locator: row.get(5)?,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
+    })
 }
 
 fn label_from_row(row: &Row<'_>) -> rusqlite::Result<Label> {

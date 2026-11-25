@@ -13,9 +13,9 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
 use pocketlibrary_core::{
-    Api, ApiError, AppInfo, BackupPreview, BackupReport, Book, BookDetail, Bookmark, Download,
-    DownloadRequest, DownloadSink, ImportMode, Label, LabelUsage, LibraryStatus, ReadingState,
-    ReadingStatus, ScanReport, SearchPage, SearchQuery, Shelf,
+    Annotation, AnnotationKind, Api, ApiError, AppInfo, BackupPreview, BackupReport, Book,
+    BookDetail, Bookmark, Download, DownloadRequest, DownloadSink, ImportMode, Label, LabelUsage,
+    LibraryStatus, ReadingState, ReadingStatus, ScanReport, SearchPage, SearchQuery, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -783,6 +783,59 @@ fn delete_bookmark(
 }
 
 #[tauri::command]
+fn list_annotations(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+) -> Result<Vec<Annotation>, ApiError> {
+    api.list_annotations(book_id)
+}
+
+#[tauri::command]
+fn create_annotation(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    kind: AnnotationKind,
+    colour: Option<String>,
+    note: Option<String>,
+    locator: String,
+) -> Result<Annotation, ApiError> {
+    api.create_annotation(
+        book_id,
+        kind,
+        colour.as_deref(),
+        note.as_deref(),
+        &locator,
+    )
+}
+
+#[tauri::command]
+fn update_annotation(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    annotation_id: i64,
+    colour: Option<String>,
+    note: Option<String>,
+    locator: Option<String>,
+) -> Result<Annotation, ApiError> {
+    api.update_annotation(
+        book_id,
+        annotation_id,
+        colour.as_deref(),
+        note.as_deref(),
+        locator.as_deref(),
+    )
+}
+
+#[tauri::command]
+fn delete_annotation(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    annotation_id: i64,
+) -> Result<(), ApiError> {
+    api.delete_annotation(book_id, annotation_id)
+}
+
+#[tauri::command]
 fn record_open(api: tauri::State<'_, Api>, book_id: i64) -> Result<(), ApiError> {
     api.record_open(book_id)
 }
@@ -859,6 +912,10 @@ pub fn run() {
             list_bookmarks,
             add_bookmark,
             delete_bookmark,
+            list_annotations,
+            create_annotation,
+            update_annotation,
+            delete_annotation,
             record_open,
             record_progress,
             reading_state,

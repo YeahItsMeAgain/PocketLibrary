@@ -243,6 +243,45 @@ pub struct LabelUsage {
     pub book_count: i64,
 }
 
+/// What an annotation is for. Bookmarks are the same table with their own
+/// narrow CRUD surface; highlights and notes carry a colour, note and locator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AnnotationKind {
+    Highlight,
+    Note,
+    Bookmark,
+}
+
+impl AnnotationKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Highlight => "highlight",
+            Self::Note => "note",
+            Self::Bookmark => "bookmark",
+        }
+    }
+}
+
+impl ToSql for AnnotationKind {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+impl FromSql for AnnotationKind {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        match value.as_str()? {
+            "highlight" => Ok(Self::Highlight),
+            "note" => Ok(Self::Note),
+            "bookmark" => Ok(Self::Bookmark),
+            other => Err(FromSqlError::Other(
+                format!("unknown annotation kind: {other}").into(),
+            )),
+        }
+    }
+}
+
 /// One durable bookmark. Bookmarks are annotations with `kind = 'bookmark'`;
 /// the locator is a versioned JSON document (CFI + quote fallback).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -252,6 +291,24 @@ pub struct Bookmark {
     pub book_id: i64,
     pub locator: String,
     pub created_at: i64,
+}
+
+/// A highlight or note attached to a range of an EPUB.
+///
+/// The locator is a Readium-shaped JSON document (href, CFI fragment,
+/// progression/position, quoted text plus W3C TextQuote/TextPosition
+/// selectors). Core treats it as opaque; the reader repairs it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Annotation {
+    pub id: i64,
+    pub book_id: i64,
+    pub kind: AnnotationKind,
+    pub colour: Option<String>,
+    pub note: Option<String>,
+    pub locator: String,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 /// A book's reading position and status.

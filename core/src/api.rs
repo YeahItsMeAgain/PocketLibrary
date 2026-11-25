@@ -12,8 +12,8 @@ use crate::backup::{BackupPreview, BackupReport, ImportMode};
 use crate::download::{DownloadManager, DownloadSink};
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
-    AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest, Label, LabelUsage,
-    LibraryStatus, ReadingState, ReadingStatus, ScanReport, Shelf,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest,
+    Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus, ScanReport, Shelf,
 };
 use crate::service::Service;
 use crate::source::FileSource;
@@ -298,6 +298,48 @@ impl Api {
     pub fn delete_bookmark(&self, book_id: i64, bookmark_id: i64) -> ApiResult<()> {
         self.service
             .delete_bookmark(book_id, bookmark_id)
+            .map_err(ApiError::from)
+    }
+
+    /// Every highlight and note for a book, oldest first.
+    pub fn list_annotations(&self, book_id: i64) -> ApiResult<Vec<Annotation>> {
+        self.service
+            .list_annotations(book_id)
+            .map_err(ApiError::from)
+    }
+
+    /// Create a highlight or note with a Readium-shaped locator.
+    pub fn create_annotation(
+        &self,
+        book_id: i64,
+        kind: AnnotationKind,
+        colour: Option<&str>,
+        note: Option<&str>,
+        locator: &str,
+    ) -> ApiResult<Annotation> {
+        self.service
+            .create_annotation(book_id, kind, colour, note, locator)
+            .map_err(ApiError::from)
+    }
+
+    /// Update colour, note or a repaired locator. `None` keeps a field.
+    pub fn update_annotation(
+        &self,
+        book_id: i64,
+        annotation_id: i64,
+        colour: Option<&str>,
+        note: Option<&str>,
+        locator: Option<&str>,
+    ) -> ApiResult<Annotation> {
+        self.service
+            .update_annotation(book_id, annotation_id, colour, note, locator)
+            .map_err(ApiError::from)
+    }
+
+    /// Delete one highlight or note, leaving bookmarks alone.
+    pub fn delete_annotation(&self, book_id: i64, annotation_id: i64) -> ApiResult<()> {
+        self.service
+            .delete_annotation(book_id, annotation_id)
             .map_err(ApiError::from)
     }
 
