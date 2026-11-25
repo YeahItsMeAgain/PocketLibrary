@@ -114,6 +114,8 @@ fn parses_the_live_fixture_and_extracts_every_field() {
     assert!(page.total_is_exact);
     assert_eq!(page.per_page, 25);
     assert_eq!(page.results.len(), 18, "only EPUB and PDF rows are offered");
+    assert_eq!(page.rows_returned, 25);
+    assert_eq!(page.unsupported_rows, 7);
     assert_eq!(page.source_mirror, server.host);
     assert!(
         page.results
@@ -205,7 +207,27 @@ fn page_two_has_8_supported_rows_and_no_overlap() {
     assert_eq!(
         second.requests()[0].lines().next(),
         Some(
-            "GET /index.php?req=Rock+Paper+Scissors+Alice+Feeney&columns%5B%5D=t&columns%5B%5D=a&res=25&page=2 HTTP/1.1"
+            "GET /index.php?req=Rock+Paper+Scissors+Alice+Feeney&columns%5B%5D=t&columns%5B%5D=a&topics%5B%5D=l&topics%5B%5D=f&topics%5B%5D=r&res=25&page=2 HTTP/1.1"
+        )
+    );
+}
+
+#[test]
+fn the_basic_box_sends_title_author_and_book_topic_columns() {
+    let server = FakeServer::start(vec![Reply::Html(PAGE_ONE.to_owned())]);
+    let runtime = tokio::runtime::Runtime::new().expect("runtime");
+    let query = SearchQuery {
+        query: "1984".into(),
+        ..SearchQuery::default()
+    };
+    runtime
+        .block_on(provider(vec![&server]).search(&query))
+        .expect("basic search");
+
+    assert_eq!(
+        server.requests()[0].lines().next(),
+        Some(
+            "GET /index.php?req=1984&columns%5B%5D=t&columns%5B%5D=a&topics%5B%5D=l&topics%5B%5D=f&topics%5B%5D=r&res=25 HTTP/1.1"
         )
     );
 }

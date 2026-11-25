@@ -39,6 +39,11 @@ pub struct SearchPage {
     pub total_is_exact: bool,
     /// Rows the mirror returned on this page before filters.
     pub on_page_before_filters: usize,
+    /// File rows the mirror returned on this page before unsupported formats
+    /// were removed.
+    pub rows_returned: usize,
+    /// Rows removed because the file is not EPUB or PDF.
+    pub unsupported_rows: usize,
     /// True when language/format/year removed at least one row.
     pub filters_applied: bool,
     /// Host that answered, e.g. `libgen.li`.
@@ -143,6 +148,8 @@ impl LibgenProvider {
                             total: parsed.total,
                             total_is_exact: parsed.total_is_exact,
                             on_page_before_filters,
+                            rows_returned: parsed.rows_returned,
+                            unsupported_rows: parsed.unsupported_rows,
                             filters_applied,
                             source_mirror: mirror.host.clone(),
                             health: self.health_snapshot()?,
@@ -159,6 +166,8 @@ impl LibgenProvider {
                             total: 0,
                             total_is_exact: true,
                             on_page_before_filters: 0,
+                            rows_returned: 0,
+                            unsupported_rows: 0,
                             filters_applied: false,
                             source_mirror: mirror.host.clone(),
                             health: self.health_snapshot()?,

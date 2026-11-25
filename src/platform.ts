@@ -352,6 +352,8 @@ export interface SearchPage {
   total: number;
   totalIsExact: boolean;
   onPageBeforeFilters: number;
+  rowsReturned: number;
+  unsupportedRows: number;
   filtersApplied: boolean;
   sourceMirror: string;
   health: MirrorHealth[];
@@ -664,7 +666,7 @@ export function createTauriPlatform(call: Invoke): Platform {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.2",
+  appVersion: "0.1.3",
   schemaVersion: 3,
 };
 
@@ -700,6 +702,14 @@ export interface MockConfig {
   searchResults?: LibgenResult[];
   /** Total the mock mirror reports before client-side filters. */
   searchTotal?: number;
+  /** Raw file rows the mock mirror returns on this page. */
+  searchRowsReturned?: number;
+  /** Rows the mock mirror drops because they are not EPUB or PDF. */
+  searchUnsupportedRows?: number;
+  /** Supported rows on this page before client filters. */
+  searchOnPageBeforeFilters?: number;
+  /** Whether the mock mirror reported an exact total. */
+  searchTotalIsExact?: boolean;
   /** Force a front-desk state for UI tests. */
   searchMode?: "ok" | "offline" | "allFailed" | "formatChanged" | "empty";
   /** Milliseconds between mock download progress ticks. */
@@ -1059,8 +1069,14 @@ function mockSearch(config: MockConfig, query: SearchQuery): SearchPage {
     page,
     perPage,
     total,
-    totalIsExact: true,
-    onPageBeforeFilters: Math.min(perPage, Math.max(0, total - start)),
+    totalIsExact: config.searchTotalIsExact ?? true,
+    onPageBeforeFilters:
+      config.searchOnPageBeforeFilters ??
+      Math.min(perPage, Math.max(0, total - start)),
+    rowsReturned:
+      config.searchRowsReturned ??
+      Math.min(perPage, Math.max(0, total - start)),
+    unsupportedRows: config.searchUnsupportedRows ?? 0,
     filtersApplied,
     sourceMirror: "libgen.li",
     health: [

@@ -186,11 +186,12 @@ export function SearchView({
 
   const canSearch = hasSearchTerm(form) && !busy;
   const total = pageData?.total ?? 0;
+  const unsupportedRows = pageData?.unsupportedRows ?? 0;
   const hasNextPage =
     pageData !== null &&
     (pageData.totalIsExact
       ? pageData.page * pageData.perPage < total
-      : pageData.results.length === pageData.perPage);
+      : pageData.rowsReturned === pageData.perPage);
   const hiddenByFilters =
     pageData !== null && pageData.filtersApplied
       ? Math.max(0, pageData.onPageBeforeFilters - pageData.results.length)
@@ -248,8 +249,10 @@ export function SearchView({
           <span>❧</span>
         </div>
         <p className="search-intro">
-          Ask the five LG+ mirrors at once. Formats, language and years are
-          filtered here, because Libgen ignores those fields.
+          Ask the five LG+ mirrors at once. Searches cover titles and authors
+          and return books only; comics, magazines and standards are excluded.
+          Formats, language and years are filtered here, because Libgen ignores
+          those fields.
         </p>
 
         <form className="search-form" onSubmit={submit}>
@@ -402,16 +405,22 @@ export function SearchView({
           <>
             <div className="search-state" data-testid="search-empty">
               <h3>
-                {total === 0 ? "No files found" : "0 matches on this page"}
+                {unsupportedRows > 0 && pageData.onPageBeforeFilters === 0
+                  ? "No EPUB or PDF on this page"
+                  : total === 0
+                    ? "No files found"
+                    : "0 matches on this page"}
               </h3>
               <p>
-                {total === 0
+                {total === 0 && unsupportedRows === 0
                   ? "The mirrors answered honestly: nothing matches that search."
                   : hiddenByFilters > 0
-                    ? `${hiddenByFilters} of ${pageData.onPageBeforeFilters} files on this page were hidden by your filters.`
-                    : pageData.page > 1
-                      ? "The mirrors listed more files, but this page arrived empty. Turn back a page."
-                      : "The mirrors listed more files, but this page arrived empty."}
+                    ? `${hiddenByFilters} of ${pageData.onPageBeforeFilters} books on this page were hidden by your filters.${unsupportedRows > 0 ? ` ${unsupportedRows} more were not EPUB or PDF.` : ""}`
+                    : unsupportedRows > 0
+                      ? `${unsupportedRows} of ${pageData.rowsReturned} rows on this page are not EPUB or PDF, so there is nothing to show here.${hasNextPage ? " Try the next page." : ""}`
+                      : pageData.page > 1
+                        ? "The mirrors listed more files, but this page arrived empty. Turn back a page."
+                        : "The mirrors listed more files, but this page arrived empty."}
               </p>
               {pageData.filtersApplied ? (
                 <button
@@ -439,6 +448,9 @@ export function SearchView({
                 {pageData.results.length} shown on this page
                 {hiddenByFilters > 0
                   ? ` · ${hiddenByFilters} hidden by your filters`
+                  : ""}
+                {unsupportedRows > 0
+                  ? ` · ${unsupportedRows} non-EPUB/PDF hidden`
                   : ""}
                 {" · "}
                 answered by {pageData.sourceMirror}

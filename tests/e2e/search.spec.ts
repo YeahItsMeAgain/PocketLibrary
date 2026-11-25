@@ -194,6 +194,69 @@ test("a page fully hidden by filters still pages forward", async ({ page }) => {
   await expect(page.getByTestId("search-next")).toBeDisabled();
 });
 
+test("rows dropped as non-EPUB/PDF are reported instead of silently vanishing", async ({
+  page,
+}) => {
+  const rows = Array.from({ length: 18 }, (_, index) => result(index));
+  await boot(page, {
+    searchResults: rows,
+    searchTotal: 43,
+    searchRowsReturned: 25,
+    searchUnsupportedRows: 7,
+  });
+
+  await page.getByTestId("search-query").fill("Victorian");
+  await page.getByTestId("search-submit").click();
+
+  await expect(page.getByTestId("search-result")).toHaveCount(18);
+  await expect(page.getByTestId("search-counts")).toContainText(
+    "7 non-EPUB/PDF hidden",
+  );
+});
+
+test("a page with no supported files explains why and still pages forward", async ({
+  page,
+}) => {
+  await boot(page, {
+    searchResults: [],
+    searchTotal: 43,
+    searchOnPageBeforeFilters: 0,
+    searchRowsReturned: 25,
+    searchUnsupportedRows: 25,
+  });
+
+  await page.getByTestId("search-query").fill("Victorian");
+  await page.getByTestId("search-submit").click();
+
+  await expect(page.getByTestId("search-empty")).toContainText(
+    "No EPUB or PDF on this page",
+  );
+  await expect(page.getByTestId("search-empty")).toContainText(
+    "25 of 25 rows on this page are not EPUB or PDF",
+  );
+  await expect(page.getByTestId("search-next")).toBeEnabled();
+});
+
+test("an inexact total keeps paging while the mirror returns a full row set", async ({
+  page,
+}) => {
+  const rows = Array.from({ length: 8 }, (_, index) => result(index));
+  await boot(page, {
+    searchResults: rows,
+    searchTotal: 8,
+    searchTotalIsExact: false,
+    searchRowsReturned: 25,
+    searchUnsupportedRows: 17,
+  });
+
+  await page.getByTestId("search-query").fill("Victorian");
+  await page.getByTestId("search-submit").click();
+
+  await expect(page.getByTestId("search-result")).toHaveCount(8);
+  await expect(page.getByTestId("search-counts")).toContainText("or more files");
+  await expect(page.getByTestId("search-next")).toBeEnabled();
+});
+
 test("a genuine no-results answer is shown as such", async ({ page }) => {
   await boot(page, { searchMode: "empty" });
 

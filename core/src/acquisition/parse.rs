@@ -48,6 +48,11 @@ pub struct ParsedSearchPage {
     pub results: Vec<LibgenResult>,
     pub total: u64,
     pub total_is_exact: bool,
+    /// File rows the mirror returned on this page, before any rows were
+    /// dropped for an unsupported format.
+    pub rows_returned: usize,
+    /// Rows dropped because the extension is not EPUB or PDF.
+    pub unsupported_rows: usize,
 }
 
 /// What a fetched response turned out to contain.
@@ -121,11 +126,11 @@ impl SearchQuery {
             &self.title,
             &self.author,
             &self.publisher,
-            &self.isbn,
             &self.md5,
         ]
         .iter()
         .all(|value| value.trim().is_empty())
+            && normalize_isbn(&self.isbn).is_empty()
     }
 
     /// Validate before touching the network.
@@ -205,18 +210,29 @@ fn language_matches(wanted: &str, actual: Option<&str>) -> bool {
 /// `publisher` and `ISBN` are folded in where LG+ supports them. `columns[]`
 /// scopes the free-text terms to title/author/publisher, which is the only
 /// field filtering the server honours.
+///
+/// The basic search box is labelled "Title or author", so it always sends
+/// `columns[]=t&columns[]=a`. Leaving `columns[]` off makes LG+ search every
+/// field, including year and publisher, which turns `1984` into hundreds of
+/// thousands of rows.
+///
+/// Text searches also restrict `topics[]` to the book topics (Libgen, Fiction,
+/// Fiction RUS). LG+ otherwise includes comics, magazines, standards and
+/// scientific articles, and the parser has to discard those rows because the
+/// app only opens EPUB and PDF.
 pub fn search_url(base: &str, query: &SearchQuery) -> String {
     let mut params: Vec<(String, String)> = Vec::new();
 
     let md5 = query.md5.trim().to_ascii_lowercase();
-    let isbn = query.isbn.trim();
+    let isbn = normalize_isbn(&query.isbn);
     if !md5.is_empty() {
         params.push(("req".into(), format!("md5:{md5}")));
         params.push(("gmode".into(), "1".into()));
     } else if !isbn.is_empty() {
-        params.push(("req".into(), isbn.to_owned()));
+        params.push(("req".into(), isbn));
         params.push(("columns[]".into(), "i".into()));
     } else {
+        let has_query = !query.query.trim().is_empty();
         let mut terms: Vec<String> = Vec::new();
         if !query.title.trim().is_empty() {
             terms.push(query.title.trim().to_owned());
@@ -227,16 +243,16 @@ pub fn search_url(base: &str, query: &SearchQuery) -> String {
         if !query.publisher.trim().is_empty() {
             terms.push(query.publisher.trim().to_owned());
         }
-        if !query.query.trim().is_empty() {
+        if has_query {
             terms.push(query.query.trim().to_owned());
         }
         params.push(("req".into(), terms.join(" ")));
 
         let mut columns: Vec<&str> = Vec::new();
-        if !query.title.trim().is_empty() {
+        if !query.title.trim().is_empty() || has_query {
             columns.push("t");
         }
-        if !query.author.trim().is_empty() {
+        if !query.author.trim().is_empty() || has_query {
             columns.push("a");
         }
         if !query.publisher.trim().is_empty() {
@@ -244,6 +260,10 @@ pub fn search_url(base: &str, query: &SearchQuery) -> String {
         }
         for column in columns {
             params.push(("columns[]".into(), column.into()));
+        }
+
+        for topic in ["l", "f", "r"] {
+            params.push(("topics[]".into(), topic.into()));
         }
     }
 
@@ -258,6 +278,17 @@ pub fn search_url(base: &str, query: &SearchQuery) -> String {
         .collect::<Vec<_>>()
         .join("&");
     format!("{}/index.php?{encoded}", base.trim_end_matches('/'))
+}
+
+/// ISBNs are printed with hyphens on the book and pasted with them, but LG+
+/// only matches the bare digits (plus a trailing `X`). Keep alphanumerics and
+/// drop spaces, hyphens and the various dash characters.
+fn normalize_isbn(value: &str) -> String {
+    value
+        .chars()
+        .filter(|ch| ch.is_ascii_alphanumeric())
+        .map(|ch| ch.to_ascii_uppercase())
+        .collect()
 }
 
 /// RFC 3986 form encoding; spaces become `+` like the Libgen search form.
@@ -326,11 +357,14 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
 
     let host = host_label(base);
     let mut results = Vec::new();
+    let mut rows_returned = 0usize;
+    let mut unsupported_rows = 0usize;
     for row in rows {
         let cells: Vec<_> = row.select(&cell_selector).collect();
         if cells.len() < 9 {
             continue;
         }
+        rows_returned += 1;
 
         let title = cells[0]
             .select(&anchor_selector)
@@ -358,7 +392,11 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
             .and_then(parse_file_id);
         let extension = normalize(&cells[7].text().collect::<String>()).to_ascii_lowercase();
 
-        if title.is_empty() || !matches!(extension.as_str(), "epub" | "pdf") {
+        if title.is_empty() {
+            continue;
+        }
+        if !matches!(extension.as_str(), "epub" | "pdf") {
+            unsupported_rows += 1;
             continue;
         }
 
@@ -410,7 +448,7 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
     let total_is_exact = parsed_total.is_some();
     let total = parsed_total.unwrap_or(results.len() as u64);
 
-    if results.is_empty() && (!total_is_exact || total == 0) {
+    if results.is_empty() && rows_returned == 0 && (!total_is_exact || total == 0) {
         return ParseOutcome::Empty;
     }
 
@@ -418,6 +456,8 @@ pub(crate) fn parse_search_page(body: &str, base: &str) -> ParseOutcome {
         results,
         total,
         total_is_exact,
+        rows_returned,
+        unsupported_rows,
     })
 }
 
@@ -582,7 +622,66 @@ mod tests {
         let url = search_url("https://libgen.bz", &query);
         assert!(url.contains("columns%5B%5D=t"));
         assert!(url.contains("columns%5B%5D=a"));
+        assert!(url.contains("topics%5B%5D=l"));
+        assert!(url.contains("topics%5B%5D=f"));
+        assert!(url.contains("topics%5B%5D=r"));
         assert!(url.ends_with("res=25&page=2"));
+    }
+
+    #[test]
+    fn basic_query_is_scoped_to_title_and_author_and_books() {
+        let query = SearchQuery {
+            query: "1984".into(),
+            ..SearchQuery::default()
+        };
+        let url = search_url("https://libgen.li/", &query);
+        assert_eq!(
+            url,
+            "https://libgen.li/index.php?req=1984&columns%5B%5D=t&columns%5B%5D=a&topics%5B%5D=l&topics%5B%5D=f&topics%5B%5D=r&res=25"
+        );
+    }
+
+    #[test]
+    fn publisher_search_stays_in_the_publisher_column() {
+        let query = SearchQuery {
+            publisher: "HarperCollins".into(),
+            ..SearchQuery::default()
+        };
+        let url = search_url("https://libgen.li", &query);
+        assert!(url.contains("req=HarperCollins&columns%5B%5D=p&"));
+        assert!(!url.contains("columns%5B%5D=t"));
+        assert!(!url.contains("columns%5B%5D=a"));
+    }
+
+    #[test]
+    fn isbn_search_strips_hyphens_and_spaces() {
+        for (input, expected) in [
+            ("978-0-00-837100-5", "9780008371005"),
+            (" 978 0 00 837100 5 ", "9780008371005"),
+            ("0-00-837100-x", "000837100X"),
+        ] {
+            let query = SearchQuery {
+                isbn: input.into(),
+                ..SearchQuery::default()
+            };
+            let url = search_url("https://libgen.li", &query);
+            assert_eq!(
+                url,
+                format!("https://libgen.li/index.php?req={expected}&columns%5B%5D=i&res=25"),
+                "{input} should normalise to {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn counts_rows_dropped_for_unsupported_formats() {
+        let body = include_str!("../../tests/fixtures/libgen-rock-paper-scissors.html");
+        let ParseOutcome::Page(page) = parse_search_page(body, "https://libgen.li") else {
+            panic!("expected a search page");
+        };
+        assert_eq!(page.rows_returned, 25);
+        assert_eq!(page.unsupported_rows, 7);
+        assert_eq!(page.results.len(), 18);
     }
 
     #[test]
