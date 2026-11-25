@@ -135,6 +135,19 @@ test("filtering dims non-matching spines without moving them and ANDs with statu
   );
   await expect(page.locator('[data-testid="spine"][data-dimmed="true"]')).toHaveCount(2);
 
+  // Clear is pinned outside the scrolling chip row and stays on screen.
+  const clear = page.getByTestId("filter-clear");
+  await expect(clear).toBeVisible();
+  expect(
+    await clear.evaluate((element) => element.closest(".fb-scroll") === null),
+  ).toBe(true);
+  const clearBox = await clear.boundingBox();
+  expect(clearBox).not.toBeNull();
+  if (clearBox) {
+    expect(clearBox.x).toBeGreaterThanOrEqual(0);
+    expect(clearBox.x + clearBox.width).toBeLessThanOrEqual(390);
+  }
+
   const after = await spines.evaluateAll((elements) =>
     elements.map((element) => element.getBoundingClientRect().left),
   );

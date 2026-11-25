@@ -33,7 +33,7 @@ All checks ran on 2026-11-25 on the headless build host:
 | Check | Result |
 |---|---|
 | `cargo test --manifest-path core/Cargo.toml` | pass |
-| `npm run test:e2e` | 73 passed |
+| `npm run test:e2e` | 74 passed |
 | `npm run build` | pass |
 | `npx tsc --noEmit` | pass |
 | Android `cargo clippy --all-targets -- -D warnings` | pass |
@@ -42,7 +42,7 @@ All checks ran on 2026-11-25 on the headless build host:
 
 APK: `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk`
 · **35,122,454 bytes** · SHA-256
-`bea72ea0d874f0766e0bb22757e1a322282db6c2a3d1caf3aa215a641c60ea9a`
+`cdb2461256adaf19d0b9f83b9edec87d517d8ddb1512699bcb3684fac9cf786f`
 · certificate SHA-256
 `f2167c3918933cd2fe247fb5748e7b699f925d8f6f716eec04da9f862d1dcbdb`.
 Published path

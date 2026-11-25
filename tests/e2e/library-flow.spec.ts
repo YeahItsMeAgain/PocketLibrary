@@ -213,7 +213,9 @@ test("tapping a spine opens the framed detail and Back returns to the wall", asy
   await expect(page.getByTestId("detail-title")).toHaveText(
     "The Hollow Crown",
   );
-  await expect(page.getByTestId("detail-author")).toHaveText("Ada Lovelace");
+  await expect(page.getByTestId("detail-author")).toHaveText(
+    "Ada Lovelace · 1974 · Shelf I",
+  );
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "A quiet revolution",
   );

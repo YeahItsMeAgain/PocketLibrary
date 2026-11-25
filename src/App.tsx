@@ -574,6 +574,10 @@ function DetailPanel({
     detail && detail.authors.length > 0
       ? detail.authors.join(" · ")
       : "Unknown author";
+  const editionYear = detail?.publishedDate?.slice(0, 4);
+  const byline = [authors, editionYear, `Shelf ${shelfMarkLabel}`]
+    .filter(Boolean)
+    .join(" · ");
   const readLabel =
     detail?.readingStatus === "reading"
       ? "Continue reading"
@@ -749,7 +753,7 @@ function DetailPanel({
                   {detail.title}
                 </h2>
                 <p className="byline" data-testid="detail-author">
-                  {authors}
+                  {byline}
                 </p>
                 {detail.series ? (
                   <p className="detail-series">{detail.series}</p>
@@ -1060,17 +1064,17 @@ function FilterStrip({ labels, books, onApply, onManage }: FilterStripProps) {
               </button>
             ))
           )}
-          <button
-            type="button"
-            className="chip clear"
-            data-testid="filter-clear"
-            onClick={() => apply([], null)}
-            hidden={!active}
-            aria-label="Clear filters"
-          >
-            Clear
-          </button>
         </div>
+        <button
+          type="button"
+          className="chip clear filter-clear"
+          data-testid="filter-clear"
+          onClick={() => apply([], null)}
+          hidden={!active}
+          aria-label="Clear filters"
+        >
+          Clear
+        </button>
         <div className="fb-count" aria-hidden="true">
           <b>{matchingCount}</b>
           <span>vols</span>

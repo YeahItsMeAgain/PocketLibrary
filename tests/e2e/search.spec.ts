@@ -95,6 +95,19 @@ test("basic search lists results with honest counts and a read-only detail", asy
 
   await page.getByTestId("result-detail-close").click();
   await expect(sheet).toHaveCount(0);
+
+  // Scrolling to the end leaves the last result above the fixed pull.
+  await page.evaluate(() =>
+    window.scrollTo(0, document.documentElement.scrollHeight),
+  );
+  const pull = await page
+    .getByRole("button", { name: "Open navigation" })
+    .boundingBox();
+  const lastResult = await page.getByTestId("search-result").last().boundingBox();
+  expect(pull).not.toBeNull();
+  expect(lastResult).not.toBeNull();
+  if (!pull || !lastResult) return;
+  expect(pull.y).toBeGreaterThanOrEqual(lastResult.y + lastResult.height);
 });
 
 test("browser back closes the result detail before the Search view", async ({

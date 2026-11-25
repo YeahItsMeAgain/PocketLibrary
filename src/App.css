@@ -13,6 +13,8 @@
   --paper: #f4e9cf;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-io: cubic-bezier(0.65, 0.05, 0.36, 1);
+  /* Room reserved below content for the fixed brass drawer pull. */
+  --drawer-pull-space: calc(32px + env(safe-area-inset-bottom));
   /* A pre-rasterised noise tile. The old feTurbulence filter was the most
      expensive first-paint raster task; the look is unchanged. */
   --noise: url("./assets/noise.png");
@@ -91,7 +93,7 @@ button:focus-visible {
 .room {
   position: relative;
   min-height: 100dvh;
-  padding: 0 0 calc(64px + env(safe-area-inset-bottom));
+  padding: 0 0 calc(var(--drawer-pull-space) + 36px);
   color: #d9cbb2;
   background:
     radial-gradient(78% 26% at 50% 1%, rgba(201, 168, 106, 0.13), transparent 70%),
@@ -278,6 +280,11 @@ button:focus-visible {
   color: #e0b0a8;
   border-color: rgba(160, 80, 60, 0.5);
   background: rgba(52, 14, 24, 0.55);
+}
+
+/* Pinned outside .fb-scroll so Clear stays reachable at 390 px. */
+.filter-clear {
+  flex: 0 0 auto;
 }
 
 .chip.clear::before {
@@ -2230,6 +2237,11 @@ html.is-book-dragging body {
   place-items: center;
 }
 
+.settings-main {
+  min-height: 100dvh;
+  padding-bottom: calc(var(--drawer-pull-space) + 40px);
+}
+
 .placeholder-card {
   width: min(340px, 100%);
   padding: 28px 22px 30px;
@@ -3213,6 +3225,7 @@ html.reader-open body {
 
 .reader-bookmark-jump {
   flex: 1 1 auto;
+  min-width: 0;
   border-bottom: 0;
 }
 
@@ -3222,8 +3235,29 @@ html.reader-open body {
   font-size: 10px;
 }
 
+/* Annotation rows give the excerpt the full text column; the chapter/percent
+   metadata and the two compact action buttons sit beneath and beside it. */
+.reader-annotations .reader-bookmark-jump {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+}
+
+.reader-annotations .reader-bookmark-jump > span {
+  min-width: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.reader-annotations .reader-bookmark-jump small {
+  align-self: flex-start;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
 .reader-bookmark-delete {
-  flex: 0 0 42px;
+  flex: 0 0 40px;
   min-height: 42px;
   color: var(--reader-accent);
   font-size: 19px;
@@ -3522,7 +3556,7 @@ html.reader-open .drawer-pull {
 .search-main {
   display: block;
   min-height: 100dvh;
-  padding: 26px 18px 90px;
+  padding: 26px 18px calc(var(--drawer-pull-space) + 40px);
 }
 
 .search-card {

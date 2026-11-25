@@ -106,6 +106,25 @@ test("a drag down past the threshold closes the drawer", async ({ page }) => {
   await expect(drawer(page)).toBeHidden();
 });
 
+test("the drawer pull sits below the end of the wall", async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() =>
+    window.scrollTo(0, document.documentElement.scrollHeight),
+  );
+
+  const pull = await page
+    .getByRole("button", { name: "Open navigation" })
+    .boundingBox();
+  const lastShelf = await page
+    .locator('[data-testid="shelf"], [data-testid="empty-shelf"]')
+    .last()
+    .boundingBox();
+  expect(pull).not.toBeNull();
+  expect(lastShelf).not.toBeNull();
+  if (!pull || !lastShelf) return;
+  expect(pull.y).toBeGreaterThanOrEqual(lastShelf.y + lastShelf.height);
+});
+
 test("a short drag snaps the drawer back open", async ({ page }) => {
   await boot(page);
   await openDrawer(page);
