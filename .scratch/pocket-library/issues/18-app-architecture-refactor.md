@@ -4,7 +4,7 @@
 
 **Blocked by:** 17 (diagnostics) — start after the v0.1.1 release cut.
 
-**Status:** ready-for-agent
+**Status:** in-progress — phase 1 complete on `refactor/app-modules`; phase 2 (windowed shelves, filter/ first paint, perf gates) remains.
 
 ## Problem
 
@@ -66,10 +66,46 @@ Each module exposes a small interface to the shell (view + actions); no module i
 - Make `perf/bench.mjs` a threshold check in the release checklist: fail on >10% regression in first shelf, scroll p95/p99, filter, lift sweep, or DOM.
 - E2E stays green after every extraction commit.
 
+## Phase 1 completion (mechanical extraction only)
+
+Done on branch `refactor/app-modules`, nine commits, no behaviour, visual, framework or dependency changes. `platform.ts` remains the only Tauri import boundary (`grep -rn "@tauri-apps" src --exclude=platform.ts` is empty).
+
+| Commit | Scope |
+| --- | --- |
+| `3e98e2f` | Spine helpers, `ShelfCase`, masthead |
+| `9f1bde1` | `DetailPanel`, `FilterStrip`, `ManageLabels` |
+| `0916a96` | `LibraryWall`, drag surface, pure `placement.ts` (+ helper tests) |
+| `49e97be` | `SearchView`, `DownloadQueue`, download formatting |
+| `4760560` | Search query helpers, `ResultDetail` |
+| `26cb85e` | `SettingsView`, `BackupSection`, backup/naming/scan notices |
+| `b9fa455` | Onboarding, reconnect, app footer into the shell |
+| `a12a2ec` | Shelf drag + geometry measurement into `useShelfDrag` |
+| `e0489e8` | Tests for extracted spine, download and layout helpers |
+
+Final layout (`src/`):
+
+- Shell: `App.tsx` (649 lines), `shell/Masthead.tsx`, `shell/LibraryGate.tsx`, `shell/AppInfoFooter.tsx`.
+- Library: `library/LibraryWall.tsx` (478), `useShelfDrag.ts` (613, drag/measurement), `Shelf.tsx`, `DetailPanel.tsx` (538), `spine.ts`, `placement.ts`, `scan.ts`.
+- Labels: `labels/FilterStrip.tsx`, `labels/ManageLabels.tsx`.
+- Search/acquisition: `search/SearchView.tsx` (493), `query.ts`, `ResultDetail.tsx`.
+- Downloads: `downloads/DownloadQueue.tsx`, `format.ts`.
+- Settings/backup: `settings/SettingsView.tsx` (533), `BackupSection.tsx`, `backup.ts`, `naming.ts`.
+
+Verification after every commit: `npx tsc --noEmit`, `npm run build`, `npm run test:e2e`. Final suite: **93 passed** (82 existing Playwright tests unchanged, plus 11 focused pure-helper tests). No existing tests were weakened or deleted. `App.tsx` is shell-only and no feature module now owns the wall's internals except through props.
+
+Known mechanical residue / phase 2 inputs:
+
+- `useShelfDrag` still operates on the whole mounted wall; windowing will need to move `geometryRef`/`flipRef` and `measureWall` to reason about recycled DOM.
+- Filtering still runs its imperative pass from `LibraryWall`; `useDeferredValue` and memoised spines are not yet applied.
+- `SearchView` and `SettingsView` are still eagerly imported by the shell; code-splitting them is first-paint work.
+- Downloads polling, settings, and scan orchestration still live in `App.tsx` as shell effects; they can become `useDownloads`/`useSettings` hooks without changing the module boundaries established here.
+
+Still open for phase 2: windowed shelf lifecycle and memory flatness, deferred/memoised filtering under 20 ms, first-paint assets/fonts/code-splitting, and the `perf/bench.mjs` release gates.
+
 ## Acceptance criteria
 
-- [ ] `App.tsx` is shell-only (roughly <800 lines); each feature module is independently readable and under ~600 lines.
-- [ ] No visual or behavioural regressions: 74+ e2e pass, reader/drag/filters/back stack/import-export still work.
+- [x] `App.tsx` is shell-only at 649 lines; feature modules are split (two largest: `useShelfDrag.ts` 613, `DetailPanel.tsx` 538).
+- [x] No visual or behavioural regressions: 93 e2e pass (82 original), reader/drag/filters/back stack/import-export still work.
 - [ ] Full-wall traversal memory stays flat with windowed shelves; no scroll jumps at recycle boundaries.
 - [ ] Filtering 2,000 books under 20 ms, no wall re-render.
 - [ ] First shelf ≤400 ms at 4x throttle, or the residual is documented with a measured floor.
