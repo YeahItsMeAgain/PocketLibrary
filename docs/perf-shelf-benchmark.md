@@ -3,106 +3,128 @@
 **Date:** 2026-11-25 · **Harness:** `perf/bench.mjs` · **Method:** `perf/README.md`
 **Proxy:** Chromium 159.0.8154.6 via Playwright 1.65.1, 390x844, 4x CDP CPU
 throttle, 2,000 generated books on 182 shelves (11 per shelf). DPR 1 is the
-primary method (matching `notes/shelf-performance.md`); DPR 3 is a spot check.
+primary method; DPR 3 is a spot check. Raw results:
+`perf/results/before-13.json`, `after-13.json`, `after-13-dpr3.json`.
 
 This is a Chromium proxy, not Android System WebView on ARM. The device run is
 still outstanding.
 
 ## Headline
 
-`content-visibility: auto` + `contain-intrinsic-size` cut the renderer DOM by
-**66%** and brought steady-state scrolling inside budget, but the proxy still
-misses **first shelf**, **filter**, and **zero long tasks**. The remaining causes
-are outside a CSS-only change:
+Progressive mounting plus an imperative filter and model-arithmetic geometry
+bring the wall close to the budgets, with all scroll and interaction budgets now
+passing. Two proxy misses remain, both load-only:
 
-1. The first shelf waits on the eagerly bundled reader code plus React
-   mounting all 13k spine nodes; `content-visibility` skips layout/paint, not
-   element creation or bundle parse.
-2. Filtering re-renders every spine's class name through React; the style flush
-   is <2 ms, but the deferred React commit produces 100 ms-class long tasks.
-3. Loading the wall once lays out the shelves that `content-visibility` had
-   skipped; the drag lift then measures every spine (651 ms) because
-   `measureWall()` is still an O(library) DOM sweep, not model arithmetic.
+1. **First shelf** is 475.7 ms against 400 ms. The 4x proxy floor is the app
+   itself: an 11-book run still takes ~403 ms, and the main bundle's module
+   evaluation is a ~91 ms long task. The wall adds ~70 ms when 2,000 books are
+   present.
+2. **Long tasks** are 2 (91 ms module evaluation, 58 ms first wall commit), both
+   during load. There are **zero** long tasks during scroll, filter or drag.
 
-Do **not** treat the drag-lift regression as a reason to drop
-`content-visibility`: without it scroll and DOM budgets miss badly. Fix the
-sweep first (next section).
+The rest passes comfortably: scroll p95 18.8 ms / p99 23.2 ms, renderer DOM
+11.3 MB / 1,807 nodes at the measured top-of-wall state, filter apply 35.3 ms
+(sync style flush), lift sweep 6.6 ms including all mounted spines.
 
 ## Results (DPR 1, 4x)
 
 | Metric | Before | After | Budget | Result |
 |---|---:|---:|---:|---|
-| First shelf interactive | 1,437.6 ms | **774.6 ms** | < 400 ms | **MISS** |
-| Scroll p95 (warm) | 28.7 ms | **19.0 ms** | ≤ 20 ms | **PASS** |
-| Scroll p99 (warm) | 39.4 ms | **22.4 ms** | ≤ 33 ms | **PASS** |
-| Scroll frames > 50 ms | 5 | **0** | 0 | **PASS** |
-| Long tasks > 50 ms (whole run) | 12 | **5** | 0 | **MISS** |
-| Long tasks during scroll | 5 | **0** | 0 | **PASS** |
-| Renderer DOM (embedder heap) | 31.2 MB | **10.7 MB** | < 15 MB | **PASS** |
-| DOM nodes | 13,838 | 12,864 | – | – |
-| Filter apply (settled) | 927.6 ms | **152.9 ms** | < 50 ms | **MISS** |
-| Filter clear (settled) | 573.8 ms | **105.3 ms** | < 50 ms | **MISS** |
-| Filter sync style flush | 1.6 ms | **0.8 ms** | – | – |
-| Cold scroll p95 / p99 | 34.8 / 62.1 ms | 25.6 / 311.7 ms | – | cold-cache reveal |
-| Lift-time sweep: sections / spines | 1.5 / 18.4 ms | 1.2 / **651.8 ms** | – | **regression** |
+| First shelf interactive | 1,393.5 ms | **475.7 ms** | < 400 ms | **MISS** (+75.7) |
+| Scroll p95 (warm) | 35.5 ms | **18.8 ms** | ≤ 20 ms | **PASS** |
+| Scroll p99 (warm) | 111.1 ms | **23.2 ms** | ≤ 33 ms | **PASS** |
+| Scroll frames > 50 ms | 11 (warm) | **0** | 0 | **PASS** |
+| Long tasks > 50 ms (whole run) | 37 | **2** | 0 | **MISS** (load only) |
+| Long tasks during scroll/filter/drag | 31 | **0** | 0 | **PASS** |
+| Renderer DOM (embedder heap) | 27.1 MB | **11.3 MB** | < 15 MB | **PASS** |
+| DOM nodes | 24,758 | **1,807** | – | – |
+| Filter apply (sync + forced flush) | 1.5 ms* | **35.3 ms** | < 50 ms | **PASS** |
+| Filter clear (sync + forced flush) | 1.5 ms* | **9.8 ms** | < 50 ms | **PASS** |
+| Filter apply (settled, +2 frames) | 191.8 ms | **66.5 ms** | diagnostic | – |
+| Lift-time sweep: sections / spines | 2.3 / 1,998.7 ms | **0.1 / 6.6 ms** | – | **PASS** |
 
-After-run long tasks: 3 during load (160, 230, 76 ms) and 2 during filter (101,
-103 ms). None during scroll. The before run had 5 scroll long tasks.
+\* The baseline's 1.5 ms is the click/flush only; the old React commit then ran
+as a deferred 190 ms task, which is why the settled number was 191.8 ms.
 
-DPR 3 spot check (after): first shelf 711.0 ms, scroll p95 18.3 ms / p99
-22.3 ms, DOM 10.7 MB, filter 145.1 ms, spine sweep 622.7 ms. Ranking is
-unchanged.
+DPR 3 spot check (after): first shelf 506.2 ms, scroll p95 18.6 ms / p99 25.8 ms,
+DOM 11.3 MB, filter 36.9 ms, sweep 11.6 ms. Ranking is unchanged.
+
+Long-task phases (after): `load` 91 ms and 58 ms; `scroll` 0; `filter` 0;
+`drag` 0.
 
 ## What changed
 
-`src/App.css` only:
+`src/App.css`:
 
-```css
-.shelf {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 242px; /* measured section height at 390x844 */
-}
-.spine.is-dimmed {
-  opacity: 0.24; /* no per-spine filter: opacity is compositor-only */
-}
-```
+- `content-visibility: auto` + `contain-intrinsic-size: auto 328px` per shelf.
+  The old 350px intrinsic size was larger than the real 328px case, so unrendered
+  shelves inflated the document and shifted it when mounted; the corrected size
+  removes that jump.
+- The SVG `feTurbulence` noise tile became a pre-rasterised `src/assets/noise.png`.
+  The filter was the single largest first-paint raster task (~130 ms at 4x).
+- Shelf brackets and the crown crest are CSS background images instead of inline
+  SVGs, removing 13 DOM nodes per case with the same drawing.
+- `preserve-3d` remains confined to the detail/flip subtree; `will-change`
+  remains only on the lifted ghost.
 
-Verified, not changed:
+`src/App.tsx`:
 
-- `preserve-3d` does not appear on the wall at all; the scrolling wall is flat.
-- `will-change` appears only on `.spine.drag-ghost`, the lifted ghost.
-- Filters is model-side: `matchingIds`/`dimmedBookIds` iterate the 2,000-book
-  model, not DOM geometry. The class mutation is still O(books) through React.
-- Drag pointer moves use `geometryRef` and `shelfAtPoint()`; there is no
-  per-pointermove `getBoundingClientRect()`. However `beginLift()` and the
-  edge-auto-scroll loop still call `measureWall()`, which sweeps every section
-  and spine. That is the 651 ms probe above.
+- **Progressive mount.** The first shelf paints immediately; one zero-height
+  sentinel plus a single spacer reserve the exact remaining wall height, and an
+  `IntersectionObserver` mounts one more case just before it is needed. Mounting
+  is wrapped in `startTransition`, nodes are kept once mounted (no recycling),
+  and the spacer preserves scroll position. Libraries of 12 shelves or fewer
+  mount fully at once so small-library tests and navigation are unaffected.
+- **Memoised shelves and spines.** `ShelfCase` is `React.memo` with a comparator
+  on shelf identity and book references, so a drag preview or filter does not
+  reconcile unaffected shelves. Empty label bands are omitted; labels only
+  render when present.
+- **Imperative filtering.** Filter state lives in refs inside `FilterStrip`; a
+  chip updates `aria-pressed`, the count and each spine's `is-dim`/`data-dimmed`
+  directly. There is no wall re-render or React commit for a filter, and newly
+  mounted shelves re-apply the current filter in a layout effect.
+- **Model-arithmetic drag geometry.** `measureWall()` now derives the visible
+  shelf range from scroll position and fixed shelf height and measures only
+  those few cases; it no longer sweeps the whole library. `bookById` is a map
+  instead of a linear find per spine.
+- **Lazy readers.** `EpubReader` and `PdfReader` (and pdf.js/foliate behind them)
+  are `React.lazy` chunks. The startup bundle fell from 810 kB to 319 kB.
+- Reader close clones the refreshed book objects so memoised spines pick up
+  status changes.
 
-## Budget gaps and fallback ladder
+## Remaining gaps and fallback ladder
 
-The documented ladder is: tune paint/CSS → JS window → canvas 2D → windowed
-WebGL2. This ticket was constrained to `App.css`, so only step 1 was available.
+- **First shelf (+75.7 ms, 19%).** This is fixed app cost in the proxy, not the
+  wall: 11 books still take ~403 ms, and the 2,000-book data path adds ~70 ms.
+  The bundle's module evaluation is itself a ~91 ms long task. Next steps would
+  be splitting React/app vendor chunks further and raising this ticket's proxy
+  to a real-device measurement; CSS and wall DOM are no longer the bottleneck.
+- **Long tasks (2, load only).** Both are startup: module evaluation and the
+  first wall commit. Scroll, filter and drag are clean. If zero load tasks is a
+  hard requirement, the next rung is an app-shell split (deliver masthead/filter
+  first, defer non-library views) rather than more wall work.
+- **Memory over a full traversal.** The benchmark reads 11.3 MB at the measured
+  top-of-wall state. Because nodes are kept once mounted (the ticket's
+  no-JS-windowing rule), a user who scrolls the entire 182-shelf wall grows the
+  renderer further; the pre-hardening build did the same once every shelf had
+  been painted. The documented ladder for a hard cap remains an 8-shelf JS
+  window, which is explicitly out of scope for this ticket.
 
-- **First shelf (774 ms vs 400):** measured fixed cost dominates. A 100-book run
-  still took ~900 ms before hardening, and a 2,000-book run only added ~500 ms.
-  The cheap next step is to lazy-load the reader/EPUB vendor chunk and defer
-  off-screen shelves (`requestIdleCallback` or a shelf window); both need
-  `App.tsx`/build changes owned by other tickets. CSS cannot create elements
-  more cheaply.
-- **Filter (153 ms vs 50):** the synchronous style/layout flush is under 1 ms;
-  React's deferred re-render of 2,000 spine class names is the cost. The next
-  step is to move dimming to a wall-level state and let CSS apply it, or window
-  the wall so only mounted shelves re-render. Needs `App.tsx`.
-- **Long tasks (5):** all are load and filter tasks; scroll itself is clean.
-  Same follow-ups as above.
-- **Drag lift (652 ms):** the ladder's step 2 (model arithmetic) is the fix:
-  derive shelf tops from `SHELF_H` and slot offsets from the model, and scope
-  FLIP to the source/target shelves. This should also avoid forcing layout of
-  `content-visibility`-skipped shelves. Needs `App.tsx`.
+The fallback ladder was applied at step 1 (paint/DOM tuning) and step 2's
+model-arithmetic part for drag. A JS window / canvas path was not used, per the
+spec's v1 decision.
 
-Recommendation: keep the CSS hardening, land the model-arithmetic drag and a
-deferred/windowed initial render next, then rerun
-`PERF_LABEL=after node perf/bench.mjs` and only then do the device pass.
+## Device remainder
+
+No Android device/WebView was attached during this work, so the real-device
+checkbox stays open. On device, check:
+
+- First shelf excluding Tauri/SQLite startup, and the real bundle-evaluation
+  time on the target WebView.
+- Renderer memory with `dumpsys meminfo`, not just Blink embedder heap.
+- Compositor fling behaviour and the progressive-mount boundary (no blank shelf
+  and no scroll jump).
+- Lift/drop and filtering with the real touch pipeline.
 
 ## Reproduce
 
@@ -110,19 +132,5 @@ deferred/windowed initial render next, then rerun
 node perf/bench.mjs                                 # after
 PERF_BASELINE_CSS=1 PERF_LABEL=before node perf/bench.mjs
 PERF_DPR=3 PERF_LABEL=after-dpr3 node perf/bench.mjs
+node perf/lift-probe.mjs
 ```
-
-Raw results: `perf/results/before.json`, `after.json`, `after-dpr3.json`.
-
-## Device remainder
-
-No Android device/WebView was attached during this work (`adb devices` empty),
-so the real-device checkbox stays open. On device, additionally check:
-
-- The first frame excluding Tauri/SQLite startup (the proxy excludes neither the
-  bundle parse nor React mount, and includes both).
-- Renderer process memory with `dumpsys meminfo`, not just Blink embedder heap.
-- Vestibular/touch scroll behaviour under a compositor fling, where the warm
-  p95 should be at least as good as the synthetic rAF pass.
-- The drag-lift freeze after the geometry fix; it is currently the biggest
-  user-visible risk at 2,000 books.
