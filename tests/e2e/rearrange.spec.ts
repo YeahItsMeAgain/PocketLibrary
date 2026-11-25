@@ -206,6 +206,63 @@ test("dragging a book into the middle inserts it before the next book", async ({
   await expect(page.getByTestId("book-detail")).toHaveCount(0);
 });
 
+test("several quick drags keep moving books while earlier moves finish", async ({
+  page,
+}) => {
+  await seed(page, {
+    state: "ready",
+    folderName: "PocketLibrary",
+    moveDelayMs: 1200,
+    shelves: [mockShelf(1, 0, 6)],
+    books: [
+      mockBook(1, "Alpha", 1, 0),
+      mockBook(2, "Beta", 1, 1),
+      mockBook(3, "Gamma", 1, 2),
+      mockBook(4, "Delta", 1, 3),
+      mockBook(5, "Epsilon", 1, 4),
+    ],
+  });
+
+  const spines = page.getByTestId("spine");
+  await expect(spines).toHaveCount(5);
+
+  // First move: Alpha to the end. The command deliberately takes 1.2s.
+  const start = await longPress(page, spine(page, "Alpha"));
+  const epsilonBox = await spine(page, "Epsilon").boundingBox();
+  expect(epsilonBox).not.toBeNull();
+  if (!epsilonBox) return;
+  await page.mouse.move(
+    epsilonBox.x + epsilonBox.width + 4,
+    epsilonBox.y + epsilonBox.height / 2,
+    { steps: 6 },
+  );
+  await page.mouse.up();
+  await expect(spines).toHaveText([
+    "Beta",
+    "Gamma",
+    "Delta",
+    "Epsilon",
+    "Alpha",
+  ]);
+
+  // Start the next drag before the first command resolves, as a hurried user
+  // moving a pile of books would. Gamma goes before Beta.
+  const second = await longPress(page, spine(page, "Gamma"));
+  const betaBox = await spine(page, "Beta").boundingBox();
+  expect(betaBox).not.toBeNull();
+  if (!betaBox) return;
+  await page.mouse.move(betaBox.x - 4, second.y, { steps: 6 });
+  await page.mouse.up();
+
+  await expect(spines).toHaveText([
+    "Gamma",
+    "Beta",
+    "Delta",
+    "Epsilon",
+    "Alpha",
+  ]);
+});
+
 test("cross-shelf drag with edge auto-scroll lands on the next shelf", async ({
   page,
 }) => {

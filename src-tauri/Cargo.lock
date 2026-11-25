@@ -3662,7 +3662,7 @@ dependencies = [
 
 [[package]]
 name = "pocketlibrary"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "futures-util",
  "pocketlibrary_core",
@@ -3679,7 +3679,7 @@ dependencies = [
 
 [[package]]
 name = "pocketlibrary_core"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "base64 0.22.1",
  "blake3",

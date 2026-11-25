@@ -230,6 +230,40 @@ test("tapping a spine opens the framed detail and Back returns to the wall", asy
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
 });
 
+test("a book can be deleted from the library after confirmation", async ({
+  page,
+}) => {
+  await page.addInitScript((books) => {
+    (
+      window as unknown as { __POCKETLIBRARY_MOCK__: unknown }
+    ).__POCKETLIBRARY_MOCK__ = {
+      state: "ready",
+      folderName: "PocketLibrary",
+      books,
+    };
+  }, BOOKS);
+
+  await page.goto("/");
+  await expect(page.getByTestId("spine")).toHaveCount(2);
+
+  await page.getByTestId("spine").first().click();
+  const detail = page.getByTestId("book-detail");
+  await expect(detail).toBeVisible();
+  await page.getByTestId("detail-actions").click();
+  await page.getByTestId("detail-delete").click();
+
+  const confirm = page.getByTestId("detail-delete-confirm");
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toContainText("Delete “The Hollow Crown”");
+  await page.getByTestId("detail-delete-confirm-button").click();
+
+  await expect(detail).toHaveCount(0);
+  await expect(page.getByTestId("spine")).toHaveCount(1);
+  await expect(page.getByTestId("spine").first()).toHaveText(
+    "A Field Guide to Birds",
+  );
+});
+
 test("Escape and the scrim close the detail panel", async ({ page }) => {
   await page.addInitScript((nextBooks) => {
     (

@@ -6,7 +6,7 @@ An Android-only reading room for the EPUBs and PDFs you already own. Point it at
 a folder, arrange the books on manual shelves, and read them in place. No
 account, sync service, store or telemetry.
 
-**Version 0.1.4** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
+**Version 0.1.5** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
 
 ## Features
 
@@ -54,7 +54,7 @@ Download the signed APK from
 sideload it:
 
 ```bash
-adb install -r PocketLibrary-0.1.4.apk
+adb install -r PocketLibrary-0.1.5.apk
 ```
 
 The release is signed with `CN=PocketLibrary`. Installing over an earlier release
@@ -63,7 +63,7 @@ choose a normal subfolder such as `Documents/PocketLibrary`; Android will not
 grant the storage root or `Download`.
 
 APK SHA-256:
-`d9b8b91cc029f384176099bb74d35acb82668eb31b887ea1358d42dc3667ed90`.
+`840099a0335b5d81bdd4f4f9285e8e01190bd5f14f3005529a14aa745c20d8e5`.
 
 ## Development
 
@@ -98,7 +98,7 @@ APK is built locally because it needs the SDK, NDK and release keystore.
 
 ## Documentation
 
-- [Release notes](docs/release-0.1.4.md) · [Diagnostics](docs/diagnostics.md) ·
+- [Release notes](docs/release-0.1.5.md) · [Diagnostics](docs/diagnostics.md) ·
   [Updates and signing](docs/updates.md) · [Build guide](docs/build.md)
 - [Performance benchmark](docs/perf-shelf-benchmark.md) ·
   [Architecture decisions](docs/adr/) · [Contributing](CONTRIBUTING.md)

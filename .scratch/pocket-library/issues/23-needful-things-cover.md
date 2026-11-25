@@ -5,7 +5,7 @@
 **What to fix:** The PDF copy of *Needful Things* shows an incorrect cover. We need the actual file or a screenshot before choosing a cover heuristic.
 
 **Category:** bug
-**Status:** needs-info
+**Status:** resolved
 
 ## Triage Notes
 
@@ -23,3 +23,7 @@
 ## Agent Brief (provisional)
 
 Once the artifact is available, make PDF cover selection choose a jacket-like page/image instead of blindly rendering page 1, and add a fixture-based regression test for the chosen rule. Do not add online cover fetching without a separate decision.
+
+## Resolution
+
+PDF cover extraction now samples the first four pages and skips text-only title pages, choosing a jacket-like page by ink and colour or falling back to the generated plate. Fixture test covers a white text page followed by a coloured jacket. See issue 26.

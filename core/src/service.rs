@@ -90,10 +90,57 @@ impl Service {
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         migrations::migrate(&mut conn)?;
+        Self::repair_truncated_titles(&conn)?;
         Ok(Self {
             conn: Mutex::new(conn),
             cover_dir,
         })
+    }
+
+    /// Repair titles that were indexed from a truncated embedded title, using
+    /// the acquisition history or filename that is already in the catalogue.
+    ///
+    /// This runs once when the database opens so an update fixes existing
+    /// libraries without waiting for the user to rescan. Normal titles never
+    /// match the repair rule and are left alone.
+    fn repair_truncated_titles(conn: &Connection) -> Result<()> {
+        let mut statement = conn.prepare(
+            "SELECT b.id, b.title, b.path,
+                    (SELECT d.title FROM downloads d
+                      WHERE d.book_id = b.id AND trim(d.title) <> ''
+                      ORDER BY d.id DESC LIMIT 1)
+             FROM books b",
+        )?;
+        let rows = statement.query_map([], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, Option<String>>(3)?,
+            ))
+        })?;
+        let mut repairs = Vec::new();
+        for row in rows {
+            let (id, title, path, acquired_title) = row?;
+            let filename = path.rsplit(['/', '\\']).next().unwrap_or(&path);
+            let hint = acquired_title
+                .as_deref()
+                .filter(|value| !value.trim().is_empty())
+                .unwrap_or(filename);
+            if let Some(repaired) = metadata::title_from_hint(&title, hint)
+                && repaired != title
+            {
+                repairs.push((id, repaired));
+            }
+        }
+        drop(statement);
+        for (id, title) in repairs {
+            conn.execute(
+                "UPDATE books SET title = ?1 WHERE id = ?2",
+                params![title, id],
+            )?;
+        }
+        Ok(())
     }
 
     fn connection(&self) -> Result<MutexGuard<'_, Connection>> {
@@ -1131,6 +1178,29 @@ impl Service {
         Ok(path)
     }
 
+    /// Forget a book and compact its shelf. The shell deletes the file and
+    /// cover first; this only owns the catalogue side of the operation.
+    pub fn delete_book(&self, book_id: i64) -> Result<()> {
+        let mut conn = self.connection()?;
+        let tx = conn.transaction()?;
+        ensure_book(&tx, book_id)?;
+        let (shelf_id, cover_path): (Option<i64>, Option<String>) = tx.query_row(
+            "SELECT shelf_id, cover_path FROM books WHERE id = ?1",
+            [book_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )?;
+        tx.execute("DELETE FROM books WHERE id = ?1", [book_id])?;
+        if let Some(shelf_id) = shelf_id {
+            let remaining = ordered_book_ids(&tx, shelf_id)?;
+            reassign_slots(&tx, &remaining, shelf_id)?;
+        }
+        tx.commit()?;
+        if let Some(path) = cover_path {
+            let _ = fs::remove_file(path);
+        }
+        Ok(())
+    }
+
     /// Every live bookmark for a book, oldest first.
     pub fn list_bookmarks(&self, book_id: i64) -> Result<Vec<Bookmark>> {
         let conn = self.connection()?;
@@ -1937,4 +2007,61 @@ fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
         reading_status: row.get::<_, ReadingStatus>(19)?,
         labels: Vec::new(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn opening_repairs_a_truncated_title_from_download_history() {
+        let dir = tempfile::TempDir::new().expect("temporary directory");
+        let path = dir.path().join("library.db");
+        let service = Service::open(&path).expect("open service");
+        {
+            let conn = service.connection().expect("connection");
+            conn.execute(
+                "INSERT INTO books (content_hash, path, format, title, authors, added_at)
+                 VALUES ('hash', 'Alex North - The Whisper Man (2019).epub', 'epub', 'MAN', '[]', 1)",
+                [],
+            )
+            .expect("insert book");
+            let book_id = conn.last_insert_rowid();
+            conn.execute(
+                "INSERT INTO downloads
+                    (md5, title, format, source, mirror_urls, state, bytes, book_id, created_at, updated_at)
+                 VALUES ('md5', 'The Whisper Man ebook', 'epub', 'libgen.vg', '[]', 'completed', 1, ?1, 1, 1)",
+                [book_id],
+            )
+            .expect("insert download");
+        }
+        drop(service);
+
+        let reopened = Service::open(&path).expect("reopen service");
+        let books = reopened.list_books().expect("list books");
+        assert_eq!(books[0].title, "The Whisper Man");
+    }
+
+    #[test]
+    fn opening_leaves_a_normal_title_alone() {
+        let dir = tempfile::TempDir::new().expect("temporary directory");
+        let path = dir.path().join("library.db");
+        let service = Service::open(&path).expect("open service");
+        {
+            let conn = service.connection().expect("connection");
+            conn.execute(
+                "INSERT INTO books (content_hash, path, format, title, authors, added_at)
+                 VALUES ('hash', 'Something Else.epub', 'epub', 'The Whisper Man', '[]', 1)",
+                [],
+            )
+            .expect("insert book");
+        }
+        drop(service);
+
+        let reopened = Service::open(&path).expect("reopen service");
+        assert_eq!(
+            reopened.list_books().expect("list books")[0].title,
+            "The Whisper Man"
+        );
+    }
 }

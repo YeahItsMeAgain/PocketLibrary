@@ -906,8 +906,61 @@ async fn share_diagnostics(app: AppHandle) -> Result<Option<SharedDiagnostics>, 
 }
 
 #[cfg(target_os = "android")]
-fn open_book_externally_response(app: &AppHandle, book_id: i64) -> Result<(), ApiError> {
+fn delete_book_response(app: &AppHandle, book_id: i64, delete_file: bool) -> Result<(), ApiError> {
     let api = app.state::<Api>();
+    let path = api.book_path(book_id)?;
+    if delete_file {
+        let token = api.library_folder()?.ok_or_else(|| {
+            api_error(
+                "library_unavailable",
+                "No library folder has been chosen yet.",
+            )
+        })?;
+        let uri = parse_folder_token(&token);
+        if !grant_is_valid(app, &uri) {
+            return Err(api_error(
+                "library_unavailable",
+                "The library folder is no longer accessible.",
+            ));
+        }
+        let source = SafSource::new(app.android_fs(), uri);
+        if let Some(file_uri) = source.uri_for_path(&path)? {
+            app.android_fs()
+                .remove_file(&file_uri)
+                .map_err(|error| {
+                    logged_error(
+                        "delete_book",
+                        "The book file could not be deleted. It is still in your library.",
+                        error,
+                    )
+                })?;
+        }
+    }
+    api.delete_book(book_id)?;
+    log_diag(
+        app,
+        Level::Info,
+        "book.deleted",
+        &format!("book {book_id} removed at {path} (file deleted: {delete_file})"),
+    );
+    Ok(())
+}
+
+#[cfg(not(target_os = "android"))]
+fn delete_book_response(app: &AppHandle, book_id: i64, _delete_file: bool) -> Result<(), ApiError> {
+    let api = app.state::<Api>();
+    api.delete_book(book_id)?;
+    log_diag(
+        app,
+        Level::Info,
+        "book.deleted",
+        &format!("book {book_id} removed from the catalogue"),
+    );
+    Ok(())
+}
+
+#[cfg(target_os = "android")]
+fn open_book_externally_response(app: &AppHandle, book_id: i64) -> Result<(), ApiError> {    let api = app.state::<Api>();
     let token = api.library_folder()?.ok_or_else(|| {
         api_error(
             "library_unavailable",
@@ -1080,6 +1133,15 @@ fn move_book(
     slot_index: i64,
 ) -> Result<(), ApiError> {
     api.move_book(book_id, shelf_id, slot_index)
+}
+
+#[tauri::command]
+async fn delete_book(
+    app: AppHandle,
+    book_id: i64,
+    delete_file: bool,
+) -> Result<(), ApiError> {
+    blocking(move || delete_book_response(&app, book_id, delete_file)).await
 }
 
 #[tauri::command]
@@ -1315,6 +1377,7 @@ pub fn run() {
             choose_library_folder,
             rescan_library,
             move_book,
+            delete_book,
             get_shelf_capacity,
             set_shelf_capacity,
             get_download_naming,

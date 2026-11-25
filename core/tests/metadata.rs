@@ -3,7 +3,7 @@ mod common;
 use base64::Engine as _;
 use common::{
     FakeDir, database, epub_with, epub_with_plain_image, epub2_with, minimal_epub, pdf_with,
-    pdf_with_info, png_cover, rich_epub,
+    pdf_with_info, pdf_with_title_page_then_cover, png_cover, rich_epub,
 };
 use pocketlibrary_core::{BookFormat, CoverSource};
 
@@ -132,6 +132,31 @@ fn pdf_metadata_page_count_and_rendered_cover_are_read() {
         .expect("book detail");
     let bytes = data_url_bytes(&detail.cover_data_url.expect("cover"));
     assert!(bytes.starts_with(&[0xff, 0xd8]));
+}
+
+#[test]
+fn pdf_cover_skips_a_text_title_page_for_the_coloured_jacket() {
+    use image::GenericImageView;
+
+    let (_dir, api) = database();
+    let source = FakeDir::new().file_with(
+        "Stephen King - Needful Things (1991).pdf",
+        pdf_with_title_page_then_cover("needful"),
+    );
+    api.scan(&source).expect("scan pdf with a title page");
+
+    let book = api.list_books().expect("list books").remove(0);
+    let detail = api
+        .get_book_detail(book.id, Some(&source))
+        .expect("book detail");
+    let bytes = data_url_bytes(&detail.cover_data_url.expect("cover"));
+    let image = image::load_from_memory(&bytes).expect("decode rendered cover");
+    let pixel = image.get_pixel(image.width() / 10, image.height() / 10);
+    let [red, green, blue, _] = pixel.0;
+    assert!(
+        red > green.saturating_add(30) && red > blue.saturating_add(30),
+        "cover came from the coloured second page, not the white title page: {red},{green},{blue}"
+    );
 }
 
 #[test]

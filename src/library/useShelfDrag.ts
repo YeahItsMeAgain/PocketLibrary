@@ -439,28 +439,30 @@ export function useShelfDrag({
     shelfId: number,
     index: number,
   ) {
+    const previousBooks = booksRef.current;
     const nextBooks = moveBookInList(
-      booksRef.current,
+      previousBooks,
       shelvesRef.current,
       gesture.book.id,
       shelfId,
       index,
     );
+    // Paint the result immediately. Waiting for the command used to leave the
+    // old ghost and preview on screen, so a second quick drag could start
+    // against stale geometry and its result could overwrite the first move.
+    setBooks(nextBooks);
+    setPreview(null);
+    setLift(null);
+    setMoveNotice(null);
     platform
       .moveBook(gesture.book.id, shelfId, index)
-      .then(() => {
-        setBooks(nextBooks);
-        setPreview(null);
-        setLift(null);
-        setMoveNotice(null);
-      })
       .catch((error) => {
+        setBooks(previousBooks);
         setMoveNotice(
           isApiError(error)
             ? error.message
             : "That book could not be moved. Please try again.",
         );
-        returnBook(gesture);
       });
   }
 

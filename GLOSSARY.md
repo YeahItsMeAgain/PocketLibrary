@@ -36,6 +36,10 @@ _Avoid_: progress, state
 A reading status meaning the user has finished the book. It is also applied when a book's file disappears from the library folder, because the user chose never to drop a known book from the library.
 _Avoid_: read, complete
 
+**Delete**:
+Remove a book from the library and delete its file from the library folder, after explicit confirmation. Different from a file disappearing on its own, which keeps the book as finished.
+_Avoid_: remove, forget
+
 **Flip**:
 The book-detail interaction: a book comes off the shelf, opens, and turns to reveal its blurb, metadata, labels, status, and actions.
 _Avoid_: detail view, modal

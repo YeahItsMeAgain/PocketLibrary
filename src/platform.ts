@@ -397,6 +397,7 @@ export interface Platform {
   getDownloadNaming(): Promise<string>;
   setDownloadNaming(pattern: string): Promise<string>;
   moveBook(bookId: number, shelfId: number, slotIndex: number): Promise<void>;
+  deleteBook(bookId: number, deleteFile?: boolean): Promise<void>;
   listLabels(): Promise<LabelUsage[]>;
   createLabel(name: string, colour: string): Promise<Label>;
   renameLabel(labelId: number, name: string): Promise<Label>;
@@ -572,6 +573,8 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<string>("set_download_naming", { pattern }),
     moveBook: (bookId, shelfId, slotIndex) =>
       call<void>("move_book", { bookId, shelfId, slotIndex }),
+    deleteBook: (bookId, deleteFile = true) =>
+      call<void>("delete_book", { bookId, deleteFile }),
     listLabels: () => call<LabelUsage[]>("label_usage"),
     createLabel: (name, colour) =>
       call<Label>("create_label", { name, colour }),
@@ -661,7 +664,7 @@ export function createTauriPlatform(call: Invoke): Platform {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.4",
+  appVersion: "0.1.5",
   schemaVersion: 3,
 };
 
@@ -730,6 +733,8 @@ export interface MockConfig {
   diagnosticsShare?: SharedDiagnostics | null;
   /** Byte size of the synthetic diagnostics zip. */
   diagnosticsBytes?: number;
+  /** Test-only delay before a shelf move resolves. */
+  moveDelayMs?: number;
   /** Test-only delay before the wall's shelves and books arrive. */
   libraryDelayMs?: number;
   /** Update flow scenario; defaults to `upToDate`. */
@@ -929,8 +934,7 @@ function initialShelves(config: MockConfig, books: Book[]): Shelf[] {
     .map((id, ordinal) => ({ id, ordinal, capacity }));
 }
 
-function orderBooks(books: Book[], shelves: Shelf[]): Book[] {
-  const rank = new Map(shelves.map((shelf, index) => [shelf.id, index]));
+function orderBooks(books: Book[], shelves: Shelf[]): Book[] {  const rank = new Map(shelves.map((shelf, index) => [shelf.id, index]));
   return [...books].sort((left, right) => {
     const leftRank =
       left.shelfId === null ? Number.MAX_SAFE_INTEGER : rank.get(left.shelfId) ?? Number.MAX_SAFE_INTEGER;
@@ -985,6 +989,26 @@ function applyMove(
     return placement ? { ...book, ...placement } : book;
   });
   return orderBooks(updated, shelves);
+}
+
+function applyDelete(books: Book[], shelves: Shelf[], bookId: number): Book[] {
+  const removed = books.find((book) => book.id === bookId);
+  if (!removed) return books;
+  const remaining = books
+    .filter((book) => book.shelfId === removed.shelfId && book.id !== bookId)
+    .sort((left, right) => (left.slotIndex ?? 0) - (right.slotIndex ?? 0));
+  const slots = new Map<number, number>();
+  remaining.forEach((book, slot) => slots.set(book.id, slot));
+  return orderBooks(
+    books
+      .filter((book) => book.id !== bookId)
+      .map((book) =>
+        slots.has(book.id)
+          ? { ...book, slotIndex: slots.get(book.id) ?? book.slotIndex }
+          : book,
+      ),
+    shelves,
+  );
 }
 
 function seedBooks(source: Book[] | undefined): Book[] {
@@ -1580,6 +1604,11 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       return downloadNaming;
     },
     moveBook: async (bookId, shelfId, slotIndex) => {
+      if (config.moveDelayMs) {
+        await new Promise((resolve) =>
+          window.setTimeout(resolve, config.moveDelayMs),
+        );
+      }
       const book = books.find((candidate) => candidate.id === bookId);
       if (!book) {
         throw { code: "book_not_found", message: "That book could not be found." };
@@ -1603,6 +1632,13 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         throw { code: "shelf_full", message: "That shelf is already full." };
       }
       books = applyMove(books, shelves, bookId, shelfId, slotIndex);
+    },
+    deleteBook: async (bookId) => {
+      if (!books.some((book) => book.id === bookId)) {
+        throw { code: "book_not_found", message: "That book could not be found." };
+      }
+      books = applyDelete(books, shelves, bookId);
+      books = books.filter((book) => book.id !== bookId);
     },
     listLabels: async () => labelUsage(),
     createLabel: async (name, colour) => {

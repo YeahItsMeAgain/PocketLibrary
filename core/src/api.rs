@@ -294,6 +294,11 @@ impl Api {
         self.service.book_path(book_id).map_err(ApiError::from)
     }
 
+    /// Forget a book and compact its shelf. The shell deletes the file first.
+    pub fn delete_book(&self, book_id: i64) -> ApiResult<()> {
+        self.service.delete_book(book_id).map_err(ApiError::from)
+    }
+
     /// Every live bookmark for a book.
     pub fn list_bookmarks(&self, book_id: i64) -> ApiResult<Vec<Bookmark>> {
         self.service.list_bookmarks(book_id).map_err(ApiError::from)

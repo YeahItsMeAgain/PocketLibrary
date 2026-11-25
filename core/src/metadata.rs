@@ -259,10 +259,24 @@ fn split_on_word<'a>(value: &'a str, word: &str) -> Vec<&'a str> {
     parts
 }
 
-/// Render page one to a PNG at roughly 600 px wide. Failure is never fatal.
+/// Render a jacket-like page to a PNG at roughly 600 px wide.
+///
+/// PDF page one is often a text-only title page. Sample the first few pages
+/// and choose the first one with substantial ink and colour, which is much
+/// more likely to be the jacket than a wall of title-page text. If no page
+/// looks jacket-like, keep page one so unusual PDFs still get a cover.
 fn render_pdf_cover(bytes: &[u8]) -> Option<Vec<u8>> {
+    const CANDIDATE_PAGES: usize = 4;
+    const COVER_SCORE: f32 = 0.18;
+
     let pdf = Pdf::new(bytes.to_vec()).ok()?;
-    let page = pdf.pages().first()?;
+    let pages = pdf.pages();
+    if pages.is_empty() {
+        return None;
+    }
+    let index = (0..pages.len().min(CANDIDATE_PAGES))
+        .find(|index| page_cover_score(&pages[*index]).is_some_and(|score| score >= COVER_SCORE))?;
+    let page = &pages[index];
     let (width, _height) = page.render_dimensions();
     if !width.is_finite() || width <= 0.0 {
         return None;
@@ -281,6 +295,54 @@ fn render_pdf_cover(bytes: &[u8]) -> Option<Vec<u8>> {
         },
     );
     pixmap.into_png().ok()
+}
+
+/// Score how much a page looks like a printed jacket rather than a title page.
+/// Colour carries most of the signal; ink stops an almost-blank page from
+/// winning just because its few pixels are coloured.
+fn page_cover_score(page: &hayro::hayro_syntax::page::Page<'_>) -> Option<f32> {
+    const SAMPLE_WIDTH: f32 = 120.0;
+
+    let (width, _height) = page.render_dimensions();
+    if !width.is_finite() || width <= 0.0 {
+        return None;
+    }
+    let scale = (SAMPLE_WIDTH / width).clamp(0.02, 1.0);
+    let cache = RenderCache::new();
+    let pixmap = render(
+        page,
+        &cache,
+        &InterpreterSettings::default(),
+        &RenderSettings::default(),
+        &PixmapSettings {
+            x_scale: scale,
+            y_scale: scale,
+            bg_color: WHITE,
+        },
+    );
+    let data = pixmap.data_as_u8_slice();
+    let mut sampled = 0u32;
+    let mut ink = 0u32;
+    let mut colour = 0u32;
+    for pixel in data.chunks_exact(4) {
+        let (red, green, blue, alpha) = (pixel[0], pixel[1], pixel[2], pixel[3]);
+        if alpha == 0 {
+            continue;
+        }
+        sampled += 1;
+        if u16::from(red) + u16::from(green) + u16::from(blue) < 720 {
+            ink += 1;
+        }
+        let max = red.max(green).max(blue);
+        let min = red.min(green).min(blue);
+        if max - min > 18 {
+            colour += 1;
+        }
+    }
+    let total = sampled.max(1) as f32;
+    let ink_fraction = ink as f32 / total;
+    let colour_fraction = colour as f32 / total;
+    Some(ink_fraction * (0.35 + colour_fraction))
 }
 
 /// Pull a four-digit year out of a PDF `D:YYYY...` date.
@@ -404,8 +466,20 @@ fn filename_title_extends_short_embedded(embedded: &str, hint: &str) -> bool {
 /// Returns `None` for normal titles so a rescan never rewrites them.
 pub(crate) fn repaired_filename_title(current_title: &str, filename: &str) -> Option<String> {
     let hint = parse_filename(filename).title?;
-    let current_title = clean_text(current_title);
-    filename_title_extends_short_embedded(&current_title, &hint).then_some(hint)
+    title_from_hint(current_title, &hint)
+}
+
+/// Complete a short stored title from any trusted title hint, such as an
+/// acquisition history row or a filename. Returns `None` when the hint does
+/// not clearly extend the stored title.
+pub(crate) fn title_from_hint(current_title: &str, hint: &str) -> Option<String> {
+    let cleaned = clean_text(hint);
+    let candidate = clean_text(&strip_trailing_acquisition_words(&cleaned));
+    if candidate.is_empty() {
+        return None;
+    }
+    let current = clean_text(current_title);
+    filename_title_extends_short_embedded(&current, &candidate).then_some(candidate)
 }
 
 fn split_trailing_parenthetical(value: &str) -> Option<(&str, &str)> {

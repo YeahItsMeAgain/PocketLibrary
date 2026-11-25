@@ -1644,6 +1644,58 @@ button:focus-visible {
   color: #ffe7b1;
 }
 
+.detail .detail-menu-rule {
+  height: 1px;
+  margin: 4px 2px;
+  background: rgba(201, 168, 106, 0.25);
+}
+
+.detail .detail-delete-trigger {
+  padding: 9px 10px;
+  color: #e8b3a3;
+  font-size: 11px;
+  text-align: left;
+}
+
+.detail .detail-delete-trigger:active {
+  background: rgba(196, 110, 96, 0.18);
+}
+
+.detail .detail-delete-confirm {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  z-index: 9;
+  width: min(260px, calc(100vw - 48px));
+  padding: 12px;
+  border: 1px solid rgba(196, 110, 96, 0.62);
+  background: linear-gradient(180deg, rgba(48, 24, 32, 0.99), rgba(12, 7, 12, 0.99));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.72);
+}
+
+.detail .detail-delete-confirm p {
+  margin: 0 0 10px;
+  color: #f0d3c2;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.detail .detail-delete-confirm .detail-delete-error {
+  color: #ffb7a5;
+}
+
+.detail .detail-delete-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.detail .detail-delete-buttons .danger-action,
+.detail .detail-delete-buttons .secondary-action {
+  width: 100%;
+  margin: 0;
+}
+
 @keyframes detail-in {
   from {
     transform: translateY(18px) scale(0.985);

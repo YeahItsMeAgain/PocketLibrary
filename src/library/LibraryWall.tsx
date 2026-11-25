@@ -526,6 +526,10 @@ export function LibraryWall({
             }}
             onBookChanged={updateBook}
             onLabelsChanged={refreshLabels}
+            onDeleted={() => {
+              setOpenBookId(null);
+              void refreshWallData();
+            }}
           />
         </Suspense>
       ) : null}

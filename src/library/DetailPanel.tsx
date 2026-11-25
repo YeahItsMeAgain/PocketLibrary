@@ -30,6 +30,7 @@ interface DetailPanelProps {
     labels?: Label[];
   }) => void;
   onLabelsChanged: () => void;
+  onDeleted: (bookId: number) => void;
 }
 
 export function DetailPanel({
@@ -39,6 +40,7 @@ export function DetailPanel({
   onRead,
   onBookChanged,
   onLabelsChanged,
+  onDeleted,
 }: DetailPanelProps) {
   const [detail, setDetail] = useState<BookDetail | null>(null);
   const [reading, setReading] = useState<ReadingState | null>(null);
@@ -48,6 +50,9 @@ export function DetailPanel({
   const [labelMenu, setLabelMenu] = useState(false);
   const [labelNotice, setLabelNotice] = useState<string | null>(null);
   const [externalNotice, setExternalNotice] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const close = useLayerExit(true, onClose);
 
@@ -68,6 +73,9 @@ export function DetailPanel({
     setLabelMenu(false);
     setLabelNotice(null);
     setExternalNotice(null);
+    setConfirmDelete(false);
+    setDeleteBusy(false);
+    setDeleteNotice(null);
     Promise.all([
       platform.getBookDetail(bookId),
       platform.readingState(bookId),
@@ -186,6 +194,25 @@ export function DetailPanel({
     }
   }, [detail, bookId, onBookChanged]);
 
+  const deleteBook = useCallback(async () => {
+    if (!detail) return;
+    setDeleteBusy(true);
+    setDeleteNotice(null);
+    try {
+      await platform.deleteBook(bookId, true);
+      onDeleted(bookId);
+      close();
+    } catch (error) {
+      setDeleteNotice(
+        isApiError(error)
+          ? error.message
+          : "That book could not be deleted. Please try again.",
+      );
+    } finally {
+      setDeleteBusy(false);
+    }
+  }, [detail, bookId, onDeleted, close]);
+
   useEffect(() => {
     closeRef.current?.focus();
   }, []);
@@ -294,6 +321,62 @@ export function DetailPanel({
                           {STATUS_LABELS[status]}
                         </button>
                       ))}
+                      <span className="detail-menu-rule" aria-hidden="true" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="detail-delete-trigger"
+                        data-testid="detail-delete"
+                        onClick={() => {
+                          setStatusMenu(false);
+                          setConfirmDelete(true);
+                          setDeleteNotice(null);
+                        }}
+                      >
+                        Delete book…
+                      </button>
+                    </div>
+                  ) : null}
+                  {confirmDelete ? (
+                    <div
+                      className="detail-delete-confirm"
+                      role="alertdialog"
+                      aria-label="Confirm deleting this book"
+                      data-testid="detail-delete-confirm"
+                    >
+                      <p>
+                        Delete “{detail.title}” from your library folder? The
+                        file will be removed too. This cannot be undone.
+                      </p>
+                      {deleteNotice ? (
+                        <p
+                          className="detail-delete-error"
+                          role="status"
+                          data-testid="detail-delete-error"
+                        >
+                          {deleteNotice}
+                        </p>
+                      ) : null}
+                      <div className="detail-delete-buttons">
+                        <button
+                          type="button"
+                          className="danger-action"
+                          data-testid="detail-delete-confirm-button"
+                          disabled={deleteBusy}
+                          onClick={() => void deleteBook()}
+                        >
+                          {deleteBusy ? "Deleting…" : "Delete book and file"}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-action"
+                          data-testid="detail-delete-cancel"
+                          disabled={deleteBusy}
+                          onClick={() => setConfirmDelete(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   ) : null}
                 </div>

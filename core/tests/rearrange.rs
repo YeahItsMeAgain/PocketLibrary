@@ -220,3 +220,33 @@ fn a_rearranged_shelf_survives_reopening_the_catalog() {
     assert_eq!(reopened.list_books().expect("books after reopen"), expected);
     drop(dir);
 }
+
+#[test]
+fn deleting_a_book_compacts_its_shelf_and_forgets_its_metadata() {
+    let (_dir, api) = database();
+    api.set_shelf_capacity(4).expect("set capacity");
+    api.scan(&source(3)).expect("scan three books");
+    let shelf_id = api.list_shelves().expect("shelves")[0].id;
+    let books = api.list_books().expect("books");
+    let removed = book(&books, "book-1");
+    let removed_id = removed.id;
+    let label = api.create_label("Gothic", "#6e2630").expect("create label");
+    api.attach_label(removed_id, label.id)
+        .expect("attach label");
+
+    api.delete_book(removed_id).expect("delete book");
+
+    let books = api.list_books().expect("books after delete");
+    assert!(books.iter().all(|book| book.id != removed_id));
+    assert_eq!(shelf_titles(&books, shelf_id), vec!["book-0", "book-2"]);
+    assert!(
+        books
+            .iter()
+            .filter(|book| book.shelf_id == Some(shelf_id))
+            .enumerate()
+            .all(|(index, book)| book.slot_index == Some(index as i64)),
+        "the shelf stays contiguous after deletion"
+    );
+    let usage = api.label_usage().expect("label usage");
+    assert_eq!(usage[0].book_count, 0, "the deleted book's labels cascade");
+}
