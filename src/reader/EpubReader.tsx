@@ -15,6 +15,7 @@ import {
   type Bookmark,
   type ReadingStatus,
 } from "../platform";
+import { useLayerExit } from "../navigation";
 import {
   ANNOTATION_COLOURS,
   DEFAULT_ANNOTATION_COLOUR,
@@ -183,10 +184,19 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
   const resolvedAnnotations = useRef(new Map<number, string>());
   const selectionTimer = useRef(0);
 
+  // Sheets sit above the reader in the shared back stack: back/Escape closes
+  // the open sheet first, then the reader on the next press.
+  const closeSheet = useLayerExit(sheet !== null, () => setSheet(null));
+  const closeNoteEditor = useLayerExit(noteEditor !== null, () =>
+    setNoteEditor(null),
+  );
+
   const openExternally = useCallback(async () => {
     try {
       await platform.openBookExternally(book.id);
-      setExternalNote("Opened in another app. Your place is saved.");
+      setExternalNote(
+        "Handed to the Android app chooser. Your place here is saved.",
+      );
     } catch (error) {
       setExternalNote(
         isApiError(error)
@@ -667,7 +677,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
         { note: noteEditor.text },
       );
       upsertAnnotation(updated);
-      setNoteEditor(null);
+      closeNoteEditor();
       await drawAnnotation(updated);
     } catch (error) {
       setAnnotationNotice(
@@ -740,7 +750,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
     } catch {
       // Keep the annotation list usable even when this rendering cannot jump.
     }
-    setSheet(null);
+    closeSheet();
     setActiveAnnotation(null);
   }, []);
 
@@ -754,7 +764,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
     } catch {
       // The bookmark stays in the list even if this rendering cannot find it.
     }
-    setSheet(null);
+    closeSheet();
   }, []);
 
   const jumpChapter = useCallback(async (item: FoliateTocItem) => {
@@ -765,7 +775,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
     } catch {
       // A broken TOC target should not tear down the reader.
     }
-    setSheet(null);
+    closeSheet();
   }, []);
 
   const cycleTheme = useCallback(() => {
@@ -1014,7 +1024,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
             type="button"
             className="reader-scrim"
             aria-label="Close note editor"
-            onClick={() => setNoteEditor(null)}
+            onClick={closeNoteEditor}
           />
           <section
             className="reader-sheet reader-note-sheet"
@@ -1050,7 +1060,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
                 type="button"
                 className="secondary-action"
                 data-testid="reader-note-cancel"
-                onClick={() => setNoteEditor(null)}
+                onClick={closeNoteEditor}
               >
                 Cancel
               </button>
@@ -1094,7 +1104,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
             type="button"
             className="reader-scrim"
             aria-label="Close contents"
-            onClick={() => setSheet(null)}
+            onClick={() => closeSheet()}
           />
           <section
             className="reader-sheet"
@@ -1257,7 +1267,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
                           aria-label="Edit note"
                           data-testid="reader-annotation-edit"
                           onClick={() => {
-                            setSheet(null);
+                            closeSheet();
                             setNoteEditor({
                               annotation,
                               text: annotation.note ?? "",
@@ -1291,7 +1301,7 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
             type="button"
             className="reader-scrim"
             aria-label="Close type settings"
-            onClick={() => setSheet(null)}
+            onClick={() => closeSheet()}
           />
           <section
             className="reader-sheet reader-type-sheet"

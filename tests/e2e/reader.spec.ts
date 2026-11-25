@@ -141,6 +141,34 @@ test("Contents lists chapters with the current one highlighted", async ({
   await expect(sheet).toHaveCount(0);
 });
 
+test("browser back closes an open reader sheet before the reader", async ({
+  page,
+}) => {
+  await boot(page);
+  await page.goto("/");
+  await openReader(page);
+  await showChrome(page);
+
+  await page.getByTestId("reader-contents").click();
+  const contents = page.getByTestId("reader-contents-sheet");
+  await expect(contents).toBeVisible();
+
+  await page.goBack();
+  await expect(contents).toHaveCount(0);
+  await expect(page.getByTestId("reader")).toBeVisible();
+
+  await showChrome(page);
+  await page.getByTestId("reader-type").click();
+  await expect(page.getByTestId("reader-type-sheet")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByTestId("reader-type-sheet")).toHaveCount(0);
+  await expect(page.getByTestId("reader")).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+});
+
 test("typography, theme and scroll mode apply and are remembered", async ({
   page,
 }) => {

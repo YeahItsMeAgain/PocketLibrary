@@ -31,6 +31,7 @@ import {
   type ReaderTheme,
 } from "./settings";
 import { ReaderPersistentChrome, useReaderExit } from "./ReaderControls";
+import { useLayerExit } from "../navigation";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import "./pdf.css";
 
@@ -108,6 +109,9 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   pageRef.current = pageNumber;
   totalRef.current = numPages;
   zoomRef.current = zoom;
+
+  // The Contents and Zoom sheets unwind before the reader in the shared stack.
+  const closeSheet = useLayerExit(sheet !== null, () => setSheet(null));
 
   const persist = useCallback(
     (page: number, total: number, immediate = false) => {
@@ -445,7 +449,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
       const locator = parsePdfLocator(bookmark.locator);
       if (!locator) return;
       goToPage(locator.page);
-      setSheet(null);
+      closeSheet();
     },
     [goToPage],
   );
@@ -644,7 +648,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
             type="button"
             className="reader-scrim"
             aria-label="Close contents"
-            onClick={() => setSheet(null)}
+            onClick={() => closeSheet()}
           />
           <section
             className="reader-sheet"
@@ -694,7 +698,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
                           style={{ paddingLeft: 14 + item.depth * 16 }}
                           onClick={() => {
                             goToPage(item.page);
-                            setSheet(null);
+                            closeSheet();
                           }}
                         >
                           <span>{item.title}</span>
@@ -756,7 +760,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
             type="button"
             className="reader-scrim"
             aria-label="Close zoom settings"
-            onClick={() => setSheet(null)}
+            onClick={() => closeSheet()}
           />
           <section
             className="reader-sheet reader-type-sheet"
