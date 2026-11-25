@@ -174,7 +174,7 @@ test("Search and Settings are real screens with visible back paths", async ({
   await boot(page);
 
   await choose(page, "Search");
-  await expect(page.getByTestId("placeholder-view")).toContainText("Search");
+  await expect(page.getByTestId("search-view")).toContainText("Search Libgen");
   await page.getByTestId("search-back").click();
   await expect(page.getByTestId("library-wall")).toBeVisible();
 

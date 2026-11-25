@@ -38,7 +38,7 @@ test("the brass drawer navigates between Library, Search and Settings", async ({
 
   await drawer.getByRole("button", { name: "Search" }).click();
   await expect(drawer).toBeHidden();
-  await expect(page.getByTestId("placeholder-view")).toContainText("Search");
+  await expect(page.getByTestId("search-view")).toContainText("Search Libgen");
 
   await pull.click();
   await page
@@ -46,7 +46,7 @@ test("the brass drawer navigates between Library, Search and Settings", async ({
     .getByRole("button", { name: "Library" })
     .click();
   await expect(page.getByTestId("library-wall")).toBeVisible();
-  await expect(page.getByTestId("placeholder-view")).toHaveCount(0);
+  await expect(page.getByTestId("search-view")).toHaveCount(0);
 });
 
 test("Escape closes the drawer and returns focus to the pull", async ({ page }) => {

@@ -131,6 +131,67 @@ export interface ApiError {
   message: string;
 }
 
+/* ------------------------------------------------------------ acquisition */
+
+/** Mirrors `pocketlibrary_core::SearchQuery`. */
+export interface SearchQuery {
+  query: string;
+  title: string;
+  author: string;
+  yearFrom: number | null;
+  yearTo: number | null;
+  language: string;
+  format: string;
+  publisher: string;
+  isbn: string;
+  md5: string;
+  page: number;
+}
+
+/** Mirrors `pocketlibrary_core::MirrorLink`. */
+export interface MirrorLink {
+  label: string;
+  url: string;
+}
+
+/** Mirrors `pocketlibrary_core::LibgenResult`. */
+export interface LibgenResult {
+  md5: string;
+  title: string;
+  authors: string[];
+  publisher: string | null;
+  year: number | null;
+  language: string | null;
+  pages: number | null;
+  sizeText: string;
+  sizeBytes: number | null;
+  extension: string;
+  fileId: number | null;
+  source: string;
+  mirrors: MirrorLink[];
+}
+
+/** Mirrors `pocketlibrary_core::MirrorHealth`. */
+export interface MirrorHealth {
+  host: string;
+  failures: number;
+  coolingDown: boolean;
+  lastSuccess: boolean;
+}
+
+/** Mirrors `pocketlibrary_core::SearchPage`. */
+export interface SearchPage {
+  results: LibgenResult[];
+  page: number;
+  perPage: number;
+  total: number;
+  totalIsExact: boolean;
+  onPageBeforeFilters: number;
+  filtersApplied: boolean;
+  sourceMirror: string;
+  health: MirrorHealth[];
+}
+
 /** Narrow an unknown rejection from `invoke` to the command API error shape. */
 export function isApiError(error: unknown): error is ApiError {
   if (typeof error !== "object" || error === null) return false;
@@ -147,6 +208,7 @@ export function isLibraryUnavailable(error: unknown): error is ApiError {
 
 export interface Platform {
   appInfo(): Promise<AppInfo>;
+  searchLibgen(query: SearchQuery): Promise<SearchPage>;
   listBooks(): Promise<Book[]>;
   listShelves(): Promise<Shelf[]>;
   getBookDetail(id: number): Promise<BookDetail>;
@@ -187,6 +249,7 @@ export type Invoke = typeof invoke;
 export function createTauriPlatform(call: Invoke): Platform {
   return {
     appInfo: () => call<AppInfo>("app_info"),
+    searchLibgen: (query) => call<SearchPage>("search_libgen", { query }),
     listBooks: () => call<Book[]>("list_books"),
     listShelves: () => call<Shelf[]>("list_shelves"),
     getBookDetail: (id) => call<BookDetail>("get_book_detail", { id }),
@@ -261,12 +324,109 @@ export interface MockConfig {
   readingProgress?: Record<number, number>;
   /** Optional EPUB fixture URL per book id (defaults to sample.epub). */
   bookFiles?: Record<number, string>;
+  /** Front-desk results; defaults to a small Rock Paper Scissors set. */
+  searchResults?: LibgenResult[];
+  /** Total the mock mirror reports before client-side filters. */
+  searchTotal?: number;
+  /** Force a front-desk state for UI tests. */
+  searchMode?: "ok" | "offline" | "allFailed" | "formatChanged" | "empty";
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
 const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
 const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
 const MOCK_SAMPLE_PDF = "/test-assets/sample.pdf";
+
+const MOCK_SEARCH_RESULTS: LibgenResult[] = [
+  {
+    md5: "a1423442916f2f3def9517a3bf4dee48",
+    title: "Rock Paper Scissors",
+    authors: ["Alice Feeney"],
+    publisher: "HarperCollins Publishers",
+    year: 2021,
+    language: "English",
+    pages: 106,
+    sizeText: "3 MB",
+    sizeBytes: 3_000_000,
+    extension: "epub",
+    fileId: 98756682,
+    source: "libgen.li",
+    mirrors: [
+      {
+        label: "libgen.li",
+        url: "https://libgen.li/ads.php?md5=a1423442916f2f3def9517a3bf4dee48",
+      },
+      {
+        label: "libgen.bz",
+        url: "https://libgen.bz/ads.php?md5=a1423442916f2f3def9517a3bf4dee48",
+      },
+      {
+        label: "libgen.vg",
+        url: "https://libgen.vg/ads.php?md5=a1423442916f2f3def9517a3bf4dee48",
+      },
+    ],
+  },
+  {
+    md5: "8af476ee50480eaa5eb7db40f9edb742",
+    title: "Rock Paper Scissors",
+    authors: ["Alice Feeney"],
+    publisher: "HarperCollins Publishers",
+    year: 2021,
+    language: "English",
+    pages: 105,
+    sizeText: "4 MB",
+    sizeBytes: 4_000_000,
+    extension: "epub",
+    fileId: 98777542,
+    source: "libgen.li",
+    mirrors: [
+      {
+        label: "libgen.li",
+        url: "https://libgen.li/ads.php?md5=8af476ee50480eaa5eb7db40f9edb742",
+      },
+    ],
+  },
+  {
+    md5: "0541b9335749ea12eca941ff535aff53",
+    title: "Rock Paper Scissors",
+    authors: ["Alice Feeney"],
+    publisher: "Flatiron Books",
+    year: 2021,
+    language: "English",
+    pages: 267,
+    sizeText: "3 MB",
+    sizeBytes: 2_941_616,
+    extension: "pdf",
+    fileId: 101939413,
+    source: "libgen.bz",
+    mirrors: [
+      {
+        label: "libgen.bz",
+        url: "https://libgen.bz/ads.php?md5=0541b9335749ea12eca941ff535aff53",
+      },
+    ],
+  },
+  {
+    md5: "b22d21ad5e55cbcb4619dcba2865bfeb",
+    title: "Feeney, Alice - Rock Paper Scissors",
+    authors: ["Alice Feeney"],
+    publisher: "HarperCollins Publishers",
+    year: 2021,
+    language: "English",
+    pages: 87,
+    sizeText: "783 kB",
+    sizeBytes: 783_000,
+    extension: "epub",
+    fileId: 98946090,
+    source: "libgen.li",
+    mirrors: [
+      {
+        label: "libgen.li",
+        url: "https://libgen.li/ads.php?md5=b22d21ad5e55cbcb4619dcba2865bfeb",
+      },
+    ],
+  },
+];
 
 interface StoredReading {
   status: ReadingStatus;
@@ -377,8 +537,7 @@ function seedBooks(source: Book[] | undefined): Book[] {
     : [];
 }
 
-function seedLabels(config: MockConfig, books: Book[]): Label[] {
-  const labels = (config.labels ?? []).map((label) => ({ ...label }));
+function seedLabels(config: MockConfig, books: Book[]): Label[] {  const labels = (config.labels ?? []).map((label) => ({ ...label }));
   for (const book of books) {
     for (const label of book.labels) {
       if (!labels.some((candidate) => candidate.id === label.id)) {
@@ -389,6 +548,73 @@ function seedLabels(config: MockConfig, books: Book[]): Label[] {
   return labels.sort(
     (left, right) => left.createdAt - right.createdAt || left.id - right.id,
   );
+}
+
+function mockSearch(config: MockConfig, query: SearchQuery): SearchPage {
+  const mode = config.searchMode ?? "ok";
+  if (mode === "offline") {
+    throw {
+      code: "offline",
+      message:
+        "No network connection. Libgen search needs a connection; your shelf is still available.",
+    };
+  }
+  if (mode === "allFailed") {
+    throw {
+      code: "all_mirrors_failed",
+      message: "Every Libgen mirror refused or timed out. Try again in a moment.",
+    };
+  }
+  if (mode === "formatChanged") {
+    throw {
+      code: "mirror_format_changed",
+      message: "A Libgen mirror answered, but its results could not be read.",
+    };
+  }
+
+  const all = config.searchResults ?? MOCK_SEARCH_RESULTS;
+  const total = mode === "empty" ? 0 : (config.searchTotal ?? all.length);
+  const filtersApplied =
+    Boolean(query.language || query.format || query.yearFrom || query.yearTo);
+  const matches = mode === "empty"
+    ? []
+    : all.filter((result) => {
+        if (query.format && result.extension !== query.format.toLowerCase()) {
+          return false;
+        }
+        if (query.language) {
+          const language = (result.language ?? "").toLowerCase();
+          if (!language.startsWith(query.language.toLowerCase())) return false;
+        }
+        if (query.yearFrom !== null || query.yearTo !== null) {
+          if (result.year === null) return false;
+          if (query.yearFrom !== null && result.year < query.yearFrom) return false;
+          if (query.yearTo !== null && result.year > query.yearTo) return false;
+        }
+        return true;
+      });
+  const page = Math.max(1, query.page);
+  const perPage = 25;
+  const start = (page - 1) * perPage;
+  const results = matches.slice(start, start + perPage);
+  return {
+    results,
+    page,
+    perPage,
+    total,
+    totalIsExact: true,
+    onPageBeforeFilters: Math.min(perPage, Math.max(0, total - start)),
+    filtersApplied,
+    sourceMirror: "libgen.li",
+    health: [
+      {
+        host: "libgen.li",
+        failures: 0,
+        coolingDown: false,
+        lastSuccess: true,
+      },
+    ],
+  };
 }
 
 function createMockPlatform(config: MockConfig = {}): Platform {
@@ -533,6 +759,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
 
   return {
     appInfo: async () => MOCK_APP_INFO,
+    searchLibgen: async (query) => mockSearch(config, query),
     listBooks: async () => books,
     listShelves: async () => shelves,
     getBookDetail: async (id) => {
