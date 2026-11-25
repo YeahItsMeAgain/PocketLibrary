@@ -666,6 +666,8 @@ export interface MockConfig {
   diagnosticsSave?: SavedDiagnostics | null;
   /** Byte size of the synthetic diagnostics zip. */
   diagnosticsBytes?: number;
+  /** Test-only delay before the wall's shelves and books arrive. */
+  libraryDelayMs?: number;
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
@@ -1022,6 +1024,12 @@ function createMockPlatform(config: MockConfig = {}): Platform {
   const downloadTimers = new Map<number, number>();
   const downloadFailedOnce = new Set<number>();
   const downloadStepMs = config.downloadStepMs ?? 45;
+  const libraryDelay = () =>
+    config.libraryDelayMs
+      ? new Promise<void>((resolve) =>
+          setTimeout(resolve, config.libraryDelayMs),
+        )
+      : Promise.resolve();
   const progress = new Map<number, number>(
     Object.entries(config.readingProgress ?? {}).map(([id, value]) => [
       Number(id),
@@ -1403,8 +1411,14 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       scheduleMockDownload(id);
       return { ...downloads.find((download) => download.id === id)! };
     },
-    listBooks: async () => books,
-    listShelves: async () => shelves,
+    listBooks: async () => {
+      await libraryDelay();
+      return books;
+    },
+    listShelves: async () => {
+      await libraryDelay();
+      return shelves;
+    },
     getBookDetail: async (id) => {
       const book = books.find((candidate) => candidate.id === id);
       if (!book) throw { code: "book_not_found", message: "That book could not be found." };

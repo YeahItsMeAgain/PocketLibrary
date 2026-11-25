@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 
 import type { Book, LabelUsage, ReadingStatus } from "../platform";
+import { matchingBookIds } from "../library/filter";
 import { STATUS_LABELS } from "../library/spine";
 
 interface FilterStripProps {
@@ -15,7 +16,12 @@ interface FilterStripProps {
  * A chip click never re-renders the wall, so dimming 2,000 spines is one
  * class/attribute pass rather than a React reconciliation of every spine.
  */
-export function FilterStrip({ labels, books, onApply, onManage }: FilterStripProps) {
+export const FilterStrip = memo(function FilterStrip({
+  labels,
+  books,
+  onApply,
+  onManage,
+}: FilterStripProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const selectedRef = useRef<number[]>([]);
   const statusRef = useRef<ReadingStatus | null>(null);
@@ -25,20 +31,9 @@ export function FilterStrip({ labels, books, onApply, onManage }: FilterStripPro
       selectedRef.current = nextSelected;
       statusRef.current = nextStatus;
       const active = nextSelected.length > 0 || nextStatus !== null;
-      let matchingCount = 0;
-      if (active) {
-        for (const book of books) {
-          const worn = book.labels ?? [];
-          if (
-            nextSelected.every((labelId) =>
-              worn.some((label) => label.id === labelId),
-            ) &&
-            (nextStatus === null || book.readingStatus === nextStatus)
-          ) {
-            matchingCount += 1;
-          }
-        }
-      }
+      const matchingCount = active
+        ? matchingBookIds(books, nextSelected, nextStatus).size
+        : books.length;
       const root = sectionRef.current;
       if (root) {
         root
@@ -89,22 +84,9 @@ export function FilterStrip({ labels, books, onApply, onManage }: FilterStripPro
   }, [labels]);
 
   const active = selectedRef.current.length > 0 || statusRef.current !== null;
-  let matchingCount = books.length;
-  if (active) {
-    matchingCount = 0;
-    for (const book of books) {
-      const worn = book.labels ?? [];
-      if (
-        selectedRef.current.every((labelId) =>
-          worn.some((label) => label.id === labelId),
-        ) &&
-        (statusRef.current === null ||
-          book.readingStatus === statusRef.current)
-      ) {
-        matchingCount += 1;
-      }
-    }
-  }
+  const matchingCount = active
+    ? matchingBookIds(books, selectedRef.current, statusRef.current).size
+    : books.length;
   const countText = active
     ? `${matchingCount} of ${books.length} books match`
     : `${books.length} books on the wall`;
@@ -215,5 +197,5 @@ export function FilterStrip({ labels, books, onApply, onManage }: FilterStripPro
       </div>
     </section>
   );
-}
+});
 

@@ -22,25 +22,36 @@ import {
 import { ReportAction } from "../Diagnostics";
 import { Masthead } from "../shell/Masthead";
 import { FilterStrip } from "../labels/FilterStrip";
-import { ManageLabels } from "../labels/ManageLabels";
-import { DetailPanel } from "./DetailPanel";
+import { matchingBookIds } from "./filter";
+import { LibrarySkeleton } from "./LibrarySkeleton";
 import { ShelfCase, SpineFace } from "./Shelf";
 import { SPINE_GOLD, SPINE_INK, shelfMark, spineStyle } from "./spine";
 import {
   HINT_KEY,
-  SHELF_UNIT_PX,
   prefersReducedMotion,
   useShelfDrag,
 } from "./useShelfDrag";
-
-const INITIAL_SHELVES = 1;
-const MOUNT_BATCH = 1;
-const MOUNT_AHEAD_PX = 0;
+import {
+  EAGER_SHELF_LIMIT,
+  SHELF_UNIT_PX,
+  computeShelfRange,
+  mountedShelves,
+  placeholderRanges,
+  type ShelfRange,
+} from "./window";
 
 // The readers (and pdf.js/foliate behind them) are only needed after a tap.
 // Keeping them out of the startup chunk protects first shelf time.
 const EpubReader = lazy(() => import("../reader/EpubReader"));
 const PdfReader = lazy(() => import("../reader/PdfReader"));
+const DetailPanel = lazy(() =>
+  import("./DetailPanel").then((module) => ({ default: module.DetailPanel })),
+);
+const ManageLabels = lazy(() =>
+  import("../labels/ManageLabels").then((module) => ({
+    default: module.ManageLabels,
+  })),
+);
 
 interface LibraryWallProps {
   reloadKey: number;
@@ -66,7 +77,9 @@ export function LibraryWall({
   const [failed, setFailed] = useState(false);
   const [openBookId, setOpenBookId] = useState<number | null>(null);
   const [readerBook, setReaderBook] = useState<Book | null>(null);
-  const [mountedShelves, setMountedShelves] = useState(INITIAL_SHELVES);
+  const [range, setRange] = useState<ShelfRange>({ start: 0, end: 0 });
+  const rangeRef = useRef(range);
+  rangeRef.current = range;
   const [showHint, setShowHint] = useState(() => {
     try {
       return window.localStorage.getItem(HINT_KEY) !== "1";
@@ -75,12 +88,17 @@ export function LibraryWall({
     }
   });
   const closeDetail = useCallback(() => setOpenBookId(null), []);
+  const openLabelManager = useCallback(() => setShowLabelManager(true), []);
   const wallRef = useRef<HTMLElement>(null);
+  const shelfWindowRef = useRef<HTMLDivElement>(null);
+  const windowTopRef = useRef<number | null>(null);
+  const scrollFrameRef = useRef(0);
   const booksRef = useRef<Book[]>(books);
   const filterRef = useRef<{
     selected: number[];
     status: ReadingStatus | null;
   }>({ selected: [], status: null });
+  const filterFrameRef = useRef(0);
   const focusedBookRef = useRef<number | null>(null);
   booksRef.current = books;
 
@@ -154,20 +172,23 @@ export function LibraryWall({
   useEffect(() => {
     let alive = true;
     setFailed(false);
-    setMountedShelves(INITIAL_SHELVES);
-    Promise.all([
-      platform.listShelves(),
-      platform.listBooks(),
-      platform.listLabels(),
-    ])
-      .then(([nextShelves, nextBooks, nextLabels]) => {
+    // The wall only waits for shelves and the book index. Label usage can
+    // arrive a frame later; it only decorates the filter strip.
+    Promise.all([platform.listShelves(), platform.listBooks()])
+      .then(([nextShelves, nextBooks]) => {
         if (!alive) return;
-        setMountedShelves(
-          nextShelves.length <= 12 ? nextShelves.length : INITIAL_SHELVES,
-        );
+        setRange({
+          start: 0,
+          end:
+            nextShelves.length <= EAGER_SHELF_LIMIT
+              ? nextShelves.length
+              : 1,
+        });
         setShelves(nextShelves);
         setBooks(nextBooks);
-        setLabels(nextLabels);
+        window.requestAnimationFrame(() => {
+          if (alive) void refreshLabels();
+        });
       })
       .catch(() => {
         if (alive) setFailed(true);
@@ -175,43 +196,129 @@ export function LibraryWall({
     return () => {
       alive = false;
     };
-  }, [reloadKey]);
+  }, [reloadKey, refreshLabels]);
 
-  useEffect(() => {
-    if (!shelves || mountedShelves >= shelves.length) return;
-    const sentinel = wallRef.current?.querySelector("[data-shelf-sentinel]");
-    if (!sentinel) return;
-    if (typeof IntersectionObserver === "undefined") {
-      setMountedShelves(shelves.length);
+  const measureWindowTop = useCallback(() => {
+    const element = shelfWindowRef.current;
+    if (!element) return;
+    windowTopRef.current = element.getBoundingClientRect().top + window.scrollY;
+  }, []);
+
+  const updateWindow = useCallback(() => {
+    if (!shelves) return;
+    if (windowTopRef.current === null) measureWindowTop();
+    const top = windowTopRef.current;
+    if (top === null) return;
+    const next = computeShelfRange(
+      shelves.length,
+      window.scrollY,
+      window.innerHeight || 844,
+      top,
+    );
+    if (
+      rangeRef.current.start === next.start &&
+      rangeRef.current.end === next.end
+    ) {
       return;
     }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        startTransition(() => {
-          setMountedShelves((current) =>
-            Math.min(shelves.length, current + MOUNT_BATCH),
-          );
-        });
+    rangeRef.current = next;
+    startTransition(() => setRange(next));
+  }, [shelves, measureWindowTop]);
+
+  useEffect(() => {
+    // Expand from the first case to the full scroll window after the first
+    // shelf has painted. The first frame is the budget that matters; the
+    // overscan is not needed until the user scrolls.
+    const timer = window.setTimeout(
+      () => {
+        measureWindowTop();
+        updateWindow();
       },
-      { rootMargin: `${MOUNT_AHEAD_PX}px 0px` },
+      shelves?.length && shelves.length > EAGER_SHELF_LIMIT ? 220 : 0,
     );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [shelves, mountedShelves]);
+    return () => window.clearTimeout(timer);
+  }, [updateWindow, measureWindowTop, shelves]);
+
+  useEffect(() => {
+    if (!shelves) return;
+    // Label chips and notices can change the strip height and therefore the
+    // document offset of the shelf list. Re-anchor once they settle.
+    measureWindowTop();
+    updateWindow();
+  }, [labels, shelves, measureWindowTop, updateWindow]);
+
+  useEffect(() => {
+    if (!shelves || shelves.length <= EAGER_SHELF_LIMIT) return;
+    const onScroll = () => {
+      if (scrollFrameRef.current !== 0) return;
+      scrollFrameRef.current = window.requestAnimationFrame(() => {
+        scrollFrameRef.current = 0;
+        updateWindow();
+      });
+    };
+    const onResize = () => {
+      measureWindowTop();
+      onScroll();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      if (scrollFrameRef.current !== 0) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = 0;
+      }
+    };
+  }, [shelves, updateWindow, measureWindowTop]);
 
   useEffect(() => {
     if (focusBookId === null || focusedBookRef.current === focusBookId) return;
-    const element = wallRef.current?.querySelector<HTMLElement>(
-      `[data-book-id="${focusBookId}"]`,
-    );
-    if (!element) return;
-    focusedBookRef.current = focusBookId;
-    element.scrollIntoView({
-      block: "center",
-      behavior: prefersReducedMotion() ? "auto" : "smooth",
-    });
-  }, [books, focusBookId]);
+    let cancelled = false;
+    let attempts = 0;
+    const find = () =>
+      wallRef.current?.querySelector<HTMLElement>(
+        `[data-book-id="${focusBookId}"]`,
+      ) ?? null;
+    const tryReveal = () => {
+      if (cancelled) return;
+      const element = find();
+      if (!element) {
+        if (attempts < 8) {
+          attempts += 1;
+          window.setTimeout(tryReveal, 50);
+        }
+        return;
+      }
+      focusedBookRef.current = focusBookId;
+      element.scrollIntoView({
+        block: "center",
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+      });
+    };
+    const shelfIndex =
+      shelves?.findIndex(
+        (shelf) =>
+          shelf.id ===
+          books.find((book) => book.id === focusBookId)?.shelfId,
+      ) ?? -1;
+    if (shelfIndex >= 0 && windowTopRef.current !== null) {
+      const target =
+        windowTopRef.current +
+        shelfIndex * SHELF_UNIT_PX -
+        (window.innerHeight || 844) / 2;
+      if (Math.abs(window.scrollY - target) > window.innerHeight) {
+        window.scrollTo({
+          top: Math.max(0, target),
+          behavior: "auto",
+        });
+      }
+    }
+    tryReveal();
+    return () => {
+      cancelled = true;
+    };
+  }, [books, focusBookId, shelves]);
 
   useEffect(() => {
     if (!showHint) return;
@@ -223,30 +330,32 @@ export function LibraryWall({
     (selected: number[], status: ReadingStatus | null) => {
       const wall = wallRef.current;
       if (!wall) return;
+      const startedAt = performance.now();
       const active = selected.length > 0 || status !== null;
-      const matching = new Set<number>();
-      if (active) {
-        for (const book of booksRef.current) {
-          const worn = book.labels ?? [];
-          if (
-            selected.every((labelId) =>
-              worn.some((label) => label.id === labelId),
-            ) &&
-            (status === null || book.readingStatus === status)
-          ) {
-            matching.add(book.id);
-          }
-        }
-      }
+      const matching = active
+        ? matchingBookIds(booksRef.current, selected, status)
+        : new Set<number>();
       wall.querySelectorAll<HTMLElement>(".spine[data-book-id]").forEach(
         (element) => {
           const dimmed =
             active && !matching.has(Number(element.dataset.bookId));
-          element.classList.toggle("is-dim", dimmed);
-          if (dimmed) element.dataset.dimmed = "true";
-          else delete element.dataset.dimmed;
+          if (dimmed) {
+            if (element.dataset.dimmed !== "true") {
+              element.dataset.dimmed = "true";
+            }
+          } else if (element.dataset.dimmed !== undefined) {
+            delete element.dataset.dimmed;
+          }
         },
       );
+      try {
+        performance.measure("pocketlibrary:filter", {
+          start: startedAt,
+          end: performance.now(),
+        });
+      } catch {
+        // Diagnostic only.
+      }
     },
     [],
   );
@@ -254,15 +363,34 @@ export function LibraryWall({
   const handleFilter = useCallback(
     (selected: number[], status: ReadingStatus | null) => {
       filterRef.current = { selected, status };
-      applyFilterToDom(selected, status);
+      // A chip press paints its own state first; the data-attribute sweep runs
+      // on the next frame, so the wall never renders and the input handler
+      // itself stays short. This is the deferred equivalent of the wall
+      // reconciling a filter value on every keystroke.
+      if (filterFrameRef.current !== 0) {
+        window.cancelAnimationFrame(filterFrameRef.current);
+      }
+      filterFrameRef.current = window.requestAnimationFrame(() => {
+        filterFrameRef.current = 0;
+        applyFilterToDom(selected, status);
+      });
     },
     [applyFilterToDom],
+  );
+
+  useEffect(
+    () => () => {
+      if (filterFrameRef.current !== 0) {
+        window.cancelAnimationFrame(filterFrameRef.current);
+      }
+    },
+    [],
   );
 
   useLayoutEffect(() => {
     const { selected, status } = filterRef.current;
     applyFilterToDom(selected, status);
-  }, [books, mountedShelves, applyFilterToDom]);
+  }, [books, range.start, range.end, applyFilterToDom]);
 
   const booksByShelf = useMemo(() => {
     const grouped = new Map<number, Book[]>();
@@ -274,6 +402,23 @@ export function LibraryWall({
     }
     return grouped;
   }, [displayBooks]);
+
+  const pinnedShelfId = lift?.book.shelfId ?? null;
+  const pinnedIndex =
+    pinnedShelfId === null || !shelves
+      ? null
+      : shelves.findIndex((shelf) => shelf.id === pinnedShelfId);
+  const slots = useMemo(
+    () =>
+      shelves
+        ? mountedShelves(shelves.length, range, pinnedIndex)
+        : [],
+    [shelves, range, pinnedIndex],
+  );
+  const placeholders = useMemo(
+    () => (shelves ? placeholderRanges(shelves.length, range) : []),
+    [shelves, range],
+  );
 
   if (failed) {
     return (
@@ -293,16 +438,7 @@ export function LibraryWall({
   }
 
   if (shelves === null) {
-    return (
-      <main
-        id="library-main"
-        className="library-wall"
-        data-testid="library-wall"
-        aria-busy="true"
-      >
-        <div className="wall-inner" />
-      </main>
-    );
+    return <LibrarySkeleton />;
   }
 
   return (
@@ -311,6 +447,7 @@ export function LibraryWall({
       id="library-main"
       className="library-wall"
       data-testid="library-wall"
+      data-rendered-shelves={slots.length}
       onContextMenu={(event) => {
         if (gestureRef.current?.lifted) event.preventDefault();
       }}
@@ -321,52 +458,76 @@ export function LibraryWall({
           labels={labels}
           books={books}
           onApply={handleFilter}
-          onManage={() => setShowLabelManager(true)}
+          onManage={openLabelManager}
         />
-        {shelves.slice(0, mountedShelves).map((shelf) => (
-          <ShelfCase
-            key={shelf.id}
-            shelf={shelf}
-            books={booksByShelf.get(shelf.id) ?? []}
-            draggedBookId={lift?.book.id ?? null}
-            onOpen={(book) => {
-              if (performance.now() < suppressClickRef.current) return;
-              setOpenBookId(book.id);
-            }}
-            onPress={startPress}
-          />
-        ))}
-        {mountedShelves < shelves.length ? (
-          <>
-            <div className="v4-shelf-sentinel" data-shelf-sentinel="true" aria-hidden="true" />
+        <div
+          ref={shelfWindowRef}
+          className="shelf-window"
+          style={{ height: shelves.length * SHELF_UNIT_PX }}
+          data-testid="shelf-window"
+          data-shelf-total={shelves.length}
+          data-shelf-range={`${range.start}-${range.end}`}
+        >
+          {placeholders.map((gap) => (
             <div
-              className="v4-shelf-spacer"
-              style={{ height: (shelves.length - mountedShelves) * SHELF_UNIT_PX }}
+              key={`gap-${gap.start}`}
+              className="v4-shelf-placeholder"
+              data-shelf-placeholder="true"
               aria-hidden="true"
+              style={{
+                top: gap.start * SHELF_UNIT_PX,
+                height: (gap.end - gap.start) * SHELF_UNIT_PX,
+              }}
             />
-          </>
-        ) : null}
+          ))}
+          {slots.map(({ index, slot }) => {
+            const shelf = shelves[index];
+            if (!shelf) return null;
+            return (
+              <div
+                key={`slot-${slot}`}
+                className="shelf-slot"
+                data-shelf-slot={slot}
+                data-shelf-index={index}
+                style={{ top: index * SHELF_UNIT_PX }}
+              >
+                <ShelfCase
+                  shelf={shelf}
+                  books={booksByShelf.get(shelf.id) ?? []}
+                  draggedBookId={lift?.book.id ?? null}
+                  onOpen={(book) => {
+                    if (performance.now() < suppressClickRef.current) return;
+                    setOpenBookId(book.id);
+                  }}
+                  onPress={startPress}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
       {openBookId !== null ? (
-        <DetailPanel
-          bookId={openBookId}
-          shelfLabel={
-            shelfMark(
-              shelves.find(
-                (shelf) =>
-                  shelf.id ===
-                  books.find((book) => book.id === openBookId)?.shelfId,
-              )?.ordinal ?? 0,
-            )
-          }
-          onClose={closeDetail}
-          onRead={(book) => {
-            setReaderBook(book);
-            setOpenBookId(null);
-          }}
-          onBookChanged={updateBook}
-          onLabelsChanged={refreshLabels}
-        />
+        <Suspense fallback={null}>
+          <DetailPanel
+            bookId={openBookId}
+            shelfLabel={
+              shelfMark(
+                shelves.find(
+                  (shelf) =>
+                    shelf.id ===
+                    books.find((book) => book.id === openBookId)?.shelfId,
+                )?.ordinal ?? 0,
+              )
+            }
+            onClose={closeDetail}
+            onRead={(book) => {
+              setReaderBook(book);
+              setOpenBookId(null);
+            }}
+            onBookChanged={updateBook}
+            onLabelsChanged={refreshLabels}
+          />
+        </Suspense>
       ) : null}
       {readerBook ? (
         <Suspense fallback={null}>
@@ -390,10 +551,12 @@ export function LibraryWall({
         </Suspense>
       ) : null}
       {showLabelManager ? (
-        <ManageLabels
-          onClose={() => setShowLabelManager(false)}
-          onChanged={refreshWallData}
-        />
+        <Suspense fallback={null}>
+          <ManageLabels
+            onClose={() => setShowLabelManager(false)}
+            onChanged={refreshWallData}
+          />
+        </Suspense>
       ) : null}
       {notice ? (
         <>

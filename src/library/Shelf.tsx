@@ -1,5 +1,10 @@
 import type { Book, Shelf } from "../platform";
-import { memo, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  memo,
+  useMemo,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   SPINE_GOLD,
   SPINE_INK,
@@ -75,6 +80,70 @@ export function SpineFace({ book }: { book: Book }) {
   );
 }
 
+interface SpineProps {
+  book: Book;
+  dragging: boolean;
+  onOpen: (book: Book) => void;
+  onPress: (book: Book, event: ReactPointerEvent<HTMLLIElement>) => void;
+}
+
+/**
+ * One spine. Filtering and slot recycling must not reconcile the other
+ * twenty-odd spines on a shelf, so each book is its own memoised leaf.
+ * Callbacks are intentionally excluded: their behaviour is ref-stable and
+ * recreating them must not invalidate every book.
+ */
+export const Spine = memo(function Spine({
+  book,
+  dragging,
+  onOpen,
+  onPress,
+}: SpineProps) {
+  const statusLabel = STATUS_LABELS[book.readingStatus];
+  const style = useMemo(() => spineStyle(book), [book]);
+  return (
+    <li
+      className={`spine book${dragging ? " is-dragging-source" : ""}`}
+      data-testid="spine"
+      data-book-id={book.id}
+      data-slot={book.slotIndex ?? undefined}
+      data-status={book.readingStatus}
+      data-dragging={dragging || undefined}
+      title={`${book.title} — ${statusLabel}`}
+      aria-label={`${book.title}, ${statusLabel}`}
+      aria-grabbed={dragging || undefined}
+      role="button"
+      tabIndex={0}
+      style={
+        {
+          "--w": `${style.width}px`,
+          "--h": `${style.height}px`,
+          "--c1": style.c1,
+          "--c2": style.c2,
+          "--gold": SPINE_GOLD,
+          "--ink": SPINE_INK,
+          "--lean": `${style.lean}deg`,
+          "--fs": style.fontSize,
+        } as CSSProperties
+      }
+      onPointerDown={(event) => onPress(book, event)}
+      onClick={() => onOpen(book)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(book);
+        }
+      }}
+    >
+      <SpineFace book={book} />
+    </li>
+  );
+}, areSpineEqual);
+
+function areSpineEqual(prev: SpineProps, next: SpineProps): boolean {
+  return prev.book === next.book && prev.dragging === next.dragging;
+}
+
 export const ShelfCase = memo(function ShelfCase({
   shelf,
   books,
@@ -111,49 +180,18 @@ export const ShelfCase = memo(function ShelfCase({
             </div>
           ) : (
             <ul className="spines v4-books">
-              {books.map((book) => {
-                const statusLabel = STATUS_LABELS[book.readingStatus];
-                const dragging = draggedBookId === book.id;
-                const style = spineStyle(book);
-                return (
-                  <li
-                    key={book.id}
-                    className={`spine book${dragging ? " is-dragging-source" : ""}`}
-                    data-testid="spine"
-                    data-book-id={book.id}
-                    data-slot={book.slotIndex ?? undefined}
-                    data-status={book.readingStatus}
-                    data-dragging={dragging || undefined}
-                    title={`${book.title} — ${statusLabel}`}
-                    aria-label={`${book.title}, ${statusLabel}`}
-                    aria-grabbed={dragging || undefined}
-                    role="button"
-                    tabIndex={0}
-                    style={
-                      {
-                        "--w": `${style.width}px`,
-                        "--h": `${style.height}px`,
-                        "--c1": style.c1,
-                        "--c2": style.c2,
-                        "--gold": SPINE_GOLD,
-                        "--ink": SPINE_INK,
-                        "--lean": `${style.lean}deg`,
-                        "--fs": style.fontSize,
-                      } as CSSProperties
-                    }
-                    onPointerDown={(event) => onPress(book, event)}
-                    onClick={() => onOpen(book)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onOpen(book);
-                      }
-                    }}
-                  >
-                    <SpineFace book={book} />
-                  </li>
-                );
-              })}
+              {books.map((book, slot) => (
+                // Slot keys are deliberate: a recycled case updates its
+                // existing spine nodes in place instead of replacing eleven
+                // subtrees whenever the window crosses a boundary.
+                <Spine
+                  key={slot}
+                  book={book}
+                  dragging={draggedBookId === book.id}
+                  onOpen={onOpen}
+                  onPress={onPress}
+                />
+              ))}
             </ul>
           )}
         </div>

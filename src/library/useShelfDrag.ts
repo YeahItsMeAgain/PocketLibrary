@@ -14,15 +14,16 @@ import {
 import { isApiError, platform, type Book, type Shelf } from "../platform";
 import { moveBookInList } from "./placement";
 import { spineStyle } from "./spine";
+import { SHELF_UNIT_PX } from "./window";
 
 const LONG_PRESS_MS = 380;
 const DRAG_THRESHOLD = 8;
 const EDGE_ZONE = 88;
 const EDGE_MAX_SPEED = 14;
-// Progressive mount: the first few shelves paint immediately, the rest mount
-// just ahead of the viewport. Nodes are kept once mounted, so scroll position
-// and drag geometry stay stable; `content-visibility` keeps far shelves cheap.
-export const SHELF_UNIT_PX = 358;
+// The wall mounts a scroll window and reuses slot nodes. Geometry is measured
+// only for the few mounted cases, so a lift never forces layout across the
+// whole library.
+export { SHELF_UNIT_PX } from "./window";
 export const HINT_KEY = "pocketlibrary.dragHintSeen";
 
 interface ShelfGeometry {
