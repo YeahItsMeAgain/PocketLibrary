@@ -16,6 +16,7 @@ mod migrations;
 mod models;
 mod service;
 mod source;
+pub mod updates;
 
 pub use acquisition::{
     LibgenProvider, LibgenResult, MirrorHealth, MirrorLink, PAGE_SIZE, SearchPage, SearchQuery,

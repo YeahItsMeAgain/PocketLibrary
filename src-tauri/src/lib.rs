@@ -26,6 +26,7 @@ use pocketlibrary_core::{
 
 #[cfg(target_os = "android")]
 mod saf;
+mod updates;
 
 #[cfg(target_os = "android")]
 use tauri_plugin_android_fs::{AndroidFsExt, FsUri, UriPermission};
@@ -1210,6 +1211,8 @@ pub fn run() {
                 ),
             );
             app.manage(api);
+            let updates_state = updates::UpdatesState::from_config(app.config());
+            app.manage(updates_state);
             app.manage(BackupExchange::default());
             app.manage(PendingExternal::default());
             spawn_download_worker(app.handle().clone());
@@ -1220,12 +1223,17 @@ pub fn run() {
     // it conditionally keeps the desktop build compiling cleanly.
     #[cfg(target_os = "android")]
     {
-        builder = builder.plugin(tauri_plugin_android_fs::init());
+        builder = builder
+            .plugin(tauri_plugin_android_fs::init())
+            .plugin(updates::android_plugin());
     }
 
     builder
         .invoke_handler(tauri::generate_handler![
             app_info,
+            updates::updates_check,
+            updates::updates_download,
+            updates::updates_install,
             search_libgen,
             enqueue_download,
             list_downloads,
