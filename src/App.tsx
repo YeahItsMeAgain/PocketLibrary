@@ -1,4 +1,6 @@
 import {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useRef,
@@ -21,9 +23,20 @@ import { Masthead } from "./shell/Masthead";
 import { AppInfoFooter } from "./shell/AppInfoFooter";
 import { Onboarding, Reconnect } from "./shell/LibraryGate";
 import { LibraryWall } from "./library/LibraryWall";
-import { SearchView } from "./search/SearchView";
-import { SettingsView } from "./settings/SettingsView";
+import { LibrarySkeleton } from "./library/LibrarySkeleton";
 import { disconnected, runScan, scanNotice } from "./library/scan";
+
+// Search and Settings are navigation destinations, not first-paint content.
+const SearchView = lazy(() =>
+  import("./search/SearchView").then((module) => ({
+    default: module.SearchView,
+  })),
+);
+const SettingsView = lazy(() =>
+  import("./settings/SettingsView").then((module) => ({
+    default: module.SettingsView,
+  })),
+);
 
 const DRAWER_HINT_KEY = "pocketlibrary.drawerHintSeen";
 
@@ -34,6 +47,19 @@ const NAV_ITEMS: ReadonlyArray<{ view: View; label: string; note: string }> = [
   { view: "search", label: "Search", note: "Front desk" },
   { view: "settings", label: "Settings", note: "The study" },
 ];
+
+function ViewSkeleton() {
+  return (
+    <main
+      id="library-main"
+      className="placeholder"
+      data-testid="view-skeleton"
+      aria-busy="true"
+    >
+      <div className="wall-inner" />
+    </main>
+  );
+}
 
 
 
@@ -253,12 +279,22 @@ export default function App() {
     initialLoadStarted.current = true;
     (async () => {
       try {
-        let next = await platform.libraryStatus();
-        if (next.state === "ready") {
-          const outcome = await runScan();
-          if (outcome.kind === "unavailable") next = disconnected(next);
-        }
+        const next = await platform.libraryStatus();
+        // Paint the wall as soon as the folder state is known. The launch
+        // rescan is a background reconciliation, not a gate on first shelf.
         setStatus(next);
+        if (next.state !== "ready") return;
+        const outcome = await runScan();
+        if (outcome.kind === "unavailable") {
+          setStatus(disconnected(next));
+        } else if (
+          outcome.kind === "report" &&
+          (outcome.report.added > 0 ||
+            outcome.report.relinked > 0 ||
+            outcome.report.removed > 0)
+        ) {
+          setReloadKey((key) => key + 1);
+        }
       } catch {
         setStatusFailed(true);
       }
@@ -422,11 +458,7 @@ export default function App() {
     }
     if (view === "settings") {
       if (status === null) {
-        return (
-          <main id="library-main" className="placeholder" aria-busy="true">
-            <div className="wall-inner" />
-          </main>
-        );
+        return <ViewSkeleton />;
       }
       return (
         <SettingsView
@@ -455,16 +487,7 @@ export default function App() {
       );
     }
     if (status === null) {
-      return (
-        <main
-          id="library-main"
-          className="library-wall"
-          data-testid="library-wall"
-          aria-busy="true"
-        >
-          <div className="wall-inner" />
-        </main>
-      );
+      return <LibrarySkeleton />;
     }
     if (status.state === "needsFolder") {
       return (
@@ -532,7 +555,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {renderMain()}
+      <Suspense fallback={<ViewSkeleton />}>{renderMain()}</Suspense>
 
       <div
         className="edge-zone"
