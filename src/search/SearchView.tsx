@@ -4,7 +4,6 @@ import {
   isApiError,
   platform,
   type ApiError,
-  type BookFormat,
   type Download,
   type DownloadRequest,
   type LibgenResult,
@@ -13,113 +12,18 @@ import {
 } from "../platform";
 import { ReportAction } from "../Diagnostics";
 import { noteFailure } from "../diagnostics";
-import { DownloadProgress, DownloadQueue } from "../downloads/DownloadQueue";
-import { downloadStatusText } from "../downloads/format";
-import { useLayerExit } from "../navigation";
-
-interface SearchForm {
-  query: string;
-  title: string;
-  author: string;
-  yearFrom: string;
-  yearTo: string;
-  language: string;
-  format: string;
-  publisher: string;
-  isbn: string;
-  md5: string;
-}
-
-const EMPTY_SEARCH_FORM: SearchForm = {
-  query: "",
-  title: "",
-  author: "",
-  yearFrom: "",
-  yearTo: "",
-  language: "",
-  format: "",
-  publisher: "",
-  isbn: "",
-  md5: "",
-};
-
-const SEARCH_LANGUAGES = [
-  "English",
-  "French",
-  "German",
-  "Spanish",
-  "Italian",
-  "Russian",
-  "Portuguese",
-] as const;
-
-const SEARCH_FORMATS = ["epub", "pdf"] as const;
-
-/** Pocket Library can only open EPUB and PDF; never coerce another format. */
-function supportedBookFormat(extension: string): BookFormat | null {
-  const value = extension.trim().toLowerCase();
-  return value === "epub" || value === "pdf" ? value : null;
-}
-
-function searchYear(value: string): number | null {
-  const year = Number(value);
-  return Number.isInteger(year) && year >= 1000 && year <= 2100 ? year : null;
-}
-
-function searchQueryFrom(form: SearchForm, page: number): SearchQuery {
-  return {
-    query: form.query.trim(),
-    title: form.title.trim(),
-    author: form.author.trim(),
-    yearFrom: searchYear(form.yearFrom),
-    yearTo: searchYear(form.yearTo),
-    language: form.language.trim(),
-    format: form.format.trim().toLowerCase(),
-    publisher: form.publisher.trim(),
-    isbn: form.isbn.trim(),
-    md5: form.md5.trim(),
-    page,
-  };
-}
-
-function hasSearchTerm(form: SearchForm): boolean {
-  return [form.query, form.title, form.author, form.publisher, form.isbn, form.md5]
-    .map((value) => value.trim())
-    .some(Boolean);
-}
-
-function searchErrorCopy(error: ApiError): { title: string; body: string } {
-  switch (error.code) {
-    case "offline":
-      return {
-        title: "The desk is offline",
-        body:
-          "Libgen search needs a connection. Your shelves, books and reading progress are unaffected.",
-      };
-    case "all_mirrors_failed":
-      return {
-        title: "Every mirror refused",
-        body:
-          "All five Libgen mirrors timed out or refused the request. Wait a moment, then try again.",
-      };
-    case "mirror_format_changed":
-      return {
-        title: "The mirror's page changed",
-        body:
-          "A mirror answered, but its results could not be read. Try another search, or try again later.",
-      };
-    case "empty_search":
-      return {
-        title: "Nothing to search for",
-        body: "Enter a title, author, ISBN or MD5 first.",
-      };
-    default:
-      return {
-        title: "The front desk could not answer",
-        body: error.message,
-      };
-  }
-}
+import { DownloadQueue } from "../downloads/DownloadQueue";
+import {
+  EMPTY_SEARCH_FORM,
+  SEARCH_FORMATS,
+  SEARCH_LANGUAGES,
+  type SearchForm,
+  hasSearchTerm,
+  searchErrorCopy,
+  searchQueryFrom,
+  supportedBookFormat,
+} from "./query";
+import { ResultDetail } from "./ResultDetail";
 
 function SearchResultRow({
   result,
@@ -150,174 +54,6 @@ function SearchResultRow({
   );
 }
 
-
-function ResultDetail({
-  result,
-  download,
-  onClose,
-  onDownload,
-  onCancel,
-  onRetry,
-}: {
-  result: LibgenResult;
-  download: Download | null;
-  onClose: () => void;
-  onDownload: () => void;
-  onCancel: () => void;
-  onRetry: () => void;
-}) {
-  const active =
-    download?.state === "queued" || download?.state === "running";
-  const supported = supportedBookFormat(result.extension) !== null;
-  const close = useLayerExit(true, onClose);
-  return (
-    <div className="search-sheet-backdrop" onClick={close}>
-      <section
-        className="search-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Result details"
-        data-testid="result-detail"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="search-sheet-head">
-          <div>
-            <p className="kicker">On the front desk</p>
-            <h2>{result.title}</h2>
-            <p className="search-sheet-author">
-              {result.authors.join("; ") || "Author unknown"}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="sheet-close"
-            data-testid="result-detail-close"
-            aria-label="Close result details"
-            onClick={close}
-          >
-            ×
-          </button>
-        </header>
-
-        <dl className="search-detail-list">
-          <div>
-            <dt>Year</dt>
-            <dd>{result.year ?? "Unknown"}</dd>
-          </div>
-          <div>
-            <dt>Publisher</dt>
-            <dd>{result.publisher ?? "Unknown"}</dd>
-          </div>
-          <div>
-            <dt>Language</dt>
-            <dd>{result.language ?? "Unknown"}</dd>
-          </div>
-          <div>
-            <dt>Pages</dt>
-            <dd>{result.pages ?? "Unknown"}</dd>
-          </div>
-          <div>
-            <dt>Format</dt>
-            <dd>{result.extension.toUpperCase()}</dd>
-          </div>
-          <div>
-            <dt>Size</dt>
-            <dd>{result.sizeText || "Unknown"}</dd>
-          </div>
-          <div>
-            <dt>Source</dt>
-            <dd>{result.source}</dd>
-          </div>
-          <div className="search-detail-md5">
-            <dt>MD5</dt>
-            <dd>{result.md5}</dd>
-          </div>
-        </dl>
-
-        <section className="search-mirrors" aria-labelledby="mirror-heading">
-          <h3 id="mirror-heading">Mirrors</h3>
-          {result.mirrors.length === 0 ? (
-            <p className="settings-note">No mirror links were listed.</p>
-          ) : (
-            <ul>
-              {result.mirrors.map((mirror) => (
-                <li key={mirror.url} data-testid="mirror-row">
-                  <span className="mirror-label">{mirror.label}</span>
-                  <span className="mirror-url">{mirror.url}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {!supported ? (
-          <p
-            className="settings-note result-unsupported"
-            data-testid="result-unsupported"
-          >
-            Pocket Library reads EPUB and PDF only. This edition is a{" "}
-            {result.extension.toUpperCase()} file, so it cannot be added here.
-          </p>
-        ) : download ? (
-          <div
-            className={`result-download-state is-${download.state}`}
-            data-testid="result-download-state"
-          >
-            <p>{downloadStatusText(download)}</p>
-            {download.state === "running" || download.state === "queued" ? (
-              <DownloadProgress download={download} />
-            ) : null}
-            {download.errorCode === "duplicate" ? (
-              <p className="settings-note">
-                The existing copy stays on your shelf; nothing new was added.
-              </p>
-            ) : null}
-            {active ? (
-              <button
-                type="button"
-                className="secondary-action"
-                data-testid="result-download-cancel"
-                onClick={onCancel}
-              >
-                Cancel
-              </button>
-            ) : download.state === "failed" || download.state === "cancelled" ? (
-              <>
-                <button
-                  type="button"
-                  className="secondary-action"
-                  data-testid="result-download-retry"
-                  onClick={onRetry}
-                >
-                  Retry
-                </button>
-                {download.state === "failed" ? (
-                  <ReportAction
-                    testId="download-report"
-                    label="Report"
-                  />
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="primary-action search-download"
-            data-testid="result-download"
-            onClick={onDownload}
-          >
-            Download to library
-          </button>
-        )}
-        <p className="settings-note">
-          The file is fetched inside the app, checked for duplicates, named
-          “Author - Title (Year)” and placed on the lowest shelf with room.
-        </p>
-      </section>
-    </div>
-  );
-}
 
 interface SearchViewProps {
   onBack: () => void;
