@@ -7,7 +7,7 @@ use tauri::{AppHandle, Manager};
 
 use pocketlibrary_core::{
     Api, ApiError, AppInfo, Book, BookDetail, Bookmark, Label, LabelUsage, LibraryStatus,
-    ReadingState, ReadingStatus, ScanReport, Shelf,
+    ReadingState, ReadingStatus, ScanReport, SearchPage, SearchQuery, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -217,6 +217,16 @@ fn app_info(api: tauri::State<'_, Api>) -> Result<AppInfo, ApiError> {
     api.app_info()
 }
 
+/// Search Libgen from the front desk. Network work runs on the async runtime;
+/// the provider keeps mirror health in memory between calls.
+#[tauri::command]
+async fn search_libgen(
+    api: tauri::State<'_, Api>,
+    query: SearchQuery,
+) -> Result<SearchPage, ApiError> {
+    api.search_libgen(query).await
+}
+
 #[tauri::command]
 fn list_books(api: tauri::State<'_, Api>) -> Result<Vec<Book>, ApiError> {
     api.list_books()
@@ -287,12 +297,20 @@ fn label_usage(api: tauri::State<'_, Api>) -> Result<Vec<LabelUsage>, ApiError> 
 }
 
 #[tauri::command]
-fn create_label(api: tauri::State<'_, Api>, name: String, colour: String) -> Result<Label, ApiError> {
+fn create_label(
+    api: tauri::State<'_, Api>,
+    name: String,
+    colour: String,
+) -> Result<Label, ApiError> {
     api.create_label(&name, &colour)
 }
 
 #[tauri::command]
-fn rename_label(api: tauri::State<'_, Api>, label_id: i64, name: String) -> Result<Label, ApiError> {
+fn rename_label(
+    api: tauri::State<'_, Api>,
+    label_id: i64,
+    name: String,
+) -> Result<Label, ApiError> {
     api.rename_label(label_id, &name)
 }
 
@@ -398,6 +416,7 @@ pub fn run() {
     builder
         .invoke_handler(tauri::generate_handler![
             app_info,
+            search_libgen,
             list_books,
             list_shelves,
             get_book_detail,

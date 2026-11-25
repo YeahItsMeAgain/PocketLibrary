@@ -18,6 +18,9 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export NDK_HOME="${NDK_HOME:-$ANDROID_HOME/ndk/28.2.13676358}"
 
+# wreq's BoringSSL build looks for this exact variable when targeting Android.
+export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$NDK_HOME}"
+
 # The bundled SQLite in libsqlite3-sys needs an explicit NDK C toolchain when
 # building for the Android target from a plain `cargo`/`cargo clippy` command.
 # API 24 matches the app's minSdk.
