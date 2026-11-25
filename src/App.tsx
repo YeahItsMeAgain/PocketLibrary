@@ -18,6 +18,8 @@ import {
   type AppInfo,
   type Book,
   type BookDetail,
+  type Download,
+  type DownloadRequest,
   type Label,
   type LabelUsage,
   type LibgenResult,
@@ -1261,6 +1263,7 @@ function ManageLabels({ onClose, onChanged }: ManageLabelsProps) {
 
 interface LibraryWallProps {
   reloadKey: number;
+  focusBookId: number | null;
   notice: string | null;
   onAddBooks: () => void;
   onFindBook: () => void;
@@ -1391,6 +1394,7 @@ function moveBookInList(
 
 function LibraryWall({
   reloadKey,
+  focusBookId,
   notice,
   onAddBooks,
   onFindBook,
@@ -1425,6 +1429,7 @@ function LibraryWall({
   const suppressClickRef = useRef(0);
   const booksRef = useRef<Book[]>(books);
   const shelvesRef = useRef<Shelf[]>(shelves ?? []);
+  const focusedBookRef = useRef<number | null>(null);
   booksRef.current = books;
   shelvesRef.current = shelves ?? [];
 
@@ -1500,6 +1505,19 @@ function LibraryWall({
       alive = false;
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (focusBookId === null || focusedBookRef.current === focusBookId) return;
+    const element = wallRef.current?.querySelector<HTMLElement>(
+      `[data-book-id="${focusBookId}"]`,
+    );
+    if (!element) return;
+    focusedBookRef.current = focusBookId;
+    element.scrollIntoView({
+      block: "center",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [books, focusBookId]);
 
   useEffect(() => {
     if (!showHint) return;
@@ -2503,8 +2521,9 @@ function SettingsView({
           <h3 id="settings-download">Download naming</h3>
           <p className="settings-value">Author - Title (Year)</p>
           <p className="settings-note">
-            Placeholder until the download queue lands in ticket 11; naming is
-            not editable yet.
+            Downloads land in the library folder root with this name, sanitised.
+            A second copy gets a numbered suffix. Editing the pattern follows
+            with the backup ticket.
           </p>
         </section>
 
@@ -2697,13 +2716,67 @@ function SearchResultRow({
   );
 }
 
+function downloadPercent(download: Download): number {
+  if (download.state === "completed") return 100;
+  if (!download.totalBytes || download.totalBytes <= 0) return 0;
+  return Math.max(
+    0,
+    Math.min(100, Math.round((download.bytes / download.totalBytes) * 100)),
+  );
+}
+
+function downloadStatusText(download: Download): string {
+  switch (download.state) {
+    case "queued":
+      return "Queued";
+    case "running":
+      return `Downloading ${downloadPercent(download)}%`;
+    case "completed":
+      return download.errorCode === "duplicate"
+        ? "Already in your library"
+        : "Added to library";
+    case "failed":
+      return download.error ?? "The download failed.";
+    case "cancelled":
+      return "Cancelled";
+  }
+}
+
+function DownloadProgress({ download }: { download: Download }) {
+  const percent = downloadPercent(download);
+  return (
+    <div
+      className="download-progress"
+      data-testid="download-progress"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      aria-label={`Download ${percent}%`}
+    >
+      <span className="download-progress-fill" style={{ width: `${percent}%` }} />
+      <span className="download-progress-label">{percent}%</span>
+    </div>
+  );
+}
+
 function ResultDetail({
   result,
+  download,
   onClose,
+  onDownload,
+  onCancel,
+  onRetry,
 }: {
   result: LibgenResult;
+  download: Download | null;
   onClose: () => void;
+  onDownload: () => void;
+  onCancel: () => void;
+  onRetry: () => void;
 }) {
+  const active =
+    download?.state === "queued" || download?.state === "running";
   return (
     <div className="search-sheet-backdrop" onClick={onClose}>
       <section
@@ -2784,17 +2857,53 @@ function ResultDetail({
           )}
         </section>
 
-        <button
-          type="button"
-          className="primary-action search-download"
-          data-testid="result-download"
-          disabled
-        >
-          Download — arrives with the queue (ticket 11)
-        </button>
+        {download ? (
+          <div
+            className={`result-download-state is-${download.state}`}
+            data-testid="result-download-state"
+          >
+            <p>{downloadStatusText(download)}</p>
+            {download.state === "running" || download.state === "queued" ? (
+              <DownloadProgress download={download} />
+            ) : null}
+            {download.errorCode === "duplicate" ? (
+              <p className="settings-note">
+                The existing copy stays on your shelf; nothing new was added.
+              </p>
+            ) : null}
+            {active ? (
+              <button
+                type="button"
+                className="secondary-action"
+                data-testid="result-download-cancel"
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+            ) : download.state === "failed" || download.state === "cancelled" ? (
+              <button
+                type="button"
+                className="secondary-action"
+                data-testid="result-download-retry"
+                onClick={onRetry}
+              >
+                Retry
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="primary-action search-download"
+            data-testid="result-download"
+            onClick={onDownload}
+          >
+            Download to library
+          </button>
+        )}
         <p className="settings-note">
-          The file is not fetched yet. Downloads, duplicate checks and naming are
-          bound in the next ticket.
+          The file is fetched inside the app, checked for duplicates, named
+          “Author - Title (Year)” and placed on the lowest shelf with room.
         </p>
       </section>
     </div>
@@ -2809,9 +2918,94 @@ function SearchView({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState<LibgenResult | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
+  const [downloads, setDownloads] = useState<Download[]>([]);
+  const [queueOpen, setQueueOpen] = useState(true);
 
   const update = (field: keyof SearchForm, value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
+
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => {
+      platform
+        .listDownloads()
+        .then((rows) => {
+          if (alive) setDownloads(rows);
+        })
+        .catch(() => {
+          // The queue is diagnostic here; a failed poll leaves the last rows.
+        });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 450);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const downloadFor = (result: LibgenResult) =>
+    downloads.find(
+      (download) => download.md5.toLowerCase() === result.md5.toLowerCase(),
+    ) ?? null;
+
+  const enqueue = async (result: LibgenResult) => {
+    const mirrors = result.mirrors
+      .filter((link) => link.url.includes("ads.php"))
+      .map((link) => link.url);
+    const request: DownloadRequest = {
+      md5: result.md5,
+      title: result.title,
+      authors: result.authors,
+      year: result.year,
+      format: result.extension.toLowerCase() === "pdf" ? "pdf" : "epub",
+      source: result.source,
+      mirrorUrls: mirrors.length > 0 ? mirrors : result.mirrors.map((link) => link.url),
+    };
+    try {
+      const row = await platform.enqueueDownload(request);
+      setDownloads((current) => [
+        row,
+        ...current.filter((download) => download.id !== row.id),
+      ]);
+      setQueueOpen(true);
+    } catch (rejection) {
+      setError(
+        isApiError(rejection)
+          ? rejection
+          : {
+              code: "unknown",
+              message: "The download could not be queued.",
+            },
+      );
+    }
+  };
+
+  const cancelDownload = async (download: Download) => {
+    try {
+      await platform.cancelDownload(download.id);
+      setDownloads((current) =>
+        current.map((row) =>
+          row.id === download.id ? { ...row, state: "cancelled" } : row,
+        ),
+      );
+    } catch {
+      // The next poll corrects the row.
+    }
+  };
+
+  const retryDownload = async (download: Download) => {
+    try {
+      const row = await platform.retryDownload(download.id);
+      setDownloads((current) =>
+        current.map((candidate) =>
+          candidate.id === row.id ? row : candidate,
+        ),
+      );
+    } catch {
+      // The next poll corrects the row.
+    }
+  };
 
   const runSearch = useCallback(
     async (query: SearchQuery) => {
@@ -3114,8 +3308,96 @@ function SearchView({ onBack }: { onBack: () => void }) {
         ) : null}
       </section>
 
+      {downloads.length > 0 ? (
+        <section
+          className="download-queue"
+          data-testid="download-queue"
+          aria-labelledby="download-queue-heading"
+        >
+          <div className="download-queue-head">
+            <h3 id="download-queue-heading">The delivery hatch</h3>
+            <span className="download-badge" data-testid="download-badge">
+              {downloads.filter(
+                (download) =>
+                  download.state === "queued" || download.state === "running",
+              ).length}{" "}
+              active
+            </span>
+            <button
+              type="button"
+              className="download-queue-toggle"
+              data-testid="download-queue-toggle"
+              aria-expanded={queueOpen}
+              onClick={() => setQueueOpen((open) => !open)}
+            >
+              {queueOpen ? "Hide" : "Show"}
+            </button>
+          </div>
+          {queueOpen ? (
+            <ul className="download-queue-list">
+              {downloads.map((download) => (
+                <li
+                  key={download.id}
+                  className={`download-row is-${download.state}`}
+                  data-testid="download-row"
+                >
+                  <div className="download-row-main">
+                    <span className="download-row-title">
+                      {download.title}
+                    </span>
+                    <span
+                      className="download-row-status"
+                      data-testid="download-status"
+                    >
+                      {downloadStatusText(download)}
+                    </span>
+                    {download.state === "running" ? (
+                      <DownloadProgress download={download} />
+                    ) : null}
+                  </div>
+                  {download.state === "queued" ||
+                  download.state === "running" ? (
+                    <button
+                      type="button"
+                      className="download-cancel"
+                      data-testid="download-cancel"
+                      onClick={() => void cancelDownload(download)}
+                    >
+                      Cancel
+                    </button>
+                  ) : download.state === "failed" ||
+                    download.state === "cancelled" ? (
+                    <button
+                      type="button"
+                      className="download-retry"
+                      data-testid="download-retry"
+                      onClick={() => void retryDownload(download)}
+                    >
+                      Retry
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+
       {selected ? (
-        <ResultDetail result={selected} onClose={() => setSelected(null)} />
+        <ResultDetail
+          result={selected}
+          download={downloadFor(selected)}
+          onClose={() => setSelected(null)}
+          onDownload={() => void enqueue(selected)}
+          onCancel={() => {
+            const download = downloadFor(selected);
+            if (download) void cancelDownload(download);
+          }}
+          onRetry={() => {
+            const download = downloadFor(selected);
+            if (download) void retryDownload(download);
+          }}
+        />
       ) : null}
     </main>
   );
@@ -3223,6 +3505,7 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [shelfCapacity, setShelfCapacity] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [focusBookId, setFocusBookId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerOffset, setDrawerOffset] = useState<number | null>(null);
   const [drawerDragging, setDrawerDragging] = useState(false);
@@ -3420,6 +3703,44 @@ export default function App() {
     })();
   }, []);
 
+  const announcedDownloads = useRef(new Set<number>());
+  useEffect(() => {
+    let alive = true;
+    let initialized = false;
+    const check = async () => {
+      try {
+        const rows = await platform.listDownloads();
+        if (!alive) return;
+        if (!initialized) {
+          initialized = true;
+          for (const row of rows) announcedDownloads.current.add(row.id);
+          return;
+        }
+        const fresh = rows.filter(
+          (row) =>
+            row.state === "completed" &&
+            row.bookId !== null &&
+            !announcedDownloads.current.has(row.id),
+        );
+        for (const row of fresh) {
+          announcedDownloads.current.add(row.id);
+        }
+        if (fresh.length > 0) {
+          setFocusBookId(fresh[0].bookId);
+          setReloadKey((key) => key + 1);
+        }
+      } catch {
+        // The queue is advisory here; the next tick retries.
+      }
+    };
+    void check();
+    const timer = window.setInterval(check, 700);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   useEffect(() => {
     let alive = true;
     platform
@@ -3565,6 +3886,7 @@ export default function App() {
     return (
       <LibraryWall
         reloadKey={reloadKey}
+        focusBookId={focusBookId}
         notice={notice}
         onAddBooks={chooseFolder}
         onFindBook={() => setView("search")}

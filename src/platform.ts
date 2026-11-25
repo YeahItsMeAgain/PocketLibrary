@@ -179,6 +179,41 @@ export interface MirrorHealth {
   lastSuccess: boolean;
 }
 
+/** Mirrors `pocketlibrary_core::DownloadState`. */
+export type DownloadState = "queued" | "running" | "completed" | "failed" | "cancelled";
+
+/** Mirrors `pocketlibrary_core::Download`. */
+export interface Download {
+  id: number;
+  md5: string;
+  title: string;
+  authors: string[];
+  year: number | null;
+  format: BookFormat;
+  source: string;
+  mirrorUrls: string[];
+  state: DownloadState;
+  bytes: number;
+  totalBytes: number | null;
+  error: string | null;
+  errorCode: string | null;
+  bookId: number | null;
+  filename: string | null;
+  createdAt: number;
+  finishedAt: number | null;
+}
+
+/** Mirrors `pocketlibrary_core::DownloadRequest`. */
+export interface DownloadRequest {
+  md5: string;
+  title: string;
+  authors: string[];
+  year: number | null;
+  format: BookFormat;
+  source: string;
+  mirrorUrls: string[];
+}
+
 /** Mirrors `pocketlibrary_core::SearchPage`. */
 export interface SearchPage {
   results: LibgenResult[];
@@ -209,6 +244,10 @@ export function isLibraryUnavailable(error: unknown): error is ApiError {
 export interface Platform {
   appInfo(): Promise<AppInfo>;
   searchLibgen(query: SearchQuery): Promise<SearchPage>;
+  enqueueDownload(request: DownloadRequest): Promise<Download>;
+  listDownloads(): Promise<Download[]>;
+  cancelDownload(id: number): Promise<void>;
+  retryDownload(id: number): Promise<Download>;
   listBooks(): Promise<Book[]>;
   listShelves(): Promise<Shelf[]>;
   getBookDetail(id: number): Promise<BookDetail>;
@@ -250,6 +289,11 @@ export function createTauriPlatform(call: Invoke): Platform {
   return {
     appInfo: () => call<AppInfo>("app_info"),
     searchLibgen: (query) => call<SearchPage>("search_libgen", { query }),
+    enqueueDownload: (request) =>
+      call<Download>("enqueue_download", { request }),
+    listDownloads: () => call<Download[]>("list_downloads"),
+    cancelDownload: (id) => call<void>("cancel_download", { id }),
+    retryDownload: (id) => call<Download>("retry_download", { id }),
     listBooks: () => call<Book[]>("list_books"),
     listShelves: () => call<Shelf[]>("list_shelves"),
     getBookDetail: (id) => call<BookDetail>("get_book_detail", { id }),
@@ -297,7 +341,7 @@ export function createTauriPlatform(call: Invoke): Platform {
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
   appVersion: "0.1.0",
-  schemaVersion: 2,
+  schemaVersion: 3,
 };
 
 const MOCK_COVER =
@@ -330,6 +374,12 @@ export interface MockConfig {
   searchTotal?: number;
   /** Force a front-desk state for UI tests. */
   searchMode?: "ok" | "offline" | "allFailed" | "formatChanged" | "empty";
+  /** Milliseconds between mock download progress ticks. */
+  downloadStepMs?: number;
+  /** Make the next mock download fail so the retry affordance is visible. */
+  downloadFail?: boolean;
+  /** Force a typed failure reason. */
+  downloadFailCode?: "mirror_failed" | "offline" | "truncated_file";
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
@@ -628,6 +678,11 @@ function createMockPlatform(config: MockConfig = {}): Platform {
   let nextBookId = Math.max(0, ...books.map((book) => book.id)) + 1;
   let nextShelfId = Math.max(0, ...shelves.map((shelf) => shelf.id)) + 1;
   let nextLabelId = Math.max(0, ...labels.map((label) => label.id)) + 1;
+  let downloads: Download[] = [];
+  let nextDownloadId = 1;
+  const downloadTimers = new Map<number, number>();
+  const downloadFailedOnce = new Set<number>();
+  const downloadStepMs = config.downloadStepMs ?? 45;
   const progress = new Map<number, number>(
     Object.entries(config.readingProgress ?? {}).map(([id, value]) => [
       Number(id),
@@ -664,6 +719,114 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       books = [...books];
     }
     progress.set(bookId, next.progress);
+  }
+
+  function addDownloadedBook(download: Download): number {
+    let shelf = shelves.find(
+      (candidate) => books.filter((book) => book.shelfId === candidate.id).length < candidate.capacity,
+    );
+    if (!shelf) {
+      shelf = {
+        id: nextShelfId++,
+        ordinal: shelves.length,
+        capacity,
+      };
+      shelves = [...shelves, shelf];
+    }
+    const used = new Set(
+      books
+        .filter((book) => book.shelfId === shelf!.id)
+        .map((book) => book.slotIndex ?? 0),
+    );
+    let slotIndex = 0;
+    while (used.has(slotIndex)) slotIndex += 1;
+    const book: Book = {
+      id: nextBookId++,
+      contentHash: `mock-download-${download.id}`,
+      format: download.format,
+      title: download.title,
+      authors: download.authors,
+      series: null,
+      language: null,
+      description: null,
+      publisher: null,
+      publishedDate: download.year ? String(download.year) : null,
+      identifier: null,
+      pageCount: null,
+      addedAt: Math.floor(Date.now() / 1000),
+      shelfId: shelf.id,
+      slotIndex,
+      readingStatus: "unread",
+      labels: [],
+    };
+    books = [...books, book];
+    return book.id;
+  }
+
+  function finishMockDownload(id: number) {
+    downloadTimers.delete(id);
+    const index = downloads.findIndex((download) => download.id === id);
+    if (index < 0) return;
+    const current = downloads[index];
+    if (current.state !== "running") return;
+    if (config.downloadFail && !downloadFailedOnce.has(id)) {
+      downloadFailedOnce.add(id);
+      const code = config.downloadFailCode ?? "mirror_failed";
+      const message =
+        code === "offline"
+          ? "The network is unavailable. Your shelf is unaffected."
+          : code === "truncated_file"
+            ? "The file arrived incomplete. Retry to resume where it stopped."
+            : "The download mirror refused or timed out. Try again.";
+      downloads[index] = {
+        ...current,
+        state: "failed",
+        error: message,
+        errorCode: code,
+        finishedAt: Math.floor(Date.now() / 1000),
+      };
+      return;
+    }
+    const bookId = addDownloadedBook(current);
+    downloads[index] = {
+      ...current,
+      state: "completed",
+      bytes: current.totalBytes ?? current.bytes,
+      bookId,
+      filename: `${current.authors[0] ?? "Unknown author"} - ${current.title} (${current.year ?? "n.d."}).${current.format}`,
+      finishedAt: Math.floor(Date.now() / 1000),
+    };
+  }
+
+  function scheduleMockDownload(id: number) {
+    const timer = window.setTimeout(() => {
+      const index = downloads.findIndex((download) => download.id === id);
+      if (index < 0) return;
+      if (downloads[index].state !== "queued") return;
+      downloads[index] = { ...downloads[index], state: "running", totalBytes: downloads[index].totalBytes ?? 1_000_000 };
+      const tick = window.setInterval(() => {
+        const current = downloads.findIndex((download) => download.id === id);
+        if (current < 0) {
+          window.clearInterval(tick);
+          return;
+        }
+        const row = downloads[current];
+        if (row.state !== "running") {
+          window.clearInterval(tick);
+          downloadTimers.delete(id);
+          return;
+        }
+        const total = row.totalBytes ?? 1_000_000;
+        const next = Math.min(total, row.bytes + Math.ceil(total / 4));
+        downloads[current] = { ...row, bytes: next };
+        if (next >= total) {
+          window.clearInterval(tick);
+          finishMockDownload(id);
+        }
+      }, downloadStepMs);
+      downloadTimers.set(id, tick);
+    }, downloadStepMs);
+    downloadTimers.set(id, timer);
   }
 
   const status = (): LibraryStatus => ({ state, folderName });
@@ -760,6 +923,93 @@ function createMockPlatform(config: MockConfig = {}): Platform {
   return {
     appInfo: async () => MOCK_APP_INFO,
     searchLibgen: async (query) => mockSearch(config, query),
+    enqueueDownload: async (request) => {
+      const completed = downloads.find(
+        (download) =>
+          download.md5.toLowerCase() === request.md5.toLowerCase() &&
+          download.state === "completed",
+      );
+      if (completed) {
+        const duplicate: Download = {
+          id: nextDownloadId++,
+          ...request,
+          state: "completed",
+          bytes: 0,
+          totalBytes: null,
+          error: "Already in your library",
+          errorCode: "duplicate",
+          bookId: completed.bookId,
+          filename: completed.filename,
+          createdAt: Math.floor(Date.now() / 1000),
+          finishedAt: Math.floor(Date.now() / 1000),
+        };
+        downloads = [duplicate, ...downloads];
+        return { ...duplicate };
+      }
+      const active = downloads.find(
+        (download) =>
+          download.md5.toLowerCase() === request.md5.toLowerCase() &&
+          (download.state === "queued" || download.state === "running"),
+      );
+      if (active) return { ...active };
+      const row: Download = {
+        id: nextDownloadId++,
+        ...request,
+        state: "queued",
+        bytes: 0,
+        totalBytes: null,
+        error: null,
+        errorCode: null,
+        bookId: null,
+        filename: null,
+        createdAt: Math.floor(Date.now() / 1000),
+        finishedAt: null,
+      };
+      downloads = [row, ...downloads];
+      scheduleMockDownload(row.id);
+      return { ...row };
+    },
+    listDownloads: async () => downloads.map((download) => ({ ...download })),
+    cancelDownload: async (id) => {
+      const timer = downloadTimers.get(id);
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+        window.clearInterval(timer);
+        downloadTimers.delete(id);
+      }
+      downloads = downloads.map((download) =>
+        download.id === id
+          ? {
+              ...download,
+              state: "cancelled",
+              error: null,
+              errorCode: null,
+              finishedAt: Math.floor(Date.now() / 1000),
+            }
+          : download,
+      );
+    },
+    retryDownload: async (id) => {
+      const existing = downloads.find((download) => download.id === id);
+      if (!existing) {
+        throw { code: "download_not_found", message: "That download could not be found." };
+      }
+      downloads = downloads.map((download) =>
+        download.id === id
+          ? {
+              ...download,
+              state: "queued",
+              bytes: 0,
+              totalBytes: null,
+              error: null,
+              errorCode: null,
+              finishedAt: null,
+            }
+          : download,
+      );
+      scheduleMockDownload(id);
+      return { ...downloads.find((download) => download.id === id)! };
+    },
     listBooks: async () => books,
     listShelves: async () => shelves,
     getBookDetail: async (id) => {

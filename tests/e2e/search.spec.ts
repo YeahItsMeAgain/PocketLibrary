@@ -68,8 +68,8 @@ test("basic search lists results with honest counts and a read-only detail", asy
   await expect(sheet).toContainText("a1423442916f2f3def9517a3bf4dee48");
   await expect(page.getByTestId("mirror-row")).toHaveCount(3);
   const download = page.getByTestId("result-download");
-  await expect(download).toBeDisabled();
-  await expect(download).toContainText("ticket 11");
+  await expect(download).toBeEnabled();
+  await expect(download).toContainText("Download to library");
 
   await page.getByTestId("result-detail-close").click();
   await expect(sheet).toHaveCount(0);
@@ -160,4 +160,88 @@ test("back returns to the wall", async ({ page }) => {
   await page.getByTestId("search-back").click();
   await expect(page.getByTestId("library-wall")).toBeVisible();
   await expect(page.getByTestId("search-view")).toHaveCount(0);
+});
+
+
+test("a download shows queue progress and can be cancelled", async ({
+  page,
+}) => {
+  await boot(page, { downloadStepMs: 1500 });
+  await page.getByTestId("search-query").fill("Rock Paper Scissors");
+  await page.getByTestId("search-submit").click();
+  await page.getByTestId("search-result").first().click();
+  await page.getByTestId("result-download").click();
+
+  await expect(page.getByTestId("download-queue")).toBeVisible();
+  await expect(page.getByTestId("download-badge")).toContainText("1 active");
+  await expect(page.getByTestId("download-status").first()).toContainText(
+    /Queued|Downloading/,
+  );
+  await expect(page.getByTestId("result-download-state")).toContainText(
+    /Queued|Downloading/,
+  );
+
+  await page.getByTestId("result-download-cancel").click();
+  await expect(page.getByTestId("download-status").first()).toContainText(
+    "Cancelled",
+  );
+  await expect(page.getByTestId("download-retry")).toBeVisible();
+});
+
+test("a completed download says Added to library and the wall shows a new spine", async ({
+  page,
+}) => {
+  await boot(page);
+  await page.getByTestId("search-query").fill("Rock Paper Scissors");
+  await page.getByTestId("search-submit").click();
+  await page.getByTestId("search-result").first().click();
+  await page.getByTestId("result-download").click();
+
+  await expect(page.getByTestId("download-status").first()).toContainText(
+    "Added to library",
+    { timeout: 5000 },
+  );
+  await expect(page.getByTestId("result-download-state")).toContainText(
+    "Added to library",
+  );
+
+  await page.getByTestId("result-detail-close").click();
+  await page.getByTestId("search-back").click();
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+  await expect(
+    page.getByTestId("spine").filter({ hasText: "Rock Paper Scissors" }),
+  ).toHaveCount(1);
+});
+
+test("a failed download shows the reason and a retry action", async ({
+  page,
+}) => {
+  await boot(page, { downloadFail: true, downloadFailCode: "mirror_failed" });
+  await page.getByTestId("search-query").fill("Rock Paper Scissors");
+  await page.getByTestId("search-submit").click();
+  await page.getByTestId("search-result").first().click();
+  await page.getByTestId("result-download").click();
+
+  await expect(page.getByTestId("download-status").first()).toContainText(
+    "mirror refused",
+    { timeout: 5000 },
+  );
+  await expect(page.getByTestId("download-retry")).toBeVisible();
+  await expect(page.getByTestId("result-download-retry")).toBeVisible();
+});
+
+test("a download finishing after leaving search refreshes the wall", async ({
+  page,
+}) => {
+  await boot(page, { downloadStepMs: 220 });
+  await page.getByTestId("search-query").fill("Rock Paper Scissors");
+  await page.getByTestId("search-submit").click();
+  await page.getByTestId("search-result").first().click();
+  await page.getByTestId("result-download").click();
+  await page.getByTestId("result-detail-close").click();
+  await page.getByTestId("search-back").click();
+
+  await expect(
+    page.getByTestId("spine").filter({ hasText: "Rock Paper Scissors" }),
+  ).toHaveCount(1, { timeout: 10_000 });
 });
