@@ -4,6 +4,10 @@ Status: ready-for-agent
 Tracker: local `.scratch/metadata-gaps/`
 Blocked by: none
 
+## Superseded (2026-11-27)
+
+Online details are automatic always, per product decision. The Off / Ask / Automatic setting and its Settings section are removed, and every launch forces automatic mode, including existing installs that stored Off or Ask. The privacy consequence is accepted: title, author and ISBN may be sent on open or import without a per-book prompt. Automatic lookup keeps its conservative rules — only missing fields are filled, only high-confidence matches are applied, embedded metadata is never overwritten, and the source is attributed. The rest of this spec is retained as historical context.
+
 ## Problem Statement
 
 Many of my books arrive with thin or missing embedded metadata. The shelf shows a generated

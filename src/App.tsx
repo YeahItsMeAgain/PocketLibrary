@@ -27,6 +27,7 @@ import { LibrarySkeleton } from "./library/LibrarySkeleton";
 import { disconnected, runScan, scanNotice } from "./library/scan";
 import { UpdateBanner } from "./updates/UpdateBanner";
 import { useUpdateCheck } from "./updates/useUpdateCheck";
+import { useAutomaticEnrichment } from "./settings/useAutomaticEnrichment";
 
 // Search and Settings are navigation destinations, not first-paint content.
 const SearchView = lazy(() =>
@@ -95,6 +96,7 @@ export default function App() {
   });
   const [updateFocusRequest, setUpdateFocusRequest] = useState(0);
   const update = useUpdateCheck(status !== null);
+  useAutomaticEnrichment(status?.state === "ready");
   const pullRef = useRef<HTMLButtonElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLButtonElement>(null);

@@ -23,7 +23,6 @@ import {
 } from "../reader/settings";
 import { BackupSection } from "./BackupSection";
 import { downloadNameExample } from "./naming";
-import { OnlineDetailsSection } from "./OnlineDetailsSection";
 import { UpdateSection } from "./UpdateSection";
 import type { UpdateCheckController } from "../updates/useUpdateCheck";
 
@@ -424,8 +423,6 @@ export function SettingsView({
             </p>
           ) : null}
         </section>
-
-        <OnlineDetailsSection />
 
         <BackupSection busy={busy} onLibraryChanged={onLibraryChanged} />
 
