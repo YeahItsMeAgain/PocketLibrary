@@ -408,6 +408,57 @@ pub fn minimal_pdf(marker: &str) -> Vec<u8> {
     pdf_with(marker, None, None)
 }
 
+/// A text-only PDF standing in for the acquired *Needful Things* copy.
+///
+/// The page has no jacket-like ink or colour, so cover extraction falls back to
+/// the generated plate: that is the "missing cover" the online path must fill.
+/// `identifier` lets a test model the same file with or without an ISBN.
+pub fn needful_things_pdf(identifier: Option<&str>) -> Vec<u8> {
+    use lopdf::{Document, Object, Stream, dictionary};
+
+    let mut doc = Document::with_version("1.5");
+    let pages_id = doc.new_object_id();
+    let title_content = doc.add_object(Stream::new(
+        dictionary! {},
+        b"0 0 0 rg 30 340 240 8 re f 30 315 200 8 re f 30 290 220 8 re f".to_vec(),
+    ));
+    let page = doc.add_object(dictionary! {
+        "Type" => "Page",
+        "Parent" => pages_id,
+        "MediaBox" => vec![0.into(), 0.into(), 300.into(), 400.into()],
+        "Contents" => title_content,
+        "Resources" => dictionary! {},
+    });
+    doc.objects.insert(
+        pages_id,
+        Object::Dictionary(dictionary! {
+            "Type" => "Pages",
+            "Kids" => vec![Object::Reference(page)],
+            "Count" => 1,
+        }),
+    );
+    let catalog_id = doc.add_object(dictionary! {
+        "Type" => "Catalog",
+        "Pages" => pages_id,
+    });
+    doc.trailer.set("Root", catalog_id);
+    let mut info = dictionary! {
+        "Title" => Object::string_literal("Needful Things"),
+        "Author" => Object::string_literal("Stephen King"),
+        // A scan timestamp, not the 1991 publication year.
+        "CreationDate" => Object::string_literal("D:20110101000000"),
+    };
+    if let Some(identifier) = identifier {
+        info.set("Identifier", Object::string_literal(identifier.to_owned()));
+    }
+    let info_id = doc.add_object(info);
+    doc.trailer.set("Info", info_id);
+
+    let mut buffer = Cursor::new(Vec::new());
+    doc.save_to(&mut buffer).expect("save fixture pdf");
+    buffer.into_inner()
+}
+
 /// A two-page PDF whose first page is a text-like title page and whose second
 /// page is a coloured jacket. Used to verify that cover extraction does not
 /// blindly choose page one.

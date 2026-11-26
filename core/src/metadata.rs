@@ -359,6 +359,14 @@ struct FilenameHints {
     year: Option<String>,
 }
 
+/// The publication year carried by a filename such as `Author - Title (1991)`.
+///
+/// This is a better match signal for PDFs than their `CreationDate`, which is
+/// the scan or export timestamp rather than the book's publication year.
+pub(crate) fn filename_year(filename: &str) -> Option<i64> {
+    parse_filename(filename).year?.parse().ok()
+}
+
 fn parse_filename(filename: &str) -> FilenameHints {
     let stem = filename
         .rsplit_once('.')

@@ -6,7 +6,7 @@ mod common;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use common::{FakeDir, epub_with, png_cover};
+use common::{FakeDir, epub_with, needful_things_pdf, png_cover};
 use futures_util::future::BoxFuture;
 use pocketlibrary_core::{
     Api, CoverSource, EnrichmentMode, EnrichmentOutcome, MetadataProvider,
@@ -135,6 +135,34 @@ fn add_book(
     api.list_books().expect("list books").remove(0)
 }
 
+fn add_pdf_book(api: &Api, path: &str, bytes: Vec<u8>) -> pocketlibrary_core::Book {
+    let source = FakeDir::new().file_with(path, bytes);
+    api.scan(&source).expect("scan pdf");
+    api.list_books().expect("list books").remove(0)
+}
+
+fn needful_things_candidate() -> ProviderCandidate {
+    ProviderCandidate {
+        key: "open_library:/books/OL52963676M".to_owned(),
+        source: "open_library".to_owned(),
+        edition_key: Some("open_library:/books/OL52963676M".to_owned()),
+        title: "Needful Things".to_owned(),
+        // The real `/isbn/9780670839537.json` edition record has no author
+        // names, only work and author links.
+        authors: Vec::new(),
+        year: Some(1991),
+        publisher: Some("Viking".to_owned()),
+        description: Some("<p>A newcomer opens a shop in Castle Rock.</p>".to_owned()),
+        cover_keys: vec![
+            "id:14651900".to_owned(),
+            "isbn:9780670839537".to_owned(),
+            "olid:OL52963676M".to_owned(),
+        ],
+        source_url: "https://openlibrary.org/books/OL52963676M".to_owned(),
+        ..ProviderCandidate::default()
+    }
+}
+
 fn basic_metadata(title: &str, author: &str, year: &str) -> Vec<String> {
     vec![
         format!("<dc:title>{title}</dc:title>"),
@@ -188,6 +216,71 @@ fn a_high_confidence_match_fills_only_missing_blurb_and_cover() {
     assert!(detail.enrichment.has_file_cover == false);
     assert!(detail.enrichment.attribution.is_some());
     assert_eq!(detail.book.file_cover_source, Some(CoverSource::Generated));
+}
+
+#[test]
+fn a_needful_things_isbn_match_without_author_names_fills_its_cover() {
+    let provider = FakeProvider::with_candidate(needful_things_candidate());
+    *provider.cover.lock().unwrap() = png_cover(339, 500);
+    let (_dir, api) = database_with_provider(Arc::clone(&provider));
+    let book = add_pdf_book(
+        &api,
+        "Stephen King - Needful Things (1991).pdf",
+        needful_things_pdf(Some("ISBN:9780670839537")),
+    );
+    assert_eq!(book.cover_source, Some(CoverSource::Generated));
+
+    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    match outcome {
+        EnrichmentOutcome::Applied { fields, .. } => {
+            assert_eq!(fields, vec!["description", "cover"]);
+        }
+        other => panic!("expected the ISBN match to apply, got {other:?}"),
+    }
+
+    let detail = api.get_book_detail(book.id, None).expect("detail");
+    assert_eq!(detail.book.cover_source, Some(CoverSource::OpenLibrary));
+    assert!(detail.cover_data_url.is_some());
+    let attribution = detail.enrichment.attribution.expect("attribution");
+    assert!(attribution.label.contains("Open Library"));
+    assert!(attribution.url.contains("openlibrary.org"));
+}
+
+#[test]
+fn a_needful_things_title_match_ignores_the_pdf_creation_date() {
+    let provider = FakeProvider::with_candidate(ProviderCandidate {
+        key: "open_library:/works/OL81607W".to_owned(),
+        source: "open_library".to_owned(),
+        edition_key: Some("open_library:/books/OL60561812M".to_owned()),
+        title: "Needful Things".to_owned(),
+        authors: vec!["Stephen King".to_owned()],
+        year: Some(1991),
+        publisher: Some("Viking".to_owned()),
+        description: Some("<p>A newcomer opens a shop in Castle Rock.</p>".to_owned()),
+        cover_keys: vec!["id:8404327".to_owned()],
+        source_url: "https://openlibrary.org/works/OL81607W".to_owned(),
+        ..ProviderCandidate::default()
+    });
+    *provider.cover.lock().unwrap() = png_cover(330, 500);
+    let (_dir, api) = database_with_provider(provider);
+    let book = add_pdf_book(
+        &api,
+        "Stephen King - Needful Things (1991).pdf",
+        needful_things_pdf(None),
+    );
+    // The PDF's CreationDate is 2011, but the filename year is the publication
+    // hint the matcher must use.
+    assert_eq!(book.published_date.as_deref(), Some("2011"));
+    assert_eq!(book.cover_source, Some(CoverSource::Generated));
+
+    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    assert!(
+        matches!(outcome, EnrichmentOutcome::Applied { .. }),
+        "the 1991 edition should match, got {outcome:?}"
+    );
+    let detail = api.get_book_detail(book.id, None).expect("detail");
+    assert_eq!(detail.book.cover_source, Some(CoverSource::OpenLibrary));
+    assert!(detail.cover_data_url.is_some());
 }
 
 #[test]

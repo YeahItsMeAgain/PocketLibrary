@@ -18,8 +18,8 @@ use unicode_normalization::UnicodeNormalization;
 use crate::cover::{self, CoverRejection};
 use crate::error::{Error, Result};
 use crate::models::{
-    BookDetail, BookEnrichmentState, CoverChoices, CoverLookupOutcome, CoverOption, CoverSource,
-    DeviceCoverPreview, EnrichmentAttribution, EnrichmentCandidate, EnrichmentMode,
+    BookDetail, BookEnrichmentState, BookFormat, CoverChoices, CoverLookupOutcome, CoverOption,
+    CoverSource, DeviceCoverPreview, EnrichmentAttribution, EnrichmentCandidate, EnrichmentMode,
     EnrichmentOutcome, EnrichmentSettings,
 };
 use crate::service::Service;
@@ -965,6 +965,7 @@ struct BookSnapshot {
     file_cover_path: Option<String>,
     file_cover_source: Option<CoverSource>,
     file_description: Option<String>,
+    format: BookFormat,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1221,10 +1222,7 @@ impl EnrichmentService {
             edition_key: None,
             title: snapshot.title.clone(),
             authors: snapshot.authors.clone(),
-            year: snapshot
-                .published_date
-                .as_deref()
-                .and_then(first_year),
+            year: publication_year(snapshot),
         }
     }
 
@@ -2008,21 +2006,35 @@ fn candidate_view(candidate: &ProviderCandidate, cover: Option<String>) -> Enric
     }
 }
 
+/// The year to check a candidate against.
+///
+/// A PDF's `CreationDate` is a scan/export timestamp, so a year in the filename
+/// (the acquisition naming pattern) is the better publication-year hint. This
+/// also repairs books already in the catalogue without rewriting their row.
+fn publication_year(snapshot: &BookSnapshot) -> Option<i64> {
+    let filename_year = if snapshot.format == BookFormat::Pdf {
+        crate::metadata::filename_year(&snapshot.path)
+    } else {
+        None
+    };
+    filename_year.or_else(|| snapshot.published_date.as_deref().and_then(first_year))
+}
+
 fn confidence(snapshot: &BookSnapshot, candidate: &ProviderCandidate) -> Confidence {
     let file_authors = &snapshot.authors;
     let author_ok = author_matches(file_authors, &candidate.authors);
     let similarity = title_similarity(&snapshot.title, &candidate.title);
-    let year_ok = match (
-        snapshot.published_date.as_deref().and_then(first_year),
-        candidate.year,
-    ) {
+    let year_ok = match (publication_year(snapshot), candidate.year) {
         (Some(file_year), Some(candidate_year)) => (file_year - candidate_year).abs() <= 1,
         _ => true,
     };
 
     if let Some(isbn) = snapshot.identifier.as_deref().and_then(find_isbn) {
         if candidate.cover_keys.iter().any(|key| key == &format!("isbn:{isbn}")) {
-            if similarity >= 0.9 && author_ok {
+            // Open Library edition records usually link authors by key and omit
+            // their names. An exact ISBN is already the strongest key, so a
+            // missing author list is not a conflict as long as the title agrees.
+            if similarity >= 0.9 && (author_ok || candidate.authors.is_empty()) {
                 return Confidence::High;
             }
             return Confidence::Medium;
@@ -2061,7 +2073,7 @@ fn snapshot(conn: &Connection, book_id: i64) -> Result<BookSnapshot> {
         .query_row(
             "SELECT id, content_hash, title, authors, identifier, description, published_date,
                     path, cover_path, cover_source, file_cover_path, file_cover_source,
-                    file_description
+                    file_description, format
              FROM books WHERE id = ?1",
             [book_id],
             |row| {
@@ -2080,6 +2092,7 @@ fn snapshot(conn: &Connection, book_id: i64) -> Result<BookSnapshot> {
                     file_cover_path: row.get(10)?,
                     file_cover_source: row.get(11)?,
                     file_description: row.get(12)?,
+                    format: row.get(13)?,
                 })
             },
         )
@@ -2485,6 +2498,7 @@ mod tests {
             file_cover_path: None,
             file_cover_source: None,
             file_description: None,
+            format: BookFormat::Epub,
         }
     }
 
@@ -2569,5 +2583,29 @@ mod tests {
             ..ProviderCandidate::default()
         };
         assert_eq!(confidence(&snapshot, &exact), Confidence::High);
+    }
+
+    #[test]
+    fn an_isbn_match_without_author_names_still_needs_the_title_to_agree() {
+        let snapshot = snapshot_with(
+            "Needful Things",
+            &["Stephen King"],
+            Some("9780670839537"),
+        );
+        let same_book = ProviderCandidate {
+            title: "Needful Things".to_owned(),
+            authors: Vec::new(),
+            cover_keys: vec!["isbn:9780670839537".to_owned()],
+            ..ProviderCandidate::default()
+        };
+        assert_eq!(confidence(&snapshot, &same_book), Confidence::High);
+
+        let other_book = ProviderCandidate {
+            title: "The Stand".to_owned(),
+            authors: Vec::new(),
+            cover_keys: vec!["isbn:9780670839537".to_owned()],
+            ..ProviderCandidate::default()
+        };
+        assert_eq!(confidence(&snapshot, &other_book), Confidence::Medium);
     }
 }
