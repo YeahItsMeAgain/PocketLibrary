@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>App renderers — v8 art into four spine studies</title>
+<meta name="description" content="Four spine renderers fed by the v8-app on-device textless art and crop pipeline, proved on random books at 390 and 320 px.">
+<link rel="stylesheet" href="renderer/renderer.css">
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+<div class="page-grain" aria-hidden="true"></div>
+<header class="mast">
+  <div class="mast__top">
+    <span class="wordmark"><span class="mark" aria-hidden="true"></span>Pocket Library</span>
+    <span class="edition">Spine studies <span aria-hidden="true">·</span> <b>App renderers</b></span>
+  </div>
+  <div class="mast__body">
+    <p class="kicker">v8-app output · four renderer routes · one gallery</p>
+    <h1>The pipeline, <em>rendered four ways</em>.</h1>
+    <p class="lede">The v8-on-device pipeline already turns a downloaded cover into textless art, a 52 × 236 spine crop and a QA verdict. This study takes that output — not new art, not a pack — and feeds it into the four spine studies: <b>full-bleed</b>, <b>textless art-only</b>, a <b>wrap engine</b>, and the <b>Hybrid / Cloth / Editorial</b> design system.</p>
+    <dl class="facts">
+      <div><dt>Books</dt><dd>5 <small>1 holdout</small></dd></div>
+      <div><dt>Renderer routes</dt><dd>4 <small>6 spines</small></dd></div>
+      <div><dt>Widths</dt><dd>390 / 320 <small>px</small></dd></div>
+      <div><dt>On-device</dt><dd>APK <small>WebView</small></dd></div>
+    </dl>
+  </div>
+</header>
+
+<main>
+  <section class="method" aria-labelledby="method-title">
+    <div class="method__intro">
+      <p class="kicker">The chain</p>
+      <h2 id="method-title">What each renderer consumes</h2>
+      <p>Every book below was fed through the real <code>v8-app</code> Rust/ONNX binary on the host. The app-renderer layer never runs detection, masks or inpainting itself: it reads <code>run.json</code>, applies the pipeline's <code>final.crop_box_work</code> to <code>art.jpg</code>, and composes the study.</p>
+    </div>
+    <ol class="chain">
+      <li><b>Download</b><span>Original cover, per book.</span></li>
+      <li><b>v8-app</b><span>DBNet → mask → crop search / fill → QA.</span></li>
+      <li><b>Output</b><span><code>art.jpg</code>, <code>spine-2x.jpg</code>, <code>run.json</code>, <code>qa.json</code>.</span></li>
+      <li><b>Renderers</b><span>Full-bleed · art-only · wrap · design system.</span></li>
+    </ol>
+  </section>
+
+  <aside class="scope" role="note">
+    <div>
+      <p class="kicker">Execution split</p>
+      <h2>Host gallery now. Native pipeline → WebView on the APK.</h2>
+    </div>
+    <div>
+      <p>These pixels were rendered in Chromium from v8-app's <b>host</b> output. The APK in <code>android-renderer/out/</code> bundles this exact renderer; its native Activity runs the <b>same Rust/ONNX pipeline on the phone</b> and hands the run directory to a WebView. This environment has no adb device or emulator, so the APK integration is built and package-verified here, not device-run. The v8 pipeline itself was device-proved separately.</p>
+      <p class="scope__links"><a href="android-renderer/README.md">APK notes</a> · <a href="README.md">full README</a> · <a href="audit.json">390/320 audit</a></p>
+      <p>The pill on each book is the <b>v8 pipeline verdict</b>. Per-style renderer verdicts, including the Dune decorative-letterform review, are in the README.</p>
+    </div>
+  </aside>
+
+  <nav class="jump" aria-label="Books in this study">
+    <span>Jump to</span>
+    <div id="jump-links"></div>
+  </nav>
+
+  <div id="books" aria-live="polite">
+    <p class="loading">Loading v8 output and rendering spines…</p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div>
+    <span class="wordmark wordmark--small"><span class="mark" aria-hidden="true"></span>Pocket Library</span>
+    <p>Throwaway design study · no production code, tests, manifests or specs changed · no commit or release.</p>
+  </div>
+  <p class="foot__note">Inputs: four study covers plus an unseen Standard Ebooks holdout. Modern edition covers are design references, not public domain. Renderer: <code>renderer/renderer.js</code>, shared by this gallery and the Android WebView.</p>
+</footer>
+
+<script src="renderer/renderer.js"></script>
+<script src="data/books.js"></script>
+<script>
+(async function () {
+  const books = window.APP_RENDERER_BOOKS || [];
+  const mount = document.getElementById("books");
+  const jump = document.getElementById("jump-links");
+  mount.textContent = "";
+  if (!books.length) {
+    mount.innerHTML = '<p class="rer-error">No books found. Run tools/build-data.py.</p>';
+    return;
+  }
+  books.forEach((b) => {
+    const a = document.createElement("a");
+    a.href = "#book-" + b.slug;
+    a.textContent = b.title;
+    if (b.holdout) a.dataset.holdout = "1";
+    jump.appendChild(a);
+  });
+  await window.PocketRenderers.ready();
+  const root = document.createElement("div");
+  mount.appendChild(root);
+  await window.PocketRenderers.mountAll(books, root, { dpr: 2 });
+  books.forEach((b) => {
+    const sec = root.querySelector('[data-slug="' + b.slug + '"]');
+    if (sec) sec.id = "book-" + b.slug;
+  });
+  window.__APP_RENDERERS_READY__ = true;
+})();
+</script>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

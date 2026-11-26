@@ -1,0 +1,21 @@
+date: 2026-11-26T22:01:24+02:00
+host: Linux server 6.12.73+deb13-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.12.73-1 (2026-02-17) x86_64 GNU/Linux
+
+$ adb devices -l
+List of devices attached
+
+
+$ adb install -r out/v8-spine-test-arm64-v8a.apk
+adb: no devices/emulators found
+
+$ emulator -list-avds
+ls: cannot access '/home/mark/Android/Sdk/emulator': No such file or directory
+ls: cannot access '/home/mark/.android/avd': No such file or directory
+
+$ ls ~/Android/Sdk/system-images
+ls: cannot access '/home/mark/Android/Sdk/system-images': No such file or directory
+
+$ ls -l /dev/kvm
+ls: cannot access '/dev/kvm': No such file or directory
+
+$ which waydroid anbox

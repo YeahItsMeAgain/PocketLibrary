@@ -1,0 +1,200 @@
+{
+  "book": {
+    "author": "J.R.R. Tolkien",
+    "cover": "./v7/assets/source/the-hobbit.jpg",
+    "pages": 310,
+    "title": "The Hobbit"
+  },
+  "compare_python": null,
+  "crop_options": {
+    "inpaint_visual": {
+      "box_": [
+        115,
+        15,
+        68,
+        310
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.1984819769859314,
+      "luma_std": 28.16345977783203,
+      "non_dark": 0.41252371668815613,
+      "salience": 11.784744262695312,
+      "score": 2.5414512157440186
+    },
+    "text_free": null,
+    "text_free_ocr_checks": []
+  },
+  "decision_reasons": [
+    "no residual OCR, controlled mask, adequate spine structure"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          131.32798767089844,
+          60.28645324707031
+        ],
+        [
+          178.62208557128906,
+          60.28645324707031
+        ],
+        [
+          178.62208557128906,
+          85.546875
+        ],
+        [
+          131.32798767089844,
+          85.546875
+        ]
+      ],
+      "conf": 0.8240170478820801,
+      "text": "THE"
+    },
+    {
+      "box_": [
+        [
+          24.40589714050293,
+          87.84896087646484
+        ],
+        [
+          287.6817932128906,
+          87.84896087646484
+        ],
+        [
+          287.6817932128906,
+          152.77603149414062
+        ],
+        [
+          24.40589714050293,
+          152.77603149414062
+        ]
+      ],
+      "conf": 0.8135547637939453,
+      "text": "HOBBIT"
+    },
+    {
+      "box_": [
+        [
+          41.72670364379883,
+          389.1051330566406
+        ],
+        [
+          267.68896484375,
+          389.1051330566406
+        ],
+        [
+          267.68896484375,
+          419.7489929199219
+        ],
+        [
+          41.72670364379883,
+          419.7489929199219
+        ]
+      ],
+      "conf": 0.9365330338478088,
+      "text": "J.R.R. TOLKIEN"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      115,
+      15,
+      68,
+      310
+    ],
+    "fallback_spine": "the-hobbit/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 22.594877243041992,
+    "route": "inpaint",
+    "spine": "the-hobbit/spine.jpg",
+    "spine_2x": "the-hobbit/spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795724127,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 3,
+    "coverage_pct": 12.44,
+    "detection_boxes": 3,
+    "flat_fill_pct": 5.02
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 22.594877243041992,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 13.902597427368164,
+      "palette_corr": 0.974536120891571,
+      "score": 2.5414512157440186,
+      "seam": {
+        "boundary_px": 4274,
+        "inside_ring_std_ratio": 0.14033102989196777,
+        "inside_vs_ring_delta_e": 0.9953904747962952,
+        "seam_ratio": 0.7579283714294434
+      },
+      "spine": {
+        "edge_density": 0.24111799895763397,
+        "height_px": 236,
+        "laplacian_var": 245.14495849609375,
+        "luma_p5": 0.0,
+        "luma_p95": 69.0,
+        "luma_std": 27.93076515197754,
+        "non_dark_pct": 40.12385940551758,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 22.594877243041992,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 13.902597427368164,
+      "palette_corr": 0.974536120891571,
+      "score": 2.5414512157440186,
+      "seam": {
+        "boundary_px": 4274,
+        "inside_ring_std_ratio": 0.14033102989196777,
+        "inside_vs_ring_delta_e": 0.9953904747962952,
+        "seam_ratio": 0.7579283714294434
+      },
+      "spine": {
+        "edge_density": 0.24111799895763397,
+        "height_px": 236,
+        "laplacian_var": 245.14495849609375,
+        "luma_p5": 0.0,
+        "luma_p95": 69.0,
+        "luma_std": 27.93076515197754,
+        "non_dark_pct": 40.12385940551758,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "text_free": null
+  },
+  "route": "inpaint",
+  "runtime_s": {
+    "crop_search": 0.01,
+    "detection": 1.27,
+    "inpaint_flat": 0.01,
+    "inpaint_lama": 0.0,
+    "mask_total": 1.31,
+    "total": 2.86
+  },
+  "slug": "the-hobbit",
+  "source": {
+    "height": 500,
+    "width": 308
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 500,
+    "scale": 1.0,
+    "width": 308
+  }
+}

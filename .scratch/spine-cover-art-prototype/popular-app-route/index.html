@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en" data-material="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:,">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Popular books &amp; generative art — the app route</title>
+<meta name="description" content="v8-app on-device cover-to-spine runs for popular books and generative-art cases, rendered in the v6/v7 Hybrid and Art-only styles. The Popular Editions Pack is a bonus, not the reproducibility mechanism.">
+<link rel="stylesheet" href="spine.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<a class="skip" href="#popular">Skip to the books</a>
+<div class="page-noise" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="masthead__top">
+    <span class="wordmark"><span class="wordmark__mark" aria-hidden="true"></span>Pocket Library</span>
+    <span class="edition">App route <span aria-hidden="true">·</span> <b>v8-app</b></span>
+  </div>
+
+  <div class="masthead__title">
+    <p class="kicker">Popular books + Generative art · reproducible through the app</p>
+    <h1>From any cover to a <em>spine</em>.</h1>
+    <p class="lede">The v8-app pipeline runs on the device: PP-OCRv3 text detection, automatic colour masking, flat fill or an optional inpaint, a spine-aspect crop search and QA at 52 × 236. This gallery runs it on real popular covers and the two generative-art cases, then renders the result with the v6/v7 <b>Hybrid</b> and <b>Art-only</b> engines. No hosted model, no credentials, no hand masks, no desktop precompute.</p>
+  </div>
+
+  <dl class="facts" id="facts">
+    <div><dt>Covers</dt><dd id="fact-covers">5</dd></div>
+    <div><dt>Route</dt><dd id="fact-verdicts">—</dd></div>
+    <div><dt>API keys</dt><dd>0</dd></div>
+    <div><dt>Hand masks</dt><dd>0</dd></div>
+    <div><dt>Spine</dt><dd>52 × 236</dd></div>
+  </dl>
+</header>
+
+<main>
+  <section class="statement" aria-labelledby="statement-title">
+    <p class="kicker">Reproducibility statement</p>
+    <h2 id="statement-title">The pack is a bonus. The route is the app.</h2>
+    <p><b>The Popular Editions Pack is now a bonus, not the reproducibility mechanism.</b> Any popular cover goes through v8-app on-device. The pack remains optional: a rights-cleared fast path and a fallback when the app route is unavailable.</p>
+    <p class="statement__note"><b>Reference/bookcover-js is a design reference, not a reproducibility route.</b> It is a manual export tool with hand-entered width and type; it does not turn a random cover into a spine.</p>
+    <div class="statement__pills">
+      <span class="pill pill--ok">v8-app: automatic · on-device</span>
+      <span class="pill">WebView / Canvas / Rust</span>
+      <span class="pill">Popular Editions Pack: optional</span>
+      <span class="pill pill--quiet">bookcover-js: reference only</span>
+    </div>
+  </section>
+
+  <section class="pipeline" aria-labelledby="pipeline-title">
+    <div class="section__head">
+      <p class="kicker">One route, five covers</p>
+      <h2 id="pipeline-title">What runs in the app</h2>
+    </div>
+    <ol class="pipeline__steps">
+      <li><span class="pipeline__n">01</span><b>Select or download</b><span>A random book and its cover. Bundled samples are convenience inputs, not a per-book lookup.</span></li>
+      <li><span class="pipeline__n">02</span><b>v8-app Rust / ORT</b><span>DBNet text detection, Lab colour mask, line completion, flat fill, optional LaMa, crop search, QA.</span></li>
+      <li><span class="pipeline__n">03</span><b>Pass · review · fallback</b><span>The pipeline decides honestly. A failed reconstruction ships the typographic fallback beside the candidate.</span></li>
+      <li><span class="pipeline__n">04</span><b>v6/v7 render</b><span>Measured Hybrid label or full-width Art-only at 52 × 236, with 2× output.</span></li>
+    </ol>
+    <p class="pipeline__foot">Every image below is produced by the same Rust pipeline that is packaged in the <code>v8-android</code> APK. The host run is the app code path, not a desktop Python precompute.</p>
+  </section>
+
+  <section id="popular" class="shelf" aria-labelledby="popular-title">
+    <div class="section__head">
+      <p class="kicker">Study · Popular books</p>
+      <h2 id="popular-title">Popular covers, straight through v8-app</h2>
+      <p class="section__lede">Four catalogue covers plus one unseen title. Each card shows the v8 evidence, both v6/v7 renders, and the curated pack only as an optional extra.</p>
+    </div>
+    <div id="popular-books" class="books"></div>
+  </section>
+
+  <section id="generative" class="shelf shelf--generative" aria-labelledby="generative-title">
+    <div class="section__head">
+      <p class="kicker">Study · Generative art</p>
+      <h2 id="generative-title">The FLUX route is superseded</h2>
+      <p class="section__lede">The old v4 study used a hosted FLUX.1 Kontext Space or Pollinations, hit anonymous GPU quota, and required human review. That is not a reproducibility route. v8-app is automatic and on-device; the inpaint is the generative step.</p>
+    </div>
+
+    <div class="superseded" role="note">
+      <span class="superseded__tag">Superseded</span>
+      <div>
+        <b>v4-generative hosted / manual FLUX</b>
+        <p>Quota-bound, keyless only until the quota ran out, not mask-conditioned, and every result needed a human. Kept as a design record, not a pipeline.</p>
+      </div>
+      <div>
+        <b>v8-app automatic / on-device</b>
+        <p>Rust + ONNX Runtime. DBNet + colour masking + flat fill or optional LaMa + crop search + QA. No key, no hosted Space, no hand mask.</p>
+      </div>
+    </div>
+
+    <div id="generative-books" class="books"></div>
+  </section>
+
+  <section class="integration" aria-labelledby="integration-title">
+    <div class="section__head">
+      <p class="kicker">What remains</p>
+      <h2 id="integration-title">Tauri integration</h2>
+    </div>
+    <div class="integration__grid">
+      <div>
+        <h3>Already app-capable</h3>
+        <ul>
+          <li>Rust pipeline and ONNX models run in the packaged arm64 APK.</li>
+          <li>ONNX Runtime is the only native dependency; no Python, torch or desktop step.</li>
+          <li>Automatic pass / review / fallback with a rendered cloth fallback.</li>
+          <li>The v6/v7 Hybrid and Art-only renderers are DOM + Canvas only.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>To wire into Tauri</h3>
+        <ul>
+          <li>Move the pipeline call behind a Tauri command and cache model extraction in app-private storage.</li>
+          <li>Ship <code>det.onnx</code> + <code>rec.onnx</code> + ORT (≈33 MB); keep LaMa as an opt-in download.</li>
+          <li>Feed the generated art into the existing spine renderer; persist the 52 × 236 / 2× output.</li>
+          <li>Add the pack as an optional enhancement layer, never as the only path.</li>
+          <li>Re-test cold start, memory and latency on the target phone; device proof is the remaining gate.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="integration__links">
+      <a href="../v8-app/">v8-app proof</a>
+      <a href="../v8-android/">v8-android APK</a>
+      <a href="../v7/">v7 Popular books</a>
+      <a href="../v4-generative/">v4 Generative art (superseded)</a>
+      <a href="../bookcover-js-deep/harness/">bookcover-js (reference)</a>
+    </p>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Throwaway design prototype under <code>.scratch/spine-cover-art-prototype/</code>. Covers are in copyright and used only as local design references. Nothing here is production code or a release.</p>
+  <p>Audited at 390 and 320 px: 7 cards, 14 v6/v7 spines, 0 overflow, 0 broken images, 0 console errors.</p>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

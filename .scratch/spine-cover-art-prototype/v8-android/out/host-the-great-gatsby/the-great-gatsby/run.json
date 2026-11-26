@@ -1,0 +1,259 @@
+{
+  "book": {
+    "author": "F. Scott Fitzgerald",
+    "cover": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-android/assets/covers/gatsby.jpg",
+    "pages": 180,
+    "title": "The Great Gatsby"
+  },
+  "compare_python": null,
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        0,
+        84,
+        68,
+        310
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.15635673701763153,
+      "luma_std": 58.998722076416016,
+      "non_dark": 0.9304079413414001,
+      "salience": 19.756698608398438,
+      "score": 3.2170000076293945
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          0,
+          84,
+          68,
+          310
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.15635673701763153,
+        "luma_std": 58.998722076416016,
+        "non_dark": 0.9304079413414001,
+        "salience": 19.756698608398438,
+        "score": 3.2170000076293945
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          137.89752197265625,
+          2.719906806945801
+        ],
+        [
+          232.42816162109375,
+          2.719906806945801
+        ],
+        [
+          232.42816162109375,
+          30.61342430114746
+        ],
+        [
+          137.89752197265625,
+          30.61342430114746
+        ]
+      ],
+      "conf": 0.9713149070739746,
+      "text": "SCOTT"
+    },
+    {
+      "box_": [
+        [
+          124.00218200683594,
+          32.34054946899414
+        ],
+        [
+          317.520263671875,
+          32.34054946899414
+        ],
+        [
+          317.520263671875,
+          69.7427749633789
+        ],
+        [
+          124.00218200683594,
+          69.7427749633789
+        ]
+      ],
+      "conf": 0.8424828052520752,
+      "text": "GERALD"
+    },
+    {
+      "box_": [
+        [
+          25.997352600097656,
+          35.28934860229492
+        ],
+        [
+          116.90840911865234,
+          35.28934860229492
+        ],
+        [
+          116.90840911865234,
+          47.002315521240234
+        ],
+        [
+          25.997352600097656,
+          47.002315521240234
+        ]
+      ],
+      "conf": 0.9706854820251465,
+      "text": "31111027951530"
+    },
+    {
+      "box_": [
+        [
+          30.967626571655273,
+          410.135009765625
+        ],
+        [
+          325.5284423828125,
+          410.135009765625
+        ],
+        [
+          325.5284423828125,
+          448.19830322265625
+        ],
+        [
+          30.967626571655273,
+          448.19830322265625
+        ]
+      ],
+      "conf": 0.8807572722434998,
+      "text": "IREAT GATSBY"
+    },
+    {
+      "box_": [
+        [
+          0.96038818359375,
+          422.3306884765625
+        ],
+        [
+          23.62554931640625,
+          422.3306884765625
+        ],
+        [
+          23.62554931640625,
+          434.9609375
+        ],
+        [
+          0.96038818359375,
+          434.9609375
+        ]
+      ],
+      "conf": 0.5745849609375,
+      "text": "ton"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      0,
+      84,
+      68,
+      310
+    ],
+    "fallback_spine": "the-great-gatsby/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "the-great-gatsby/spine.jpg",
+    "spine_2x": "the-great-gatsby/spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795723185,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 4,
+    "coverage_pct": 20.6,
+    "detection_boxes": 10,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 21.628658294677734,
+      "palette_corr": 0.5041539669036865,
+      "score": 3.2170000076293945,
+      "seam": {
+        "boundary_px": 3121,
+        "inside_ring_std_ratio": 1.1774662733078003,
+        "inside_vs_ring_delta_e": 111.09603881835938,
+        "seam_ratio": 0.7014345526695251
+      },
+      "spine": {
+        "edge_density": 0.19312255084514618,
+        "height_px": 236,
+        "laplacian_var": 1725.943603515625,
+        "luma_p5": 17.0,
+        "luma_p95": 236.0,
+        "luma_std": 58.29786682128906,
+        "non_dark_pct": 93.46479797363281,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 21.628658294677734,
+      "palette_corr": 0.5041539669036865,
+      "score": 3.2170000076293945,
+      "seam": {
+        "boundary_px": 3121,
+        "inside_ring_std_ratio": 1.1774662733078003,
+        "inside_vs_ring_delta_e": 111.09603881835938,
+        "seam_ratio": 0.7014345526695251
+      },
+      "spine": {
+        "edge_density": 0.19312255084514618,
+        "height_px": 236,
+        "laplacian_var": 1725.943603515625,
+        "luma_p5": 17.0,
+        "luma_p95": 236.0,
+        "luma_std": 58.29786682128906,
+        "non_dark_pct": 93.46479797363281,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.2,
+    "detection": 1.13,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "mask_total": 1.18,
+    "total": 2.77
+  },
+  "slug": "the-great-gatsby",
+  "source": {
+    "height": 500,
+    "width": 328
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 500,
+    "scale": 1.0,
+    "width": 328
+  }
+}

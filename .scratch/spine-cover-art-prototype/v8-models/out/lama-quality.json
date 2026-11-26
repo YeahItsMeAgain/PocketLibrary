@@ -1,0 +1,212 @@
+[
+  {
+    "book": "hound",
+    "variant": "dynamic",
+    "art": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    },
+    "spine": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    }
+  },
+  {
+    "book": "hound",
+    "variant": "static",
+    "art": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    },
+    "spine": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    }
+  },
+  {
+    "book": "hound",
+    "variant": "conv",
+    "art": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    },
+    "spine": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    }
+  },
+  {
+    "book": "rps",
+    "variant": "dynamic",
+    "art": {
+      "mae": 42.26,
+      "psnr_db": 9.9,
+      "ssim": 0.6061
+    },
+    "spine": {
+      "mae": 49.17,
+      "psnr_db": 9.35,
+      "ssim": 0.4594
+    }
+  },
+  {
+    "book": "rps",
+    "variant": "static",
+    "art": {
+      "mae": 13.55,
+      "psnr_db": 18.38,
+      "ssim": 0.7427
+    },
+    "spine": {
+      "mae": 22.57,
+      "psnr_db": 15.66,
+      "ssim": 0.6312
+    }
+  },
+  {
+    "book": "rps",
+    "variant": "conv",
+    "art": {
+      "mae": 10.03,
+      "psnr_db": 20.71,
+      "ssim": 0.7994
+    },
+    "spine": {
+      "mae": 15.28,
+      "psnr_db": 17.95,
+      "ssim": 0.7161
+    }
+  },
+  {
+    "book": "harry-potter",
+    "variant": "dynamic",
+    "art": {
+      "mae": 35.12,
+      "psnr_db": 11.25,
+      "ssim": 0.7815
+    },
+    "spine": {
+      "mae": 20.48,
+      "psnr_db": 14.26,
+      "ssim": 0.8331
+    }
+  },
+  {
+    "book": "harry-potter",
+    "variant": "static",
+    "art": {
+      "mae": 22.08,
+      "psnr_db": 15.35,
+      "ssim": 0.8124
+    },
+    "spine": {
+      "mae": 13.91,
+      "psnr_db": 18.09,
+      "ssim": 0.8202
+    }
+  },
+  {
+    "book": "harry-potter",
+    "variant": "conv",
+    "art": {
+      "mae": 20.2,
+      "psnr_db": 16.04,
+      "ssim": 0.9244
+    },
+    "spine": {
+      "mae": 10.35,
+      "psnr_db": 19.9,
+      "ssim": 0.9052
+    }
+  },
+  {
+    "book": "hunger-games",
+    "variant": "dynamic",
+    "art": {
+      "mae": 28.77,
+      "psnr_db": 10.74,
+      "ssim": 0.8167
+    },
+    "spine": {
+      "mae": 33.0,
+      "psnr_db": 9.87,
+      "ssim": 0.8319
+    }
+  },
+  {
+    "book": "hunger-games",
+    "variant": "static",
+    "art": {
+      "mae": 11.41,
+      "psnr_db": 18.83,
+      "ssim": 0.8516
+    },
+    "spine": {
+      "mae": 15.29,
+      "psnr_db": 17.06,
+      "ssim": 0.8234
+    }
+  },
+  {
+    "book": "hunger-games",
+    "variant": "conv",
+    "art": {
+      "mae": 7.07,
+      "psnr_db": 22.34,
+      "ssim": 0.9307
+    },
+    "spine": {
+      "mae": 10.72,
+      "psnr_db": 19.68,
+      "ssim": 0.8974
+    }
+  },
+  {
+    "book": "whisper-man",
+    "variant": "dynamic",
+    "art": {
+      "mae": 9.93,
+      "psnr_db": 15.28,
+      "ssim": 0.9099
+    },
+    "spine": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    }
+  },
+  {
+    "book": "whisper-man",
+    "variant": "static",
+    "art": {
+      "mae": 3.47,
+      "psnr_db": 25.96,
+      "ssim": 0.9285
+    },
+    "spine": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    }
+  },
+  {
+    "book": "whisper-man",
+    "variant": "conv",
+    "art": {
+      "mae": 0.94,
+      "psnr_db": 36.01,
+      "ssim": 0.9828
+    },
+    "spine": {
+      "mae": 0.0,
+      "psnr_db": 99.0,
+      "ssim": 1.0
+    }
+  }
+]

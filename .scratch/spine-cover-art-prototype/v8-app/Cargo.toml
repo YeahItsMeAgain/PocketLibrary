@@ -1,0 +1,39 @@
+[package]
+name = "v8-app"
+version = "0.1.0"
+edition = "2021"
+description = "App-capable Rust port of the v8 automatic generative spine pipeline"
+license = "Apache-2.0"
+
+[lib]
+name = "v8_app"
+path = "src/lib.rs"
+
+[[bin]]
+name = "v8-app"
+path = "src/main.rs"
+
+[[bin]]
+name = "maskprobe"
+path = "src/bin/maskprobe.rs"
+
+[[bin]]
+name = "probe"
+path = "src/bin/probe.rs"
+
+[dependencies]
+anyhow = "1"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+ndarray = "0.17"
+ort = { version = "=2.0.0-rc.15", default-features = false, features = ["load-dynamic", "ndarray"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+fontdue = "0.9"
+rayon = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true

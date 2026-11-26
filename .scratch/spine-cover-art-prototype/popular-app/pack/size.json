@@ -1,0 +1,105 @@
+{
+  "packId": "popular-editions",
+  "version": "2026.11.26.1",
+  "entryCount": 6,
+  "fileCount": 18,
+  "manifestBytes": 19749,
+  "latestBytes": 497,
+  "assetBytes": 1941864,
+  "totalBytes": 1962110,
+  "totalKiB": 1916.1,
+  "assets": [
+    {
+      "path": "files/art/harry-potter.jpg",
+      "sha256": "5dcb88880b26cdf8064024e369141540c5127bfb63d9200f3dc84d003e031530",
+      "bytes": 84233
+    },
+    {
+      "path": "files/spine/harry-potter.jpg",
+      "sha256": "733493c41b13c7704ccc753b4f26b99b62e260762f3bc8a62cff8f04f20d0e42",
+      "bytes": 8329
+    },
+    {
+      "path": "files/spine-2x/harry-potter.jpg",
+      "sha256": "44d5a2d03c3f38491c6f78df3e2593f22582d8ffae7b7afad8a0d80b0bb558f0",
+      "bytes": 20959
+    },
+    {
+      "path": "files/art/lord-of-the-rings.jpg",
+      "sha256": "51749d21c6a7e0c4964be1f8e5238805b28acae31fcadab3d00bfe36a33f7ec2",
+      "bytes": 68743
+    },
+    {
+      "path": "files/spine/lord-of-the-rings.jpg",
+      "sha256": "7de7385ece573c20bb816be7d495a574060f3a9d674b54ae95c7ae6849bb877d",
+      "bytes": 7346
+    },
+    {
+      "path": "files/spine-2x/lord-of-the-rings.jpg",
+      "sha256": "70a1e9d25d08d24257de4d136a7ad860fa20f1966ab4754dbf8d71f12b9bc5a3",
+      "bytes": 21020
+    },
+    {
+      "path": "files/art/the-hobbit.jpg",
+      "sha256": "a5bfcc1fff76e37c8d77d6606e9c92448b65721312c8663cae2d566074fed440",
+      "bytes": 28402
+    },
+    {
+      "path": "files/spine/the-hobbit.jpg",
+      "sha256": "2e8d53ea9230f08aeb7881ca6d3257aaf488fc419f44c7a5f28b0f6f254ec752",
+      "bytes": 4305
+    },
+    {
+      "path": "files/spine-2x/the-hobbit.jpg",
+      "sha256": "1b6124e70b58dab8315047080bf083d88d6bf70783193b422816b7c0d73aed26",
+      "bytes": 11017
+    },
+    {
+      "path": "files/art/the-hunger-games.jpg",
+      "sha256": "66064d2aa907f0fc4c15c0225fda9d3cea28ebafbd553ac97a8bd262c1444b36",
+      "bytes": 31456
+    },
+    {
+      "path": "files/spine/the-hunger-games.jpg",
+      "sha256": "ac9eb6500927e218dcc76b38223d0e779e263cb90be6afc45e8161111cc5d958",
+      "bytes": 6029
+    },
+    {
+      "path": "files/spine-2x/the-hunger-games.jpg",
+      "sha256": "79e9a4d2503f094c2cf2c992d9357c410f63aef5913335d4628c5801a8f61717",
+      "bytes": 15420
+    },
+    {
+      "path": "files/art/moby-dick.jpg",
+      "sha256": "6bb5139b15e3f105bef18147d15b3135f4298126b500d0c072825d7867e9d752",
+      "bytes": 900585
+    },
+    {
+      "path": "files/spine/moby-dick.jpg",
+      "sha256": "3ccb54e90aa5605ff6ec65edeefe34e6552c854ef596269a4d1caf29d4d439ba",
+      "bytes": 3986
+    },
+    {
+      "path": "files/spine-2x/moby-dick.jpg",
+      "sha256": "82e4d19797b27e3752ae0f082be2a7ed0c5682b6c16e5faf0a13d2c47296ce94",
+      "bytes": 14604
+    },
+    {
+      "path": "files/art/hound-of-the-baskervilles.jpg",
+      "sha256": "cf6720979ba338320e1cd46fff5dcdc86d9025da5870e751c6a184bbad6055af",
+      "bytes": 707998
+    },
+    {
+      "path": "files/spine/hound-of-the-baskervilles.jpg",
+      "sha256": "14bbc9cdbcf99b21bceba583fd95e4a117ccb5f8dc1cef5c3ab6f0032dbf24b4",
+      "bytes": 1839
+    },
+    {
+      "path": "files/spine-2x/hound-of-the-baskervilles.jpg",
+      "sha256": "2d835f26ae73f49832317177499384c0139208311c56818cb5b94ceb345079c1",
+      "bytes": 5593
+    }
+  ],
+  "zipBytes": 1940755,
+  "zipKiB": 1895.3
+}

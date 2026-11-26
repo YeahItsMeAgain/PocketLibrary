@@ -1,0 +1,376 @@
+{
+  "book": {
+    "author": "Alice Feeney",
+    "cover": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-app/out/rps/source.jpg",
+    "pages": 320,
+    "title": "Rock Paper Scissors"
+  },
+  "compare_python": null,
+  "crop_options": {
+    "inpaint_visual": {
+      "box_": [
+        310,
+        0,
+        159,
+        720
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.10944269597530365,
+      "luma_std": 32.10594177246094,
+      "non_dark": 1.0,
+      "salience": 6.479828834533691,
+      "score": 2.703827381134033
+    },
+    "text_free": null,
+    "text_free_ocr_checks": []
+  },
+  "decision_reasons": [
+    "40-55% of the cover was reconstructed"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          265.8792419433594,
+          103.31877899169922
+        ],
+        [
+          921.0723876953125,
+          103.31877899169922
+        ],
+        [
+          921.0723876953125,
+          150.84786987304688
+        ],
+        [
+          265.8792419433594,
+          150.84786987304688
+        ]
+      ],
+      "conf": 0.8564892411231995,
+      "text": "NEW YORK TIMES BESTSELLER"
+    },
+    {
+      "box_": [
+        [
+          152.0858612060547,
+          172.2930145263672
+        ],
+        [
+          998.2188720703125,
+          172.2930145263672
+        ],
+        [
+          998.2188720703125,
+          413.1236267089844
+        ],
+        [
+          152.0858612060547,
+          413.1236267089844
+        ]
+      ],
+      "conf": 0.9864476323127747,
+      "text": "ALICE"
+    },
+    {
+      "box_": [
+        [
+          24.35582160949707,
+          485.3395080566406
+        ],
+        [
+          1130.020751953125,
+          485.3395080566406
+        ],
+        [
+          1130.020751953125,
+          714.6604614257812
+        ],
+        [
+          24.35582160949707,
+          714.6604614257812
+        ]
+      ],
+      "conf": 0.9857028126716614,
+      "text": "FEENEY"
+    },
+    {
+      "box_": [
+        [
+          602.2079467773438,
+          757.8937377929688
+        ],
+        [
+          1079.4764404296875,
+          757.8937377929688
+        ],
+        [
+          1079.4764404296875,
+          810.856201171875
+        ],
+        [
+          602.2079467773438,
+          810.856201171875
+        ]
+      ],
+      "conf": 0.9385398626327515,
+      "text": "\"Feeney lives up to her reputation"
+    },
+    {
+      "box_": [
+        [
+          634.6290283203125,
+          799.4028930664062
+        ],
+        [
+          1042.9835205078125,
+          799.4028930664062
+        ],
+        [
+          1042.9835205078125,
+          846.4303588867188
+        ],
+        [
+          634.6290283203125,
+          846.4303588867188
+        ]
+      ],
+      "conf": 0.9467755556106567,
+      "text": "as the 'queen of the twist. .."
+    },
+    {
+      "box_": [
+        [
+          559.1113891601562,
+          836.7105712890625
+        ],
+        [
+          1132.752685546875,
+          836.7105712890625
+        ],
+        [
+          1132.752685546875,
+          884.1226806640625
+        ],
+        [
+          559.1113891601562,
+          884.1226806640625
+        ]
+      ],
+      "conf": 0.9522492289543152,
+      "text": "This page-turner will keep you guessing.\""
+    },
+    {
+      "box_": [
+        [
+          720.54052734375,
+          872.7310180664062
+        ],
+        [
+          975.3954467773438,
+          872.7310180664062
+        ],
+        [
+          975.3954467773438,
+          918.935546875
+        ],
+        [
+          720.54052734375,
+          918.935546875
+        ]
+      ],
+      "conf": 0.9082351326942444,
+      "text": "-REAL SIMPLE"
+    },
+    {
+      "box_": [
+        [
+          183.46221923828125,
+          1089.8165283203125
+        ],
+        [
+          791.7518920898438,
+          1089.8165283203125
+        ],
+        [
+          791.7518920898438,
+          1268.5167236328125
+        ],
+        [
+          183.46221923828125,
+          1268.5167236328125
+        ]
+      ],
+      "conf": 0.9819961190223694,
+      "text": "ROCK"
+    },
+    {
+      "box_": [
+        [
+          447.8949279785156,
+          1383.3216552734375
+        ],
+        [
+          1129.9566650390625,
+          1383.3216552734375
+        ],
+        [
+          1129.9566650390625,
+          1547.92822265625
+        ],
+        [
+          447.8949279785156,
+          1547.92822265625
+        ]
+      ],
+      "conf": 0.9946632385253906,
+      "text": "PAPER"
+    },
+    {
+      "box_": [
+        [
+          79.96662139892578,
+          1669.328125
+        ],
+        [
+          1106.9849853515625,
+          1669.328125
+        ],
+        [
+          1106.9849853515625,
+          1843.1717529296875
+        ],
+        [
+          79.96662139892578,
+          1843.1717529296875
+        ]
+      ],
+      "conf": 0.9400489330291748,
+      "text": "SCISSORS"
+    },
+    {
+      "box_": [
+        [
+          126.45892333984375,
+          1877.3193359375
+        ],
+        [
+          376.41766357421875,
+          1877.3193359375
+        ],
+        [
+          376.41766357421875,
+          1928.930419921875
+        ],
+        [
+          126.45892333984375,
+          1928.930419921875
+        ]
+      ],
+      "conf": 0.677247941493988,
+      "text": "A nOvel"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      310,
+      0,
+      159,
+      720
+    ],
+    "fallback_spine": "rock-paper-scissors/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 60.20527648925781,
+    "route": "inpaint",
+    "spine": "rock-paper-scissors/spine.jpg",
+    "spine_2x": "rock-paper-scissors/spine-2x.jpg",
+    "verdict": "review"
+  },
+  "generated_epoch": 1795723227,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 14,
+    "coverage_pct": 45.27,
+    "detection_boxes": 21,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 60.20527648925781,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 48.130775451660156,
+      "palette_corr": 0.9873810410499573,
+      "score": 2.703827381134033,
+      "seam": {
+        "boundary_px": 17496,
+        "inside_ring_std_ratio": 0.24981729686260223,
+        "inside_vs_ring_delta_e": 5.171788215637207,
+        "seam_ratio": 0.7173212170600891
+      },
+      "spine": {
+        "edge_density": 0.1382007896900177,
+        "height_px": 236,
+        "laplacian_var": 602.9053344726562,
+        "luma_p5": 127.0,
+        "luma_p95": 229.0,
+        "luma_std": 31.194101333618164,
+        "non_dark_pct": 100.0,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 60.20527648925781,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 48.130775451660156,
+      "palette_corr": 0.9873810410499573,
+      "score": 2.703827381134033,
+      "seam": {
+        "boundary_px": 17496,
+        "inside_ring_std_ratio": 0.24981729686260223,
+        "inside_vs_ring_delta_e": 5.171788215637207,
+        "seam_ratio": 0.7173212170600891
+      },
+      "spine": {
+        "edge_density": 0.1382007896900177,
+        "height_px": 236,
+        "laplacian_var": 602.9053344726562,
+        "luma_p5": 127.0,
+        "luma_p95": 229.0,
+        "luma_std": 31.194101333618164,
+        "non_dark_pct": 100.0,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "text_free": null
+  },
+  "route": "inpaint",
+  "runtime_s": {
+    "crop_search": 0.02,
+    "detection": 2.22,
+    "inpaint_flat": 0.12,
+    "inpaint_lama": 0.0,
+    "mask_total": 3.01,
+    "total": 5.75
+  },
+  "slug": "rock-paper-scissors",
+  "source": {
+    "height": 2000,
+    "width": 1303
+  },
+  "verdict": "review",
+  "working": {
+    "height": 720,
+    "scale": 0.36,
+    "width": 469
+  }
+}

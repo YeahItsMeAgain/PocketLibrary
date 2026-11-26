@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>v8 spine test APK</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0b060c; color: #e9d9b8; font: 16px/1.55 ui-serif, Georgia, serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 28px 20px 60px; }
+  .kicker { color: #b99a63; font: 650 11px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+  h1 { font-size: 2.1rem; line-height: 1.05; margin: 10px 0 8px; font-weight: 400; }
+  h1 em { color: #f0cf88; }
+  p { color: #cbb998; }
+  .download { display: block; margin: 24px 0; padding: 18px 20px; border: 1px solid rgba(201,168,106,.55); border-radius: 5px; background: linear-gradient(180deg, #38203f, #1a0e20); text-decoration: none; }
+  .download strong { display: block; color: #ffe7b1; font: 700 17px/1.2 ui-sans-serif, system-ui, sans-serif; }
+  .download span { display: block; margin-top: 5px; color: #a99574; font: 12px/1.4 ui-monospace, monospace; }
+  code { color: #f1d9a1; font: 12px/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+  .card { margin: 20px 0; padding: 16px 18px; border: 1px solid rgba(201,168,106,.22); border-radius: 4px; background: rgba(28,16,32,.55); }
+  .card h2 { margin: 0 0 8px; color: #f2dfb8; font: 650 13px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+  ol, ul { padding-left: 22px; color: #cbb998; }
+  li { margin: 6px 0; }
+  .warn { border-color: rgba(196,110,96,.55); background: rgba(48,22,28,.5); }
+  .warn h2 { color: #f0b7a7; }
+  .foot { margin-top: 32px; color: #7e6d58; font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker">PocketLibrary · throwaway test build</p>
+  <h1>Cover → spine, <em>on the phone</em></h1>
+  <p>This APK runs the v8 Rust/ONNX pipeline on-device. It accepts a bundled sample, a device image, or a cover URL, then generates a 52 × 236 spine with pass/review/fallback QA.</p>
+
+  <a class="download" href="v8-spine-test-arm64-v8a.apk" download>
+    <strong>Download v8 spine test APK</strong>
+    <span>19.7 MB · arm64-v8a · Android 8.0+ · package app.pocketlibrary.spinetest</span>
+  </a>
+
+  <div class="card">
+    <h2>Install</h2>
+    <ol>
+      <li>Open the link on the Android phone.</li>
+      <li>Allow install from this browser/file source if prompted.</li>
+      <li>Install <strong>v8 Spine Test</strong>.</li>
+      <li>Open it. The first run copies ~13 MB of detection/recognition models out of the APK.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>What to test</h2>
+    <ul>
+      <li>Pick a bundled sample, a device image, or fetch a cover URL.</li>
+      <li>Fill title/author/page count, then tap <strong>Generate spine on device</strong>.</li>
+      <li>Check the source, 52 × 236 spine, typographic fallback, contact sheet and QA summary.</li>
+      <li>Export <strong>spine + run.json</strong> to Downloads if you want to inspect the result.</li>
+    </ul>
+  </div>
+
+  <div class="card warn">
+    <h2>Important</h2>
+    <p>LaMa (208 MB) is <strong>not packaged</strong> in this test build. Covers where no text-free crop is available use the flat-fill route and may return <strong>review</strong> or <strong>fallback</strong>. That is the pipeline's honest result, not a crash.</p>
+    <p>This is a debug-signed test APK, not the PocketLibrary release app. It will install alongside the normal app.</p>
+  </div>
+
+  <div class="card">
+    <h2>Build details</h2>
+    <p>SHA-256:<br><code>24bb847deea6360a7965091d3802fa44a3f0a5c5f739f7d66e707f667c5d88d3</code></p>
+    <p>Size: <strong>19,698,712 bytes</strong> · minSdk 26 · arm64-v8a · signed APK Signature Scheme v2/v3</p>
+    <p>If install fails with “app not installed”, confirm the phone is arm64 and Android 8.0+.</p>
+  </div>
+
+  <p class="foot">Throwaway prototype. No production data, no API keys, no network inference. The only network use is fetching a cover URL if you paste one.</p>
+</main>
+</body>
+</html>

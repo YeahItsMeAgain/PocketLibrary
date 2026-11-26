@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>On-device spine renderer</title>
+<link rel="stylesheet" href="renderer.css">
+<style>
+  html, body { margin: 0; background: #0d0a08; color: #ddcfb5; }
+  body { font: 15px/1.5 ui-serif, Georgia, serif; overflow-x: hidden; }
+  .app-head {
+    position: sticky; top: 0; z-index: 5; padding: 12px 16px 10px;
+    background: rgba(13, 10, 8, .94); border-bottom: 1px solid rgba(226, 210, 178, .16);
+    backdrop-filter: blur(8px);
+  }
+  .app-head b { display: block; color: #f2e6cc; font: 600 11px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+  .app-head span { display: block; margin-top: 3px; color: #8d7f6b; font: 10px/1.3 ui-monospace, monospace; }
+  main { padding: 4px 16px 30px; }
+  .app-note { margin: 14px 0 0; color: #a99a80; font: 11px/1.45 ui-sans-serif, system-ui, sans-serif; }
+  .app-error { margin: 20px 0; padding: 14px; border: 1px solid rgba(200, 100, 90, .5); color: #e8b5a8; font: 12px/1.4 ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<header class="app-head">
+  <b>On-device renderer</b>
+  <span id="mode">waiting for native pipeline output…</span>
+</header>
+<main>
+  <div id="root"><p class="app-note">Reading run.json, art.jpg and the spine crop from this device…</p></div>
+  <p class="app-note">The native Activity ran the v8 Rust/ONNX pipeline on this phone. This WebView only composes the renderer studies from that run directory; no network and no second inference.</p>
+</main>
+<script src="renderer.js"></script>
+<script>
+(async function () {
+  const root = document.getElementById("root");
+  const mode = document.getElementById("mode");
+  try {
+    if (!window.PocketBridge || !window.PocketBridge.payload) {
+      root.innerHTML = '<p class="app-error">PocketBridge is missing. Open this page from the v8 renderer APK.</p>';
+      return;
+    }
+    const raw = window.PocketBridge.payload();
+    const book = JSON.parse(raw);
+    if (book.error) throw new Error(book.error);
+    mode.textContent = (book.title || book.slug) + " · " + (book.route || "") + " · " + (book.verdict || "");
+    await window.PocketRenderers.ready();
+    root.textContent = "";
+    await window.PocketRenderers.mountBook(book, root, { dpr: Math.min(window.devicePixelRatio || 1, 2) });
+    window.__RENDERERS_READY__ = true;
+  } catch (e) {
+    root.innerHTML = '<p class="app-error">' + String(e) + '</p>';
+    mode.textContent = "renderer failed";
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+[
+  {
+    "asset": "covers/gatsby.jpg",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "pages": 180
+  },
+  {
+    "asset": "covers/pride-prejudice.jpg",
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "pages": 432
+  },
+  {
+    "asset": "covers/dune.jpg",
+    "title": "Dune",
+    "author": "Frank Herbert",
+    "pages": 617
+  }
+]

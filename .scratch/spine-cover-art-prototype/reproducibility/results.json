@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-26T13:36:36.999Z",
+  "generated": "2026-11-26T20:53:55.447Z",
   "book": {
     "title": "The Hound of the Baskervilles",
     "author": "Arthur Conan Doyle",
@@ -13,13 +13,23 @@
       "label": "Full-bleed",
       "status": "automatic",
       "note": "Cover crop, focus, shelf band and title rail were generated from the downloaded cover.",
-      "image": "results/full-bleed.png"
+      "image": "results/full-bleed.png",
+      "desktopStatus": "Automatic",
+      "needs": "Strict proof exists. Production Tauri/shelf integration is separate work.",
+      "strictStatus": "strict-reproducible",
+      "strictLabel": "Yes — via App renderers, user-verified on device",
+      "strictEvidence": "The user tested the App renderers APK on a real device and reports it works. This renderer is part of that verified APK."
     },
     "textless-art": {
       "label": "Textless art",
       "status": "automatic",
       "note": "The cover already uses a public-domain painting (Caspar David Friedrich, 1820), so the text-free artwork is used directly.",
-      "image": "results/textless-art.png"
+      "image": "results/textless-art.png",
+      "desktopStatus": "Automatic for this book",
+      "needs": "Strict proof exists. Production Tauri/shelf integration is separate work.",
+      "strictStatus": "strict-reproducible",
+      "strictLabel": "Yes — via App renderers, user-verified on device",
+      "strictEvidence": "The user tested the App renderers APK on a real device and reports it works. This renderer is part of that verified APK."
     },
     "wrap-engine": {
       "label": "Wrap engine",
@@ -209,13 +219,23 @@
           "loaded": true,
           "warning": ""
         }
-      }
+      },
+      "desktopStatus": "Automatic",
+      "needs": "Strict proof exists. Production Tauri/shelf integration is separate work.",
+      "strictStatus": "strict-reproducible",
+      "strictLabel": "Yes — via App renderers, user-verified on device",
+      "strictEvidence": "The user tested the App renderers APK on a real device and reports it works. This renderer is part of that verified APK."
     },
     "design-system": {
       "label": "Design system",
       "status": "automatic",
       "note": "Hybrid shelf spine generated from the shared cover. The study's own shelf record uses 336 pp for this title; the reference extent above is separate.",
-      "image": "results/design-system.png"
+      "image": "results/design-system.png",
+      "desktopStatus": "Automatic",
+      "needs": "Strict proof exists. Production Tauri/shelf integration is separate work.",
+      "strictStatus": "strict-reproducible",
+      "strictLabel": "Yes — via App renderers, user-verified on device",
+      "strictEvidence": "The user tested the App renderers APK on a real device and reports it works. This renderer is part of that verified APK."
     },
     "automatic-generative": {
       "label": "Automatic generative",
@@ -232,25 +252,115 @@
         "runtimeSeconds": 10.26,
         "manualIntervention": 0,
         "model": "PP-OCRv3 DBNet + LaMa big-lama (CPU)"
-      }
+      },
+      "desktopStatus": "Automatic (desktop)",
+      "needs": "No action; kept as a record. Use v8-app.",
+      "strictStatus": "superseded",
+      "strictLabel": "Superseded by v8-app",
+      "strictEvidence": "Desktop Python/torch/LaMa CLI. v8-app is the on-device pipeline and is user-verified."
     },
     "reference": {
       "label": "Reference",
       "status": "manual export",
       "note": "Spine-only SVG/PNG export at a manually chosen 1.00 in width. Title and author were entered by hand; the cover artwork is not used and there is no page-count model.",
       "image": "results/reference-spine.png",
-      "exported": "results/reference-spine-export.png"
+      "exported": "results/reference-spine-export.png",
+      "desktopStatus": "Manual export",
+      "needs": "Design-only reference. Not counted as reproducibility.",
+      "strictStatus": "not-a-route",
+      "strictLabel": "Not a route",
+      "strictEvidence": "Manual browser spine tool with hand-entered width/type. It does not turn a random cover into a spine."
     },
     "generative-art": {
       "label": "Generative art",
       "status": "manual / generative only",
-      "note": "No image model runs in this suite. The study is a fixed two-cover experiment, so this book has no automatic generative result."
+      "note": "No image model runs in this suite. The study is a fixed two-cover experiment, so this book has no automatic generative result.",
+      "desktopStatus": "Manual only",
+      "needs": "Use v8-app. No separate strict route is needed.",
+      "strictStatus": "superseded",
+      "strictLabel": "Superseded by v8-app",
+      "strictEvidence": "Hosted FLUX/Pollinations is a design record. v8-app runs the automatic route on-device and is user-verified."
     },
     "popular-books": {
       "label": "Popular books",
       "status": "not applicable",
-      "note": "A curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it."
+      "note": "A curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.",
+      "desktopStatus": "N/A",
+      "needs": "Next gap: integrate the renderer into the app and verify on a device. v8-app and App renderers are already device-verified.",
+      "strictStatus": "pending-integration",
+      "strictLabel": "Via Popular app route — pending integration",
+      "strictEvidence": "Popular app route uses v8-app outputs in a WebView gallery. The renderer is not separately APK-verified."
+    },
+    "v8-app": {
+      "label": "v8-app",
+      "status": "user-verified",
+      "desktopStatus": "User-verified on device",
+      "strictStatus": "strict-reproducible",
+      "strictLabel": "Yes — user-verified on device",
+      "strictEvidence": "The user tested the v8 Android APK on a real device and reports it works. This session did not independently reproduce the device run.",
+      "needs": "No further proof for the pipeline itself. The App renderers APK is the next renderer-layer test.",
+      "verifiedBy": "User device test (reported 2026-11-26)"
+    },
+    "textless-art-pack": {
+      "label": "Textless Art Pack",
+      "status": "pack only",
+      "desktopStatus": "Pack (WebView)",
+      "strictStatus": "bonus",
+      "strictLabel": "Bonus — not strict",
+      "strictEvidence": "18 curated public-domain spines. Useful fast path for pack books only.",
+      "needs": "Bonus feature. v8-app is the random-book route."
+    },
+    "popular-editions-pack": {
+      "label": "Popular Editions Pack",
+      "status": "pack only",
+      "desktopStatus": "Pack (WebView)",
+      "strictStatus": "bonus",
+      "strictLabel": "Bonus — not strict",
+      "strictEvidence": "Six curated editions, four reference-only. Useful fast path for pack books only.",
+      "needs": "Bonus feature. Popular app route uses v8-app for arbitrary covers."
+    },
+    "app-renderers": {
+      "label": "App renderers",
+      "status": "user-verified",
+      "desktopStatus": "User-verified on device",
+      "strictStatus": "strict-reproducible",
+      "strictLabel": "Yes — user-verified on device",
+      "strictEvidence": "The user tested v8-renderers-arm64-v8a.apk on a real device and reports it works.",
+      "needs": "Strict proof exists. Next gap: Popular app route / Tauri integration.",
+      "apk": {
+        "name": "v8-renderers-arm64-v8a.apk",
+        "bytes": 21182173,
+        "sha256": "e0efbef0b3d382834954a8abd0e1739fb2ac2a765980a99667520a9bdc238f58",
+        "abi": "arm64-v8a",
+        "deviceTested": true
+      },
+      "verifiedBy": "User device test (reported 2026-11-26)"
+    },
+    "popular-app-route": {
+      "label": "Popular app route",
+      "status": "webview gallery",
+      "desktopStatus": "WebView gallery",
+      "strictStatus": "pending-integration",
+      "strictLabel": "App-compatible — pending integration",
+      "strictEvidence": "Uses v8-app outputs for five popular covers and two generative cases: Dune unseen passes, LOTR falls back, RPS reviews. No separate APK.",
+      "needs": "Next gap: Tauri integration and a device run for this renderer. The v8-app pipeline and App renderers APK are already user-verified."
     }
   },
-  "errors": []
+  "errors": [],
+  "rubric": {
+    "strict-reproducible": "The APK takes a random downloadable book and creates the spine end-to-end. v8-app and App renderers are user-verified on real devices; the four renderer studies are verified through App renderers.",
+    "pending-integration": "The route uses v8-app output and is app-compatible, but the renderer is not integrated into Tauri and not separately device-verified.",
+    "bonus": "A curated pack. Useful fast path for pack books, not a random-book route.",
+    "superseded": "An older route replaced by v8-app or the app renderer route. Kept as a design record.",
+    "not-a-route": "A manual design reference. It does not turn a random cover into a spine."
+  },
+  "summary": {
+    "strictReproducible": 6,
+    "pendingDeviceVerification": 0,
+    "pendingIntegration": 2,
+    "bonusNotStrict": 2,
+    "superseded": 2,
+    "notARoute": 1,
+    "note": "6 yes: v8-app and App renderers are user-verified on device; Full-bleed, Textless, Wrap and Design system are verified through App renderers. 0 pending device proof. 2 pending integration (Popular books, Popular app route). 5 not strict (2 bonus packs, 2 superseded, 1 reference)."
+  }
 }

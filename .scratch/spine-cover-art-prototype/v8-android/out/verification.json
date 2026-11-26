@@ -1,0 +1,162 @@
+{
+  "generated": "2026-11-26T22:02:00+02:00",
+  "apk": {
+    "path": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-android/out/v8-spine-test-arm64-v8a.apk",
+    "bytes": 19698712,
+    "sha256": "24bb847deea6360a7965091d3802fa44a3f0a5c5f739f7d66e707f667c5d88d3",
+    "package": "app.pocketlibrary.spinetest",
+    "min_sdk": 26,
+    "target_sdk": 36,
+    "abi": "arm64-v8a",
+    "signature_schemes": [
+      "v2",
+      "v3"
+    ],
+    "native_libs": {
+      "libv8android.so": 2463784,
+      "libonnxruntime.so": 17571160
+    },
+    "assets": {
+      "det.onnx": 2432880,
+      "rec.onnx": 10690752,
+      "keys.txt": 26250
+    }
+  },
+  "onnxruntime": "1.20.0 (official onnxruntime-android AAR, CPU EP)",
+  "host_smoke": {
+    "host-the-great-gatsby": {
+      "cover": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-android/assets/covers/gatsby.jpg",
+      "title": "The Great Gatsby",
+      "route": "text-free crop",
+      "verdict": "pass",
+      "decision_reasons": [
+        "zero mask coverage, no residual OCR, structure at spine scale"
+      ],
+      "load_s": 0.24,
+      "run_s": 2.77,
+      "runtime_s": {
+        "crop_search": 0.2,
+        "detection": 1.13,
+        "inpaint_flat": 0.0,
+        "inpaint_lama": 0.0,
+        "mask_total": 1.18,
+        "total": 2.77
+      },
+      "source": {
+        "height": 500,
+        "width": 328
+      },
+      "mask_coverage_pct": 20.6,
+      "detection_boxes": 10,
+      "peak_rss_kb": 276092,
+      "spine": "out/host-the-great-gatsby/the-great-gatsby/spine.jpg"
+    },
+    "host-pride-and-prejudice": {
+      "cover": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-android/assets/covers/pride-prejudice.jpg",
+      "title": "Pride and Prejudice",
+      "route": "text-free crop",
+      "verdict": "pass",
+      "decision_reasons": [
+        "zero mask coverage, no residual OCR, structure at spine scale"
+      ],
+      "load_s": 0.27,
+      "run_s": 2.44,
+      "runtime_s": {
+        "crop_search": 0.15,
+        "detection": 1.13,
+        "inpaint_flat": 0.0,
+        "inpaint_lama": 0.0,
+        "mask_total": 1.15,
+        "total": 2.44
+      },
+      "source": {
+        "height": 500,
+        "width": 320
+      },
+      "mask_coverage_pct": 7.22,
+      "detection_boxes": 9,
+      "peak_rss_kb": 278196,
+      "spine": "out/host-pride-and-prejudice/pride-and-prejudice/spine.jpg"
+    },
+    "host-dune": {
+      "cover": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-android/assets/covers/dune.jpg",
+      "title": "Dune",
+      "route": "text-free crop",
+      "verdict": "pass",
+      "decision_reasons": [
+        "zero mask coverage, no residual OCR, structure at spine scale"
+      ],
+      "load_s": 0.34,
+      "run_s": 2.68,
+      "runtime_s": {
+        "crop_search": 0.15,
+        "detection": 1.33,
+        "inpaint_flat": 0.0,
+        "inpaint_lama": 0.0,
+        "mask_total": 1.37,
+        "total": 2.68
+      },
+      "source": {
+        "height": 475,
+        "width": 265
+      },
+      "mask_coverage_pct": 6.93,
+      "detection_boxes": 5,
+      "peak_rss_kb": 313172,
+      "spine": "out/host-dune/dune/spine.jpg"
+    },
+    "host-rps": {
+      "cover": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-app/out/rps/source.jpg",
+      "title": "Rock Paper Scissors",
+      "route": "inpaint",
+      "verdict": "review",
+      "decision_reasons": [
+        "40-55% of the cover was reconstructed"
+      ],
+      "load_s": 0.25,
+      "run_s": 5.79,
+      "runtime_s": {
+        "crop_search": 0.02,
+        "detection": 2.22,
+        "inpaint_flat": 0.12,
+        "inpaint_lama": 0.0,
+        "mask_total": 3.01,
+        "total": 5.75
+      },
+      "source": {
+        "height": 2000,
+        "width": 1303
+      },
+      "mask_coverage_pct": 45.27,
+      "detection_boxes": 21,
+      "peak_rss_kb": 468388,
+      "spine": "out/host-rps/rock-paper-scissors/spine.jpg"
+    }
+  },
+  "on_device": {
+    "executed": false,
+    "adb_devices": [],
+    "emulator_binary": "absent",
+    "avds": [],
+    "system_images": "absent",
+    "kvm": "absent",
+    "blocking_error": "adb: no devices/emulators found"
+  },
+  "hosted_copy": {
+    "path": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-test/v8-spine-test-arm64-v8a.apk",
+    "sha256": "24bb847deea6360a7965091d3802fa44a3f0a5c5f739f7d66e707f667c5d88d3",
+    "byte_identical": true,
+    "changed": false
+  },
+  "checks": {
+    "apksigner_v2": true,
+    "apksigner_v3": true,
+    "zipalign_p4": true,
+    "native_elf_arm64": true,
+    "jni_symbols_present": true,
+    "load_segment_align_16kb": true,
+    "models_present": true,
+    "host_pipeline_runs": true,
+    "ran_on_device": false
+  }
+}

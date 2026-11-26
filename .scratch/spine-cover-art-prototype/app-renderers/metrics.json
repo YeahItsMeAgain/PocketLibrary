@@ -1,0 +1,362 @@
+{
+  "gatsby": {
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "pages": 180,
+    "route": "text-free crop",
+    "verdict": "pass",
+    "holdout": false,
+    "styles": {
+      "fullbleed": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.4,
+        "fit": 0.8648656944022154,
+        "contrast": 13.362937060998748,
+        "label": "Full-bleed"
+      },
+      "artonly": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 0,
+        "fit": 0,
+        "contrast": null,
+        "type": "none",
+        "label": "Textless art-only"
+      },
+      "wrap": {
+        "width": 338,
+        "height": 236,
+        "spinePx": 11,
+        "spineMm": 10.2,
+        "widthMm": 321.4,
+        "pages": 180,
+        "titlePx": 0,
+        "fit": 0,
+        "type": "back/spine/front",
+        "label": "Wrap engine"
+      },
+      "hybrid": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.5104033749121115,
+        "contrast": 11.29846165947566,
+        "cloth": "#55514d",
+        "paper": "#e4dac3",
+        "ink": "#2c2118",
+        "label": "Design system · Hybrid"
+      },
+      "cloth": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.5536566763650743,
+        "contrast": 5.341347636833067,
+        "cloth": "#55514d",
+        "paper": "#e4dac3",
+        "ink": "#e8d3a1",
+        "label": "Design system · Cloth"
+      },
+      "editorial": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.2,
+        "fit": 0.7125934206231365,
+        "contrast": 15.52511931098808,
+        "cloth": "#55514d",
+        "paper": "#e4dac3",
+        "ink": "#f2e8d4",
+        "label": "Design system · Editorial"
+      }
+    }
+  },
+  "dune": {
+    "title": "Dune",
+    "author": "Frank Herbert",
+    "pages": 617,
+    "route": "text-free crop",
+    "verdict": "pass",
+    "holdout": false,
+    "styles": {
+      "fullbleed": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.4,
+        "fit": 0.4246987951807229,
+        "contrast": 14.62469756118748,
+        "label": "Full-bleed"
+      },
+      "artonly": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 0,
+        "fit": 0,
+        "contrast": null,
+        "type": "none",
+        "label": "Textless art-only"
+      },
+      "wrap": {
+        "width": 360,
+        "height": 236,
+        "spinePx": 33,
+        "spineMm": 32.1,
+        "widthMm": 343.2,
+        "pages": 617,
+        "titlePx": 0,
+        "fit": 0,
+        "type": "back/spine/front",
+        "label": "Wrap engine"
+      },
+      "hybrid": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.3403038427167114,
+        "contrast": 11.13088408888121,
+        "cloth": "#563022",
+        "paper": "#e4d8c1",
+        "ink": "#2c2118",
+        "label": "Design system · Hybrid"
+      },
+      "cloth": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.18133333333333332,
+        "contrast": 7.745313818086952,
+        "cloth": "#563022",
+        "paper": "#e4d8c1",
+        "ink": "#e8d3a1",
+        "label": "Design system · Cloth"
+      },
+      "editorial": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.2,
+        "fit": 0.3564397905759162,
+        "contrast": 15.52511931098808,
+        "cloth": "#563022",
+        "paper": "#e4d8c1",
+        "ink": "#f2e8d4",
+        "label": "Design system · Editorial"
+      }
+    }
+  },
+  "pride": {
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "pages": 432,
+    "route": "text-free crop",
+    "verdict": "pass",
+    "holdout": false,
+    "styles": {
+      "fullbleed": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.4,
+        "fit": 0.8890562639775178,
+        "contrast": 14.987542914416345,
+        "label": "Full-bleed"
+      },
+      "artonly": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 0,
+        "fit": 0,
+        "contrast": null,
+        "type": "none",
+        "label": "Textless art-only"
+      },
+      "wrap": {
+        "width": 351,
+        "height": 236,
+        "spinePx": 24,
+        "spineMm": 22.8,
+        "widthMm": 334,
+        "pages": 432,
+        "titlePx": 0,
+        "fit": 0,
+        "type": "back/spine/front",
+        "label": "Wrap engine"
+      },
+      "hybrid": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.5188900358248831,
+        "contrast": 11.08226353250158,
+        "cloth": "#362b21",
+        "paper": "#e2d8c1",
+        "ink": "#2c2118",
+        "label": "Design system · Hybrid"
+      },
+      "cloth": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.5596699194446264,
+        "contrast": 9.357011898768299,
+        "cloth": "#362b21",
+        "paper": "#e2d8c1",
+        "ink": "#e8d3a1",
+        "label": "Design system · Cloth"
+      },
+      "editorial": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.2,
+        "fit": 0.718382182743074,
+        "contrast": 15.52511931098808,
+        "cloth": "#362b21",
+        "paper": "#e2d8c1",
+        "ink": "#f2e8d4",
+        "label": "Design system · Editorial"
+      }
+    }
+  },
+  "rps": {
+    "title": "Rock Paper Scissors",
+    "author": "Alice Feeney",
+    "pages": 320,
+    "route": "inpaint",
+    "verdict": "review",
+    "holdout": false,
+    "styles": {
+      "fullbleed": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.4,
+        "fit": 0.9323680098375241,
+        "contrast": 13.362937060998748,
+        "label": "Full-bleed"
+      },
+      "artonly": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 0,
+        "fit": 0,
+        "contrast": null,
+        "type": "none",
+        "label": "Textless art-only"
+      },
+      "wrap": {
+        "width": 345,
+        "height": 236,
+        "spinePx": 18,
+        "spineMm": 17.2,
+        "widthMm": 328.4,
+        "pages": 320,
+        "titlePx": 0,
+        "fit": 0,
+        "type": "back/spine/front",
+        "label": "Wrap engine"
+      },
+      "hybrid": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.5287336691998975,
+        "contrast": 11.29846165947566,
+        "cloth": "#58504c",
+        "paper": "#e4dac3",
+        "ink": "#2c2118",
+        "label": "Design system · Hybrid"
+      },
+      "cloth": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.5704884372902326,
+        "contrast": 5.348616130153757,
+        "cloth": "#58504c",
+        "paper": "#e4dac3",
+        "ink": "#e8d3a1",
+        "label": "Design system · Cloth"
+      },
+      "editorial": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.2,
+        "fit": 0.7428279485743993,
+        "contrast": 15.52511931098808,
+        "cloth": "#58504c",
+        "paper": "#e4dac3",
+        "ink": "#f2e8d4",
+        "label": "Design system · Editorial"
+      }
+    }
+  },
+  "war-of-the-worlds": {
+    "title": "The War of the Worlds",
+    "author": "H. G. Wells",
+    "pages": 192,
+    "route": "inpaint",
+    "verdict": "pass",
+    "holdout": true,
+    "styles": {
+      "fullbleed": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 8.8,
+        "fit": 0.9660251988201478,
+        "contrast": 14.997008445686921,
+        "label": "Full-bleed"
+      },
+      "artonly": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 0,
+        "fit": 0,
+        "contrast": null,
+        "type": "none",
+        "label": "Textless art-only"
+      },
+      "wrap": {
+        "width": 338,
+        "height": 236,
+        "spinePx": 11,
+        "spineMm": 10.8,
+        "widthMm": 322,
+        "pages": 192,
+        "titlePx": 0,
+        "fit": 0,
+        "type": "back/spine/front",
+        "label": "Wrap engine"
+      },
+      "hybrid": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.601561839929512,
+        "contrast": 11.075613279607166,
+        "cloth": "#382e1c",
+        "paper": "#e2d8c0",
+        "ink": "#2c2118",
+        "label": "Design system · Hybrid"
+      },
+      "cloth": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 11.2,
+        "fit": 0.6485276704271903,
+        "contrast": 9.052077044684522,
+        "cloth": "#382e1c",
+        "paper": "#e2d8c0",
+        "ink": "#e8d3a1",
+        "label": "Design system · Cloth"
+      },
+      "editorial": {
+        "width": 52,
+        "height": 236,
+        "titlePx": 9.2,
+        "fit": 0.8030974145008283,
+        "contrast": 15.52511931098808,
+        "cloth": "#382e1c",
+        "paper": "#e2d8c0",
+        "ink": "#f2e8d4",
+        "label": "Design system · Editorial"
+      }
+    }
+  }
+}

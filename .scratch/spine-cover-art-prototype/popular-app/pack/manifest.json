@@ -1,0 +1,563 @@
+{
+  "schema": "pocketlibrary.popular-editions-pack/1",
+  "id": "popular-editions",
+  "name": "Popular Editions Pack",
+  "version": "2026.11.26.1",
+  "publishedAt": "2026-11-26T21:30:00Z",
+  "minAppVersion": "0.1.7",
+  "description": "Curated textless art and spine crops for popular editions, with per-entry rights and provenance. Data only; no on-device generation.",
+  "spine": {
+    "widthPx": 52,
+    "heightPx": 236,
+    "retina": 2
+  },
+  "policy": {
+    "releaseRequiresClearedRights": true,
+    "rejectQualityStatus": [
+      "reject"
+    ],
+    "fallback": "typographic-cloth",
+    "matchingOrder": [
+      "isbn",
+      "contentHash",
+      "title+author"
+    ]
+  },
+  "entryCount": 6,
+  "entries": [
+    {
+      "id": "harry-potter",
+      "schema": "pocketlibrary.popular-edition/1",
+      "match": {
+        "isbn": "9780747532699",
+        "title": "Harry Potter and the Philosopher's Stone",
+        "author": "J.K. Rowling",
+        "contentHash": "sha256:db8beb951de934a46386b63ea00771c9a83d2e6d8d12320185c06bf7bb5ec604",
+        "contentHashOf": "source cover image"
+      },
+      "edition": {
+        "title": "Harry Potter and the Philosopher's Stone",
+        "author": "J.K. Rowling",
+        "year": 1997,
+        "publisher": "Bloomsbury (UK)",
+        "isbn": "9780747532699",
+        "pages": 223,
+        "spineMm": 12.35,
+        "editionNote": "First-edition ISBN; Thomas Taylor artwork with the later 15th-anniversary badge and Smarties band.",
+        "coverArtist": "Thomas Taylor",
+        "source": {
+          "name": "Amazon product image (ISBN-keyed)",
+          "url": "https://www.amazon.co.uk/dp/0747532699",
+          "retrieved": "2026-11-26"
+        },
+        "rights": {
+          "status": "restricted-reference",
+          "distribution": "restricted",
+          "holder": "J.K. Rowling / Bloomsbury",
+          "note": "In copyright. The prototype pack is for local design evaluation only and must not be redistributed or bundled in a release until a licence is obtained.",
+          "credit": "Cover art © J.K. Rowling / Bloomsbury. Thomas Taylor, 1997.",
+          "takedown": "Remove this entry from manifest.json and delete its three files. Cached clients fall back to the typographic spine after the next pack refresh."
+        }
+      },
+      "quality": {
+        "status": "pass",
+        "score": 20,
+        "testedAt": "2026-11-26",
+        "reason": "Pass at spine scale only with a detail crop below the title block; the Hogwarts Express still reads at 52 px.",
+        "preferredDirection": "hybrid",
+        "caveat": "Full-cover art rejected; the pack ships the detail crop, not the full reconstruction."
+      },
+      "design": {
+        "cloth": "#6e1f3a",
+        "accent": "#e8c76b",
+        "tone": "warm",
+        "focus": [
+          0.36,
+          0.5
+        ],
+        "lightCloth": false,
+        "measured": {
+          "avg": "#a7676a",
+          "dominant": "#7a2040"
+        }
+      },
+      "files": {
+        "art": {
+          "path": "files/art/harry-potter.jpg",
+          "sha256": "5dcb88880b26cdf8064024e369141540c5127bfb63d9200f3dc84d003e031530",
+          "bytes": 84233,
+          "width": 420,
+          "height": 621,
+          "mime": "image/jpeg"
+        },
+        "spine": {
+          "path": "files/spine/harry-potter.jpg",
+          "sha256": "733493c41b13c7704ccc753b4f26b99b62e260762f3bc8a62cff8f04f20d0e42",
+          "bytes": 8329,
+          "width": 52,
+          "height": 236,
+          "mime": "image/jpeg"
+        },
+        "spine2x": {
+          "path": "files/spine-2x/harry-potter.jpg",
+          "sha256": "44d5a2d03c3f38491c6f78df3e2593f22582d8ffae7b7afad8a0d80b0bb558f0",
+          "bytes": 20959,
+          "width": 104,
+          "height": 472,
+          "mime": "image/jpeg"
+        }
+      },
+      "render": {
+        "widthPx": 52,
+        "heightPx": 236,
+        "retina": 2,
+        "artKind": "textless-crop"
+      }
+    },
+    {
+      "id": "lord-of-the-rings",
+      "schema": "pocketlibrary.popular-edition/1",
+      "match": {
+        "isbn": "9780261103252",
+        "title": "The Lord of the Rings",
+        "author": "J.R.R. Tolkien",
+        "contentHash": "sha256:7b2a6d4e213dd558de43453be0b7c43842e6a11af8336336dd641d52b6efc6e4",
+        "contentHashOf": "source cover image"
+      },
+      "edition": {
+        "title": "The Lord of the Rings",
+        "author": "J.R.R. Tolkien",
+        "year": 1954,
+        "publisher": "HarperCollins (UK)",
+        "isbn": "9780261103252",
+        "pages": 1031,
+        "spineMm": 52.75,
+        "editionNote": "One-volume black edition, 2004 (ISBN 9780261103252 / 0261103253).",
+        "coverArtist": "HarperCollins design after Tolkien's ring inscription",
+        "source": {
+          "name": "Amazon product image (ISBN-keyed)",
+          "url": "https://www.amazon.co.uk/dp/0261103253",
+          "retrieved": "2026-11-26"
+        },
+        "rights": {
+          "status": "restricted-reference",
+          "distribution": "restricted",
+          "holder": "HarperCollins / The Tolkien Estate",
+          "note": "In copyright. The prototype pack is for local design evaluation only and must not be redistributed or bundled in a release until a licence is obtained.",
+          "credit": "Cover design © HarperCollins. Ring inscription after J.R.R. Tolkien.",
+          "takedown": "Remove this entry from manifest.json and delete its three files. Cached clients fall back to the typographic spine after the next pack refresh."
+        }
+      },
+      "quality": {
+        "status": "reject",
+        "score": 17,
+        "testedAt": "2026-11-26",
+        "reason": "Rejected at spine scale: a near-black strip with thin red script; the identity was the typography, not the art.",
+        "preferredDirection": "fallback",
+        "caveat": "The loader accepts the files but marks the edition rejected. The renderer must not show the art alone."
+      },
+      "design": {
+        "cloth": "#141210",
+        "accent": "#d8452c",
+        "tone": "dark",
+        "focus": [
+          0.5,
+          0.48
+        ],
+        "lightCloth": false,
+        "measured": {
+          "avg": "#412e2a",
+          "dominant": "#0e0c0b"
+        }
+      },
+      "files": {
+        "art": {
+          "path": "files/art/lord-of-the-rings.jpg",
+          "sha256": "51749d21c6a7e0c4964be1f8e5238805b28acae31fcadab3d00bfe36a33f7ec2",
+          "bytes": 68743,
+          "width": 326,
+          "height": 500,
+          "mime": "image/jpeg"
+        },
+        "spine": {
+          "path": "files/spine/lord-of-the-rings.jpg",
+          "sha256": "7de7385ece573c20bb816be7d495a574060f3a9d674b54ae95c7ae6849bb877d",
+          "bytes": 7346,
+          "width": 52,
+          "height": 236,
+          "mime": "image/jpeg"
+        },
+        "spine2x": {
+          "path": "files/spine-2x/lord-of-the-rings.jpg",
+          "sha256": "70a1e9d25d08d24257de4d136a7ad860fa20f1966ab4754dbf8d71f12b9bc5a3",
+          "bytes": 21020,
+          "width": 104,
+          "height": 472,
+          "mime": "image/jpeg"
+        }
+      },
+      "render": {
+        "widthPx": 52,
+        "heightPx": 236,
+        "retina": 2,
+        "artKind": "textless-crop"
+      }
+    },
+    {
+      "id": "the-hobbit",
+      "schema": "pocketlibrary.popular-edition/1",
+      "match": {
+        "isbn": "9780261102217",
+        "title": "The Hobbit",
+        "author": "J.R.R. Tolkien",
+        "contentHash": "sha256:f8633c3540759d70c2524c5558cf5e51c80ed97181e3a562d1851106c76cdadc",
+        "contentHashOf": "source cover image"
+      },
+      "edition": {
+        "title": "The Hobbit",
+        "author": "J.R.R. Tolkien",
+        "year": 1937,
+        "publisher": "HarperCollins (UK)",
+        "isbn": "9780261102217",
+        "pages": 310,
+        "spineMm": 16.7,
+        "editionNote": "HarperCollins black edition, 2009 (ISBN 9780261102217 / 0261102214).",
+        "coverArtist": "HarperCollins design; mountain/sun motif after Tolkien (artist unconfirmed)",
+        "source": {
+          "name": "Amazon product image (ISBN-keyed)",
+          "url": "https://www.amazon.co.uk/dp/0261102214",
+          "retrieved": "2026-11-26"
+        },
+        "rights": {
+          "status": "restricted-reference",
+          "distribution": "restricted",
+          "holder": "The Tolkien Estate / HarperCollins",
+          "note": "In copyright. The prototype pack is for local design evaluation only and must not be redistributed or bundled in a release until a licence is obtained.",
+          "credit": "Cover art © The Tolkien Estate / HarperCollins.",
+          "takedown": "Remove this entry from manifest.json and delete its three files. Cached clients fall back to the typographic spine after the next pack refresh."
+        }
+      },
+      "quality": {
+        "status": "pass",
+        "score": 22,
+        "testedAt": "2026-11-26",
+        "reason": "Pass. The red sun and grey peaks are strong at 52 px; the flat black fill removed the title cleanly.",
+        "preferredDirection": "hybrid",
+        "caveat": "The full cover loses faint cloud lines; the spine crop is clean."
+      },
+      "design": {
+        "cloth": "#101010",
+        "accent": "#d92b26",
+        "tone": "dark",
+        "focus": [
+          0.5,
+          0.52
+        ],
+        "lightCloth": false,
+        "measured": {
+          "avg": "#1d1617",
+          "dominant": "#050505"
+        }
+      },
+      "files": {
+        "art": {
+          "path": "files/art/the-hobbit.jpg",
+          "sha256": "a5bfcc1fff76e37c8d77d6606e9c92448b65721312c8663cae2d566074fed440",
+          "bytes": 28402,
+          "width": 308,
+          "height": 500,
+          "mime": "image/jpeg"
+        },
+        "spine": {
+          "path": "files/spine/the-hobbit.jpg",
+          "sha256": "2e8d53ea9230f08aeb7881ca6d3257aaf488fc419f44c7a5f28b0f6f254ec752",
+          "bytes": 4305,
+          "width": 52,
+          "height": 236,
+          "mime": "image/jpeg"
+        },
+        "spine2x": {
+          "path": "files/spine-2x/the-hobbit.jpg",
+          "sha256": "1b6124e70b58dab8315047080bf083d88d6bf70783193b422816b7c0d73aed26",
+          "bytes": 11017,
+          "width": 104,
+          "height": 472,
+          "mime": "image/jpeg"
+        }
+      },
+      "render": {
+        "widthPx": 52,
+        "heightPx": 236,
+        "retina": 2,
+        "artKind": "textless-crop"
+      }
+    },
+    {
+      "id": "the-hunger-games",
+      "schema": "pocketlibrary.popular-edition/1",
+      "match": {
+        "isbn": "9780439023481",
+        "title": "The Hunger Games",
+        "author": "Suzanne Collins",
+        "contentHash": "sha256:11a3dd78f9b5cf50522dbb84848dd82e94648b0a7bde13258c9909049784ece1",
+        "contentHashOf": "source cover image"
+      },
+      "edition": {
+        "title": "The Hunger Games",
+        "author": "Suzanne Collins",
+        "year": 2008,
+        "publisher": "Scholastic (US)",
+        "isbn": "9780439023481",
+        "pages": 384,
+        "spineMm": 20.4,
+        "editionNote": "First US hardcover, 2008 (ISBN 9780439023481).",
+        "coverArtist": "Tim O'Brien",
+        "source": {
+          "name": "Amazon product image (ISBN-keyed)",
+          "url": "https://www.amazon.co.uk/dp/0439023483",
+          "retrieved": "2026-11-26"
+        },
+        "rights": {
+          "status": "restricted-reference",
+          "distribution": "restricted",
+          "holder": "Scholastic / Suzanne Collins",
+          "note": "In copyright. The prototype pack is for local design evaluation only and must not be redistributed or bundled in a release until a licence is obtained.",
+          "credit": "Cover art © Scholastic. Tim O'Brien, 2008.",
+          "takedown": "Remove this entry from manifest.json and delete its three files. Cached clients fall back to the typographic spine after the next pack refresh."
+        }
+      },
+      "quality": {
+        "status": "pass",
+        "score": 21,
+        "testedAt": "2026-11-26",
+        "reason": "Pass. The gold mockingjay pin survives the 52 px crop and carries the identity.",
+        "preferredDirection": "hybrid",
+        "caveat": "The title block takes the top target ring with it; the pin still reads."
+      },
+      "design": {
+        "cloth": "#1b1a18",
+        "accent": "#d4ad45",
+        "tone": "dark",
+        "focus": [
+          0.46,
+          0.5
+        ],
+        "lightCloth": false,
+        "measured": {
+          "avg": "#4e443d",
+          "dominant": "#151413"
+        }
+      },
+      "files": {
+        "art": {
+          "path": "files/art/the-hunger-games.jpg",
+          "sha256": "66064d2aa907f0fc4c15c0225fda9d3cea28ebafbd553ac97a8bd262c1444b36",
+          "bytes": 31456,
+          "width": 330,
+          "height": 500,
+          "mime": "image/jpeg"
+        },
+        "spine": {
+          "path": "files/spine/the-hunger-games.jpg",
+          "sha256": "ac9eb6500927e218dcc76b38223d0e779e263cb90be6afc45e8161111cc5d958",
+          "bytes": 6029,
+          "width": 52,
+          "height": 236,
+          "mime": "image/jpeg"
+        },
+        "spine2x": {
+          "path": "files/spine-2x/the-hunger-games.jpg",
+          "sha256": "79e9a4d2503f094c2cf2c992d9357c410f63aef5913335d4628c5801a8f61717",
+          "bytes": 15420,
+          "width": 104,
+          "height": 472,
+          "mime": "image/jpeg"
+        }
+      },
+      "render": {
+        "widthPx": 52,
+        "heightPx": 236,
+        "retina": 2,
+        "artKind": "textless-crop"
+      }
+    },
+    {
+      "id": "moby-dick",
+      "schema": "pocketlibrary.popular-edition/1",
+      "match": {
+        "isbn": null,
+        "title": "Moby-Dick",
+        "author": "Herman Melville",
+        "contentHash": "sha256:24de5f4a6c4b950cd2d8642db67516ba8dc5aead4577526cb0d21382e8287d31",
+        "contentHashOf": "source cover image"
+      },
+      "edition": {
+        "title": "Moby-Dick",
+        "author": "Herman Melville",
+        "year": 1851,
+        "publisher": "Standard Ebooks",
+        "isbn": null,
+        "pages": 720,
+        "spineMm": 38,
+        "editionNote": "Standard Ebooks edition; the cover uses a public-domain painting, not the printed title block.",
+        "coverArtist": "Albert Pinkham Ryder (painting, 1887)",
+        "source": {
+          "name": "Standard Ebooks / Wikimedia Commons",
+          "url": "https://standardebooks.org/ebooks/herman-melville/moby-dick",
+          "retrieved": "2026-11-26"
+        },
+        "rights": {
+          "status": "public-domain",
+          "distribution": "cleared",
+          "holder": "Public domain",
+          "note": "The novel and the painting are public domain. Standard Ebooks dedicates its cover work to the public domain.",
+          "credit": "The Flying Dutchman, Albert Pinkham Ryder (1887). Cover: Standard Ebooks.",
+          "takedown": "No rights restriction. Replace or remove the entry as a normal catalogue update."
+        }
+      },
+      "quality": {
+        "status": "pass",
+        "score": 22,
+        "testedAt": "2026-11-26",
+        "reason": "Pass. A genuine textless public-domain painting; no inpainting and no residual type.",
+        "preferredDirection": "hybrid",
+        "caveat": "The spine crop is a detail of the painting, not a reconstruction."
+      },
+      "design": {
+        "cloth": "#1d2a33",
+        "accent": "#c9a45c",
+        "tone": "dark",
+        "focus": [
+          0.45,
+          0.5
+        ],
+        "lightCloth": false,
+        "measured": {
+          "avg": "#2b3c45",
+          "dominant": "#132028"
+        }
+      },
+      "files": {
+        "art": {
+          "path": "files/art/moby-dick.jpg",
+          "sha256": "6bb5139b15e3f105bef18147d15b3135f4298126b500d0c072825d7867e9d752",
+          "bytes": 900585,
+          "width": 1042,
+          "height": 1563,
+          "mime": "image/jpeg"
+        },
+        "spine": {
+          "path": "files/spine/moby-dick.jpg",
+          "sha256": "3ccb54e90aa5605ff6ec65edeefe34e6552c854ef596269a4d1caf29d4d439ba",
+          "bytes": 3986,
+          "width": 52,
+          "height": 236,
+          "mime": "image/jpeg"
+        },
+        "spine2x": {
+          "path": "files/spine-2x/moby-dick.jpg",
+          "sha256": "82e4d19797b27e3752ae0f082be2a7ed0c5682b6c16e5faf0a13d2c47296ce94",
+          "bytes": 14604,
+          "width": 104,
+          "height": 472,
+          "mime": "image/jpeg"
+        }
+      },
+      "render": {
+        "widthPx": 52,
+        "heightPx": 236,
+        "retina": 2,
+        "artKind": "textless-crop"
+      }
+    },
+    {
+      "id": "hound-of-the-baskervilles",
+      "schema": "pocketlibrary.popular-edition/1",
+      "match": {
+        "isbn": null,
+        "title": "The Hound of the Baskervilles",
+        "author": "Arthur Conan Doyle",
+        "contentHash": "sha256:ee131704a727d89a7988ddc65e7bc35760786cd0164e055989126dd3e12ae0e1",
+        "contentHashOf": "source cover image"
+      },
+      "edition": {
+        "title": "The Hound of the Baskervilles",
+        "author": "Arthur Conan Doyle",
+        "year": 1902,
+        "publisher": "Standard Ebooks",
+        "isbn": null,
+        "pages": 256,
+        "spineMm": 15,
+        "editionNote": "Standard Ebooks edition; the cover uses a public-domain landscape, not the printed title block.",
+        "coverArtist": "Caspar David Friedrich (painting, 1820)",
+        "source": {
+          "name": "Standard Ebooks / Wikimedia Commons",
+          "url": "https://standardebooks.org/ebooks/arthur-conan-doyle/the-hound-of-the-baskervilles",
+          "retrieved": "2026-11-26"
+        },
+        "rights": {
+          "status": "public-domain",
+          "distribution": "cleared",
+          "holder": "Public domain",
+          "note": "The novel and the painting are public domain. Standard Ebooks dedicates its cover work to the public domain.",
+          "credit": "Riesengebirgslandschaft mit aufsteigendem Nebel, Caspar David Friedrich (1820). Cover: Standard Ebooks.",
+          "takedown": "No rights restriction. Replace or remove the entry as a normal catalogue update."
+        }
+      },
+      "quality": {
+        "status": "pass",
+        "score": 21,
+        "testedAt": "2026-11-26",
+        "reason": "Pass. A genuine textless public-domain landscape; the fog and ridge survive at 52 px.",
+        "preferredDirection": "hybrid",
+        "caveat": "The spine crop is a detail of the painting, not a reconstruction."
+      },
+      "design": {
+        "cloth": "#3b3a33",
+        "accent": "#b7a06a",
+        "tone": "light",
+        "focus": [
+          0.55,
+          0.5
+        ],
+        "lightCloth": true,
+        "measured": {
+          "avg": "#6f6d63",
+          "dominant": "#4a4a44"
+        }
+      },
+      "files": {
+        "art": {
+          "path": "files/art/hound-of-the-baskervilles.jpg",
+          "sha256": "cf6720979ba338320e1cd46fff5dcdc86d9025da5870e751c6a184bbad6055af",
+          "bytes": 707998,
+          "width": 996,
+          "height": 1494,
+          "mime": "image/jpeg"
+        },
+        "spine": {
+          "path": "files/spine/hound-of-the-baskervilles.jpg",
+          "sha256": "14bbc9cdbcf99b21bceba583fd95e4a117ccb5f8dc1cef5c3ab6f0032dbf24b4",
+          "bytes": 1839,
+          "width": 52,
+          "height": 236,
+          "mime": "image/jpeg"
+        },
+        "spine2x": {
+          "path": "files/spine-2x/hound-of-the-baskervilles.jpg",
+          "sha256": "2d835f26ae73f49832317177499384c0139208311c56818cb5b94ceb345079c1",
+          "bytes": 5593,
+          "width": 104,
+          "height": 472,
+          "mime": "image/jpeg"
+        }
+      },
+      "render": {
+        "widthPx": 52,
+        "heightPx": 236,
+        "retina": 2,
+        "artKind": "textless-crop"
+      }
+    }
+  ]
+}

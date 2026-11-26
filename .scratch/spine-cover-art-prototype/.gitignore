@@ -1,2 +1,14 @@
 __pycache__/
 *.pyc
+**/target/
+**/node_modules/
+v8-models/models/
+v8-models/dist/
+v8-models/eval/
+v8-models/calib/
+v8-android/build/
+v8-android/artifacts/
+v8-android/out/*.apk
+v8-android/out/*.idsig
+app-renderers/android-renderer/out/
+**/target-*/

@@ -1,0 +1,40 @@
+Artifact index for v8-android (2026-11-26)
+==========================================
+APK identity
+  out/v8-spine-test-arm64-v8a.apk        signed test APK, arm64-v8a
+  out/v8-spine-test-arm64-v8a.apk.idsig  v4 idsig sidecar
+  SHA-256  24bb847deea6360a7965091d3802fa44a3f0a5c5f739f7d66e707f667c5d88d3
+  Size     19,698,712 bytes (18.8 MiB)
+  Package  app.pocketlibrary.spinetest · minSdk 26 · targetSdk 36
+
+Build / package verification
+  out/apksigner-verify.txt   v2 and v3 signatures true, one signer
+  out/badging.txt            package, launcher, min/target SDK, arm64 native code
+  out/zipalign-check.txt     zipalign -c -p 4 OK
+  out/apk-contents.txt       dex, JNI lib, ORT lib, model assets
+  out/native-check.txt       arm64 ELF, NEEDED libs, 16 KB LOAD alignment, JNI symbols
+  out/hosted-copy.txt        hosted ../v8-test APK is byte-identical
+  out/aapt2-link.log         empty = no aapt2 diagnostics
+  out/javac.log              empty = no Java diagnostics
+
+Summary / evidence
+  out/verification.json      machine-readable APK + host + device summary
+  out/device-check.txt       exact adb / emulator / system-image / KVM checks
+  out/host-*/result.json     host run (same Rust pipeline, host ORT 1.32.0)
+  out/host-*/time.txt        host elapsed + peak RSS
+  out/host-*/<slug>/spine.jpg           52x236 spine
+  out/host-*/<slug>/spine-2x.jpg        104x472 2x preview
+  out/host-*/<slug>/fallback-spine.jpg  typographic fallback
+  out/host-*/<slug>/compare.jpg         source|mask|art|crop|spine sheet
+  out/host-*/<slug>/run.json            full pipeline report
+
+Docs
+  README.md     build, architecture, install/run overview
+  REPORT.md     results, measured host table, blocker, remaining work
+  TESTING.md    step-by-step human device test + capture/acceptance checklist
+
+Fast status
+  APK built and statically verified: YES
+  Host pipeline runs (pass + review): YES
+  Ran on a phone/emulator: NO — no adb device, emulator binary, AVD,
+  system image, /dev/kvm, Waydroid or Anbox. See out/device-check.txt.

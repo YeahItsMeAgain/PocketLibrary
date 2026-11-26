@@ -1,0 +1,3 @@
+APK: 24bb847deea6360a7965091d3802fa44a3f0a5c5f739f7d66e707f667c5d88d3  out/v8-spine-test-arm64-v8a.apk
+hosted: 24bb847deea6360a7965091d3802fa44a3f0a5c5f739f7d66e707f667c5d88d3  ../v8-test/v8-spine-test-arm64-v8a.apk
+MATCH: hosted copy is byte-identical

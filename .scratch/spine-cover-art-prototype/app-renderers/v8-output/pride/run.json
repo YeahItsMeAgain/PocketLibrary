@@ -1,0 +1,237 @@
+{
+  "book": {
+    "author": "Jane Austen",
+    "cover": "app-renderers/covers/pride.jpg",
+    "pages": 432,
+    "title": "Pride and Prejudice"
+  },
+  "compare_python": null,
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        232,
+        38,
+        68,
+        310
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.19293168187141418,
+      "luma_std": 47.36913299560547,
+      "non_dark": 0.7836337685585022,
+      "salience": 14.460198402404785,
+      "score": 3.128504991531372
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          232,
+          38,
+          68,
+          310
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.19293168187141418,
+        "luma_std": 47.36913299560547,
+        "non_dark": 0.7836337685585022,
+        "salience": 14.460198402404785,
+        "score": 3.128504991531372
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          145.726318359375,
+          352.5416564941406
+        ],
+        [
+          163.7473602294922,
+          352.5416564941406
+        ],
+        [
+          163.7473602294922,
+          374.5416564941406
+        ],
+        [
+          145.726318359375,
+          374.5416564941406
+        ]
+      ],
+      "conf": 0.8541557192802429,
+      "text": "0"
+    },
+    {
+      "box_": [
+        [
+          121.81755065917969,
+          361.173583984375
+        ],
+        [
+          129.7613983154297,
+          361.173583984375
+        ],
+        [
+          129.7613983154297,
+          368.513916015625
+        ],
+        [
+          121.81755065917969,
+          368.513916015625
+        ]
+      ],
+      "conf": 0.8223499059677124,
+      "text": "N"
+    },
+    {
+      "box_": [
+        [
+          87.08421325683594,
+          413.2604064941406
+        ],
+        [
+          221.8631591796875,
+          413.2604064941406
+        ],
+        [
+          221.8631591796875,
+          433.61456298828125
+        ],
+        [
+          87.08421325683594,
+          433.61456298828125
+        ]
+      ],
+      "conf": 0.912204384803772,
+      "text": "JANE AUSTEN"
+    },
+    {
+      "box_": [
+        [
+          92.03509521484375,
+          442.1180419921875
+        ],
+        [
+          218.49122619628906,
+          442.1180419921875
+        ],
+        [
+          218.49122619628906,
+          465.1736145019531
+        ],
+        [
+          92.03509521484375,
+          465.1736145019531
+        ]
+      ],
+      "conf": 0.9211604595184326,
+      "text": "Pride and Prejudice"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      232,
+      38,
+      68,
+      310
+    ],
+    "fallback_spine": "pride/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "pride/spine.jpg",
+    "spine_2x": "pride/spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795724130,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 3,
+    "coverage_pct": 7.22,
+    "detection_boxes": 9,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 7.956250190734863,
+      "palette_corr": 0.5936700701713562,
+      "score": 3.128504991531372,
+      "seam": {
+        "boundary_px": 2335,
+        "inside_ring_std_ratio": 2.015861749649048,
+        "inside_vs_ring_delta_e": 75.9456787109375,
+        "seam_ratio": 2.978696346282959
+      },
+      "spine": {
+        "edge_density": 0.23557692766189575,
+        "height_px": 236,
+        "laplacian_var": 406.536865234375,
+        "luma_p5": 15.0,
+        "luma_p95": 156.0,
+        "luma_std": 47.27928161621094,
+        "non_dark_pct": 78.49576568603516,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 7.956250190734863,
+      "palette_corr": 0.5936700701713562,
+      "score": 3.128504991531372,
+      "seam": {
+        "boundary_px": 2335,
+        "inside_ring_std_ratio": 2.015861749649048,
+        "inside_vs_ring_delta_e": 75.9456787109375,
+        "seam_ratio": 2.978696346282959
+      },
+      "spine": {
+        "edge_density": 0.23557692766189575,
+        "height_px": 236,
+        "laplacian_var": 406.536865234375,
+        "luma_p5": 15.0,
+        "luma_p95": 156.0,
+        "luma_std": 47.27928161621094,
+        "non_dark_pct": 78.49576568603516,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.15,
+    "detection": 1.23,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "mask_total": 1.26,
+    "total": 2.95
+  },
+  "slug": "pride",
+  "source": {
+    "height": 500,
+    "width": 320
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 500,
+    "scale": 1.0,
+    "width": 320
+  }
+}

@@ -1,0 +1,21 @@
+== libv8android.so ==
+build/lib/arm64-v8a/libv8android.so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, for Android 26, built by NDK r28c (13676358), stripped
+  0x0000000000000001 (NEEDED)       Shared library: [libdl.so]
+  0x0000000000000001 (NEEDED)       Shared library: [libm.so]
+  0x0000000000000001 (NEEDED)       Shared library: [libc.so]
+  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x121654 0x121654 R   0x4000
+  LOAD           0x121654 0x0000000000125654 0x0000000000125654 0x12a9fc 0x12a9fc R E 0x4000
+  LOAD           0x24c050 0x0000000000254050 0x0000000000254050 0x00c3a8 0x00cfb0 RW  0x4000
+  LOAD           0x2583f8 0x00000000002643f8 0x00000000002643f8 0x000bf8 0x0022b0 RW  0x4000
+00000000001256b4 T Java_app_pocketlibrary_spinetest_MainActivity_nativeRun
+0000000000126014 T Java_app_pocketlibrary_spinetest_MainActivity_nativeVersion
+
+== libonnxruntime.so ==
+build/lib/arm64-v8a/libonnxruntime.so: ELF 64-bit LSB shared object, ARM aarch64, version 1 (SYSV), dynamically linked, for Android 21, built by NDK r27 (12077973), BuildID[sha1]=28434ccc8a36215992c1802c13ec10a92b66f08e, stripped
+  0x0000000000000001 (NEEDED)       Shared library: [libdl.so]
+  0x0000000000000001 (NEEDED)       Shared library: [liblog.so]
+  0x0000000000000001 (NEEDED)       Shared library: [libm.so]
+  0x0000000000000001 (NEEDED)       Shared library: [libc.so]
+  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x1064ec0 0x1064ec0 R E 0x4000
+  LOAD           0x1064ec0 0x0000000001068ec0 0x0000000001068ec0 0x05ba10 0x05c140 RW  0x4000
+  LOAD           0x10c08d0 0x00000000010c88d0 0x00000000010c88d0 0x000b00 0x00bb10 RW  0x4000

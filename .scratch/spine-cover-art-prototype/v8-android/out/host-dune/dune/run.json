@@ -1,0 +1,259 @@
+{
+  "book": {
+    "author": "Frank Herbert",
+    "cover": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v8-android/assets/covers/dune.jpg",
+    "pages": 617,
+    "title": "Dune"
+  },
+  "compare_python": null,
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        28,
+        0,
+        90,
+        409
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.12811735272407532,
+      "luma_std": 62.34328842163086,
+      "non_dark": 0.8745720982551575,
+      "salience": 18.583038330078125,
+      "score": 3.301368474960327
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          28,
+          0,
+          90,
+          409
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.12811735272407532,
+        "luma_std": 62.34328842163086,
+        "non_dark": 0.8745720982551575,
+        "salience": 18.583038330078125,
+        "score": 3.301368474960327
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          204.2987060546875,
+          316.0172424316406
+        ],
+        [
+          246.46669006347656,
+          316.0172424316406
+        ],
+        [
+          246.46669006347656,
+          329.1910705566406
+        ],
+        [
+          204.2987060546875,
+          329.1910705566406
+        ]
+      ],
+      "conf": 0.8731387853622437,
+      "text": "SOON TO"
+    },
+    {
+      "box_": [
+        [
+          199.68980407714844,
+          327.1658935546875
+        ],
+        [
+          251.56239318847656,
+          327.1658935546875
+        ],
+        [
+          251.56239318847656,
+          339.3184814453125
+        ],
+        [
+          199.68980407714844,
+          339.3184814453125
+        ]
+      ],
+      "conf": 0.9849334359169006,
+      "text": "BEAMAJOR"
+    },
+    {
+      "box_": [
+        [
+          205.8059539794922,
+          337.3409118652344
+        ],
+        [
+          244.95945739746094,
+          337.3409118652344
+        ],
+        [
+          244.95945739746094,
+          350.41943359375
+        ],
+        [
+          205.8059539794922,
+          350.41943359375
+        ]
+      ],
+      "conf": 0.9848172068595886,
+      "text": "MOTION"
+    },
+    {
+      "box_": [
+        [
+          207.159912109375,
+          348.11822509765625
+        ],
+        [
+          243.60548400878906,
+          348.11822509765625
+        ],
+        [
+          243.60548400878906,
+          359.92864990234375
+        ],
+        [
+          207.159912109375,
+          359.92864990234375
+        ]
+      ],
+      "conf": 0.9911301732063293,
+      "text": "PICTURE"
+    },
+    {
+      "box_": [
+        [
+          17.194257736206055,
+          420.732177734375
+        ],
+        [
+          250.53895568847656,
+          420.732177734375
+        ],
+        [
+          250.53895568847656,
+          443.1740417480469
+        ],
+        [
+          17.194257736206055,
+          443.1740417480469
+        ]
+      ],
+      "conf": 0.9264259934425354,
+      "text": "FRANK HERBERT"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      28,
+      0,
+      90,
+      409
+    ],
+    "fallback_spine": "dune/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "dune/spine.jpg",
+    "spine_2x": "dune/spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795723192,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 2,
+    "coverage_pct": 6.93,
+    "detection_boxes": 5,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 7.530486583709717,
+      "palette_corr": 0.9192111492156982,
+      "score": 3.301368474960327,
+      "seam": {
+        "boundary_px": 1531,
+        "inside_ring_std_ratio": 1.449205994606018,
+        "inside_vs_ring_delta_e": 59.45447540283203,
+        "seam_ratio": 0.8858374357223511
+      },
+      "spine": {
+        "edge_density": 0.20746414363384247,
+        "height_px": 236,
+        "laplacian_var": 1099.7647705078125,
+        "luma_p5": 0.0,
+        "luma_p95": 248.0,
+        "luma_std": 61.67814254760742,
+        "non_dark_pct": 87.68742370605469,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 7.530486583709717,
+      "palette_corr": 0.9192111492156982,
+      "score": 3.301368474960327,
+      "seam": {
+        "boundary_px": 1531,
+        "inside_ring_std_ratio": 1.449205994606018,
+        "inside_vs_ring_delta_e": 59.45447540283203,
+        "seam_ratio": 0.8858374357223511
+      },
+      "spine": {
+        "edge_density": 0.20746414363384247,
+        "height_px": 236,
+        "laplacian_var": 1099.7647705078125,
+        "luma_p5": 0.0,
+        "luma_p95": 248.0,
+        "luma_std": 61.67814254760742,
+        "non_dark_pct": 87.68742370605469,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.15,
+    "detection": 1.33,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "mask_total": 1.37,
+    "total": 2.68
+  },
+  "slug": "dune",
+  "source": {
+    "height": 475,
+    "width": 265
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 475,
+    "scale": 1.0,
+    "width": 265
+  }
+}

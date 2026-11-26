@@ -1,0 +1,1203 @@
+{
+  "schema": "pocketlibrary.textless-art-pack/1",
+  "pack": {
+    "id": "textless-classics-pd",
+    "version": "1.0.20261126",
+    "generated": "2026-11-26",
+    "title": "Textless classics",
+    "description": "Public-domain cover art for a textless art-only spine. Spine crops are generated at build time; no on-device OCR, masks, inpainting or model weights.",
+    "licence": "Public domain artwork; Standard Ebooks covers CC0. See per-item provenance.",
+    "itemCount": 20,
+    "availableCount": 18,
+    "totalAssetBytes": 1053266,
+    "spineSize": {
+      "width": 104,
+      "height": 472,
+      "scale": 2
+    },
+    "integrity": {
+      "algorithm": "sha256",
+      "manifestHashIn": "pack-lock.js"
+    }
+  },
+  "index": {
+    "byContentHash": {
+      "24de5f4a6c4b950cd2d8642db67516ba8dc5aead4577526cb0d21382e8287d31": "moby-dick",
+      "9feb3ebe77060806fd56e87ee2d5193d06a2cf8e36917894fc3d5edc71e9fc05": "jane-eyre",
+      "837aeab46d525a7d02391adc6335dee4e4e014d23502d1c4516f4259dc2d33f8": "pride-and-prejudice",
+      "8971bc43f51e684c3a6b1f3d5ced90647d7535bd90f31b2b55614773a570d66e": "frankenstein",
+      "6ad8883d8623d7c90c769b60308dba760c1aa09a71bd130bfd51531e8c874ad2": "dracula",
+      "de76fe418e3fbdd6cae8f0414bc1f0b0af53ae54e15ea4c3cfe85892ee912904": "great-expectations",
+      "a1318eae829851c8eb32ff1e763ddc11a7888446086f770fdeffb1acd5dea7bf": "bleak-house",
+      "293a9726fb1ea32e532cab8fbfadf18402d85e6eb91d1b64228f0015780a4163": "middlemarch",
+      "610da99bd3cbda72003e3e8d14cd6fda404c30894eb408610f72b51c66636bfb": "moonstone",
+      "3766df767accc7ed7611a0fa4d581ec365cf4f00d42a38583d08e5eafaf974b2": "time-machine",
+      "8fa74afdd369109828b495f3975087d77ded31c4fc419a362f8f7400920c31ac": "treasure-island",
+      "0956f4018773b9acdc310edb05910efe5e4854efc8370c80a07fdb404992a082": "jekyll-and-hyde",
+      "ee131704a727d89a7988ddc65e7bc35760786cd0164e055989126dd3e12ae0e1": "hound-of-the-baskervilles",
+      "e7ea06475d5383146d9b28e69c3332b1ca9c06fbda22a0e9690746a6d6d9b59a": "dorian-gray",
+      "51da835409dfd4cb63c9ae31bed5b5bfb5374b4b071f13d78ec42c9ad9f2b4fb": "scarlet-letter",
+      "a21afed21707a58298313d95183b5839f84277eda930f51d7033b2d0993fe2c5": "turn-of-the-screw",
+      "f8e6f3f1c1fb5730ee89ca177017ede34e3763e504188322638a81ac3cf834dd": "alice",
+      "051459cae282487466d313a0491d1a42785fb3e43739c01400fcc0d3a4aeb1ec": "wuthering-heights",
+      "e8b4c9132b1553650250c01ab01466605493af08c8ed95f792cb6c81f9102e68": "whisper-man",
+      "cad189de4288cf28ef6f3410567dfae604568e973921adff057dabd9ab6d7ad6": "rock-paper-scissors"
+    },
+    "byIsbn": {
+      "9781405936019": "whisper-man",
+      "9781250266118": "rock-paper-scissors"
+    },
+    "byTitleAuthor": {
+      "moby dick|herman melville": "moby-dick",
+      "jane eyre|charlotte bronte": "jane-eyre",
+      "pride and prejudice|jane austen": "pride-and-prejudice",
+      "frankenstein|mary shelley": "frankenstein",
+      "dracula|bram stoker": "dracula",
+      "great expectations|charles dickens": "great-expectations",
+      "bleak house|charles dickens": "bleak-house",
+      "middlemarch|george eliot": "middlemarch",
+      "the moonstone|wilkie collins": "moonstone",
+      "the time machine|h g wells": "time-machine",
+      "treasure island|robert louis stevenson": "treasure-island",
+      "dr jekyll and mr hyde|robert louis stevenson": "jekyll-and-hyde",
+      "the hound of the baskervilles|arthur conan doyle": "hound-of-the-baskervilles",
+      "the picture of dorian gray|oscar wilde": "dorian-gray",
+      "the scarlet letter|nathaniel hawthorne": "scarlet-letter",
+      "the turn of the screw|henry james": "turn-of-the-screw",
+      "alice in wonderland|lewis carroll": "alice",
+      "wuthering heights|emily bronte": "wuthering-heights",
+      "the whisper man|alex north": "whisper-man",
+      "rock paper scissors|alice feeney": "rock-paper-scissors"
+    }
+  },
+  "items": [
+    {
+      "id": "moby-dick",
+      "slug": "moby-dick",
+      "title": "Moby-Dick",
+      "author": "Herman Melville",
+      "year": 1851,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "24de5f4a6c4b950cd2d8642db67516ba8dc5aead4577526cb0d21382e8287d31",
+      "titleAuthorKey": "moby dick|herman melville",
+      "tone": "dark",
+      "meanLum": 0.208,
+      "p95Lum": 0.723,
+      "railSide": "left",
+      "focus": [
+        0.45,
+        0.5
+      ],
+      "credit": "The Flying Dutchman, Albert Pinkham Ryder (1887)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Albert_Pinkham_Ryder_-_Flying_Dutchman_-_Smithsonian.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/herman-melville/moby-dick",
+        "credit": "The Flying Dutchman, Albert Pinkham Ryder (1887)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/moby-dick-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "82a4277b13e38b85e41304beb6a72d03b3f726bfd943ed74bf0fde9c817fa28b",
+          "bytes": 12201,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/moby-dick-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "0c7a63b191b0740552de2f0d1f95546826a29e21aba59b785623dc50ada8c8cb",
+          "bytes": 76270,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 297,
+        "y": 0,
+        "width": 344,
+        "height": 1563,
+        "sourceWidth": 1042,
+        "sourceHeight": 1563
+      },
+      "bytes": 88471
+    },
+    {
+      "id": "jane-eyre",
+      "slug": "jane-eyre",
+      "title": "Jane Eyre",
+      "author": "Charlotte Brontë",
+      "year": 1847,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "9feb3ebe77060806fd56e87ee2d5193d06a2cf8e36917894fc3d5edc71e9fc05",
+      "titleAuthorKey": "jane eyre|charlotte bronte",
+      "tone": "dark",
+      "meanLum": 0.089,
+      "p95Lum": 0.263,
+      "railSide": "right",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "credit": "Portrait of a Young Girl, Vilhelm Hammershøi (1903–04)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Vilhelm_Hammersh%C3%B8i_-_Portrait_of_a_young_woman._The_artist's_sister_Anna_Hammersh%C3%B8i_-_Google_Art_Project.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/charlotte-bronte/jane-eyre",
+        "credit": "Portrait of a Young Girl, Vilhelm Hammershøi (1903–04)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/jane-eyre-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "a6e98d566825fc35a97995e2356388f88ebd25467d5bbb9e18f90a4b5adf6eeb",
+          "bytes": 4275,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/jane-eyre-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "a0656ed856dbc51a965fc2ff8876688ab4bc8ec4ab1d6668e989af36878498bf",
+          "bytes": 20015,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 528,
+        "y": 0,
+        "width": 520,
+        "height": 2362,
+        "sourceWidth": 1575,
+        "sourceHeight": 2362
+      },
+      "bytes": 24290
+    },
+    {
+      "id": "pride-and-prejudice",
+      "slug": "pride-and-prejudice",
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "year": 1813,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "837aeab46d525a7d02391adc6335dee4e4e014d23502d1c4516f4259dc2d33f8",
+      "titleAuthorKey": "pride and prejudice|jane austen",
+      "tone": "dark",
+      "meanLum": 0.274,
+      "p95Lum": 0.599,
+      "railSide": "left",
+      "focus": [
+        0.45,
+        0.5
+      ],
+      "credit": "A Wet Sunday Morning, Edmund Blair Leighton (1896)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Edmund_Blair_Leighton_-_A_Wet_Sunday_Morning.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/jane-austen/pride-and-prejudice",
+        "credit": "A Wet Sunday Morning, Edmund Blair Leighton (1896)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/pride-and-prejudice-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "50c3ed60204d28e3e7b05c72839f4b695ad00d3b6dfc5514995037578d0cf76b",
+          "bytes": 13928,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/pride-and-prejudice-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "20c691867d7c30a6f9d8f5747432557321c4c2a46f2298db1c42f94d78ee5e8b",
+          "bytes": 70301,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 256,
+        "y": 0,
+        "width": 297,
+        "height": 1349,
+        "sourceWidth": 899,
+        "sourceHeight": 1349
+      },
+      "bytes": 84229
+    },
+    {
+      "id": "frankenstein",
+      "slug": "frankenstein",
+      "title": "Frankenstein",
+      "author": "Mary Shelley",
+      "year": 1818,
+      "isbn": null,
+      "method": "cover-crop",
+      "methodLabel": "Cover crop above plate",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "8971bc43f51e684c3a6b1f3d5ced90647d7535bd90f31b2b55614773a570d66e",
+      "titleAuthorKey": "frankenstein|mary shelley",
+      "tone": "dark",
+      "meanLum": 0.097,
+      "p95Lum": 0.267,
+      "railSide": "left",
+      "focus": [
+        0.52,
+        0.5
+      ],
+      "credit": "Portrait of Adam, Giuseppe Arcimboldo (1578)",
+      "source": {
+        "kind": "standard-ebooks",
+        "page": "https://standardebooks.org/ebooks/mary-shelley/frankenstein",
+        "coverPage": "https://standardebooks.org/ebooks/mary-shelley/frankenstein",
+        "credit": "Portrait of Adam, Giuseppe Arcimboldo (1578)",
+        "licence": "Public domain (Standard Ebooks cover art)",
+        "provenance": "Standard Ebooks public-domain cover; the title plate is excluded above the crop. No inpainting."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/frankenstein-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "9294500008d83145961723712a9cad991156bd3584ce73d388e94042ec55e24c",
+          "bytes": 12996,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/frankenstein-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "ee351e8e6f53cc62cc2e84ec902b6336bffaaa289ff7e66f1b4a9ffde3a2fe63",
+          "bytes": 61679,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 369,
+        "y": 0,
+        "width": 344,
+        "height": 1562,
+        "sourceWidth": 1041,
+        "sourceHeight": 1562
+      },
+      "bytes": 74675
+    },
+    {
+      "id": "dracula",
+      "slug": "dracula",
+      "title": "Dracula",
+      "author": "Bram Stoker",
+      "year": 1897,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "6ad8883d8623d7c90c769b60308dba760c1aa09a71bd130bfd51531e8c874ad2",
+      "titleAuthorKey": "dracula|bram stoker",
+      "tone": "dark",
+      "meanLum": 0.081,
+      "p95Lum": 0.253,
+      "railSide": "right",
+      "focus": [
+        0.55,
+        0.45
+      ],
+      "credit": "Italian Landscape of Ruins in the Moonlight, Joseph Magnus Stäck (1850)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Joseph_Magnus_St%C3%A4ck_-_Italienskt_ruinlandskap_i_m%C3%A5nsken.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/bram-stoker/dracula",
+        "credit": "Italian Landscape of Ruins in the Moonlight, Joseph Magnus Stäck (1850)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/dracula-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "cce518e6d9c02ed54d481b8c2eaa53c3147e22ca9016de6db23333a7636205ea",
+          "bytes": 4888,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/dracula-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "c4d86e27fcbf3783e6fadf96402859a6dab53c00c191fad45df3c96ace2c5dd7",
+          "bytes": 28026,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 565,
+        "y": 0,
+        "width": 485,
+        "height": 2203,
+        "sourceWidth": 1469,
+        "sourceHeight": 2203
+      },
+      "bytes": 32914
+    },
+    {
+      "id": "great-expectations",
+      "slug": "great-expectations",
+      "title": "Great Expectations",
+      "author": "Charles Dickens",
+      "year": 1861,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "de76fe418e3fbdd6cae8f0414bc1f0b0af53ae54e15ea4c3cfe85892ee912904",
+      "titleAuthorKey": "great expectations|charles dickens",
+      "tone": "dark",
+      "meanLum": 0.086,
+      "p95Lum": 0.363,
+      "railSide": "right",
+      "focus": [
+        0.6,
+        0.4
+      ],
+      "credit": "Self-Portrait, Joseph Paelinck (1812)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Clevelandart_1937.575.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/charles-dickens/great-expectations",
+        "credit": "Self-Portrait, Joseph Paelinck (1812)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/great-expectations-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "1a079c8765756bf0fabe99dc86db2bf4915e3ec644c0f65b09d4d86274e68a8d",
+          "bytes": 4643,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/great-expectations-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "ef1af5860684e8f5b84572fd5ccc8fceffaf780479ce52c92f7b19f7ffcbaa0d",
+          "bytes": 21326,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 718,
+        "y": 0,
+        "width": 546,
+        "height": 2477,
+        "sourceWidth": 1651,
+        "sourceHeight": 2477
+      },
+      "bytes": 25969
+    },
+    {
+      "id": "bleak-house",
+      "slug": "bleak-house",
+      "title": "Bleak House",
+      "author": "Charles Dickens",
+      "year": 1853,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "a1318eae829851c8eb32ff1e763ddc11a7888446086f770fdeffb1acd5dea7bf",
+      "titleAuthorKey": "bleak house|charles dickens",
+      "tone": "dark",
+      "meanLum": 0.13,
+      "p95Lum": 0.525,
+      "railSide": "right",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "credit": "The Writing Master, Thomas Eakins (1882)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:The_Writing_Master_MET_DT2038.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/charles-dickens/bleak-house",
+        "credit": "The Writing Master, Thomas Eakins (1882)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/bleak-house-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "1d8250387e21eeef1e671f808eaa6cb5f67c029d1f1936ceeb2db818874fc0db",
+          "bytes": 6724,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/bleak-house-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "e917424b736de83be4d7cf64259c259c6607ce1a7f8fcec45fed1fda676cdc4a",
+          "bytes": 25092,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 377,
+        "y": 0,
+        "width": 372,
+        "height": 1688,
+        "sourceWidth": 1125,
+        "sourceHeight": 1688
+      },
+      "bytes": 31816
+    },
+    {
+      "id": "middlemarch",
+      "slug": "middlemarch",
+      "title": "Middlemarch",
+      "author": "George Eliot",
+      "year": 1871,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "293a9726fb1ea32e532cab8fbfadf18402d85e6eb91d1b64228f0015780a4163",
+      "titleAuthorKey": "middlemarch|george eliot",
+      "tone": "dark",
+      "meanLum": 0.156,
+      "p95Lum": 0.575,
+      "railSide": "right",
+      "focus": [
+        0.56,
+        0.5
+      ],
+      "credit": "The Grove, Hampstead, John Constable (1821–22)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:John_Constable_-_The_Grove%2C_or_the_Admiral's_House_in_Hampstead_-_Google_Art_Project.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/george-eliot/middlemarch",
+        "credit": "The Grove, Hampstead, John Constable (1821–22)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/middlemarch-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "77fb72482d675d335705794ff54d8679aca470df1e882ab9b227bd2ab04713bb",
+          "bytes": 10236,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/middlemarch-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "dbb226254f5d950143ce0cb6a0d4ce08486fafed26a08d0152a158a8d2034ae4",
+          "bytes": 64915,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 442,
+        "y": 0,
+        "width": 370,
+        "height": 1679,
+        "sourceWidth": 1119,
+        "sourceHeight": 1679
+      },
+      "bytes": 75151
+    },
+    {
+      "id": "moonstone",
+      "slug": "moonstone",
+      "title": "The Moonstone",
+      "author": "Wilkie Collins",
+      "year": 1868,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "610da99bd3cbda72003e3e8d14cd6fda404c30894eb408610f72b51c66636bfb",
+      "titleAuthorKey": "the moonstone|wilkie collins",
+      "tone": "dark",
+      "meanLum": 0.157,
+      "p95Lum": 0.466,
+      "railSide": "right",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "credit": "Study for “Portrait of an Indian”, Anne-Louis Girodet Roussy-Trioson (1807)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Study_for_%22Portrait_of_an_Indian%22_MET_DP135221.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/wilkie-collins/the-moonstone",
+        "credit": "Study for “Portrait of an Indian”, Anne-Louis Girodet Roussy-Trioson (1807)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/moonstone-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "968de800b143a18f145bb2a478f049bfbd12e6a461b818eaf12a5def88dd4fa3",
+          "bytes": 11462,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/moonstone-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "743b84b5bdc1dbc3a02c99eaaef0878e30d84606465321e94878f9a514ade0ad",
+          "bytes": 41737,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 530,
+        "y": 0,
+        "width": 523,
+        "height": 2375,
+        "sourceWidth": 1583,
+        "sourceHeight": 2375
+      },
+      "bytes": 53199
+    },
+    {
+      "id": "time-machine",
+      "slug": "time-machine",
+      "title": "The Time Machine",
+      "author": "H. G. Wells",
+      "year": 1895,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "3766df767accc7ed7611a0fa4d581ec365cf4f00d42a38583d08e5eafaf974b2",
+      "titleAuthorKey": "the time machine|h g wells",
+      "tone": "dark",
+      "meanLum": 0.269,
+      "p95Lum": 0.644,
+      "railSide": "right",
+      "focus": [
+        0.55,
+        0.5
+      ],
+      "credit": "The Black Marble Clock, Paul Cézanne (c. 1870)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:La_Pendule_noire%2C_par_Paul_C%C3%A9zanne.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/h-g-wells/the-time-machine",
+        "credit": "The Black Marble Clock, Paul Cézanne (c. 1870)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/time-machine-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "1c30874d34cf8a29533f97308693098cde43eda416821a12e2d563853d4a0d1a",
+          "bytes": 13715,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/time-machine-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "52b9d3143b1b990b275a9edd4451bac58e06e593d9d8924fa72d04a78f8caa07",
+          "bytes": 83417,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 364,
+        "y": 0,
+        "width": 313,
+        "height": 1419,
+        "sourceWidth": 946,
+        "sourceHeight": 1419
+      },
+      "bytes": 97132
+    },
+    {
+      "id": "treasure-island",
+      "slug": "treasure-island",
+      "title": "Treasure Island",
+      "author": "Robert Louis Stevenson",
+      "year": 1883,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "8fa74afdd369109828b495f3975087d77ded31c4fc419a362f8f7400920c31ac",
+      "titleAuthorKey": "treasure island|robert louis stevenson",
+      "tone": "dark",
+      "meanLum": 0.204,
+      "p95Lum": 0.788,
+      "railSide": "right",
+      "focus": [
+        0.55,
+        0.45
+      ],
+      "credit": "One More Step, Mr. Hands, N. C. Wyeth (1911)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:One_More_Step%2C_Mr._Hands.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/robert-louis-stevenson/treasure-island",
+        "credit": "One More Step, Mr. Hands, N. C. Wyeth (1911)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/treasure-island-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "5b53595d469e3d87f5e0a1b5ad309cd3fd64271a7356df630a2542b2bb344ffc",
+          "bytes": 14166,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/treasure-island-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "95d7a3c8b415839056d39808ebfe18e78f0dd331587b62e88fc49eecfc281920",
+          "bytes": 60010,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 604,
+        "y": 0,
+        "width": 518,
+        "height": 2353,
+        "sourceWidth": 1569,
+        "sourceHeight": 2353
+      },
+      "bytes": 74176
+    },
+    {
+      "id": "jekyll-and-hyde",
+      "slug": "jekyll-and-hyde",
+      "title": "Dr Jekyll and Mr Hyde",
+      "author": "Robert Louis Stevenson",
+      "year": 1886,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "0956f4018773b9acdc310edb05910efe5e4854efc8370c80a07fdb404992a082",
+      "titleAuthorKey": "dr jekyll and mr hyde|robert louis stevenson",
+      "tone": "dark",
+      "meanLum": 0.145,
+      "p95Lum": 0.586,
+      "railSide": "left",
+      "focus": [
+        0.45,
+        0.45
+      ],
+      "credit": "Double Portrait of Marées and Lenbach, Hans von Marées (1863)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Doppelbildnis_Mar%C3%A9es_und_Lenbach_(1863).jpg",
+        "coverPage": "https://standardebooks.org/ebooks/robert-louis-stevenson/the-strange-case-of-dr-jekyll-and-mr-hyde",
+        "credit": "Double Portrait of Marées and Lenbach, Hans von Marées (1863)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/jekyll-and-hyde-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "02159a002c8ab80159424e8e668514627fa871fabe773486d6250736da35cb84",
+          "bytes": 11305,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/jekyll-and-hyde-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "6ca2b5ea0de14c59c07bb4bf3fab7ddfe10f7ec3af453ea2c67637d55a5234f4",
+          "bytes": 49228,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 327,
+        "y": 0,
+        "width": 380,
+        "height": 1724,
+        "sourceWidth": 1149,
+        "sourceHeight": 1724
+      },
+      "bytes": 60533
+    },
+    {
+      "id": "hound-of-the-baskervilles",
+      "slug": "hound-of-the-baskervilles",
+      "title": "The Hound of the Baskervilles",
+      "author": "Arthur Conan Doyle",
+      "year": 1902,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "ee131704a727d89a7988ddc65e7bc35760786cd0164e055989126dd3e12ae0e1",
+      "titleAuthorKey": "the hound of the baskervilles|arthur conan doyle",
+      "tone": "light",
+      "meanLum": 0.352,
+      "p95Lum": 0.691,
+      "railSide": "right",
+      "focus": [
+        0.55,
+        0.5
+      ],
+      "credit": "Riesengebirgslandschaft mit aufsteigendem Nebel, Caspar David Friedrich (1820)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Caspar_David_Friedrich_-_Riesengebirge_Landscape_with_Rising_Fog_-_WGA8257.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/arthur-conan-doyle/the-hound-of-the-baskervilles",
+        "credit": "Riesengebirgslandschaft mit aufsteigendem Nebel, Caspar David Friedrich (1820)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/hound-of-the-baskervilles-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "66f59cfc9f9ad4e9a59107604cd8f387e90d53eafd8d34dc0825e7fa31408401",
+          "bytes": 4204,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/hound-of-the-baskervilles-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "6af90228cdcd7aca7d2264701fe6c4e605436813470d66007d210ecc963f7c01",
+          "bytes": 24072,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 383,
+        "y": 0,
+        "width": 329,
+        "height": 1494,
+        "sourceWidth": 996,
+        "sourceHeight": 1494
+      },
+      "bytes": 28276
+    },
+    {
+      "id": "dorian-gray",
+      "slug": "dorian-gray",
+      "title": "The Picture of Dorian Gray",
+      "author": "Oscar Wilde",
+      "year": 1890,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "e7ea06475d5383146d9b28e69c3332b1ca9c06fbda22a0e9690746a6d6d9b59a",
+      "titleAuthorKey": "the picture of dorian gray|oscar wilde",
+      "tone": "dark",
+      "meanLum": 0.087,
+      "p95Lum": 0.374,
+      "railSide": "right",
+      "focus": [
+        0.52,
+        0.45
+      ],
+      "credit": "The Garden, John Collier (1899)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:John_Collier_-_The_Garden_Of_Armida.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/oscar-wilde/the-picture-of-dorian-gray",
+        "credit": "The Garden, John Collier (1899)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/dorian-gray-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "9705829617a86b4eb21636d1625f83a200494495a274a8733505ea500de1991e",
+          "bytes": 7384,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/dorian-gray-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "ddbf2545d56175169c21709461e007b416ce21ac218410e6f8c2b2bce48b6bdb",
+          "bytes": 38350,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 448,
+        "y": 0,
+        "width": 417,
+        "height": 1893,
+        "sourceWidth": 1262,
+        "sourceHeight": 1893
+      },
+      "bytes": 45734
+    },
+    {
+      "id": "scarlet-letter",
+      "slug": "scarlet-letter",
+      "title": "The Scarlet Letter",
+      "author": "Nathaniel Hawthorne",
+      "year": 1850,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "51da835409dfd4cb63c9ae31bed5b5bfb5374b4b071f13d78ec42c9ad9f2b4fb",
+      "titleAuthorKey": "the scarlet letter|nathaniel hawthorne",
+      "tone": "dark",
+      "meanLum": 0.11,
+      "p95Lum": 0.358,
+      "railSide": "right",
+      "focus": [
+        0.55,
+        0.45
+      ],
+      "credit": "The Scarlet Letter, Hugues Merle (1861)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Hugues_Merle_-_The_Scarlet_Letter_-_Walters_37172.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/nathaniel-hawthorne/the-scarlet-letter",
+        "credit": "The Scarlet Letter, Hugues Merle (1861)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/scarlet-letter-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "f29b0cf32e0c39f9e41942beb97801b14b2f855beba0b579db1e1bea46f8fa6a",
+          "bytes": 6101,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/scarlet-letter-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "3a23924fb20b929d6175e479a54999f59611d82c7526598d8bd9ad09791307d2",
+          "bytes": 22805,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 453,
+        "y": 0,
+        "width": 390,
+        "height": 1768,
+        "sourceWidth": 1179,
+        "sourceHeight": 1768
+      },
+      "bytes": 28906
+    },
+    {
+      "id": "turn-of-the-screw",
+      "slug": "turn-of-the-screw",
+      "title": "The Turn of the Screw",
+      "author": "Henry James",
+      "year": 1898,
+      "isbn": null,
+      "method": "cover-crop",
+      "methodLabel": "Cover crop above plate",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "a21afed21707a58298313d95183b5839f84277eda930f51d7033b2d0993fe2c5",
+      "titleAuthorKey": "the turn of the screw|henry james",
+      "tone": "dark",
+      "meanLum": 0.244,
+      "p95Lum": 0.453,
+      "railSide": "left",
+      "focus": [
+        0.62,
+        0.5
+      ],
+      "credit": "A Wintry Moon, John Atkinson Grimshaw (1886)",
+      "source": {
+        "kind": "standard-ebooks",
+        "page": "https://standardebooks.org/ebooks/henry-james/the-turn-of-the-screw",
+        "coverPage": "https://standardebooks.org/ebooks/henry-james/the-turn-of-the-screw",
+        "credit": "A Wintry Moon, John Atkinson Grimshaw (1886)",
+        "licence": "Public domain (Standard Ebooks cover art)",
+        "provenance": "Standard Ebooks public-domain cover; the title plate is excluded above the crop. No inpainting."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/turn-of-the-screw-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "b2ea93bbc858db777915f427fcc60378ca84056b6f9a23c4f33d848858abf500",
+          "bytes": 12855,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/turn-of-the-screw-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "7fc5d6c1b961030f80ae98a02803e48cf9b4c4689e82a5c97d6152abff5918f1",
+          "bytes": 51612,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 473,
+        "y": 0,
+        "width": 344,
+        "height": 1562,
+        "sourceWidth": 1041,
+        "sourceHeight": 1562
+      },
+      "bytes": 64467
+    },
+    {
+      "id": "alice",
+      "slug": "alice",
+      "title": "Alice in Wonderland",
+      "author": "Lewis Carroll",
+      "year": 1865,
+      "isbn": null,
+      "method": "cover-crop",
+      "methodLabel": "Cover crop above plate",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "f8e6f3f1c1fb5730ee89ca177017ede34e3763e504188322638a81ac3cf834dd",
+      "titleAuthorKey": "alice in wonderland|lewis carroll",
+      "tone": "dark",
+      "meanLum": 0.128,
+      "p95Lum": 0.414,
+      "railSide": "left",
+      "focus": [
+        0.26,
+        0.45
+      ],
+      "credit": "Amanita, Ivan Shishkin (1879)",
+      "source": {
+        "kind": "standard-ebooks",
+        "page": "https://standardebooks.org/ebooks/lewis-carroll/alices-adventures-in-wonderland/john-tenniel",
+        "coverPage": "https://standardebooks.org/ebooks/lewis-carroll/alices-adventures-in-wonderland/john-tenniel",
+        "credit": "Amanita, Ivan Shishkin (1879)",
+        "licence": "Public domain (Standard Ebooks cover art)",
+        "provenance": "Standard Ebooks public-domain cover; the title plate is excluded above the crop. No inpainting."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/alice-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "e6995d33d61ab0bf5c117406f07df1b03c5486c9d243c9478c587a00fc0804b1",
+          "bytes": 17482,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/alice-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "3aca499736258428237da96c43e08cb4a550daeed5de473024b5cee90f784efb",
+          "bytes": 95679,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 99,
+        "y": 0,
+        "width": 344,
+        "height": 1562,
+        "sourceWidth": 1041,
+        "sourceHeight": 1562
+      },
+      "bytes": 113161
+    },
+    {
+      "id": "wuthering-heights",
+      "slug": "wuthering-heights",
+      "title": "Wuthering Heights",
+      "author": "Emily Brontë",
+      "year": 1847,
+      "isbn": null,
+      "method": "original",
+      "methodLabel": "Original painting",
+      "status": "available",
+      "unavailableReason": null,
+      "contentHash": "051459cae282487466d313a0491d1a42785fb3e43739c01400fcc0d3a4aeb1ec",
+      "titleAuthorKey": "wuthering heights|emily bronte",
+      "tone": "dark",
+      "meanLum": 0.157,
+      "p95Lum": 0.498,
+      "railSide": "right",
+      "focus": [
+        0.55,
+        0.34
+      ],
+      "credit": "Edith Villiers, George Frederic Watts (1862)",
+      "source": {
+        "kind": "wikimedia-painting",
+        "page": "https://commons.wikimedia.org/wiki/File:Edith_Villiers%2C_later_Countess_of_Lytton_by_George_Frederic_Watts.jpg",
+        "coverPage": "https://standardebooks.org/ebooks/emily-bronte/wuthering-heights",
+        "credit": "Edith Villiers, George Frederic Watts (1862)",
+        "licence": "Public domain (original painting)",
+        "provenance": "Public-domain painting from Wikimedia Commons; spine slice generated from the focus point at pack build."
+      },
+      "assets": {
+        "spine": {
+          "path": "items/wuthering-heights-spine.jpg",
+          "mime": "image/jpeg",
+          "sha256": "dd8b02bebae0d3aaceb6e031df6f6c271d5cbde2ad02709b9f5b0656801bfae6",
+          "bytes": 8034,
+          "width": 104,
+          "height": 472,
+          "scale": 2
+        },
+        "art": {
+          "path": "items/wuthering-heights-art.jpg",
+          "mime": "image/jpeg",
+          "sha256": "062f18fdc5617937de419e382519fdaf01b7a0970a5ab0ff12f13ce61a4400e4",
+          "bytes": 42133,
+          "width": 480,
+          "height": 720
+        }
+      },
+      "crop": {
+        "x": 487,
+        "y": 0,
+        "width": 418,
+        "height": 1898,
+        "sourceWidth": 1265,
+        "sourceHeight": 1898
+      },
+      "bytes": 50167
+    },
+    {
+      "id": "whisper-man",
+      "slug": "whisper-man",
+      "title": "The Whisper Man",
+      "author": "Alex North",
+      "year": 2019,
+      "isbn": "9781405936019",
+      "method": "ocr+lama",
+      "methodLabel": "OCR + LaMa",
+      "status": "excluded",
+      "unavailableReason": "not-public-domain",
+      "contentHash": "e8b4c9132b1553650250c01ab01466605493af08c8ed95f792cb6c81f9102e68",
+      "titleAuthorKey": "the whisper man|alex north",
+      "tone": "dark",
+      "meanLum": 0.024,
+      "p95Lum": 0.109,
+      "railSide": "right",
+      "focus": [
+        0.5,
+        0.5
+      ],
+      "credit": "Cover design: Penguin Books; cover image as published by Apple Books",
+      "source": {
+        "kind": "edition-cover",
+        "page": "https://books.apple.com/gb/book/the-whisper-man/id1404088650",
+        "coverPage": "https://books.apple.com/gb/book/the-whisper-man/id1404088650",
+        "credit": "Cover design: Penguin Books; cover image as published by Apple Books",
+        "licence": "Edition cover used only for this design prototype; not public domain.",
+        "provenance": "In-copyright edition cover. Metadata and ISBN only; no pixels are shipped in this pack."
+      },
+      "assets": null,
+      "bytes": 0
+    },
+    {
+      "id": "rock-paper-scissors",
+      "slug": "rock-paper-scissors",
+      "title": "Rock Paper Scissors",
+      "author": "Alice Feeney",
+      "year": 2021,
+      "isbn": "9781250266118",
+      "method": "ocr+lama",
+      "methodLabel": "OCR + LaMa",
+      "status": "excluded",
+      "unavailableReason": "not-public-domain",
+      "contentHash": "cad189de4288cf28ef6f3410567dfae604568e973921adff057dabd9ab6d7ad6",
+      "titleAuthorKey": "rock paper scissors|alice feeney",
+      "tone": "light",
+      "meanLum": 0.589,
+      "p95Lum": 0.791,
+      "railSide": "right",
+      "focus": [
+        0.22,
+        0.5
+      ],
+      "credit": "Cover design: Flatiron Books; cover image as published by Apple Books",
+      "source": {
+        "kind": "edition-cover",
+        "page": "https://books.apple.com/us/book/rock-paper-scissors/id1550616355",
+        "coverPage": "https://books.apple.com/us/book/rock-paper-scissors/id1550616355",
+        "credit": "Cover design: Flatiron Books; cover image as published by Apple Books",
+        "licence": "Edition cover used only for this design prototype; not public domain.",
+        "provenance": "In-copyright edition cover. Metadata and ISBN only; no pixels are shipped in this pack."
+      },
+      "assets": null,
+      "bytes": 0
+    }
+  ]
+}

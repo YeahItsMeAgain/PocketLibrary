@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>Reproducibility — one random book, every spine study</title>
-<meta name="description" content="The same randomly chosen downloadable book tested against every PocketLibrary spine prototype, with results, automatic/manual status and honest blockers.">
+<title>Strict reproducibility — a random book made by the APK</title>
+<meta name="description" content="Strict reproducibility: v8-app and App renderers are user-verified on real Android devices. Full-bleed, Textless, Wrap and Design system are verified through App renderers. Packs are bonus only.">
 <style>
   @font-face {
     font-family: "EB Garamond";
@@ -104,19 +104,37 @@
   .matrix { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12.5px; }
   .matrix th, .matrix td { padding: 11px 10px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
   .matrix th { color: var(--faint); font-size: 9px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; }
-  .matrix td:first-child { color: var(--cream); font-family: var(--display); font-size: 16px; white-space: nowrap; }
+  .matrix td:first-child { color: var(--cream); font-family: var(--display); font-size: 16px; white-space: normal; }
   .matrix td:last-child { color: var(--muted); font-family: var(--reading); line-height: 1.5; }
-  .status { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 9.5px; font-weight: 650; letter-spacing: .06em; line-height: 1.35; text-transform: uppercase; white-space: nowrap; }
+  .status { display: inline-block; max-width: 100%; padding: 3px 8px; border-radius: 999px; font-size: 9.5px; font-weight: 650; letter-spacing: .06em; line-height: 1.35; overflow-wrap: anywhere; text-transform: uppercase; white-space: normal; }
   .status--auto { background: rgba(101, 143, 96, .2); color: var(--good); }
   .status--manual { background: rgba(170, 126, 54, .2); color: var(--warn); }
   .status--na { background: rgba(160, 110, 90, .18); color: var(--bad); }
+  .status--partial { background: rgba(170, 126, 54, .22); color: var(--warn); }
+  .status--pending-device { background: rgba(170, 126, 54, .24); color: var(--warn); }
+  .status--pending-integration { background: rgba(78, 124, 154, .22); color: #a9cbe2; }
+  .status--bonus { background: rgba(150, 145, 135, .18); color: #c3bcb0; }
+  .status--superseded { background: rgba(150, 145, 135, .16); color: #c3bcb0; }
+  .status--not-route { background: rgba(160, 110, 90, .2); color: var(--bad); }
+  .status--no { background: rgba(160, 110, 90, .2); color: var(--bad); }
+  .status--pending { background: rgba(150, 145, 135, .18); color: #c3bcb0; }
+  .status--strict { background: rgba(101, 143, 96, .26); color: var(--good); }
+  .rubric { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0; }
+  .rubric > div { padding: 13px 14px; border: 1px solid var(--line-soft); border-radius: 10px; background: rgba(18, 13, 10, .7); }
+  .rubric dt { margin: 0 0 5px; color: var(--cream); font-family: var(--display); font-size: 19px; line-height: 1.1; }
+  .rubric dd { margin: 0; color: var(--muted); font-family: var(--reading); font-size: 12.5px; line-height: 1.5; }
+  .rubric .rubric__strict dt { color: var(--good); }
+  .rubric .rubric__partial dt { color: var(--warn); }
+  .rubric .rubric__no dt { color: var(--bad); }
+  .rubric .rubric__pending dt { color: #c3bcb0; }
+  .result__flags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
   .results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
   .result {
     border: 1px solid var(--line-soft); border-radius: 12px; overflow: hidden;
     background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0));
   }
   .result__body { padding: 14px 15px 15px; }
-  .result__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+  .result__top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 8px; margin-bottom: 7px; }
   .result h3 { margin: 0; font-family: var(--display); font-size: 23px; font-weight: 400; line-height: 1.05; }
   .result p { margin: 0; color: var(--muted); font-family: var(--reading); font-size: 12.5px; line-height: 1.55; }
   .result p + p { margin-top: 7px; }
@@ -144,13 +162,24 @@
     .book-cover { width: min(58%, 180px); justify-self: center; }
     .method { grid-template-columns: minmax(0, 1fr); }
     .results { grid-template-columns: 1fr; }
+    .rubric { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .matrix { font-size: 12px; }
     .matrix thead { display: none; }
-    .matrix tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
+    .matrix tr { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
     .matrix td { padding: 0; border: 0; }
-    .matrix td:first-child { font-size: 17px; }
-    .matrix td:nth-child(2) { justify-self: end; }
-    .matrix td:last-child { grid-column: 1 / -1; margin-top: 4px; }
+    .matrix td:first-child { font-size: 17px; white-space: normal; }
+    .matrix td:nth-child(2)::before,
+    .matrix td:nth-child(3)::before {
+      color: var(--faint);
+      font-family: var(--sans);
+      font-size: 8.5px;
+      font-weight: 650;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .matrix td:nth-child(2)::before { content: "Current run? "; }
+    .matrix td:nth-child(3)::before { content: "Random-book spine in APK? "; }
+    .matrix td:last-child { margin-top: 4px; }
   }
   @media (max-width: 359px) {
     .wrap { width: calc(100% - 24px); }
@@ -158,7 +187,9 @@
     .hero { padding-top: 36px; }
     .book-band { padding: 18px 16px; }
     .facts { grid-template-columns: 1fr; }
+    .rubric { grid-template-columns: 1fr; }
     .result__body { padding: 13px; }
+    .result__flags { justify-content: flex-start; }
   }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
@@ -173,9 +204,9 @@
 
   <main>
     <section class="hero" aria-labelledby="title">
-      <p class="kicker">Shared reproducibility test · one book, every study</p>
-      <h1 id="title">The same unseen book, <em>every time</em>.</h1>
-      <p class="lede">Each study was given the same randomly chosen downloadable book and asked what it could do with it. Some process it automatically. Some need a hand. One cannot run at all. The point is to make that difference visible instead of claiming a uniform pipeline.</p>
+      <p class="kicker">Strict reproducibility · both app APKs verified on device</p>
+      <h1 id="title">The APK must make the spine. <em>Not a pack.</em></h1>
+      <p class="lede">The original studies share one randomly chosen downloadable book; the new app routes carry their own random and unseen books. The strict test is whether the <b>APK itself can take that book and create its spine end-to-end</b> — no pack lookup, curated per-book asset, desktop build, hosted service or manual mask. <b>v8-app and App renderers both pass</b>: the user tested each Android APK on a real device. The next gap is <b>Popular app route / Tauri integration</b>, not another renderer build.</p>
     </section>
 
     <section class="book-band" aria-labelledby="book-title">
@@ -195,6 +226,31 @@
           <span>Cover 1400 × 2100</span>
         </div>
       </div>
+    </section>
+
+    <section class="section" aria-labelledby="rubric-title">
+      <div class="section-head">
+        <h2 id="rubric-title">The strict reproducibility rubric</h2>
+        <p>One rule: a random book in, a spine out, all inside the APK.</p>
+      </div>
+      <dl class="rubric">
+        <div class="rubric__strict">
+          <dt>Yes — user-verified</dt>
+          <dd><b>v8-app</b> and <b>App renderers</b> both take a random downloadable book and create the spine end-to-end. The user tested each Android APK on a real device and reports both work.</dd>
+        </div>
+        <div class="rubric__strict">
+          <dt>Yes — via App renderers</dt>
+          <dd><b>Full-bleed</b>, <b>Textless art</b>, <b>Wrap engine</b> and <b>Design system</b> are the four renderer routes inside the verified App renderers APK.</dd>
+        </div>
+        <div class="rubric__pending">
+          <dt>App-compatible — pending integration</dt>
+          <dd><b>Popular app route</b> renders v8-app outputs in a WebView gallery. It uses the verified pipeline, but it is not integrated into Tauri and not separately device-verified.</dd>
+        </div>
+        <div class="rubric__no">
+          <dt>Not strict</dt>
+          <dd>Curated packs are bonus only. The v8 desktop CLI and hosted generative route are superseded. Reference is a design tool. None turns a random cover into a spine by itself.</dd>
+        </div>
+      </dl>
     </section>
 
     <section class="section" aria-labelledby="method-title">
@@ -228,24 +284,96 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
 
     <section class="section" aria-labelledby="matrix-title">
       <div class="section-head">
-        <h2 id="matrix-title">Automatic, manual, or not applicable</h2>
-        <p>The same book is used in every row.</p>
+        <h2 id="matrix-title">Current run vs strict APK rule</h2>
+        <p><b>Current run</b> is the existing study. <b>Random-book spine in APK?</b> is the only reproducibility claim.</p>
       </div>
       <table class="matrix">
         <thead>
-          <tr><th>Study</th><th>Status</th><th>What it does with this exact book</th></tr>
+          <tr><th>Study</th><th>Current run</th><th>Random-book spine in APK?</th><th>Evidence / what next</th></tr>
         </thead>
         <tbody>
-          <tr><td>Full-bleed</td><td><span class="status status--auto">Automatic</span></td><td>Crops the downloaded cover, finds a focus point, masks the printed title plate and builds the rail.</td></tr>
-          <tr><td>Textless art</td><td><span class="status status--auto">Automatic</span></td><td>The cover already uses a public-domain painting, so the text-free artwork is used directly. No OCR or inpainting was needed for this book.</td></tr>
-          <tr><td>Wrap engine</td><td><span class="status status--auto">Automatic</span></td><td>Uses the 170-page reference extent: 9.7 mm spine (0.382 in) and a 12.632 × 9.250 in wrap at 300 dpi.</td></tr>
-          <tr><td>Generative art</td><td><span class="status status--manual">Manual only</span></td><td>No image model is available in this run. The study is a fixed two-cover experiment, so this book has no automatic generative result.</td></tr>
-          <tr><td>Design system</td><td><span class="status status--auto">Automatic</span></td><td>Builds the Hybrid spine from the shared cover, using its own 336 pp / 18.0 mm shelf record.</td></tr>
-          <tr><td>Popular books</td><td><span class="status status--na">N/A</span></td><td>A curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.</td></tr>
-          <tr><td>Automatic generative</td><td><span class="status status--auto">Automatic</span></td><td>DBNet finds the title band, an automatic colour mask covers it, LaMa/flat fill removes it, and spine QA picks a real text-free crop above the band. Zero hand-drawn masks.</td></tr>
-          <tr><td>Reference</td><td><span class="status status--manual">Manual export</span></td><td>Exports a spine-only SVG/PNG at a manually chosen 1.00 in width. Title and author are typed in; the cover is not used.</td></tr>
+          <tr>
+            <td>Full-bleed</td>
+            <td><span class="status status--auto">Automatic</span></td>
+            <td><span class="status status--strict">Yes — via App renderers, user-verified on device</span></td>
+            <td>User-verified through the App renderers APK on a real device. This renderer is part of that APK.</td>
+          </tr>
+          <tr>
+            <td>Textless art</td>
+            <td><span class="status status--auto">Automatic for this book</span></td>
+            <td><span class="status status--strict">Yes — via App renderers, user-verified on device</span></td>
+            <td>User-verified through the App renderers APK on a real device. The art-only route is part of that APK.</td>
+          </tr>
+          <tr>
+            <td>Textless Art Pack</td>
+            <td><span class="status status--auto">Pack (WebView)</span></td>
+            <td><span class="status status--bonus">Bonus — not strict</span></td>
+            <td>18 curated public-domain books. A useful fast path, not a random-book route.</td>
+          </tr>
+          <tr>
+            <td>Wrap engine</td>
+            <td><span class="status status--auto">Automatic</span></td>
+            <td><span class="status status--strict">Yes — via App renderers, user-verified on device</span></td>
+            <td>User-verified through the App renderers APK on a real device. The wrap route is part of that APK.</td>
+          </tr>
+          <tr>
+            <td>Generative art</td>
+            <td><span class="status status--manual">Manual only</span></td>
+            <td><span class="status status--superseded">Superseded by v8-app</span></td>
+            <td>The hosted FLUX route is a design record. v8-app is user-verified and is the route.</td>
+          </tr>
+          <tr>
+            <td>Design system</td>
+            <td><span class="status status--auto">Automatic</span></td>
+            <td><span class="status status--strict">Yes — via App renderers, user-verified on device</span></td>
+            <td>User-verified through the App renderers APK on a real device. Hybrid, Cloth and Editorial are part of that APK.</td>
+          </tr>
+          <tr>
+            <td>Popular books</td>
+            <td><span class="status status--na">N/A</span></td>
+            <td><span class="status status--pending-integration">Via Popular app route — pending integration</span></td>
+            <td>v8-app outputs exist. The renderer is not separately APK-verified; integration is pending.</td>
+          </tr>
+          <tr>
+            <td>Popular app route</td>
+            <td><span class="status status--auto">WebView gallery</span></td>
+            <td><span class="status status--pending-integration">App-compatible — pending integration</span></td>
+            <td>Dune unseen passes, LOTR falls back, RPS reviews. There is no separate APK for this renderer.</td>
+          </tr>
+          <tr>
+            <td>Popular Editions Pack</td>
+            <td><span class="status status--auto">Pack (WebView)</span></td>
+            <td><span class="status status--bonus">Bonus — not strict</span></td>
+            <td>Six curated editions, four reference-only. Optional fast path.</td>
+          </tr>
+          <tr>
+            <td>Automatic generative</td>
+            <td><span class="status status--auto">Automatic (desktop)</span></td>
+            <td><span class="status status--superseded">Superseded by v8-app</span></td>
+            <td>The desktop CLI is no longer the route. v8-app is user-verified.</td>
+          </tr>
+          <tr>
+            <td>App renderers</td>
+            <td><span class="status status--strict">User-verified</span></td>
+            <td><span class="status status--strict">Yes — user-verified on device</span></td>
+            <td><code>v8-renderers-arm64-v8a.apk</code> · 21,182,173 bytes · SHA-256 <code>e0ef…8f58</code>. The user tested it on a real device and reports it works.</td>
+          </tr>
+          <tr>
+            <td>Reference</td>
+            <td><span class="status status--manual">Manual export</span></td>
+            <td><span class="status status--not-route">Not a route</span></td>
+            <td>Design-only bookcover-js reference. Not counted.</td>
+          </tr>
+          <tr>
+            <td>v8-app</td>
+            <td><span class="status status--strict">User-verified</span></td>
+            <td><span class="status status--strict">Yes — user-verified on device</span></td>
+            <td>The user tested v8-app on a real device and reports it works.</td>
+          </tr>
         </tbody>
       </table>
+
+      <p class="note"><b>What to test next.</b> The renderer APK is user-verified. The next gap is <b>Popular app route / Tauri integration</b>: wire the v8-app + renderer path into the app shelf, verify the popular and generative cases on-device, and capture 390/320 screenshots. Packs remain bonus only.</p>
     </section>
 
     <section class="section" aria-labelledby="results-title">
@@ -258,8 +386,8 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         <article class="result">
           <div class="shot"><img src="results/full-bleed.png" alt="Full-bleed study showing the Hound cover crop and resulting spine with a vellum rail" loading="lazy"></div>
           <div class="result__body">
-            <div class="result__top"><h3>Full-bleed</h3><span class="status status--auto">Automatic</span></div>
-            <p>The spine shows 33.4% of the cover width at a 55% focus point. Because the painting is light, the automatic luminance pass picks dark ink on a warm vellum rail.</p>
+            <div class="result__top"><h3>Full-bleed</h3><span class="result__flags"><span class="status status--auto">Auto</span><span class="status status--strict">Via App renderers</span></span></div>
+            <p>The spine shows 33.4% of the cover width at a 55% focus point. Because the painting is light, the automatic luminance pass picks dark ink on a warm vellum rail. <b>User-verified</b> through the App renderers APK on a real device.</p>
             <div class="metrics"><span>1400 × 2100 source</span><span>49 × 220 px spine</span><span>Vellum fallback</span></div>
             <p style="margin-top:9px"><a href="../v2/">Open the Full-bleed study →</a></p>
           </div>
@@ -268,8 +396,8 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         <article class="result">
           <div class="shot"><img src="results/textless-art.png" alt="Textless art study showing cover, text removed, extracted art and spine crop" loading="lazy"></div>
           <div class="result__body">
-            <div class="result__top"><h3>Textless art</h3><span class="status status--auto">Automatic</span></div>
-            <p>The genuine painting is used directly: cover, then the printed plate excluded, then the 33% spine crop. No OCR or inpainting was required for this title.</p>
+            <div class="result__top"><h3>Textless art</h3><span class="result__flags"><span class="status status--auto">Auto this book</span><span class="status status--strict">Via App renderers</span></span></div>
+            <p>The genuine painting is used directly: cover, then the printed plate excluded, then the 33% spine crop. No OCR or inpainting was required for this title. <b>User-verified</b> as the art-only route in the App renderers APK.</p>
             <div class="metrics"><span>Original painting</span><span>996 × 1494 art</span><span>Focus 55%</span></div>
             <p style="margin-top:9px"><a href="../v3/">Open the Textless art study →</a></p>
           </div>
@@ -278,8 +406,8 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         <article class="result">
           <div class="shot"><img src="results/wrap-engine.png" alt="Wrap engine showing back cover, spine and front cover as one continuous wrap" loading="lazy"></div>
           <div class="result__body">
-            <div class="result__top"><h3>Wrap engine</h3><span class="status status--auto">Automatic</span></div>
-            <p>170 pages at 0.100 mm per leaf produce a 9.7 mm spine. The title fits at 12.8 pt on the computed spine and 28.9 pt in the 1-inch stress test.</p>
+            <div class="result__top"><h3>Wrap engine</h3><span class="result__flags"><span class="status status--auto">Auto</span><span class="status status--strict">Via App renderers</span></span></div>
+            <p>170 pages at 0.100 mm per leaf produce a 9.7 mm spine. The title fits at 12.8 pt on the computed spine and 28.9 pt in the 1-inch stress test. <b>User-verified</b> as the wrap route in the App renderers APK.</p>
             <div class="metrics"><span>0.382 in spine</span><span>12.632 × 9.250 in wrap</span><span>300 dpi</span></div>
             <p style="margin-top:9px"><a href="../v4-wrap/">Open the Wrap engine study →</a></p>
           </div>
@@ -288,8 +416,8 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         <article class="result">
           <div class="shot"><img src="results/design-system.png" alt="Design system Hybrid spine and detail record for the Hound of the Baskervilles" loading="lazy"></div>
           <div class="result__body">
-            <div class="result__top"><h3>Design system</h3><span class="status status--auto">Automatic</span></div>
-            <p>The Hybrid direction keeps a narrow art window beside a paper label. This title’s existing shelf record is 336 pp / 18.0 mm, giving a 46.6 px spine and an 8.9 px title.</p>
+            <div class="result__top"><h3>Design system</h3><span class="result__flags"><span class="status status--auto">Auto</span><span class="status status--strict">Via App renderers</span></span></div>
+            <p>The Hybrid direction keeps a narrow art window beside a paper label. This title’s existing shelf record is 336 pp / 18.0 mm, giving a 46.6 px spine and an 8.9 px title. <b>User-verified</b> as Hybrid / Cloth / Editorial in the App renderers APK.</p>
             <div class="metrics"><span>Hybrid</span><span>11.3:1 contrast</span><span>91% type fit</span></div>
             <p style="margin-top:9px"><a href="../v6/">Open the Design system study →</a></p>
           </div>
@@ -298,9 +426,9 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         <article class="result">
           <div class="shot"><img src="results/automatic-generative.png" alt="Automatic generative run for the Hound of the Baskervilles: original, automatic mask, inpainted art and spine" loading="lazy"></div>
           <div class="result__body">
-            <div class="result__top"><h3>Automatic generative</h3><span class="status status--auto">Automatic</span></div>
-            <p>The title band is detected automatically, removed with a flat fill, and the spine chooses the real painting above the band. No mask is drawn and no model prompt is written.</p>
-            <div class="metrics"><span>0 manual steps</span><span>7.7% mask</span><span>Text-free crop</span><span>10.3 s CPU</span></div>
+            <div class="result__top"><h3>Automatic generative</h3><span class="result__flags"><span class="status status--auto">Auto desktop</span><span class="status status--superseded">Superseded</span></span></div>
+            <p>The title band is detected automatically, removed with a flat fill, and the spine chooses the real painting above the band. <b>Superseded by v8-app</b>, which runs the pipeline on-device and is user-verified. The desktop CLI is kept as a record.</p>
+            <div class="metrics"><span>0 manual steps</span><span>7.7% mask</span><span>Text-free crop</span><span>10.3 s desktop CPU</span></div>
             <p style="margin-top:9px"><a href="../v8-auto/">Open the Automatic generative study →</a></p>
           </div>
         </article>
@@ -308,19 +436,19 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         <article class="result">
           <div class="shot shot--tall"><img src="results/reference-spine.png" alt="Bookcover-js spine-only export with title and author" loading="lazy"></div>
           <div class="result__body">
-            <div class="result__top"><h3>Reference</h3><span class="status status--manual">Manual export</span></div>
-            <p>Bookcover-js produces a standalone decorative spine. Width is a manual choice, not page-count arithmetic; the cover artwork is not used in this export.</p>
+            <div class="result__top"><h3>Reference</h3><span class="result__flags"><span class="status status--manual">Manual export</span><span class="status status--not-route">Not a route</span></span></div>
+            <p>Bookcover-js produces a standalone decorative spine. Width is a manual choice, not page-count arithmetic; the cover artwork is not used. <b>Design-only</b>: it does not turn a random cover into a spine.</p>
             <div class="metrics"><span>1.00 in width</span><span>8 pt type</span><span>Spine-only PNG</span></div>
             <p style="margin-top:9px"><a href="../bookcover-js-deep/harness/">Open the Reference study →</a></p>
           </div>
         </article>
 
         <article class="result">
-          <div class="shot shot--empty">No automatic result</div>
+          <div class="shot shot--empty">No desktop result</div>
           <div class="result__body">
-            <div class="result__top"><h3>Generative art</h3><span class="status status--manual">Manual only</span></div>
-            <p>An honest blocker: the study reconstructs type with an image model, but no model is available in this run. Its result is a fixed two-cover experiment, not a repeatable pipeline for an arbitrary book.</p>
-            <div class="metrics"><span>Model not run</span><span>Fixed two-cover set</span><span>Review required</span></div>
+            <div class="result__top"><h3>Generative art</h3><span class="result__flags"><span class="status status--manual">Manual only</span><span class="status status--superseded">Superseded</span></span></div>
+            <p>The hosted FLUX experiment is kept as a design record. It needed quota and human review. <b>Superseded by v8-app</b>, which runs automatically on-device; the Popular app route reruns the generative cases through it.</p>
+            <div class="metrics"><span>Hosted model</span><span>Fixed two-cover set</span><span>Review required</span></div>
             <p style="margin-top:9px"><a href="../v4-generative/">Open the Generative art study →</a></p>
           </div>
         </article>
@@ -328,20 +456,60 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         <article class="result">
           <div class="shot shot--empty">N/A · curated shelf</div>
           <div class="result__body">
-            <div class="result__top"><h3>Popular books</h3><span class="status status--na">N/A</span></div>
-            <p>This study curates four commercial covers and judges them at shelf size; it is not a per-cover pipeline, so there is no shared-book run to report.</p>
+            <div class="result__top"><h3>Popular books</h3><span class="result__flags"><span class="status status--na">N/A</span><span class="status status--pending-integration">Via Popular app route</span></span></div>
+            <p>The study curates four commercial covers and judges them at shelf size. The per-cover route is now <b>Popular app route</b>, which uses v8-app output; the renderer is not separately APK-verified and integration is pending.</p>
             <div class="metrics"><span>Curated shelf</span><span>4 covers</span><span>52 × 236 px</span></div>
             <p style="margin-top:9px"><a href="../v7/">Open the Popular books study →</a></p>
           </div>
         </article>
+
+        <article class="result">
+          <div class="shot"><img src="../app-renderers/screenshots/gallery-390.png" alt="App renderers gallery showing v8 output rendered as six spine styles" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>App renderers</h3><span class="result__flags"><span class="status status--auto">APK</span><span class="status status--strict">User-verified</span></span></div>
+            <p>The v8 pipeline plus Full-bleed, art-only, Wrap and Hybrid/Cloth/Editorial in one APK. The user tested it on a real device and reports it works. <b>Strict yes.</b></p>
+            <div class="metrics"><span>21,182,173 bytes</span><span>arm64-v8a</span><span>SHA-256 e0ef…8f58</span></div>
+            <p style="margin-top:9px"><a href="../app-renderers/">Open the App renderers study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot"><img src="../popular-app-route/screenshots/route-390-popular.png" alt="Popular app route gallery showing popular covers rendered through v8-app" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>Popular app route</h3><span class="result__flags"><span class="status status--auto">v8-app output</span><span class="status status--pending-integration">Pending integration</span></span></div>
+            <p>Five popular covers and two generative cases rerun through v8-app. Dune unseen passes, LOTR falls back, RPS reviews. No separate APK; the renderer is app-compatible but integration and device proof are pending.</p>
+            <div class="metrics"><span>Dune pass</span><span>LOTR fallback</span><span>RPS review</span></div>
+            <p style="margin-top:9px"><a href="../popular-app-route/">Open the Popular app route study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot shot--empty">Pack only · 18 books</div>
+          <div class="result__body">
+            <div class="result__top"><h3>Textless Art Pack</h3><span class="result__flags"><span class="status status--auto">Pack</span><span class="status status--bonus">Bonus</span></span></div>
+            <p>The pack loads, verifies and renders 18 curated public-domain spines in a WebView. A random book outside the pack falls back to a generated plate, so this is a useful bonus feature, <b>not strict reproducibility</b>.</p>
+            <div class="metrics"><span>18 available / 20 records</span><span>1.0 MiB</span><span>SHA-256</span></div>
+            <p style="margin-top:9px"><a href="../textless-app/">Open the Textless Art Pack →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot shot--empty">Pack only · 6 editions</div>
+          <div class="result__body">
+            <div class="result__top"><h3>Popular Editions Pack</h3><span class="result__flags"><span class="status status--auto">Pack</span><span class="status status--bonus">Bonus</span></span></div>
+            <p>Six curated editions load and render from a verified pack. Four are reference-only and not rights-cleared; a random book gets a cloth fallback. A pack is a <b>bonus</b>, not strict reproducibility.</p>
+            <div class="metrics"><span>6 editions</span><span>4 rights-restricted</span><span>1.87 MiB</span></div>
+            <p style="margin-top:9px"><a href="../popular-app/">Open the Popular Editions Pack →</a></p>
+          </div>
+        </article>
       </div>
 
-      <p class="note"><b>Read the matrix, not the average.</b> Five studies process the shared book automatically, one needs a manual export, one is an explicit generative-only blocker, and one is a curated shelf. That spread is the result: the suite does not pretend every technique generalises to every book.</p>
+      <p class="note"><b>6 yes today.</b> v8-app and App renderers are user-verified on real devices; Full-bleed, Textless, Wrap and Design system are verified through App renderers. <b>2</b> are pending integration (Popular books and Popular app route). <b>5</b> are not strict: two bonus packs, two superseded routes, one design reference. A pack is a good product feature, but it does not make a random book reproducible. See <code>APP-REPRODUCIBILITY.md</code> for file-level evidence.</p>
     </section>
   </main>
 
   <footer>
-    <p>Throwaway design prototypes · not production code · no app tests, manifests or specs changed. The shared book is recorded in <code>book/metadata.json</code>; result captures are generated by <code>capture.cjs</code>. The same random book is used across the whole matrix.</p>
+    <p>Throwaway design prototypes · not production code · no app tests, manifests or specs changed. The shared book is recorded in <code>book/metadata.json</code>; result captures are generated by <code>capture.cjs</code>. Shared-book rows use The Hound; App renderers and Popular app route use their own random/unseen books. File-level app evidence is in <a href="../APP-REPRODUCIBILITY.md">APP-REPRODUCIBILITY.md</a>.</p>
   </footer>
 </div>
 

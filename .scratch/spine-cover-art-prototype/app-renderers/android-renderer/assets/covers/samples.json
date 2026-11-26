@@ -1,0 +1,32 @@
+[
+  {
+    "asset": "covers/gatsby.jpg",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "pages": 180
+  },
+  {
+    "asset": "covers/dune.jpg",
+    "title": "Dune",
+    "author": "Frank Herbert",
+    "pages": 617
+  },
+  {
+    "asset": "covers/pride.jpg",
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "pages": 432
+  },
+  {
+    "asset": "covers/rps.jpg",
+    "title": "Rock Paper Scissors",
+    "author": "Alice Feeney",
+    "pages": 320
+  },
+  {
+    "asset": "covers/war-of-the-worlds.jpg",
+    "title": "The War of the Worlds",
+    "author": "H. G. Wells",
+    "pages": 192
+  }
+]

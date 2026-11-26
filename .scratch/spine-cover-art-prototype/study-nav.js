@@ -10,48 +10,109 @@
   const REPRO = {
     book: "The Hound of the Baskervilles",
     href: "/spine-cover-art-prototype/reproducibility/",
+    pending: "Strict rule: random book, APK end-to-end. v8-app and App renderers are user-verified on real devices. Packs are bonus only. Next gap: Popular app route / Tauri integration.",
   };
 
   const studies = [
     {
       path: "/spine-cover-art-prototype/v2/",
       title: "Full-bleed",
-      auto: "Automatic. The downloaded cover is cropped, focused and railed without hand placement.",
+      desktop: "Automatic",
+      desktopKind: "auto",
+      strict: "Yes — via App renderers, user-verified on device",
+      strictKind: "strict",
+      auto: "Desktop: the downloaded cover is cropped, focused and railed without hand placement.",
+      strictNote: "The user tested the App renderers APK on a real device and reports it works. This renderer is part of that verified APK.",
     },
     {
       path: "/spine-cover-art-prototype/v3/",
       title: "Textless art",
-      auto: "Automatic for this book. Its cover already uses a public-domain painting, so the artwork is used directly. Modern covers need OCR plus inpainting, or a reviewed generative edit.",
+      desktop: "Automatic for this book",
+      desktopKind: "auto",
+      strict: "Yes — via App renderers, user-verified on device",
+      strictKind: "strict",
+      auto: "Desktop: this book's cover already uses a public-domain painting, so the artwork is used directly. Modern covers need OCR and inpainting.",
+      strictNote: "The user tested the App renderers APK on a real device. The art-only route is part of that verified APK.",
     },
     {
       path: "/spine-cover-art-prototype/v4-wrap/",
       title: "Wrap engine",
-      auto: "Automatic. The word-count estimate gives the page count, then the spine width and continuous wrap are computed from paper caliper.",
+      desktop: "Automatic",
+      desktopKind: "auto",
+      strict: "Yes — via App renderers, user-verified on device",
+      strictKind: "strict",
+      auto: "Desktop: the word-count estimate gives the page count, then the spine width and continuous wrap are computed from paper caliper.",
+      strictNote: "The user tested the App renderers APK on a real device. The wrap route is part of that verified APK.",
     },
     {
       path: "/spine-cover-art-prototype/v4-generative/",
       title: "Generative art",
-      auto: "Manual / generative only. No image model is available in this run, and the study is a fixed two-cover experiment, so this book has no automatic generative result.",
+      desktop: "Manual only",
+      desktopKind: "manual",
+      strict: "Superseded by v8-app",
+      strictKind: "superseded",
+      auto: "Desktop: no image model is available in this run, and the study is a fixed two-cover experiment, so this book has no automatic result.",
+      strictNote: "The old hosted FLUX route is a design record. v8-app is user-verified on a real device and is the route.",
     },
     {
       path: "/spine-cover-art-prototype/v6/",
       title: "Design system",
-      auto: "Automatic. The Hybrid shelf spine is generated from the shared cover and the study's own shelf record.",
+      desktop: "Automatic",
+      desktopKind: "auto",
+      strict: "Yes — via App renderers, user-verified on device",
+      strictKind: "strict",
+      auto: "Desktop: the Hybrid shelf spine is generated from the shared cover and the study's own shelf record.",
+      strictNote: "The user tested the App renderers APK on a real device. Hybrid, Cloth and Editorial are part of that verified APK.",
     },
     {
       path: "/spine-cover-art-prototype/v7/",
       title: "Popular books",
-      auto: "Not applicable: this is a curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.",
+      desktop: "N/A",
+      desktopKind: "na",
+      strict: "Via Popular app route — pending integration",
+      strictKind: "pending-integration",
+      auto: "Desktop: a curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.",
+      strictNote: "Popular app route uses v8-app outputs in a WebView gallery. The renderer is not separately APK-verified; integration is pending.",
+    },
+    {
+      path: "/spine-cover-art-prototype/popular-app-route/",
+      title: "Popular app route",
+      desktop: "WebView gallery",
+      desktopKind: "gallery",
+      strict: "App-compatible — pending integration",
+      strictKind: "pending-integration",
+      auto: "Gallery: v8-app outputs for popular and generative cases. Dune unseen passes, LOTR falls back, RPS reviews.",
+      strictNote: "Uses v8-app host outputs in a WebView gallery. There is no separate APK for this renderer; it is app-compatible, but integration and device proof are pending.",
     },
     {
       path: "/spine-cover-art-prototype/v8-auto/",
       title: "Automatic generative",
-      auto: "Automatic. DBNet finds the type, an automatic colour mask plus LaMa/flat-fill removes it, and spine-scale QA picks a text-free crop or falls back. No hand-drawn polygons and no API key.",
+      desktop: "Automatic",
+      desktopKind: "auto",
+      strict: "Superseded by v8-app",
+      strictKind: "superseded",
+      auto: "Desktop: DBNet finds the type, an automatic colour mask plus LaMa/flat-fill removes it, and spine QA picks a text-free crop or falls back.",
+      strictNote: "The desktop CLI is superseded by v8-app, which the user verified on a real device.",
+    },
+    {
+      path: "/spine-cover-art-prototype/app-renderers/",
+      title: "App renderers",
+      desktop: "APK built",
+      desktopKind: "built",
+      strict: "Yes — user-verified on device",
+      strictKind: "strict",
+      auto: "APK: v8 pipeline plus Full-bleed, art-only, Wrap and Hybrid/Cloth/Editorial. 21,182,173 bytes; SHA-256 e0ef…",
+      strictNote: "The user tested v8-renderers-arm64-v8a.apk on a real device and reports it works. Strict yes.",
     },
     {
       path: "/spine-cover-art-prototype/bookcover-js-deep/harness/",
       title: "Reference",
-      auto: "Spine-only export. Title and author are entered by hand; the cover artwork is not used.",
+      desktop: "Manual export",
+      desktopKind: "manual",
+      strict: "Not a route",
+      strictKind: "not-route",
+      auto: "Desktop: a spine-only SVG/PNG is exported after the title and author are typed in; the cover is not used.",
+      strictNote: "A manual design reference with hand-entered width and type. It does not turn a random cover into a spine.",
     },
   ];
 
@@ -225,7 +286,40 @@
       text-transform: uppercase;
     }
     .repro-callout p { margin: 0; }
+    .repro-callout p + p { margin-top: 6px; }
     .repro-callout b { font-weight: 650; }
+    .repro-callout__pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 0 0 8px !important;
+    }
+    .repro-callout__pill {
+      display: inline-block;
+      max-width: 100%;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 650;
+      letter-spacing: .05em;
+      line-height: 1.35;
+      text-transform: uppercase;
+      white-space: normal;
+    }
+    .repro-callout__pill--auto { background: rgba(101, 143, 96, .24); color: #b9d8b2; }
+    .repro-callout__pill--manual { background: rgba(170, 126, 54, .24); color: #e7c78e; }
+    .repro-callout__pill--na { background: rgba(160, 110, 90, .2); color: #dfab96; }
+    .repro-callout__pill--built { background: rgba(78, 124, 154, .26); color: #abcddf; }
+    .repro-callout__pill--gallery { background: rgba(78, 124, 154, .22); color: #abcddf; }
+    .repro-callout__pill--partial { background: rgba(170, 126, 54, .24); color: #e7c78e; }
+    .repro-callout__pill--pending-device { background: rgba(170, 126, 54, .26); color: #e7c78e; }
+    .repro-callout__pill--pending-integration { background: rgba(78, 124, 154, .26); color: #abcddf; }
+    .repro-callout__pill--no { background: rgba(160, 110, 90, .24); color: #dfab96; }
+    .repro-callout__pill--superseded { background: rgba(150, 145, 135, .2); color: #c9c2b6; }
+    .repro-callout__pill--not-route { background: rgba(160, 110, 90, .2); color: #dfab96; }
+    .repro-callout__pill--pending { background: rgba(150, 145, 135, .2); color: #c9c2b6; }
+    .repro-callout__pill--strict { background: rgba(101, 143, 96, .3); color: #c5e2be; }
+    .repro-callout__foot { color: #b08a4e; font-size: 11px; }
     .repro-callout a {
       display: inline-block;
       margin-top: 7px;
@@ -293,17 +387,23 @@
 
   const callout = document.createElement("aside");
   callout.className = "repro-callout";
-  callout.setAttribute("aria-label", "Reproducibility");
+  callout.setAttribute("aria-label", "Strict reproducibility");
 
   function renderCallout() {
     const study = studies[currentIndex];
     const landing = study.optional && study.available === false;
     callout.innerHTML =
-      `<span class="repro-callout__eyebrow">Reproducibility · shared random book</span>` +
-      `<p><b>${REPRO.book}</b> is the one randomly chosen downloadable book tested against every study. ` +
+      `<span class="repro-callout__eyebrow">Strict reproducibility · random book in the APK</span>` +
+      `<p class="repro-callout__pills">` +
+      `<span class="repro-callout__pill repro-callout__pill--${study.desktopKind}">Current run: ${study.desktop}</span>` +
+      `<span class="repro-callout__pill repro-callout__pill--${study.strictKind}">APK random book: ${study.strict}</span>` +
+      `</p>` +
+      `<p><b>${REPRO.book}</b> is the shared test book. ` +
       (landing ? `This study is still landing; the shared test will be added when it arrives.` : study.auto) +
       `</p>` +
-      `<a href="${REPRO.href}">Open the shared reproducibility test →</a>`;
+      (landing ? `` : `<p><b>Strict verdict:</b> ${study.strictNote}</p>`) +
+      `<p class="repro-callout__foot">${REPRO.pending}</p>` +
+      `<a href="${REPRO.href}">Open the strict reproducibility matrix →</a>`;
   }
 
   const firstHeader = document.querySelector("header");

@@ -1,0 +1,224 @@
+{
+  "id": "v8-app",
+  "title": "Automatic app",
+  "href": "/spine-cover-art-prototype/v8-app/",
+  "status": "throwaway proof of concept",
+  "engine": "rust/ort",
+  "spine": [
+    52,
+    236
+  ],
+  "manual_intervention": 0,
+  "api_keys": 0,
+  "verdict": {
+    "pass": 4,
+    "review": 1,
+    "fallback": 0
+  },
+  "host_runtime_s": {
+    "representative": {
+      "hound": 4.54,
+      "rps_lama": 31.65,
+      "rps_no_lama": 5.31,
+      "harry_potter": 3.72,
+      "hunger_games": 2.61,
+      "whisper_man": 5.59
+    },
+    "range": {
+      "crop_min": 2.37,
+      "crop_max": 13.79,
+      "rps_lama_min": 31.65,
+      "rps_lama_max": 57.37
+    }
+  },
+  "host_runtime_no_lama_rps_s": 5.31,
+  "host_peak_rss_mb": {
+    "crop_route": 500,
+    "rps_substitute": 453,
+    "rps_lama": 1013
+  },
+  "android": {
+    "target": "aarch64-linux-android",
+    "abi": "arm64-v8a",
+    "min_api": 24,
+    "binary_bytes": 2371744,
+    "cross_compiled": true,
+    "device_run": false
+  },
+  "sizes_mb": {
+    "rust_binary": 2.37,
+    "det_onnx": 2.43,
+    "rec_onnx": 10.69,
+    "keys_txt": 0.026,
+    "onnxruntime_arm64": 17.57,
+    "lama_onnx_optional": 208.0,
+    "apk_delta_without_lama": 33.1
+  },
+  "models": {
+    "det_onnx_sha256": "3439588c030faea393a54515f51e983d8e155b19a2e8aba7891934c1cf0de526",
+    "rec_onnx_sha256": "897a3ededb38fee0dae2c1ccee38241f37df202c9509e3abca02e9217c5ee615",
+    "lama_onnx_sha256": "1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6"
+  },
+  "stack_evaluation": {
+    "ort": "chosen; runs det/rec/LaMa; LaMa 26.6s host",
+    "tract_onnx": "verified alternative; runs det/rec/LaMa; LaMa 40.9s host, ~687MB",
+    "tflite_nnapi": "not tested; no TFLite models, no Android device/emulator"
+  },
+  "books": [
+    {
+      "slug": "hound",
+      "title": "The Hound of the Baskervilles",
+      "route": "text-free crop",
+      "verdict": "pass",
+      "mask_coverage_pct": 7.87,
+      "detection_boxes": 3,
+      "runtime_s": {
+        "crop_search": 0.14,
+        "detection": 1.88,
+        "inpaint_flat": 0.0,
+        "inpaint_lama": 0.0,
+        "mask_total": 2.31,
+        "total": 4.54
+      },
+      "spine_ocr": 0,
+      "spine_luma_std": 61.3,
+      "spine_edge_density": 0.079,
+      "seam_ratio": 0.98,
+      "palette_corr": 0.75,
+      "compare_python": {
+        "correlation": 0.95,
+        "mae": 41.14,
+        "psnr_db": 13.96,
+        "python_spine": "../v8-auto/assets/hound/spine.jpg",
+        "size": [
+          52,
+          236
+        ]
+      }
+    },
+    {
+      "slug": "rps",
+      "title": "Rock Paper Scissors",
+      "route": "inpaint",
+      "verdict": "review",
+      "mask_coverage_pct": 44.1,
+      "detection_boxes": 22,
+      "runtime_s": {
+        "crop_search": 0.02,
+        "detection": 1.55,
+        "inpaint_flat": 0.12,
+        "inpaint_lama": 26.55,
+        "mask_total": 2.41,
+        "total": 31.65
+      },
+      "spine_ocr": 0,
+      "spine_luma_std": 46.9,
+      "spine_edge_density": 0.23,
+      "seam_ratio": 0.69,
+      "palette_corr": 0.63,
+      "compare_python": {
+        "correlation": 1.0,
+        "mae": 10.75,
+        "psnr_db": 23.91,
+        "python_spine": "../v8-auto/assets/rps/spine.jpg",
+        "size": [
+          52,
+          236
+        ]
+      }
+    },
+    {
+      "slug": "harry-potter",
+      "title": "Harry Potter and the Philosopher's Stone",
+      "route": "text-free crop",
+      "verdict": "pass",
+      "mask_coverage_pct": 37.44,
+      "detection_boxes": 13,
+      "runtime_s": {
+        "crop_search": 0.13,
+        "detection": 0.76,
+        "inpaint_flat": 0.0,
+        "inpaint_lama": 0.0,
+        "mask_total": 0.8,
+        "total": 3.72
+      },
+      "spine_ocr": 0,
+      "spine_luma_std": 44.3,
+      "spine_edge_density": 0.381,
+      "seam_ratio": 0.71,
+      "palette_corr": 0.05,
+      "compare_python": {
+        "correlation": 0.94,
+        "mae": 45.83,
+        "psnr_db": 12.54,
+        "python_spine": "../v8-auto/assets/harry-potter/spine.jpg",
+        "size": [
+          52,
+          236
+        ]
+      }
+    },
+    {
+      "slug": "hunger-games",
+      "title": "The Hunger Games",
+      "route": "text-free crop",
+      "verdict": "pass",
+      "mask_coverage_pct": 27.5,
+      "detection_boxes": 6,
+      "runtime_s": {
+        "crop_search": 0.1,
+        "detection": 0.73,
+        "inpaint_flat": 0.0,
+        "inpaint_lama": 0.0,
+        "mask_total": 0.76,
+        "total": 2.61
+      },
+      "spine_ocr": 0,
+      "spine_luma_std": 54.3,
+      "spine_edge_density": 0.239,
+      "seam_ratio": 1.36,
+      "palette_corr": 0.97,
+      "compare_python": {
+        "correlation": 1.0,
+        "mae": 2.77,
+        "psnr_db": 35.17,
+        "python_spine": "../v8-auto/assets/hunger-games/spine.jpg",
+        "size": [
+          52,
+          236
+        ]
+      }
+    },
+    {
+      "slug": "whisper-man",
+      "title": "The Whisper Man",
+      "route": "text-free crop",
+      "verdict": "pass",
+      "mask_coverage_pct": 15.87,
+      "detection_boxes": 17,
+      "runtime_s": {
+        "crop_search": 0.17,
+        "detection": 1.52,
+        "inpaint_flat": 0.0,
+        "inpaint_lama": 0.0,
+        "mask_total": 1.77,
+        "total": 5.59
+      },
+      "spine_ocr": 0,
+      "spine_luma_std": 39.4,
+      "spine_edge_density": 0.319,
+      "seam_ratio": 0.92,
+      "palette_corr": 0.42,
+      "compare_python": {
+        "correlation": 0.76,
+        "mae": 28.42,
+        "psnr_db": 15.39,
+        "python_spine": "../v8-auto/assets/whisper-man/spine.jpg",
+        "size": [
+          52,
+          236
+        ]
+      }
+    }
+  ]
+}

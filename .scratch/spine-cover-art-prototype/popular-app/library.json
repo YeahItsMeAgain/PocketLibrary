@@ -1,0 +1,163 @@
+{
+  "schema": "pocketlibrary.popular-library/1",
+  "version": "2026.11.26.1",
+  "note": "The app's own catalogue snapshot. It contains a content hash of the source cover for matching, and one deliberate miss (Project Hail Mary).",
+  "books": [
+    {
+      "id": "harry-potter",
+      "spineId": "harry-potter",
+      "title": "Harry Potter and the Philosopher's Stone",
+      "author": "J.K. Rowling",
+      "isbn": "9780747532699",
+      "contentHash": "sha256:db8beb951de934a46386b63ea00771c9a83d2e6d8d12320185c06bf7bb5ec604",
+      "cloth": "#6e1f3a",
+      "accent": "#e8c76b",
+      "tone": "warm",
+      "focus": [
+        0.36,
+        0.5
+      ],
+      "lightCloth": false,
+      "measured": {
+        "avg": "#a7676a",
+        "dominant": "#7a2040"
+      },
+      "pages": 223,
+      "widthPx": 52,
+      "heightPx": 236
+    },
+    {
+      "id": "lord-of-the-rings",
+      "spineId": "lord-of-the-rings",
+      "title": "The Lord of the Rings",
+      "author": "J.R.R. Tolkien",
+      "isbn": "9780261103252",
+      "contentHash": "sha256:7b2a6d4e213dd558de43453be0b7c43842e6a11af8336336dd641d52b6efc6e4",
+      "cloth": "#141210",
+      "accent": "#d8452c",
+      "tone": "dark",
+      "focus": [
+        0.5,
+        0.48
+      ],
+      "lightCloth": false,
+      "measured": {
+        "avg": "#412e2a",
+        "dominant": "#0e0c0b"
+      },
+      "pages": 1031,
+      "widthPx": 52,
+      "heightPx": 236
+    },
+    {
+      "id": "the-hobbit",
+      "spineId": "the-hobbit",
+      "title": "The Hobbit",
+      "author": "J.R.R. Tolkien",
+      "isbn": "9780261102217",
+      "contentHash": "sha256:f8633c3540759d70c2524c5558cf5e51c80ed97181e3a562d1851106c76cdadc",
+      "cloth": "#101010",
+      "accent": "#d92b26",
+      "tone": "dark",
+      "focus": [
+        0.5,
+        0.52
+      ],
+      "lightCloth": false,
+      "measured": {
+        "avg": "#1d1617",
+        "dominant": "#050505"
+      },
+      "pages": 310,
+      "widthPx": 52,
+      "heightPx": 236
+    },
+    {
+      "id": "the-hunger-games",
+      "spineId": "the-hunger-games",
+      "title": "The Hunger Games",
+      "author": "Suzanne Collins",
+      "isbn": "9780439023481",
+      "contentHash": "sha256:11a3dd78f9b5cf50522dbb84848dd82e94648b0a7bde13258c9909049784ece1",
+      "cloth": "#1b1a18",
+      "accent": "#d4ad45",
+      "tone": "dark",
+      "focus": [
+        0.46,
+        0.5
+      ],
+      "lightCloth": false,
+      "measured": {
+        "avg": "#4e443d",
+        "dominant": "#151413"
+      },
+      "pages": 384,
+      "widthPx": 52,
+      "heightPx": 236
+    },
+    {
+      "id": "moby-dick",
+      "spineId": "moby-dick",
+      "title": "Moby-Dick",
+      "author": "Herman Melville",
+      "isbn": null,
+      "contentHash": "sha256:24de5f4a6c4b950cd2d8642db67516ba8dc5aead4577526cb0d21382e8287d31",
+      "cloth": "#1d2a33",
+      "accent": "#c9a45c",
+      "tone": "dark",
+      "focus": [
+        0.45,
+        0.5
+      ],
+      "lightCloth": false,
+      "measured": {
+        "avg": "#2b3c45",
+        "dominant": "#132028"
+      },
+      "pages": 720,
+      "widthPx": 52,
+      "heightPx": 236
+    },
+    {
+      "id": "hound-of-the-baskervilles",
+      "spineId": "hound-of-the-baskervilles",
+      "title": "The Hound of the Baskervilles",
+      "author": "Arthur Conan Doyle",
+      "isbn": null,
+      "contentHash": "sha256:ee131704a727d89a7988ddc65e7bc35760786cd0164e055989126dd3e12ae0e1",
+      "cloth": "#3b3a33",
+      "accent": "#b7a06a",
+      "tone": "light",
+      "focus": [
+        0.55,
+        0.5
+      ],
+      "lightCloth": true,
+      "measured": {
+        "avg": "#6f6d63",
+        "dominant": "#4a4a44"
+      },
+      "pages": 256,
+      "widthPx": 52,
+      "heightPx": 236
+    },
+    {
+      "id": "project-hail-mary",
+      "spineId": null,
+      "title": "Project Hail Mary",
+      "author": "Andy Weir",
+      "isbn": "9780593135204",
+      "contentHash": null,
+      "cloth": "#1b2a3a",
+      "accent": "#e0b34a",
+      "tone": "dark",
+      "focus": [
+        0.5,
+        0.5
+      ],
+      "lightCloth": false,
+      "pages": 496,
+      "note": "Deliberately not in the pack: proves a library book with no matching edition still gets a readable typographic spine."
+    }
+  ]
+}

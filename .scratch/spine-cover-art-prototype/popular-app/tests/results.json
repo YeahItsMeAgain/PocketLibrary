@@ -1,0 +1,875 @@
+{
+  "schema": "pocketlibrary.popular-editions-audit/1",
+  "generatedAt": "2026-11-26T19:30:16.921Z",
+  "url": "http://127.0.0.1:4189/popular-app/",
+  "pack": {
+    "id": "popular-editions",
+    "version": "2026.11.26.1",
+    "entries": 6,
+    "files": 18,
+    "totalBytes": 1962110,
+    "totalKiB": 1916.1,
+    "zipBytes": 1940755,
+    "zipKiB": 1895.3,
+    "manifestBytes": 19749
+  },
+  "firstLoad": {
+    "source": "network",
+    "version": "2026.11.26.1",
+    "loadMs": 309.89999997615814,
+    "verifyMs": 260.69999998807907,
+    "verifiedFiles": 18,
+    "files": 18,
+    "entries": 6,
+    "acceptedEntries": 5,
+    "cacheFiles": 18,
+    "cacheBytes": 1941864
+  },
+  "simulatedDownload": {
+    "source": "download",
+    "loadMs": 3690.5999999940395,
+    "verifyMs": 3529.800000011921,
+    "verifiedFiles": 18,
+    "files": 18
+  },
+  "offline": {
+    "reloaded": true,
+    "shellFromServiceWorker": true,
+    "ok": true,
+    "source": "cache",
+    "loadMs": 61.400000005960464,
+    "verifiedFiles": 18,
+    "files": 18,
+    "networkFiles": 0,
+    "cachedFiles": 18,
+    "cacheFiles": 18,
+    "stateStats": {
+      "entries": 6,
+      "verifiedEntries": 6,
+      "acceptedEntries": 5,
+      "rejectedQuality": 1,
+      "restrictedRights": 4,
+      "corruptEntries": 0,
+      "files": 18,
+      "verifiedFiles": 18,
+      "corruptFiles": 0,
+      "missingFiles": 0,
+      "cachedFiles": 18,
+      "networkFiles": 0,
+      "fileBytes": 1941864,
+      "manifestBytes": 19749,
+      "loadMs": 224.09999999403954,
+      "verifyMs": 212.80000001192093,
+      "policy": "study",
+      "source": "cache",
+      "at": "2026-11-26T19:30:26.322Z",
+      "wallMs": 232.7999999821186,
+      "errors": []
+    }
+  },
+  "scenarios": [
+    {
+      "name": "first-load",
+      "ok": true,
+      "detail": "18/18 files verified; 18 in IndexedDB; 310 ms.",
+      "stats": {
+        "entries": 6,
+        "verifiedEntries": 6,
+        "acceptedEntries": 5,
+        "rejectedQuality": 1,
+        "restrictedRights": 4,
+        "corruptEntries": 0,
+        "files": 18,
+        "verifiedFiles": 18,
+        "corruptFiles": 0,
+        "missingFiles": 0,
+        "cachedFiles": 0,
+        "networkFiles": 18,
+        "fileBytes": 1941864,
+        "manifestBytes": 19749,
+        "loadMs": 309.89999997615814,
+        "verifyMs": 260.69999998807907,
+        "policy": "study",
+        "source": "network",
+        "at": "2026-11-26T19:30:20.362Z",
+        "wallMs": 321.2000000178814,
+        "errors": []
+      },
+      "reason": null,
+      "entryStatus": null
+    },
+    {
+      "name": "download",
+      "ok": true,
+      "detail": "Simulated download verified 18/18 files in 3691 ms.",
+      "stats": {
+        "entries": 6,
+        "verifiedEntries": 6,
+        "acceptedEntries": 5,
+        "rejectedQuality": 1,
+        "restrictedRights": 4,
+        "corruptEntries": 0,
+        "files": 18,
+        "verifiedFiles": 18,
+        "corruptFiles": 0,
+        "missingFiles": 0,
+        "cachedFiles": 0,
+        "networkFiles": 18,
+        "fileBytes": 1941864,
+        "manifestBytes": 19749,
+        "loadMs": 3690.5999999940395,
+        "verifyMs": 3529.800000011921,
+        "policy": "study",
+        "source": "download",
+        "at": "2026-11-26T19:30:24.211Z",
+        "wallMs": 3700.199999988079,
+        "errors": []
+      },
+      "reason": null,
+      "entryStatus": null
+    },
+    {
+      "name": "offline-reload",
+      "ok": true,
+      "detail": "Offline load used 18 cached files, 18/18 verified, no network.",
+      "stats": {
+        "entries": 6,
+        "verifiedEntries": 6,
+        "acceptedEntries": 5,
+        "rejectedQuality": 1,
+        "restrictedRights": 4,
+        "corruptEntries": 0,
+        "files": 18,
+        "verifiedFiles": 18,
+        "corruptFiles": 0,
+        "missingFiles": 0,
+        "cachedFiles": 18,
+        "networkFiles": 0,
+        "fileBytes": 1941864,
+        "manifestBytes": 19749,
+        "loadMs": 153,
+        "verifyMs": 109,
+        "policy": "study",
+        "source": "cache",
+        "at": "2026-11-26T19:30:24.437Z",
+        "wallMs": 162,
+        "errors": []
+      },
+      "reason": null,
+      "entryStatus": null
+    },
+    {
+      "name": "missing-edition",
+      "ok": true,
+      "detail": "Project Hail Mary matched no pack edition; spine is fallback (no-edition-match).",
+      "stats": null,
+      "reason": null,
+      "entryStatus": null
+    },
+    {
+      "name": "corrupt-asset",
+      "ok": true,
+      "detail": "The Hobbit asset was flipped after fetch; SHA-256 rejected it (corrupt-or-missing) and the spine fell back to fallback.",
+      "stats": {
+        "entries": 6,
+        "verifiedEntries": 5,
+        "acceptedEntries": 4,
+        "rejectedQuality": 1,
+        "restrictedRights": 4,
+        "corruptEntries": 1,
+        "files": 18,
+        "verifiedFiles": 15,
+        "corruptFiles": 3,
+        "missingFiles": 0,
+        "cachedFiles": 0,
+        "networkFiles": 15,
+        "fileBytes": 1898140,
+        "manifestBytes": 19749,
+        "loadMs": 426.90000000596046,
+        "verifyMs": 375.69999998807907,
+        "policy": "study",
+        "source": "network",
+        "at": "2026-11-26T19:30:25.077Z",
+        "wallMs": 441.30000001192093,
+        "errors": [
+          {
+            "scope": "asset",
+            "code": "sha256-mismatch",
+            "entry": "the-hobbit",
+            "kind": "art",
+            "expected": "a5bfcc1fff76e37c8d77d6606e9c92448b65721312c8663cae2d566074fed440",
+            "actual": "29c675fefe1cdf51156e925902d041466e650f26e5ba752a66bed02a6cb4e2e5"
+          },
+          {
+            "scope": "asset",
+            "code": "sha256-mismatch",
+            "entry": "the-hobbit",
+            "kind": "spine",
+            "expected": "2e8d53ea9230f08aeb7881ca6d3257aaf488fc419f44c7a5f28b0f6f254ec752",
+            "actual": "6fb1944891c4a0db5ebe3c272fcede9dabf5ece076b6b2aebfca6345c4e56f22"
+          },
+          {
+            "scope": "asset",
+            "code": "sha256-mismatch",
+            "entry": "the-hobbit",
+            "kind": "spine2x",
+            "expected": "1b6124e70b58dab8315047080bf083d88d6bf70783193b422816b7c0d73aed26",
+            "actual": "42ac6a2610cd515679ad0a6c551376ceacf7c1c078c882a5633beed6d108eb2a"
+          }
+        ]
+      },
+      "reason": "asset-integrity",
+      "entryStatus": "corrupt-or-missing"
+    },
+    {
+      "name": "rejected-art",
+      "ok": true,
+      "detail": "The Lord of the Rings is present and verified but quality=reject; spine is fallback (quality-reject).",
+      "stats": {
+        "entries": 6,
+        "verifiedEntries": 6,
+        "acceptedEntries": 5,
+        "rejectedQuality": 1,
+        "restrictedRights": 4,
+        "corruptEntries": 0,
+        "files": 18,
+        "verifiedFiles": 18,
+        "corruptFiles": 0,
+        "missingFiles": 0,
+        "cachedFiles": 0,
+        "networkFiles": 18,
+        "fileBytes": 1941864,
+        "manifestBytes": 19749,
+        "loadMs": 353.7999999821186,
+        "verifyMs": 309.30000001192093,
+        "policy": "study",
+        "source": "network",
+        "at": "2026-11-26T19:30:25.597Z",
+        "wallMs": 376.39999997615814,
+        "errors": []
+      },
+      "reason": "quality-reject",
+      "entryStatus": null
+    },
+    {
+      "name": "rights-gate",
+      "ok": true,
+      "detail": "Release policy accepted 2 cleared entries; Harry Potter fell back (rights-restricted).",
+      "stats": {
+        "entries": 6,
+        "verifiedEntries": 6,
+        "acceptedEntries": 2,
+        "rejectedQuality": 1,
+        "restrictedRights": 4,
+        "corruptEntries": 0,
+        "files": 18,
+        "verifiedFiles": 18,
+        "corruptFiles": 0,
+        "missingFiles": 0,
+        "cachedFiles": 0,
+        "networkFiles": 18,
+        "fileBytes": 1941864,
+        "manifestBytes": 19749,
+        "loadMs": 386.40000000596046,
+        "verifyMs": 342.89999997615814,
+        "policy": "release",
+        "source": "network",
+        "at": "2026-11-26T19:30:27.187Z",
+        "wallMs": 392.40000000596046,
+        "errors": []
+      },
+      "reason": "rights-restricted"
+    }
+  ],
+  "matching": {
+    "isbn": {
+      "entry": "harry-potter",
+      "reason": "isbn",
+      "confidence": 1
+    },
+    "contentHash": {
+      "entry": "moby-dick",
+      "reason": "content-hash",
+      "confidence": 0.98
+    },
+    "titleAuthor": {
+      "entry": "the-hobbit",
+      "reason": "title+author",
+      "confidence": 0.82
+    },
+    "isbnConflict": null,
+    "normalizedIsbn": "9780747532699",
+    "normalized": true
+  },
+  "widths": [
+    {
+      "width": 390,
+      "overflow": false,
+      "consoleErrors": 0,
+      "modes": [
+        {
+          "mode": "hybrid",
+          "scale": 1,
+          "overflow": false,
+          "scrollWidth": 390,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 52,
+              "height": 236,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.433
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 52,
+              "height": 236,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        },
+        {
+          "mode": "hybrid",
+          "scale": 2,
+          "overflow": false,
+          "scrollWidth": 390,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 104,
+              "height": 472,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.433
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 104,
+              "height": 472,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        },
+        {
+          "mode": "artonly",
+          "scale": 1,
+          "overflow": false,
+          "scrollWidth": 390,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 52,
+              "height": 236,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.362
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 52,
+              "height": 236,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        },
+        {
+          "mode": "artonly",
+          "scale": 2,
+          "overflow": false,
+          "scrollWidth": 390,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 104,
+              "height": 472,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.362
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 104,
+              "height": 472,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        }
+      ],
+      "scrollWidth": 390
+    },
+    {
+      "width": 320,
+      "overflow": false,
+      "consoleErrors": 0,
+      "modes": [
+        {
+          "mode": "hybrid",
+          "scale": 1,
+          "overflow": false,
+          "scrollWidth": 320,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 52,
+              "height": 236,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.433
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 52,
+              "height": 236,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        },
+        {
+          "mode": "hybrid",
+          "scale": 2,
+          "overflow": false,
+          "scrollWidth": 320,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 104,
+              "height": 472,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.433
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "hybrid",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 104,
+              "height": 472,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        },
+        {
+          "mode": "artonly",
+          "scale": 1,
+          "overflow": false,
+          "scrollWidth": 320,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 52,
+              "height": 236,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.362
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "artonly",
+              "reason": "",
+              "width": 52,
+              "height": 236,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 52,
+              "height": 236,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        },
+        {
+          "mode": "artonly",
+          "scale": 2,
+          "overflow": false,
+          "scrollWidth": 320,
+          "spines": [
+            {
+              "id": "harry-potter",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.964
+            },
+            {
+              "id": "lord-of-the-rings",
+              "mode": "fallback",
+              "reason": "quality-reject",
+              "width": 104,
+              "height": 472,
+              "fit": 0.946
+            },
+            {
+              "id": "the-hobbit",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.337
+            },
+            {
+              "id": "the-hunger-games",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.606
+            },
+            {
+              "id": "moby-dick",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.362
+            },
+            {
+              "id": "hound-of-the-baskervilles",
+              "mode": "artonly",
+              "reason": "",
+              "width": 104,
+              "height": 472,
+              "fit": 0.965
+            },
+            {
+              "id": "project-hail-mary",
+              "mode": "fallback",
+              "reason": "no-edition-match",
+              "width": 104,
+              "height": 472,
+              "fit": 0.729
+            }
+          ],
+          "artSpines": 5,
+          "fallbackSpines": 2
+        }
+      ],
+      "scrollWidth": 320
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "screenshots/audit-390-shelf.png",
+    "screenshots/audit-390-detail.png",
+    "screenshots/audit-390-hybrid-1x.png",
+    "screenshots/audit-390-artonly-2x.png",
+    "screenshots/audit-320-hybrid-1x.png",
+    "screenshots/audit-320-artonly-2x.png"
+  ],
+  "verdict": "app-reproducible",
+  "failures": [],
+  "summary": {
+    "firstLoadMs": 309.89999997615814,
+    "simulatedDownloadMs": 3690.5999999940395,
+    "offlineSource": "cache",
+    "packKiB": 1916.1,
+    "zipKiB": 1895.3,
+    "scenarios": 7,
+    "scenariosPassed": 7,
+    "widths": [
+      390,
+      320
+    ],
+    "consoleErrors": 0
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "schema": "pocketlibrary.popular-app-route-audit/1",
+  "generatedAt": "2026-11-26T20:26:20.635Z",
+  "url": "http://127.0.0.1:4191/spine-cover-art-prototype/popular-app-route/",
+  "widths": [
+    {
+      "width": 390,
+      "books": 7,
+      "spines": 14,
+      "verdicts": {
+        "harry-potter": "pass",
+        "the-hunger-games": "pass",
+        "lord-of-the-rings": "fallback",
+        "the-hobbit": "pass",
+        "dune": "pass",
+        "rock-paper-scissors": "review",
+        "the-whisper-man": "pass"
+      },
+      "routes": {
+        "harry-potter": "text-free crop",
+        "the-hunger-games": "text-free crop",
+        "lord-of-the-rings": "fallback",
+        "the-hobbit": "inpaint",
+        "dune": "text-free crop",
+        "rock-paper-scissors": "inpaint",
+        "the-whisper-man": "text-free crop"
+      },
+      "overflow": {
+        "overflow": false,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "offenders": []
+      },
+      "scrollWidth": 390,
+      "images": 39,
+      "consoleErrors": 0
+    },
+    {
+      "width": 320,
+      "books": 7,
+      "spines": 14,
+      "verdicts": {
+        "harry-potter": "pass",
+        "the-hunger-games": "pass",
+        "lord-of-the-rings": "fallback",
+        "the-hobbit": "pass",
+        "dune": "pass",
+        "rock-paper-scissors": "review",
+        "the-whisper-man": "pass"
+      },
+      "routes": {
+        "harry-potter": "text-free crop",
+        "the-hunger-games": "text-free crop",
+        "lord-of-the-rings": "fallback",
+        "the-hobbit": "inpaint",
+        "dune": "text-free crop",
+        "rock-paper-scissors": "inpaint",
+        "the-whisper-man": "text-free crop"
+      },
+      "overflow": {
+        "overflow": false,
+        "scrollWidth": 320,
+        "innerWidth": 320,
+        "offenders": []
+      },
+      "scrollWidth": 320,
+      "images": 39,
+      "consoleErrors": 0
+    }
+  ],
+  "errors": [],
+  "screenshots": [
+    "screenshots/route-390-full.png",
+    "screenshots/route-390-popular.png",
+    "screenshots/route-390-generative.png",
+    "screenshots/route-320-full.png",
+    "screenshots/route-320-popular.png",
+    "screenshots/route-320-generative.png"
+  ],
+  "images": {
+    "total": 39,
+    "broken": [],
+    "external": []
+  },
+  "verdict": "pass",
+  "failures": []
+}

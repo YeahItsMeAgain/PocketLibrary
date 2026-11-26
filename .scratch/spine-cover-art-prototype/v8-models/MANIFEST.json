@@ -1,0 +1,521 @@
+{
+  "schema": 1,
+  "study": "v8-models",
+  "generated": "2026-11-26",
+  "host": {
+    "cpu": "x86-64, 6 threads",
+    "onnxruntime": "1.32.0 CPUExecutionProvider",
+    "note": "No Android device or emulator was available; phone figures are estimates only."
+  },
+  "recommendation": {
+    "bundled_text": "text-bundled (11.48 MB): det INT8 dynamic reduce_range + rec FP32. Same routes/verdicts as FP32 on all five samples; rec stays accurate for QA.",
+    "smallest_text": "text-detect-only (0.79 MB): detection only. Tested detector-only residual text on all five 52x236 fallback spines; requires the app to accept detector-only QA.",
+    "avoid": "text-min (3.74 MB) is small but rec INT8 returns no text on every 52x236 text spine; do not use it as the only residual-text gate.",
+    "optional_inpaint": "inpaint-migan (28.08 MB): recommended optional download. ~2.4 s and ~500 MB peak on host, no worse residual text than LaMa on the five samples.",
+    "rejected_inpaint": "inpaint-lama-int8 (62.2 MB): ~1.4x faster than FP32 but visible chroma/scar artifacts at 52x236. Keep LaMa FP32 only as a quality reference.",
+    "fallback": "flat ring-median + smoothing, 0 MB, already in v8-app."
+  },
+  "models": [
+    {
+      "path": "dist/text-bundled/det.onnx",
+      "bytes": 792710,
+      "mib": 0.76,
+      "sha256": "7c68d75a957a850fb0d0f6f3ccfb0d731de894ee5805883115ebe268edd247c7",
+      "id": "ppocrv3-det-int8-dynamic-range",
+      "role": "text detection / residual-text gate",
+      "license": "Apache-2.0 (PaddleOCR / Baidu; RapidOCR packaging)",
+      "source": "converted from v8-app/models/det.onnx",
+      "quantisation": "ONNX Runtime quantize_dynamic, QInt8 weights, per-channel, reduce_range=True; Constant weights hoisted to initializers first",
+      "contract": {
+        "inputs": {
+          "x": {
+            "dtype": "float32",
+            "shape": [
+              "N",
+              3,
+              "H",
+              "W"
+            ],
+            "layout": "NCHW",
+            "normalise": "(p/255 - [0.485,0.456,0.406]) / [0.229,0.224,0.225]"
+          }
+        },
+        "outputs": {
+          "sigmoid_0.tmp_0": {
+            "dtype": "float32",
+            "shape": [
+              "N",
+              1,
+              "H",
+              "W"
+            ],
+            "meaning": "text probability map"
+          }
+        },
+        "postprocess": "threshold 0.18, box score 0.28, unclip 1.9, 2x2 dilation, resize max/min side 960",
+        "opset": 12
+      },
+      "measured": {
+        "detection_median_s": 2.81,
+        "pipeline_peak_rss_mb": 568,
+        "route_verdict_match_5": "5/5",
+        "mask_iou_vs_fp32": [
+          0.856,
+          0.942,
+          0.981,
+          0.925,
+          0.932
+        ],
+        "ocr_text_similarity": [
+          1.0,
+          1.0,
+          1.0,
+          0.84,
+          0.99
+        ],
+        "small_spine_text_boxes": [
+          6,
+          3,
+          4,
+          3,
+          3
+        ],
+        "verdict": "recommended for bundled detection"
+      }
+    },
+    {
+      "path": "dist/text-bundled/rec.onnx",
+      "bytes": 10690752,
+      "mib": 10.2,
+      "sha256": "897a3ededb38fee0dae2c1ccee38241f37df202c9509e3abca02e9217c5ee615",
+      "id": "ppocrv3-rec-fp32",
+      "role": "text recognition / QA",
+      "license": "Apache-2.0 (PaddleOCR / Baidu; RapidOCR packaging)",
+      "source": "v8-app/models/rec.onnx (unchanged)",
+      "quantisation": "none",
+      "contract": {
+        "inputs": {
+          "x": {
+            "dtype": "float32",
+            "shape": [
+              "N",
+              3,
+              48,
+              "W"
+            ],
+            "layout": "NCHW",
+            "normalise": "(p/255 - 0.5) / 0.5",
+            "width": "round(48 * crop_w / crop_h), clamp 2..2048"
+          }
+        },
+        "outputs": {
+          "softmax_5.tmp_0": {
+            "dtype": "float32",
+            "shape": [
+              "N",
+              "T",
+              6625
+            ],
+            "meaning": "per-timestep character logits; argmax, collapse repeats, drop blank"
+          }
+        },
+        "keys": "keys.txt: one character per line, 6624 entries, index 0 is CTC blank, a space is appended",
+        "opset": 12
+      },
+      "measured": {
+        "small_spine_text_lines": [
+          5,
+          4,
+          5,
+          3,
+          3
+        ],
+        "verdict": "recommended with det INT8"
+      }
+    },
+    {
+      "path": "dist/text-min/rec.onnx",
+      "bytes": 2918270,
+      "mib": 2.78,
+      "sha256": "1b38cd6496e1c10af5e3cd88b2f761d2c3b35ee8420999620c29f216e60510dc",
+      "id": "ppocrv3-rec-int8-dynamic-range",
+      "role": "smallest recognition (evaluated, not recommended)",
+      "license": "Apache-2.0 (PaddleOCR / Baidu; RapidOCR packaging)",
+      "source": "converted from v8-app/models/rec.onnx",
+      "quantisation": "ONNX Runtime quantize_dynamic, QInt8 weights, per-channel, reduce_range=True",
+      "contract": {
+        "inputs": {
+          "x": {
+            "dtype": "float32",
+            "shape": [
+              "N",
+              3,
+              48,
+              "W"
+            ],
+            "layout": "NCHW",
+            "normalise": "(p/255 - 0.5) / 0.5",
+            "width": "round(48 * crop_w / crop_h), clamp 2..2048"
+          }
+        },
+        "outputs": {
+          "softmax_5.tmp_0": {
+            "dtype": "float32",
+            "shape": [
+              "N",
+              "T",
+              6625
+            ],
+            "meaning": "per-timestep character logits; argmax, collapse repeats, drop blank"
+          }
+        },
+        "keys": "keys.txt: one character per line, 6624 entries, index 0 is CTC blank, a space is appended",
+        "opset": 12
+      },
+      "measured": {
+        "small_spine_text_lines": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ocr_text_similarity": [
+          0.96,
+          0.8,
+          0.59,
+          0.81,
+          0.83
+        ],
+        "verdict": "reject as sole residual-text gate; false negatives on 52x236 spines"
+      }
+    },
+    {
+      "path": "dist/inpaint-migan/migan_pipeline_v2.onnx",
+      "bytes": 28079181,
+      "mib": 26.78,
+      "sha256": "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b",
+      "id": "migan-pipeline-v2-uint8",
+      "role": "optional inpainting (download on demand)",
+      "license": "MIT (Picsart AI Research / PAIR; ONNX export andraniksargsyan, mirror CardAnvilModels)",
+      "source": "https://huggingface.co/CardAnvilModels/MI-GAN-ONNX/resolve/main/migan_pipeline_v2.onnx",
+      "quantisation": "none (published fp16 model with uint8 I/O; 28.08 MB)",
+      "contract": {
+        "inputs": {
+          "image": {
+            "dtype": "uint8",
+            "shape": [
+              "N",
+              3,
+              "H",
+              "W"
+            ],
+            "layout": "NCHW",
+            "range": "0..255"
+          },
+          "mask": {
+            "dtype": "uint8",
+            "shape": [
+              "N",
+              1,
+              "H",
+              "W"
+            ],
+            "range": "0..255",
+            "convention": "255 = keep/known, 0 = hole to inpaint (invert v8-app mask.png before use)"
+          }
+        },
+        "outputs": {
+          "result": {
+            "dtype": "uint8",
+            "shape": [
+              "N",
+              3,
+              "H",
+              "W"
+            ],
+            "range": "0..255"
+          }
+        },
+        "recommended_use": "letterbox image and inverted mask into 512x512, run, crop back; tested 512x512",
+        "opset": 17
+      },
+      "measured": {
+        "infer_s": [
+          1.88,
+          2.33,
+          1.91,
+          1.94,
+          1.86
+        ],
+        "wall_s_mean": 2.43,
+        "peak_rss_mb": 500,
+        "spine_psnr_vs_lama_fp32_db": [
+          35.9,
+          20.4,
+          22.8,
+          32.4,
+          31.8
+        ],
+        "spine_ssim_vs_lama_fp32": [
+          0.934,
+          0.72,
+          0.869,
+          0.965,
+          0.952
+        ],
+        "residual_ocr_on_art": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "verdict": "recommended optional inpainting"
+      }
+    },
+    {
+      "path": "dist/inpaint-lama-int8/lama.onnx",
+      "bytes": 62206161,
+      "mib": 59.32,
+      "sha256": "5d81c5c9fe3d324649db4757d2141e9b9c948a6453c43e153d59409852567a7a",
+      "id": "lama-big-int8-qoperator-conv",
+      "role": "optional inpainting (evaluated, not recommended)",
+      "license": "Apache-2.0 (SAIC-MDAL; ONNX port Carve/LaMa-ONNX)",
+      "source": "converted from v8-app/models/lama_fp32.onnx (Carve/LaMa-ONNX)",
+      "quantisation": "ONNX Runtime quantize_static QOperator, Conv only, QUInt8 activations, QInt8 per-channel weights",
+      "contract": {
+        "inputs": {
+          "image": {
+            "dtype": "float32",
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ],
+            "range": "0..1",
+            "layout": "NCHW"
+          },
+          "mask": {
+            "dtype": "float32",
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "range": "0 or 1",
+            "convention": "1 = hole to inpaint"
+          }
+        },
+        "outputs": {
+          "output": {
+            "dtype": "float32",
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ],
+            "range": "0..255"
+          }
+        },
+        "recommended_use": "letterbox the v8 work image and mask into 512x512, run, crop back",
+        "opset": 17
+      },
+      "measured": {
+        "lama_s": [
+          0.0,
+          20.1,
+          19.8,
+          19.8,
+          18.0
+        ],
+        "peak_rss_mb": 1381,
+        "spine_psnr_vs_fp32_db": [
+          99.0,
+          17.95,
+          19.9,
+          19.68,
+          99.0
+        ],
+        "spine_ssim_vs_fp32": [
+          1.0,
+          0.716,
+          0.905,
+          0.897,
+          1.0
+        ],
+        "verdict": "reject: visible chroma/color artifacts in filled regions"
+      }
+    },
+    {
+      "path": "dist/inpaint-lama-fp32/lama_fp32.onnx",
+      "bytes": 208044816,
+      "mib": 198.41,
+      "sha256": "1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6",
+      "id": "lama-big-fp32-reference",
+      "role": "optional inpainting (quality reference, 208 MB)",
+      "license": "Apache-2.0 (SAIC-MDAL; ONNX port Carve/LaMa-ONNX)",
+      "source": "https://huggingface.co/Carve/LaMa-ONNX/resolve/main/lama_fp32.onnx",
+      "quantisation": "none",
+      "contract": {
+        "inputs": {
+          "image": {
+            "dtype": "float32",
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ],
+            "range": "0..1",
+            "layout": "NCHW"
+          },
+          "mask": {
+            "dtype": "float32",
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "range": "0 or 1",
+            "convention": "1 = hole to inpaint"
+          }
+        },
+        "outputs": {
+          "output": {
+            "dtype": "float32",
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ],
+            "range": "0..255"
+          }
+        },
+        "recommended_use": "letterbox the v8 work image and mask into 512x512, run, crop back",
+        "opset": 17
+      },
+      "measured": {
+        "lama_s": [
+          0.0,
+          23.95,
+          24.0,
+          24.26,
+          24.51
+        ],
+        "peak_rss_mb": 1105,
+        "verdict": "quality reference only; too large for optional download unless quality is paramount"
+      }
+    }
+  ],
+  "bundles": {
+    "text-detect-only": {
+      "files": [
+        {
+          "path": "dist/text-detect-only/det.onnx",
+          "bytes": 792710,
+          "sha256": "7c68d75a957a850fb0d0f6f3ccfb0d731de894ee5805883115ebe268edd247c7"
+        }
+      ],
+      "bytes": 792710,
+      "note": "smallest text gate; app runs detection only on candidate spines (no rec)"
+    },
+    "text-bundled": {
+      "files": [
+        {
+          "path": "dist/text-bundled/det.onnx",
+          "bytes": 792710,
+          "sha256": "7c68d75a957a850fb0d0f6f3ccfb0d731de894ee5805883115ebe268edd247c7"
+        },
+        {
+          "path": "dist/text-bundled/rec.onnx",
+          "bytes": 10690752,
+          "sha256": "897a3ededb38fee0dae2c1ccee38241f37df202c9509e3abca02e9217c5ee615"
+        },
+        {
+          "path": "dist/text-bundled/keys.txt",
+          "bytes": 26250,
+          "sha256": "a1c84d9bdb9ab29043c58896224d32941783eb821629618416dcb08f12886492"
+        }
+      ],
+      "bytes": 11509712,
+      "note": "works with the existing v8-app Ocr contract; recommended default"
+    },
+    "text-min": {
+      "files": [
+        {
+          "path": "dist/text-min/det.onnx",
+          "bytes": 792710,
+          "sha256": "7c68d75a957a850fb0d0f6f3ccfb0d731de894ee5805883115ebe268edd247c7"
+        },
+        {
+          "path": "dist/text-min/rec.onnx",
+          "bytes": 2918270,
+          "sha256": "1b38cd6496e1c10af5e3cd88b2f761d2c3b35ee8420999620c29f216e60510dc"
+        },
+        {
+          "path": "dist/text-min/keys.txt",
+          "bytes": 26250,
+          "sha256": "a1c84d9bdb9ab29043c58896224d32941783eb821629618416dcb08f12886492"
+        }
+      ],
+      "bytes": 3737230,
+      "note": "smallest det+rec pair; rec fails small-spine text QA; not recommended"
+    },
+    "inpaint-migan": {
+      "files": [
+        {
+          "path": "dist/inpaint-migan/migan_pipeline_v2.onnx",
+          "bytes": 28079181,
+          "sha256": "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b"
+        }
+      ],
+      "bytes": 28079181,
+      "note": "recommended optional download; not bundled in the APK"
+    },
+    "inpaint-lama-int8": {
+      "files": [
+        {
+          "path": "dist/inpaint-lama-int8/lama.onnx",
+          "bytes": 62206161,
+          "sha256": "5d81c5c9fe3d324649db4757d2141e9b9c948a6453c43e153d59409852567a7a"
+        }
+      ],
+      "bytes": 62206161,
+      "note": "evaluated alternative; not recommended on quality"
+    },
+    "inpaint-lama-fp32": {
+      "files": [
+        {
+          "path": "dist/inpaint-lama-fp32/lama_fp32.onnx",
+          "bytes": 208044816,
+          "sha256": "1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6"
+        }
+      ],
+      "bytes": 208044816,
+      "note": "quality reference; optional only"
+    }
+  },
+  "verification": {
+    "bundled": "APK signature is the trust anchor; optionally verify SHA-256 at first run.",
+    "download": [
+      "Fetch over HTTPS from a pinned URL; pin the SHA-256 below, not the URL response.",
+      "Write to <filesDir>/models/download/<id>.part; resume with Range if supported.",
+      "Stream SHA-256 while writing; on mismatch delete the .part file.",
+      "fsync, rename to <filesDir>/models/<id>/<file>; verify size and hash again on first load.",
+      "Keep the previous known-good file until the new one verifies; record a version in SharedPreferences/DB.",
+      "Gate MI-GAN on >=100 MB free space and Wi-Fi; it is 28.08 MB, not 208 MB."
+    ]
+  },
+  "licenses": {
+    "PP-OCRv3": "Apache-2.0",
+    "LaMa big-lama": "Apache-2.0",
+    "MI-GAN": "MIT",
+    "ONNX Runtime": "MIT"
+  }
+}

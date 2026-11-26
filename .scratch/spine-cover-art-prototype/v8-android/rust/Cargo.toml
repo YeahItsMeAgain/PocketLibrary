@@ -1,0 +1,29 @@
+[package]
+name = "v8android"
+version = "0.1.0"
+edition = "2021"
+description = "JNI harness that runs the v8-app Rust spine pipeline on Android"
+license = "Apache-2.0"
+
+[lib]
+name = "v8android"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "hostrun"
+path = "src/bin/hostrun.rs"
+
+[dependencies]
+anyhow = "1"
+jni = "0.21"
+serde_json = "1"
+v8-app = { path = "../../v8-app" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+# Keep unwinding so JNI can turn a panic into a JSON error instead of SIGABRT.
+panic = "unwind"
+strip = "symbols"

@@ -1,0 +1,321 @@
+{
+  "book": {
+    "author": "H. G. Wells",
+    "cover": "app-renderers/covers/war-of-the-worlds.jpg",
+    "pages": 192,
+    "title": "The War of the Worlds"
+  },
+  "compare_python": null,
+  "crop_options": {
+    "inpaint_visual": {
+      "box_": [
+        321,
+        0,
+        159,
+        720
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.11759259551763535,
+      "luma_std": 64.46743774414062,
+      "non_dark": 0.8276641964912415,
+      "salience": 11.181326866149902,
+      "score": 3.1795332431793213
+    },
+    "text_free": {
+      "box_": [
+        212,
+        0,
+        126,
+        570
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.1511695832014084,
+      "luma_std": 53.66236114501953,
+      "non_dark": 0.9225564002990723,
+      "salience": 12.40246295928955,
+      "score": 3.1371448040008545
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          212,
+          0,
+          126,
+          570
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.1511695832014084,
+        "luma_std": 53.66236114501953,
+        "non_dark": 0.9225564002990723,
+        "salience": 12.40246295928955,
+        "score": 3.1371448040008545
+      }
+    ]
+  },
+  "decision_reasons": [
+    "no residual OCR, controlled mask, adequate spine structure"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          371.4303283691406,
+          1681.742919921875
+        ],
+        [
+          1035.1322021484375,
+          1681.742919921875
+        ],
+        [
+          1035.1322021484375,
+          1785.444580078125
+        ],
+        [
+          371.4303283691406,
+          1785.444580078125
+        ]
+      ],
+      "conf": 0.9316234588623047,
+      "text": "THE WAR OF"
+    },
+    {
+      "box_": [
+        [
+          357.8865966796875,
+          1786.3240966796875
+        ],
+        [
+          1046.4884033203125,
+          1786.3240966796875
+        ],
+        [
+          1046.4884033203125,
+          1884.3009033203125
+        ],
+        [
+          357.8865966796875,
+          1884.3009033203125
+        ]
+      ],
+      "conf": 0.94708651304245,
+      "text": "THE WORLDS"
+    },
+    {
+      "box_": [
+        [
+          515.0578002929688,
+          1917.245361328125
+        ],
+        [
+          884.942138671875,
+          1917.245361328125
+        ],
+        [
+          884.942138671875,
+          1989.629638671875
+        ],
+        [
+          515.0578002929688,
+          1989.629638671875
+        ]
+      ],
+      "conf": 0.856648862361908,
+      "text": "H. G. WELLS"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      321,
+      0,
+      159,
+      720
+    ],
+    "fallback_spine": "war-of-the-worlds/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 6.152166366577148,
+    "route": "inpaint",
+    "spine": "war-of-the-worlds/spine.jpg",
+    "spine_2x": "war-of-the-worlds/spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795724143,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 3,
+    "coverage_pct": 7.62,
+    "detection_boxes": 4,
+    "flat_fill_pct": 1.11
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [
+        {
+          "box_": [
+            [
+              195.88352966308594,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              333.4939270019531
+            ],
+            [
+              195.88352966308594,
+              333.4939270019531
+            ]
+          ],
+          "conf": 0.5293876528739929,
+          "text": "RA"
+        }
+      ],
+      "crop_mask_coverage_pct": 6.152166366577148,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8378989100456238,
+      "score": 3.1795332431793213,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 0.48675087094306946,
+        "inside_vs_ring_delta_e": 7.923701763153076,
+        "seam_ratio": 0.6922576427459717
+      },
+      "spine": {
+        "edge_density": 0.18538135290145874,
+        "height_px": 236,
+        "laplacian_var": 571.5951538085938,
+        "luma_p5": 35.0,
+        "luma_p95": 228.0,
+        "luma_std": 63.744293212890625,
+        "non_dark_pct": 84.81095123291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": {
+      "art_residual_ocr": [
+        {
+          "box_": [
+            [
+              195.88352966308594,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              333.4939270019531
+            ],
+            [
+              195.88352966308594,
+              333.4939270019531
+            ]
+          ],
+          "conf": 0.5293876528739929,
+          "text": "RA"
+        }
+      ],
+      "crop_mask_coverage_pct": 6.152166366577148,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8378989100456238,
+      "score": 3.1795332431793213,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 0.48675087094306946,
+        "inside_vs_ring_delta_e": 7.923701763153076,
+        "seam_ratio": 0.6922576427459717
+      },
+      "spine": {
+        "edge_density": 0.18538135290145874,
+        "height_px": 236,
+        "laplacian_var": 571.5951538085938,
+        "luma_p5": 35.0,
+        "luma_p95": 228.0,
+        "luma_std": 63.744293212890625,
+        "non_dark_pct": 84.81095123291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8833342790603638,
+      "score": 3.1371448040008545,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 2.726991891860962,
+        "inside_vs_ring_delta_e": 64.039794921875,
+        "seam_ratio": 0.9867703914642334
+      },
+      "spine": {
+        "edge_density": 0.20037484169006348,
+        "height_px": 236,
+        "laplacian_var": 581.7490844726562,
+        "luma_p5": 39.0,
+        "luma_p95": 202.0,
+        "luma_std": 52.85822677612305,
+        "non_dark_pct": 93.8477783203125,
+        "width_px": 52
+      },
+      "spine_residual_ocr": [
+        {
+          "box_": [
+            [
+              0.0,
+              379.84149169921875
+            ],
+            [
+              163.1690673828125,
+              379.84149169921875
+            ],
+            [
+              163.1690673828125,
+              550.391845703125
+            ],
+            [
+              0.0,
+              550.391845703125
+            ]
+          ],
+          "conf": 0.6478734016418457,
+          "text": "RA"
+        }
+      ]
+    }
+  },
+  "route": "inpaint",
+  "runtime_s": {
+    "crop_search": 0.17,
+    "detection": 2.07,
+    "inpaint_flat": 0.02,
+    "inpaint_lama": 0.0,
+    "mask_total": 2.42,
+    "total": 4.77
+  },
+  "slug": "war-of-the-worlds",
+  "source": {
+    "height": 2100,
+    "width": 1400
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 720,
+    "scale": 0.34,
+    "width": 480
+  }
+}

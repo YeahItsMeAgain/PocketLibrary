@@ -1,0 +1,3 @@
+
+Elapsed: 6.05 s
+Maximum resident set size (kbytes): 468388

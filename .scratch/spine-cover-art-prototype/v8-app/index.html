@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v8 app — automatic generative spine (Rust/ORT)</title>
+<style>
+:root{--bg:#160f18;--panel:#221927;--ink:#f2e3c6;--muted:#b7a58a;--gold:#c9a86a;--pass:#8fbf8f;--review:#d9b45b;--fallback:#cf8a7a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#2a1f30,#120d15 70%);color:var(--ink);font:15px/1.5 ui-serif,Georgia,serif}
+main{max-width:1180px;margin:0 auto;padding:28px 16px 120px}
+h1{font-size:clamp(22px,4vw,34px);margin:.2em 0}a{color:var(--gold)}
+.lede{color:var(--muted);max-width:72ch}.book{background:var(--panel);border:1px solid #3a2c40;border-radius:14px;padding:16px;margin:18px 0}
+header h2{margin:0;font-size:20px}header p{margin:.15em 0;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.tags span{font:12px/1 ui-sans-serif,system-ui;padding:5px 9px;border-radius:999px;background:#302436;border:1px solid #46344e}
+.verdict.pass{color:var(--pass)}.verdict.review{color:var(--review)}.verdict.fallback{color:var(--fallback)}
+.strip{display:flex;gap:12px;overflow-x:auto;padding:12px 2px}
+figure{margin:0;flex:0 0 auto}figure img{display:block;height:236px;width:auto;border-radius:6px;border:1px solid #3a2c40;background:#0d0910}
+figure.spine img{height:236px;width:52px;image-rendering:pixelated}figcaption{font:11px/1.4 ui-sans-serif,system-ui;color:var(--muted);text-align:center;margin-top:4px}
+.why{color:var(--muted);font-size:13px}.cmp{color:var(--gold);font-size:13px}
+.links{font:12px ui-sans-serif,system-ui;margin:.2em 0 0}code{background:#302436;padding:1px 5px;border-radius:4px}
+</style></head><body><main>
+<h1>v8 app — automatic generative spine</h1>
+<p class="lede">Rust + ONNX Runtime port of the v8 automatic route. Original → automatic mask → fill → 52 × 236 spine → QA, with the Python v8 spine alongside for comparison. No hand-drawn masks, no API key, no hosted service.</p>
+<p class="lede">Host run on x86-64. Timings are single shared-host runs and fluctuate with load: crop routes measured 2.4–13.8 s (typically 3–6 s), the optional LaMa pass 31–57 s. Peak RSS is stable at ~450–500 MB for crop routes and ~1.0 GB with LaMa. Android cross-compile and model/runtime sizes are documented in the README. The shared study dock is wired by the audit agent; this gallery is self-contained.</p>
+<article class="book pass">
+  <header><h2>The Hound of the Baskervilles</h2><p>Arthur Conan Doyle</p>
+  <p class="tags"><span class="route">text-free crop</span><span class="verdict pass">pass</span>
+  <span class="metric">mask 7.9%</span><span class="metric">11.7 s</span><span class="metric">det 6.3 s</span><span class="metric">no LaMa</span></p></header>
+  <div class="strip">
+    <figure><img src="out/hound/source.jpg" alt="original" loading="lazy"><figcaption>Original</figcaption></figure>
+    <figure><img src="out/hound/mask-work-preview.jpg" alt="mask" loading="lazy"><figcaption>Mask</figcaption></figure>
+    <figure><img src="out/hound/art.jpg" alt="fill" loading="lazy"><figcaption>Art (no fill)</figcaption></figure>
+    <figure><img src="out/hound/crop-native.jpg" alt="chosen crop" loading="lazy"><figcaption>Chosen crop</figcaption></figure>
+    <figure class="spine"><img src="out/hound/spine-2x.jpg" alt="spine" loading="lazy"><figcaption>Spine 2×</figcaption></figure>
+    <figure class="spine"><img src="out/hound/fallback-spine.jpg" alt="fallback" loading="lazy"><figcaption>Fallback</figcaption></figure>
+    <figure><img src="../v8-auto/assets/hound/spine.jpg" alt="Python v8 spine" loading="lazy"><figcaption>Python v8</figcaption></figure>
+  </div>
+  <p class="why">zero mask coverage, no residual OCR, structure at spine scale</p>
+  <p class="cmp">QA: spine luma σ 61.3 · edge 0.079 · seam 0.98 · palette corr 0.75</p><p class="cmp">vs Python v8: MAE 41.14 · PSNR 13.96 dB · corr 0.95</p>
+  <p class="links"><a href="out/hound/compare.jpg">contact sheet</a> · <a href="out/hound/run.json">run.json</a> · <a href="out/hound/qa.json">qa.json</a></p>
+</article><article class="book review">
+  <header><h2>Rock Paper Scissors</h2><p>Alice Feeney</p>
+  <p class="tags"><span class="route">inpaint</span><span class="verdict review">review</span>
+  <span class="metric">mask 44.1%</span><span class="metric">57.4 s</span><span class="metric">det 5.1 s</span><span class="metric">LaMa 44.2 s</span></p></header>
+  <div class="strip">
+    <figure><img src="out/rps/source.jpg" alt="original" loading="lazy"><figcaption>Original</figcaption></figure>
+    <figure><img src="out/rps/mask-work-preview.jpg" alt="mask" loading="lazy"><figcaption>Mask</figcaption></figure>
+    <figure><img src="out/rps/art.jpg" alt="fill" loading="lazy"><figcaption>Fill</figcaption></figure>
+    <figure><img src="out/rps/crop-native.jpg" alt="chosen crop" loading="lazy"><figcaption>Chosen crop</figcaption></figure>
+    <figure class="spine"><img src="out/rps/spine-2x.jpg" alt="spine" loading="lazy"><figcaption>Spine 2×</figcaption></figure>
+    <figure class="spine"><img src="out/rps/fallback-spine.jpg" alt="fallback" loading="lazy"><figcaption>Fallback</figcaption></figure>
+    <figure><img src="../v8-auto/assets/rps/spine.jpg" alt="Python v8 spine" loading="lazy"><figcaption>Python v8</figcaption></figure>
+  </div>
+  <p class="why">40-55% of the cover was reconstructed</p>
+  <p class="cmp">QA: spine luma σ 46.9 · edge 0.230 · seam 0.69 · palette corr 0.63</p><p class="cmp">vs Python v8: MAE 10.75 · PSNR 23.91 dB · corr 1.0</p>
+  <p class="links"><a href="out/rps/compare.jpg">contact sheet</a> · <a href="out/rps/run.json">run.json</a> · <a href="out/rps/qa.json">qa.json</a></p>
+</article><article class="book pass">
+  <header><h2>Harry Potter and the Philosopher's Stone</h2><p>J.K. Rowling</p>
+  <p class="tags"><span class="route">text-free crop</span><span class="verdict pass">pass</span>
+  <span class="metric">mask 37.4%</span><span class="metric">3.9 s</span><span class="metric">det 1.0 s</span><span class="metric">no LaMa</span></p></header>
+  <div class="strip">
+    <figure><img src="out/harry-potter/source.jpg" alt="original" loading="lazy"><figcaption>Original</figcaption></figure>
+    <figure><img src="out/harry-potter/mask-work-preview.jpg" alt="mask" loading="lazy"><figcaption>Mask</figcaption></figure>
+    <figure><img src="out/harry-potter/art.jpg" alt="fill" loading="lazy"><figcaption>Art (no fill)</figcaption></figure>
+    <figure><img src="out/harry-potter/crop-native.jpg" alt="chosen crop" loading="lazy"><figcaption>Chosen crop</figcaption></figure>
+    <figure class="spine"><img src="out/harry-potter/spine-2x.jpg" alt="spine" loading="lazy"><figcaption>Spine 2×</figcaption></figure>
+    <figure class="spine"><img src="out/harry-potter/fallback-spine.jpg" alt="fallback" loading="lazy"><figcaption>Fallback</figcaption></figure>
+    <figure><img src="../v8-auto/assets/harry-potter/spine.jpg" alt="Python v8 spine" loading="lazy"><figcaption>Python v8</figcaption></figure>
+  </div>
+  <p class="why">zero mask coverage, no residual OCR, structure at spine scale</p>
+  <p class="cmp">QA: spine luma σ 44.3 · edge 0.381 · seam 0.71 · palette corr 0.05</p><p class="cmp">vs Python v8: MAE 45.83 · PSNR 12.54 dB · corr 0.94</p>
+  <p class="links"><a href="out/harry-potter/compare.jpg">contact sheet</a> · <a href="out/harry-potter/run.json">run.json</a> · <a href="out/harry-potter/qa.json">qa.json</a></p>
+</article><article class="book pass">
+  <header><h2>The Hunger Games</h2><p>Suzanne Collins</p>
+  <p class="tags"><span class="route">text-free crop</span><span class="verdict pass">pass</span>
+  <span class="metric">mask 27.5%</span><span class="metric">2.4 s</span><span class="metric">det 0.8 s</span><span class="metric">no LaMa</span></p></header>
+  <div class="strip">
+    <figure><img src="out/hunger-games/source.jpg" alt="original" loading="lazy"><figcaption>Original</figcaption></figure>
+    <figure><img src="out/hunger-games/mask-work-preview.jpg" alt="mask" loading="lazy"><figcaption>Mask</figcaption></figure>
+    <figure><img src="out/hunger-games/art.jpg" alt="fill" loading="lazy"><figcaption>Art (no fill)</figcaption></figure>
+    <figure><img src="out/hunger-games/crop-native.jpg" alt="chosen crop" loading="lazy"><figcaption>Chosen crop</figcaption></figure>
+    <figure class="spine"><img src="out/hunger-games/spine-2x.jpg" alt="spine" loading="lazy"><figcaption>Spine 2×</figcaption></figure>
+    <figure class="spine"><img src="out/hunger-games/fallback-spine.jpg" alt="fallback" loading="lazy"><figcaption>Fallback</figcaption></figure>
+    <figure><img src="../v8-auto/assets/hunger-games/spine.jpg" alt="Python v8 spine" loading="lazy"><figcaption>Python v8</figcaption></figure>
+  </div>
+  <p class="why">zero mask coverage, no residual OCR, structure at spine scale</p>
+  <p class="cmp">QA: spine luma σ 54.3 · edge 0.239 · seam 1.36 · palette corr 0.97</p><p class="cmp">vs Python v8: MAE 2.77 · PSNR 35.17 dB · corr 1.0</p>
+  <p class="links"><a href="out/hunger-games/compare.jpg">contact sheet</a> · <a href="out/hunger-games/run.json">run.json</a> · <a href="out/hunger-games/qa.json">qa.json</a></p>
+</article><article class="book pass">
+  <header><h2>The Whisper Man</h2><p>Alex North</p>
+  <p class="tags"><span class="route">text-free crop</span><span class="verdict pass">pass</span>
+  <span class="metric">mask 15.9%</span><span class="metric">4.5 s</span><span class="metric">det 1.6 s</span><span class="metric">no LaMa</span></p></header>
+  <div class="strip">
+    <figure><img src="out/whisper-man/source.jpg" alt="original" loading="lazy"><figcaption>Original</figcaption></figure>
+    <figure><img src="out/whisper-man/mask-work-preview.jpg" alt="mask" loading="lazy"><figcaption>Mask</figcaption></figure>
+    <figure><img src="out/whisper-man/art.jpg" alt="fill" loading="lazy"><figcaption>Art (no fill)</figcaption></figure>
+    <figure><img src="out/whisper-man/crop-native.jpg" alt="chosen crop" loading="lazy"><figcaption>Chosen crop</figcaption></figure>
+    <figure class="spine"><img src="out/whisper-man/spine-2x.jpg" alt="spine" loading="lazy"><figcaption>Spine 2×</figcaption></figure>
+    <figure class="spine"><img src="out/whisper-man/fallback-spine.jpg" alt="fallback" loading="lazy"><figcaption>Fallback</figcaption></figure>
+    <figure><img src="../v8-auto/assets/whisper-man/spine.jpg" alt="Python v8 spine" loading="lazy"><figcaption>Python v8</figcaption></figure>
+  </div>
+  <p class="why">zero mask coverage, no residual OCR, structure at spine scale</p>
+  <p class="cmp">QA: spine luma σ 39.4 · edge 0.319 · seam 0.92 · palette corr 0.42</p><p class="cmp">vs Python v8: MAE 28.42 · PSNR 15.39 dB · corr 0.76</p>
+  <p class="links"><a href="out/whisper-man/compare.jpg">contact sheet</a> · <a href="out/whisper-man/run.json">run.json</a> · <a href="out/whisper-man/qa.json">qa.json</a></p>
+</article>
+</main>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body></html>

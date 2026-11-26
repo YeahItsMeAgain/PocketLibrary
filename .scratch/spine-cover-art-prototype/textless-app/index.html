@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-state="loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Textless art, in the app — PocketLibrary</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230b0806'/%3E%3Crect x='6' y='2' width='4' height='12' fill='%23cba45e'/%3E%3C/svg%3E">
+<!--
+  THROWAWAY PROTOTYPE — app-capable Textless Art Pack.
+  Not production code. Everything lives under
+  .scratch/spine-cover-art-prototype/textless-app/.
+
+  The pack is a manifest + 2x spine crops + art files. The loader verifies
+  SHA-256, caches in IndexedDB and renders a v6-style art-only spine at
+  52 x 236 CSS px (104 x 472 backing store). Missing/corrupt/unknown books fall
+  back to a deterministic generated plate.
+-->
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#shelf-section">Skip to the shelf</a>
+<main class="stage">
+  <header class="masthead">
+    <div class="topline">
+      <span class="wordmark">PocketLibrary</span>
+      <span class="edition">Study <b>09</b> · app route</span>
+    </div>
+    <span class="proto-stamp">Pack feature · not strict reproducibility</span>
+    <h1>Textless art,<br><em>in the app.</em></h1>
+    <p class="lede">A downloadable <b>Textless Art Pack</b> replaces the desktop Python, hand masks and LaMa for the books in the pack. The manifest is keyed by content hash, ISBN and title+author; every asset is SHA-256 verified and cached offline in IndexedDB. A book outside the pack falls back to a generated plate.</p>
+    <p class="lede lede--small">No model weights on device. No OCR. No inpainting. Public-domain art only. This is a pack, not a random-book pipeline.</p>
+  </header>
+
+  <section class="panel status-panel" aria-labelledby="status-title">
+    <div class="status-head">
+      <div>
+        <p class="eyebrow">Textless Art Pack</p>
+        <h2 id="status-title">Opening the pack…</h2>
+        <p class="status-sub" id="status-sub">Reading the manifest and checking the app-side lock.</p>
+      </div>
+      <div class="badges" id="status-badges"></div>
+    </div>
+    <dl class="metrics" id="metrics"></dl>
+    <div class="progress" role="progressbar" aria-label="Pack verification progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress">
+      <span id="progress-bar"></span>
+    </div>
+    <p class="status-note" id="status-note" role="status" aria-live="polite">Starting…</p>
+    <div class="actions">
+      <button class="btn" type="button" id="btn-verify">Re-verify from pack</button>
+      <button class="btn" type="button" id="btn-clear">Clear cache &amp; re-download</button>
+      <button class="btn btn--ghost" type="button" id="btn-manifest">Download manifest</button>
+    </div>
+  </section>
+
+  <section id="shelf-section" aria-labelledby="shelf-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">The shelf object</p>
+        <h2 id="shelf-title">Twenty spines, <em>pack-first</em></h2>
+      </div>
+      <span class="count" id="shelf-count">—</span>
+    </div>
+    <p class="blurb">Each spine is a 52 × 236 CSS-pixel canvas with a 104 × 472 backing store. The public-domain items draw the verified 2× spine crop; in-copyright editions and unknown books draw the generated plate. Captions are the only type; nothing is printed on the art.</p>
+    <div class="shelf" id="shelf" aria-live="polite"></div>
+    <p class="shelf-caption" id="shelf-caption">Waiting for the pack…</p>
+  </section>
+
+  <section aria-labelledby="detail-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Selection</p>
+        <h2 id="detail-title">One book, <em>one slice</em></h2>
+      </div>
+      <span class="count" id="detail-status">—</span>
+    </div>
+    <div id="detail" class="detail"></div>
+  </section>
+
+  <section aria-labelledby="integrity-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Integrity</p>
+        <h2 id="integrity-title">Verified, <em>not assumed</em></h2>
+      </div>
+      <span class="count" id="integrity-count">—</span>
+    </div>
+    <p class="blurb">The manifest is checked against <code>pack-lock.js</code>, which ships with the app shell. Every spine and art file is hashed before it enters IndexedDB and hashed again when it is read back. A single flipped byte drops that book to the generated plate.</p>
+    <div class="table-wrap">
+      <table class="data-table" id="integrity-table">
+        <caption class="visually-hidden">Per-book asset hashes and byte sizes</caption>
+        <thead><tr><th>Book</th><th>Spine SHA-256</th><th>Art SHA-256</th><th class="num">Bytes</th><th>State</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="hash-lock" id="hash-lock"></div>
+  </section>
+
+  <section aria-labelledby="states-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Edges</p>
+        <h2 id="states-title">Five states, <em>five answers</em></h2>
+      </div>
+    </div>
+    <p class="blurb">These are the exact states the Playwright suite exercises. Each link changes one input only; the shelf must never throw, overflow or show a blank spine.</p>
+    <div class="state-links" id="state-links"></div>
+    <div class="table-wrap">
+      <table class="data-table" id="states-table">
+        <caption class="visually-hidden">Test states and expected behaviour</caption>
+        <thead><tr><th>State</th><th>Input</th><th>Expected shelf</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="lookup-box">
+      <div class="lookup-head">
+        <h3>Lookup self-check</h3>
+        <button class="btn btn--small" type="button" id="btn-lookup">Run four lookups</button>
+      </div>
+      <p class="blurb">Content hash → ISBN → title+author → unknown. The first three must resolve the same Moby-Dick / Whisper Man records; the last must return null.</p>
+      <ul class="lookup-results" id="lookup-results"><li>Not run yet.</li></ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="verdict-title" class="verdict">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">The split</p>
+        <h2 id="verdict-title">What the pack <em>does not solve</em></h2>
+      </div>
+    </div>
+    <div class="split-grid">
+      <div class="split-card split-card--yes">
+        <h3>Pack-reproducible for these books</h3>
+        <ul>
+          <li>Textless spines for the books in the pack.</li>
+          <li>Manifest lookup by content hash, ISBN or title+author.</li>
+          <li>SHA-256 integrity and offline IndexedDB cache.</li>
+          <li>2× spine crops generated at build time, no desktop Python at runtime.</li>
+          <li>Deterministic fallback plate for missing, corrupt or unknown books.</li>
+        </ul>
+      </div>
+      <div class="split-card split-card--no">
+        <h3>Still needs v8-app</h3>
+        <ul>
+          <li>Arbitrary books added by the user, with no pack entry.</li>
+          <li>Automatic text removal from a modern in-copyright cover.</li>
+          <li>On-device detection / mask / inpainting and its model download.</li>
+          <li>New public-domain titles: they need a pack build, not a device run.</li>
+          <li>A signed, hosted pack feed at scale.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="verdict-line"><b>Strict verdict:</b> Textless art is <b>not strict-reproducible</b> for a random book. This pack reproduces spines for the 18 books in the pack; a book outside it falls back to a generated plate. Arbitrary covers remain the v8-app route.</p>
+  </section>
+
+  <footer class="foot">
+    <p>Throwaway design prototype, not production code. Pack art is public domain; per-title credits, licence and provenance are in <a href="pack/manifest.json">the manifest</a>. Modern edition records are metadata/ISBN only and ship no pixels.</p>
+    <p><a href="README.md">README</a> · <a href="PACK.md">Pack spec</a> · <a href="../v3/">v3 study</a> · <a href="../v8-app/">v8-app</a> · <a href="../reproducibility/">strict matrix</a></p>
+  </footer>
+</main>
+<script src="pack-lock.js"></script>
+<script src="catalog.js"></script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

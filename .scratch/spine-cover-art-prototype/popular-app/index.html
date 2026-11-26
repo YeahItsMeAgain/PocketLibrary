@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en" data-material="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:,">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Popular Editions Pack — pack-reproducible spines</title>
+<meta name="description" content="A curated, hash-verified Popular Editions Pack that loads in a WebView, caches in IndexedDB and renders v6/v7 Hybrid and Art-only spines. Pack books only; not strict reproducibility for a random book.">
+<link rel="stylesheet" href="spine.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<a class="skip" href="#shelves">Skip to the shelves</a>
+<div class="page-noise" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="masthead__top">
+    <span class="wordmark"><span class="wordmark__mark" aria-hidden="true"></span>Pocket Library</span>
+    <span class="edition">App route <span aria-hidden="true">·</span> <b>Popular Editions Pack</b></span>
+  </div>
+
+  <div class="masthead__title">
+    <p class="kicker">Pack feature · not strict reproducibility</p>
+    <h1>Popular spines the <em>app can ship</em>.</h1>
+    <p class="lede">A curated pack of textless art and spine crops, matched by ISBN, content hash or title+author, verified with SHA-256, cached in IndexedDB and rendered by the same v6/v7 measured type engine. When an edition is missing, corrupt, rejected or rights-blocked, the spine falls back to type on cloth. <b>This covers only the six editions in the pack</b>; it is not a random-book pipeline.</p>
+  </div>
+
+  <dl class="facts" id="facts">
+    <div><dt>Editions</dt><dd id="fact-editions">6</dd></div>
+    <div><dt>Pack</dt><dd id="fact-size">— <small>KiB</small></dd></div>
+    <div><dt>Verified</dt><dd id="fact-verified">—</dd></div>
+    <div><dt>Load</dt><dd id="fact-load">— <small>ms</small></dd></div>
+  </dl>
+</header>
+
+<main>
+  <section class="console" aria-labelledby="console-title">
+    <h2 class="sr-only" id="console-title">Pack and render controls</h2>
+
+    <div class="console__row console__row--directions">
+      <span class="console__label">Spine<b>v6/v7 measured type</b></span>
+      <div class="directions directions--2" role="group" aria-label="Spine render mode">
+        <button class="dir" type="button" data-mode-btn="hybrid" aria-pressed="true">
+          <span class="dir__mini dir__mini--hybrid" aria-hidden="true"><i></i></span>
+          <span class="dir__text"><b>Hybrid</b><small>art window + paper label</small></span>
+        </button>
+        <button class="dir" type="button" data-mode-btn="artonly" aria-pressed="false">
+          <span class="dir__mini dir__mini--artonly" aria-hidden="true"><i></i></span>
+          <span class="dir__text"><b>Art only</b><small>full-width textless crop</small></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="console__row console__row--secondary">
+      <div class="control">
+        <span class="control__label">Scale</span>
+        <div class="seg" role="group" aria-label="Render scale">
+          <button class="seg__btn" type="button" data-scale-btn="1" aria-pressed="true">52 × 236</button>
+          <button class="seg__btn" type="button" data-scale-btn="2" aria-pressed="false">2× 104 × 472</button>
+        </div>
+      </div>
+      <div class="control">
+        <span class="control__label">Pack policy</span>
+        <div class="seg" role="group" aria-label="Pack rights policy">
+          <button class="seg__btn" type="button" data-policy-btn="study" aria-pressed="true">Study</button>
+          <button class="seg__btn" type="button" data-policy-btn="release" aria-pressed="false">Release · cleared</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="console__row console__row--filter">
+      <span class="console__label">Pack<b>download · bundle · cache</b></span>
+      <div class="pack-actions" role="group" aria-label="Pack actions">
+        <button class="btn btn--primary" type="button" data-load="bundled">Load bundled pack</button>
+        <button class="btn" type="button" data-load="download">Simulate download</button>
+        <button class="btn" type="button" data-load="offline">Reload from cache</button>
+        <button class="btn" type="button" data-clear>Clear cache</button>
+        <a class="btn" href="pack/popular-editions-pack.zip" download>Download .zip</a>
+      </div>
+    </div>
+
+    <div class="statusbar" id="statusbar" aria-live="polite">
+      <span>Pack <b>not loaded</b></span>
+      <span>Cache <b>empty</b></span>
+      <span>Integrity <b>waiting</b></span>
+    </div>
+
+    <div class="scenarios" role="group" aria-label="Reproducibility scenarios">
+      <button class="scenario" type="button" data-scenario="first-load"><b>First load</b><small>clear cache → bundle → verify</small></button>
+      <button class="scenario" type="button" data-scenario="offline-reload"><b>Offline reload</b><small>network off → IndexedDB only</small></button>
+      <button class="scenario" type="button" data-scenario="missing-edition"><b>Missing edition</b><small>no pack match → cloth fallback</small></button>
+      <button class="scenario" type="button" data-scenario="corrupt-asset"><b>Corrupt asset</b><small>flip a byte → SHA-256 reject</small></button>
+      <button class="scenario" type="button" data-scenario="rejected-art"><b>Rejected art</b><small>quality reject → cloth fallback</small></button>
+      <button class="scenario" type="button" data-scenario="rights-gate"><b>Rights gate</b><small>release mode drops restricted</small></button>
+    </div>
+
+    <p class="fitline" id="fitline" aria-live="polite"><span class="fitline__dot" aria-hidden="true"></span><span id="fitline-text">Loading the pack…</span></p>
+    <div class="log" id="log" aria-live="polite"></div>
+  </section>
+
+  <section class="shelf-zone" id="shelves" aria-label="Shelf rendered from the verified pack">
+    <noscript><p class="empty">The pack loader needs JavaScript, Web Crypto and IndexedDB to verify and cache the edition data.</p></noscript>
+  </section>
+
+  <section class="detail" id="detail" aria-live="polite" aria-label="Selected spine and edition provenance"></section>
+
+  <section class="app-section" aria-labelledby="rights-title">
+    <p class="kicker">Rights and provenance</p>
+    <h2 id="rights-title">A pack is reproducible for its editions. <em>Strict reproducibility is a different claim.</em></h2>
+    <p>The loader verifies every file and shows the edition's rights status before it renders the art. The four modern covers are reference-only in this prototype; the two public-domain editions are cleared. Release mode demonstrates the app-side policy: restricted entries are still verified but never used for art.</p>
+    <div class="rightsGrid">
+      <article class="rightsCard rightsCard--restricted">
+        <h3>Restricted reference</h3>
+        <p>Harry Potter, The Lord of the Rings, The Hobbit and The Hunger Games. In copyright; this pack is for local design evaluation only. A production pack must obtain a licence or use a licensed image.</p>
+        <p>Takedown: remove the entry from the manifest and delete its three files. Clients keep the previous cached version until the next refresh, then fall back to type.</p>
+      </article>
+      <article class="rightsCard rightsCard--cleared">
+        <h3>Public domain / cleared</h3>
+        <p>Moby-Dick and The Hound of the Baskervilles use public-domain paintings and Standard Ebooks cover work dedicated to the public domain. These are the entries a release pack could ship today.</p>
+        <p>Update: replace the manifest and files atomically; the loader verifies the new manifest hash before swapping the IndexedDB version.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="app-section" aria-labelledby="why-title">
+    <p class="kicker">Why this is a pack feature</p>
+    <h2 id="why-title">The app never needs to <em>generate</em> the art.</h2>
+    <div class="summaryGrid">
+      <article>
+        <h3>Data, not a pipeline</h3>
+        <p>The pack is JPEGs plus JSON. Tauri Android already has a WebView, Canvas text metrics, Web Crypto and IndexedDB. Nothing here needs Python, LaMa, OCR or a desktop mask.</p>
+      </article>
+      <article>
+        <h3>Integrity is explicit</h3>
+        <p>The manifest's SHA-256 is checked first, then every asset. A corrupt byte is rejected before it reaches the renderer, and the edition falls back to a readable cloth spine.</p>
+      </article>
+      <article>
+        <h3>Manual work stays content-side</h3>
+        <p>Licensing, cover selection, text removal and spine-scale acceptance happen once, off-device. The app only downloads, verifies, caches, matches and renders. That is the <b>pack boundary</b> — useful, but not strict reproducibility for a random book.</p>
+      </article>
+      <article>
+        <h3>Offline by construction</h3>
+        <p>After one verified load the manifest and blobs live in IndexedDB. Offline reload re-hashes the cached bytes; the app shell is bundled in the APK, so only the pack needs the cache.</p>
+      </article>
+      <article>
+        <h3>Conservative matching</h3>
+        <p>ISBN first, then a content hash of the source cover, then title+author. A present-but-different ISBN blocks the weaker title route, so a wrong edition cannot silently claim the art.</p>
+      </article>
+      <article>
+        <h3>Updates and takedown</h3>
+        <p>A new <code>latest.json</code> carries the new manifest hash. The loader verifies before replacing the cached version; removing an entry produces the typographic fallback, never a broken spine.</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="footer footer--app">
+  <div>
+    <span class="wordmark wordmark--small"><span class="wordmark__mark" aria-hidden="true"></span>Pocket Library</span>
+    <p>Throwaway prototype · Popular Editions Pack · no production code changed</p>
+  </div>
+  <p class="footer__note">Pack assets are reused from the v3 and v7 design studies. Rights are recorded per edition in <code>pack/manifest.json</code>; the modern covers are not cleared for distribution. This is a pack feature, not strict reproducibility; see the <a href="../reproducibility/">strict matrix</a>.</p>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

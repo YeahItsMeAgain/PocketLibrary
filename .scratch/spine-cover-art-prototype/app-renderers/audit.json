@@ -1,0 +1,80 @@
+{
+  "generated": "2026-11-26T20:29:51.665Z",
+  "base": "http://127.0.0.1:4173/spine-cover-art-prototype/app-renderers/",
+  "widths": {
+    "320": {
+      "gallery": {
+        "books": 5,
+        "styles": 30,
+        "canvasCount": 30,
+        "docOverflow": 0,
+        "bodyOverflow": 0,
+        "overflowEls": [],
+        "images": 15,
+        "imagesLoaded": 15,
+        "fonts": {
+          "garamond": true,
+          "literata": true
+        },
+        "height": 13516,
+        "ready": true
+      },
+      "galleryErrors": [],
+      "apkWebview": {
+        "books": 1,
+        "styles": 6,
+        "canvasCount": 6,
+        "docOverflow": 0,
+        "bodyOverflow": 0,
+        "overflowEls": [],
+        "images": 3,
+        "imagesLoaded": 3,
+        "fonts": {
+          "garamond": true,
+          "literata": true
+        },
+        "height": 2390,
+        "ready": true
+      },
+      "apkErrors": []
+    },
+    "390": {
+      "gallery": {
+        "books": 5,
+        "styles": 30,
+        "canvasCount": 30,
+        "docOverflow": 0,
+        "bodyOverflow": 0,
+        "overflowEls": [],
+        "images": 15,
+        "imagesLoaded": 15,
+        "fonts": {
+          "garamond": true,
+          "literata": true
+        },
+        "height": 12601,
+        "ready": true
+      },
+      "galleryErrors": [],
+      "apkWebview": {
+        "books": 1,
+        "styles": 6,
+        "canvasCount": 6,
+        "docOverflow": 0,
+        "bodyOverflow": 0,
+        "overflowEls": [],
+        "images": 3,
+        "imagesLoaded": 3,
+        "fonts": {
+          "garamond": true,
+          "literata": true
+        },
+        "height": 2240,
+        "ready": true
+      },
+      "apkErrors": []
+    }
+  },
+  "pass": true,
+  "failures": []
+}

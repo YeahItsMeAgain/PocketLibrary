@@ -1,0 +1,63 @@
+{
+  "decision": {
+    "reasons": [
+      "more than 55% of the cover was reconstructed",
+      "spine structure is marginal"
+    ],
+    "route": "fallback",
+    "verdict": "fallback"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 43.21907424926758,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 79.8527603149414,
+      "palette_corr": 0.18032848834991455,
+      "score": 1.8317396640777588,
+      "seam": {
+        "boundary_px": 6406,
+        "inside_ring_std_ratio": 0.06223941966891289,
+        "inside_vs_ring_delta_e": 0.1696045845746994,
+        "seam_ratio": 0.6887246966362
+      },
+      "spine": {
+        "edge_density": 0.08841264992952347,
+        "height_px": 236,
+        "laplacian_var": 301.77508544921875,
+        "luma_p5": 32.0,
+        "luma_p95": 69.0,
+        "luma_std": 13.367779731750488,
+        "non_dark_pct": 20.29009246826172,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 43.21907424926758,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 79.8527603149414,
+      "palette_corr": 0.18032848834991455,
+      "score": 1.8317396640777588,
+      "seam": {
+        "boundary_px": 6406,
+        "inside_ring_std_ratio": 0.06223941966891289,
+        "inside_vs_ring_delta_e": 0.1696045845746994,
+        "seam_ratio": 0.6887246966362
+      },
+      "spine": {
+        "edge_density": 0.08841264992952347,
+        "height_px": 236,
+        "laplacian_var": 301.77508544921875,
+        "luma_p5": 32.0,
+        "luma_p95": 69.0,
+        "luma_std": 13.367779731750488,
+        "non_dark_pct": 20.29009246826172,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "text_free": null
+  }
+}

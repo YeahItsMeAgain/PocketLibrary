@@ -1,0 +1,2 @@
+$ zipalign -c -p 4 out/v8-spine-test-arm64-v8a.apk
+OK: aligned

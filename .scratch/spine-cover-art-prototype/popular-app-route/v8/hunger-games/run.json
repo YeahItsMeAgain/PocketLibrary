@@ -1,0 +1,303 @@
+{
+  "book": {
+    "author": "Suzanne Collins",
+    "cover": "./v7/assets/source/the-hunger-games.jpg",
+    "pages": 384,
+    "title": "The Hunger Games"
+  },
+  "compare_python": null,
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        51,
+        156,
+        76,
+        344
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.18168604373931885,
+      "luma_std": 54.456817626953125,
+      "non_dark": 0.43528151512145996,
+      "salience": 21.90260124206543,
+      "score": 3.2019689083099365
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          51,
+          156,
+          76,
+          344
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.18168604373931885,
+        "luma_std": 54.456817626953125,
+        "non_dark": 0.43528151512145996,
+        "salience": 21.90260124206543,
+        "score": 3.2019689083099365
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          30.02150535583496,
+          14.17892074584961
+        ],
+        [
+          107.1347427368164,
+          14.17892074584961
+        ],
+        [
+          107.1347427368164,
+          46.23774337768555
+        ],
+        [
+          30.02150535583496,
+          46.23774337768555
+        ]
+      ],
+      "conf": 0.7273311018943787,
+      "text": "The"
+    },
+    {
+      "box_": [
+        [
+          13.14881420135498,
+          47.13578796386719
+        ],
+        [
+          314.7886657714844,
+          47.13578796386719
+        ],
+        [
+          314.7886657714844,
+          95.05170440673828
+        ],
+        [
+          13.14881420135498,
+          95.05170440673828
+        ]
+      ],
+      "conf": 0.8640690445899963,
+      "text": "HUNGER"
+    },
+    {
+      "box_": [
+        [
+          11.418272972106934,
+          95.38777923583984
+        ],
+        [
+          275.78485107421875,
+          95.38777923583984
+        ],
+        [
+          275.78485107421875,
+          145.758056640625
+        ],
+        [
+          11.418272972106934,
+          145.758056640625
+        ]
+      ],
+      "conf": 0.5621541738510132,
+      "text": "gamEs"
+    },
+    {
+      "box_": [
+        [
+          181.81646728515625,
+          350.3196716308594
+        ],
+        [
+          240.48040771484375,
+          350.3196716308594
+        ],
+        [
+          240.48040771484375,
+          359.0553283691406
+        ],
+        [
+          181.81646728515625,
+          359.0553283691406
+        ]
+      ],
+      "conf": 0.537074089050293,
+      "text": "NentThory"
+    },
+    {
+      "box_": [
+        [
+          283.66290283203125,
+          351.11151123046875
+        ],
+        [
+          306.7276916503906,
+          351.11151123046875
+        ],
+        [
+          306.7276916503906,
+          359.30511474609375
+        ],
+        [
+          283.66290283203125,
+          359.30511474609375
+        ]
+      ],
+      "conf": 0.796673059463501,
+      "text": "Nutho"
+    },
+    {
+      "box_": [
+        [
+          178.92686462402344,
+          362.5050354003906
+        ],
+        [
+          310.4012451171875,
+          362.5050354003906
+        ],
+        [
+          310.4012451171875,
+          398.9532775878906
+        ],
+        [
+          178.92686462402344,
+          398.9532775878906
+        ]
+      ],
+      "conf": 0.9486566185951233,
+      "text": "SUZANNE"
+    },
+    {
+      "box_": [
+        [
+          178.52774047851562,
+          401.6851806640625
+        ],
+        [
+          311.8316345214844,
+          401.6851806640625
+        ],
+        [
+          311.8316345214844,
+          439.4606018066406
+        ],
+        [
+          178.52774047851562,
+          439.4606018066406
+        ]
+      ],
+      "conf": 0.9332215189933777,
+      "text": "COLLINS"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      51,
+      156,
+      76,
+      344
+    ],
+    "fallback_spine": "hunger-games/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "hunger-games/spine.jpg",
+    "spine_2x": "hunger-games/spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795724118,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 2,
+    "coverage_pct": 27.5,
+    "detection_boxes": 6,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 28.69818115234375,
+      "palette_corr": 0.9705825448036194,
+      "score": 3.2019689083099365,
+      "seam": {
+        "boundary_px": 3652,
+        "inside_ring_std_ratio": 3.8156301975250244,
+        "inside_vs_ring_delta_e": 85.50624084472656,
+        "seam_ratio": 1.3646706342697144
+      },
+      "spine": {
+        "edge_density": 0.23875488340854645,
+        "height_px": 236,
+        "laplacian_var": 1217.377685546875,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "luma_std": 54.30166244506836,
+        "non_dark_pct": 43.831485748291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 28.69818115234375,
+      "palette_corr": 0.9705825448036194,
+      "score": 3.2019689083099365,
+      "seam": {
+        "boundary_px": 3652,
+        "inside_ring_std_ratio": 3.8156301975250244,
+        "inside_vs_ring_delta_e": 85.50624084472656,
+        "seam_ratio": 1.3646706342697144
+      },
+      "spine": {
+        "edge_density": 0.23875488340854645,
+        "height_px": 236,
+        "laplacian_var": 1217.377685546875,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "luma_std": 54.30166244506836,
+        "non_dark_pct": 43.831485748291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.36,
+    "detection": 1.33,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "mask_total": 1.36,
+    "total": 4.47
+  },
+  "slug": "hunger-games",
+  "source": {
+    "height": 500,
+    "width": 330
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 500,
+    "scale": 1.0,
+    "width": 330
+  }
+}

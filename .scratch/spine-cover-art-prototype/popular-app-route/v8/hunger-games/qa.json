@@ -1,0 +1,62 @@
+{
+  "decision": {
+    "reasons": [
+      "zero mask coverage, no residual OCR, structure at spine scale"
+    ],
+    "route": "text-free crop",
+    "verdict": "pass"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 28.69818115234375,
+      "palette_corr": 0.9705825448036194,
+      "score": 3.2019689083099365,
+      "seam": {
+        "boundary_px": 3652,
+        "inside_ring_std_ratio": 3.8156301975250244,
+        "inside_vs_ring_delta_e": 85.50624084472656,
+        "seam_ratio": 1.3646706342697144
+      },
+      "spine": {
+        "edge_density": 0.23875488340854645,
+        "height_px": 236,
+        "laplacian_var": 1217.377685546875,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "luma_std": 54.30166244506836,
+        "non_dark_pct": 43.831485748291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 28.69818115234375,
+      "palette_corr": 0.9705825448036194,
+      "score": 3.2019689083099365,
+      "seam": {
+        "boundary_px": 3652,
+        "inside_ring_std_ratio": 3.8156301975250244,
+        "inside_vs_ring_delta_e": 85.50624084472656,
+        "seam_ratio": 1.3646706342697144
+      },
+      "spine": {
+        "edge_density": 0.23875488340854645,
+        "height_px": 236,
+        "laplacian_var": 1217.377685546875,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "luma_std": 54.30166244506836,
+        "non_dark_pct": 43.831485748291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  }
+}

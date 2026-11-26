@@ -1,0 +1,224 @@
+{
+  "book": {
+    "author": "Arthur Conan Doyle",
+    "cover": "../reproducibility/book/cover.jpg",
+    "pages": 170,
+    "title": "The Hound of the Baskervilles"
+  },
+  "compare_python": {
+    "correlation": 0.95,
+    "mae": 41.14,
+    "psnr_db": 13.96,
+    "python_spine": "../v8-auto/assets/hound/spine.jpg",
+    "size": [
+      52,
+      236
+    ]
+  },
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        346,
+        168,
+        87,
+        396
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.062144432216882706,
+      "luma_std": 61.371253967285156,
+      "non_dark": 0.9770405292510986,
+      "salience": 7.139177322387695,
+      "score": 2.9209794998168945
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          346,
+          168,
+          87,
+          396
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.062144432216882706,
+        "luma_std": 61.371253967285156,
+        "non_dark": 0.9770405292510986,
+        "salience": 7.139177322387695,
+        "score": 2.9209794998168945
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          292.27764892578125,
+          1681.3402099609375
+        ],
+        [
+          1109.9097900390625,
+          1681.3402099609375
+        ],
+        [
+          1109.9097900390625,
+          1785.8472900390625
+        ],
+        [
+          292.27764892578125,
+          1785.8472900390625
+        ]
+      ],
+      "conf": 0.9756777286529541,
+      "text": "THE HOUND OF"
+    },
+    {
+      "box_": [
+        [
+          195.44015502929688,
+          1785.7525634765625
+        ],
+        [
+          1202.3724365234375,
+          1785.7525634765625
+        ],
+        [
+          1202.3724365234375,
+          1884.8724365234375
+        ],
+        [
+          195.44015502929688,
+          1884.8724365234375
+        ]
+      ],
+      "conf": 0.9148456454277039,
+      "text": "THE BASKERVILLES"
+    },
+    {
+      "box_": [
+        [
+          356.4079895019531,
+          1920.4705810546875
+        ],
+        [
+          1039.2169189453125,
+          1920.4705810546875
+        ],
+        [
+          1039.2169189453125,
+          1988.5919189453125
+        ],
+        [
+          356.4079895019531,
+          1988.5919189453125
+        ]
+      ],
+      "conf": 0.8616288900375366,
+      "text": "ARTHUR CONAN DOYLE"
+    }
+  ],
+  "engine": "rust/ort",
+  "final": {
+    "crop_box_work": [
+      346,
+      168,
+      87,
+      396
+    ],
+    "fallback_spine": "hound/fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "hound/spine.jpg",
+    "spine_2x": "hound/spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795722926,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 4,
+    "coverage_pct": 7.87,
+    "detection_boxes": 3,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "flat-ring fill + local substitute (LaMa not downloaded)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.415799140930176,
+      "palette_corr": 0.7451906204223633,
+      "score": 2.9209794998168945,
+      "seam": {
+        "boundary_px": 3330,
+        "inside_ring_std_ratio": 14.813926696777344,
+        "inside_vs_ring_delta_e": 81.22258758544922,
+        "seam_ratio": 0.9776785373687744
+      },
+      "spine": {
+        "edge_density": 0.07928618043661118,
+        "height_px": 236,
+        "laplacian_var": 224.3612518310547,
+        "luma_p5": 66.0,
+        "luma_p95": 233.0,
+        "luma_std": 61.303550720214844,
+        "non_dark_pct": 97.63689422607422,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.415799140930176,
+      "palette_corr": 0.7451906204223633,
+      "score": 2.9209794998168945,
+      "seam": {
+        "boundary_px": 3330,
+        "inside_ring_std_ratio": 14.813926696777344,
+        "inside_vs_ring_delta_e": 81.22258758544922,
+        "seam_ratio": 0.9776785373687744
+      },
+      "spine": {
+        "edge_density": 0.07928618043661118,
+        "height_px": 236,
+        "laplacian_var": 224.3612518310547,
+        "luma_p5": 66.0,
+        "luma_p95": 233.0,
+        "luma_std": 61.303550720214844,
+        "non_dark_pct": 97.63689422607422,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.27,
+    "detection": 6.28,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "mask_total": 7.21,
+    "total": 11.66
+  },
+  "slug": "hound",
+  "source": {
+    "height": 2100,
+    "width": 1400
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 720,
+    "scale": 0.34,
+    "width": 480
+  }
+}

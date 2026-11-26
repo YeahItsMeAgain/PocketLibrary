@@ -5,8 +5,15 @@ Throwaway design prototypes, not production code.
 **Open:** `http://<host>:4173/spine-cover-art-prototype/review/` for the external
 overview, or use the arrow dock on any study page to move through the suite.
 
-**Reproducibility:** every study is tested against one randomly chosen downloadable
-book. See `http://<host>:4173/spine-cover-art-prototype/reproducibility/`.
+**Reproducibility:** the strict rule is that the **APK itself must create the
+spine for a random downloadable book, end-to-end**. A pack, curated asset,
+renderer-only route, desktop build, hosted service or manual mask does not count.
+Today: **6 yes (v8-app and App renderers, both user-verified on real devices;
+Full-bleed, Textless, Wrap and Design system verified through App renderers),
+2 pending integration (Popular books and Popular app route), 5 not strict
+(packs, superseded, reference)**. See
+`http://<host>:4173/spine-cover-art-prototype/reproducibility/` for the matrix
+and [`APP-REPRODUCIBILITY.md`](APP-REPRODUCIBILITY.md) for the file-level audit.
 
 ## Studies
 
@@ -21,22 +28,27 @@ book. See `http://<host>:4173/spine-cover-art-prototype/reproducibility/`.
    Page-count spine width, continuous back/spine/front wrap, measured type fitting.
 
 4. **Generative art** — `v4-generative/`  
-   Instruction-driven reconstruction of large typography, with honest failure cases.
+   Hosted FLUX experiment, kept as a design record. Superseded by v8-app.
 
 5. **Design system** — `v6/`  
    Editorial, Clothbound and Hybrid; the current recommendation is Hybrid.
 
 6. **Popular books** — `v7/`  
-   A curated popular-books shelf study; not a per-cover pipeline.
+   A curated popular-books shelf study; the per-cover route is Popular app route.
 
-7. **Automatic generative** — `v8-auto/`
+7. **Popular app route** — `popular-app-route/`  
+   v8-app outputs for popular and generative cases. Dune unseen passes, LOTR
+   falls back, RPS reviews. Pack is a bonus.
 
-   DBNet text detection, automatic colour masks, LaMa/flat-fill removal, a
-   text-free crop route and spine-scale QA. No hand-drawn polygons, no API key.
+8. **Automatic generative** — `v8-auto/`  
+   The desktop v8 CLI. Superseded by v8-app.
 
-8. **Reference** — `bookcover-js-deep/harness/`
+9. **App renderers** — `app-renderers/`  
+   The v8 pipeline plus Full-bleed, art-only, Wrap and Hybrid/Cloth/Editorial.
+   User-verified on a real device.
 
-   Deep source audit and hands-on spine-only SVG/PNG test.
+10. **Reference** — `bookcover-js-deep/harness/`  
+    Deep source audit and hands-on spine-only SVG/PNG test. Design-only.
 
 Directory names are internal and deliberately unchanged; the names above are the
 only user-facing labels.

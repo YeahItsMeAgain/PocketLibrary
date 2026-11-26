@@ -1,0 +1,6 @@
+  2432880  1980-01-01 00:00   assets/models/det.onnx
+    26250  1980-01-01 00:00   assets/models/keys.txt
+ 10690752  1980-01-01 00:00   assets/models/rec.onnx
+    27176  2026-11-26 22:00   classes.dex
+ 17571160  2026-11-26 22:00   lib/arm64-v8a/libonnxruntime.so
+  2463784  2026-11-26 22:00   lib/arm64-v8a/libv8android.so
