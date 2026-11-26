@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Comparable A — 3D Book Image CSS Generator</title>
+<style>
+  html, body { margin: 0; background: #e9e4da; color: #222; font-family: system-ui, sans-serif; }
+  .stage { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; box-sizing: border-box; }
+  .caption { font-size: 13px; opacity: .7; text-align: center; max-width: 680px; }
+</style>
+<style id="generated"></style>
+</head>
+<body>
+<div class="stage">
+  <a class="book-container" href="#" onclick="return false">
+    <div class="book"><img id="cover" alt="Book cover" src=""></div>
+  </a>
+  <div class="caption" id="caption"></div>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const cover = q.get('cover') || 'whisper-man';
+  const thickness = Number(q.get('thickness') || 50);   // 50px == 1in at 50px/in
+  const rotate = Number(q.get('rotate') || 30);
+  const width = Number(q.get('width') || 300);
+  const height = Number(q.get('height') || 450);
+  const radius = 2;
+  const pagesOffset = 3;
+  const urls = {
+    'whisper-man': 'http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg',
+    'rock-paper-scissors': 'http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/rock-paper-scissors-cover.jpg',
+    'moby-dick': 'http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/classic-covers/moby-dick.jpg',
+  };
+  document.getElementById('cover').src = urls[cover] || urls['whisper-man'];
+
+  // Template copied from src/Book.tsx, values injected. There is deliberately
+  // no spine plane and no spine text element anywhere in this CSS.
+  document.getElementById('generated').textContent = `
+  .book-container {
+    display: flex; align-items: center; justify-content: center; perspective: 600px;
+  }
+  @keyframes initAnimation { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(${-rotate}deg); } }
+  .book {
+    width: ${width}px; height: ${height}px; position: relative; transform-style: preserve-3d;
+    transform: rotateY(${-rotate}deg); transition: 1s ease; animation: 1s ease 0s 1 initAnimation;
+  }
+  .book-container:hover .book, .book-container:focus .book { transform: rotateY(0deg); }
+  .book > :first-child {
+    position: absolute; top: 0; left: 0; width: ${width}px; height: ${height}px;
+    transform: translateZ(${thickness / 2}px); background-color: #14342b;
+    border-radius: 0 ${radius}px ${radius}px 0; box-shadow: 5px 5px 20px #666;
+  }
+  .book::before {
+    position: absolute; content: ' '; left: 0; top: ${pagesOffset}px;
+    width: ${thickness - 2}px; height: ${height - 2 * pagesOffset}px;
+    transform: translateX(${width - thickness / 2 - pagesOffset}px) rotateY(90deg);
+    background: linear-gradient(90deg, #fff 0%, #f9f9f9 5%, #fff 10%, #f9f9f9 15%, #fff 20%, #f9f9f9 25%, #fff 30%, #f9f9f9 35%, #fff 40%, #f9f9f9 45%, #fff 50%, #f9f9f9 55%, #fff 60%, #f9f9f9 65%, #fff 70%, #f9f9f9 75%, #fff 80%, #f9f9f9 85%, #fff 90%, #f9f9f9 95%, #fff 100%);
+  }
+  .book::after {
+    position: absolute; top: 0; left: 0; content: ' '; width: ${width}px; height: ${height}px;
+    transform: translateZ(${-thickness / 2}px); background-color: #14342b;
+    border-radius: 0 ${radius}px ${radius}px 0; box-shadow: -10px 0 50px 10px #666;
+  }`;
+  document.getElementById('caption').textContent =
+    `scastiel/3d-book-image-css-generator · cover=${cover} · thickness=${thickness}px (~${(thickness/50).toFixed(2)}in at 50px/in) · rotate=${rotate}° · front plane + right page block only; no spine face, no spine art, no title/author controls.`;
+</script>
+</body>
+</html>

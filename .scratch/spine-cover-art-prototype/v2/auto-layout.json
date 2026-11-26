@@ -1,0 +1,520 @@
+{
+  "generated": "2026-11-26T06:24:17.673Z",
+  "inputs": {
+    "whisper-man": {
+      "slug": "whisper-man",
+      "title": "The Whisper Man",
+      "author": "Alex North",
+      "isbn": "9781405936019",
+      "edition": "Penguin Books UK, 2019",
+      "source": "Apple Books/iTunes Search API (GB)",
+      "coverPage": "https://books.apple.com/gb/book/the-whisper-man/id1404088650",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Publication221/v4/dd/15/e4/dd15e43d-c935-de16-65f7-9b20558774bf/9781405936019.jpg/2000x2000bb.jpg",
+      "credit": "Cover design: Penguin Books; cover image as published by Apple Books",
+      "coverFile": "covers/source/whisper-man.jpg",
+      "sourcePixels": "1303 × 2000",
+      "aspect": 0.6515,
+      "spine": {
+        "w": 52,
+        "h": 236
+      },
+      "cropPercent": 33.8,
+      "focus": 0.5,
+      "cropLeft": 0.331,
+      "cropRight": 0.669,
+      "bandFraction": 0.22,
+      "bandTop": 0.78,
+      "bandHeightPx": 52,
+      "topCapFraction": 0.14,
+      "topCapPx": 33,
+      "topCapCovered": 2,
+      "topCapNote": "covers 2 top marketing lines without cutting one",
+      "railWidthPx": 23,
+      "railShiftPx": 1,
+      "tone": "dark",
+      "ink": "#f4e7cb",
+      "paper": "#0b0806",
+      "accent": "#71615a",
+      "meanLuma": 0.033,
+      "p05Luma": 0.001,
+      "p95Luma": 0.155,
+      "cropStd": 0.284,
+      "bareCreamContrast": 4.19,
+      "bareDarkContrast": 1.19,
+      "railContrast": 13.89,
+      "textCollision": 0,
+      "marketingCollision": 0.2,
+      "titleCoverage": 1,
+      "cutPenalty": 0,
+      "status": "pass",
+      "statusLabel": "AUTO · PASS",
+      "reasons": [
+        "band covers the foot title block; the remaining visible copy is marketing only",
+        "marketing copy remains visible above the band (not the book title)"
+      ],
+      "textBands": [
+        {
+          "top": 0.035,
+          "bottom": 0.055,
+          "density": 0.388
+        },
+        {
+          "top": 0.113,
+          "bottom": 0.133,
+          "density": 0.499
+        },
+        {
+          "top": 0.233,
+          "bottom": 0.325,
+          "density": 0.179
+        },
+        {
+          "top": 0.86,
+          "bottom": 0.905,
+          "density": 0.368
+        },
+        {
+          "top": 0.94,
+          "bottom": 0.953,
+          "density": 0.294
+        }
+      ],
+      "curve": [
+        {
+          "x": 0.18,
+          "score": 0.704,
+          "text": 0
+        },
+        {
+          "x": 0.2,
+          "score": 0.738,
+          "text": 0
+        },
+        {
+          "x": 0.22,
+          "score": 0.764,
+          "text": 0
+        },
+        {
+          "x": 0.24,
+          "score": 0.693,
+          "text": 0
+        },
+        {
+          "x": 0.26,
+          "score": 0.615,
+          "text": 0
+        },
+        {
+          "x": 0.28,
+          "score": 0.56,
+          "text": 0
+        },
+        {
+          "x": 0.3,
+          "score": 0.487,
+          "text": 0
+        },
+        {
+          "x": 0.32,
+          "score": 0.402,
+          "text": 0
+        },
+        {
+          "x": 0.34,
+          "score": 0.347,
+          "text": 0
+        },
+        {
+          "x": 0.36,
+          "score": 0.413,
+          "text": 0
+        },
+        {
+          "x": 0.38,
+          "score": 0.457,
+          "text": 0
+        },
+        {
+          "x": 0.4,
+          "score": 0.636,
+          "text": 0
+        },
+        {
+          "x": 0.42,
+          "score": 0.753,
+          "text": 0
+        },
+        {
+          "x": 0.44,
+          "score": 0.904,
+          "text": 0
+        },
+        {
+          "x": 0.46,
+          "score": 0.943,
+          "text": 0
+        },
+        {
+          "x": 0.48,
+          "score": 0.979,
+          "text": 0
+        },
+        {
+          "x": 0.5,
+          "score": 1,
+          "text": 0
+        },
+        {
+          "x": 0.52,
+          "score": 0.969,
+          "text": 0
+        },
+        {
+          "x": 0.54,
+          "score": 0.894,
+          "text": 0
+        },
+        {
+          "x": 0.56,
+          "score": 0.735,
+          "text": 0
+        },
+        {
+          "x": 0.58,
+          "score": 0.622,
+          "text": 0
+        },
+        {
+          "x": 0.6,
+          "score": 0.536,
+          "text": 0
+        },
+        {
+          "x": 0.62,
+          "score": 0.405,
+          "text": 0
+        },
+        {
+          "x": 0.64,
+          "score": 0.282,
+          "text": 0
+        },
+        {
+          "x": 0.66,
+          "score": 0.212,
+          "text": 0
+        },
+        {
+          "x": 0.68,
+          "score": 0.201,
+          "text": 0
+        },
+        {
+          "x": 0.7,
+          "score": 0.186,
+          "text": 0
+        },
+        {
+          "x": 0.72,
+          "score": 0.221,
+          "text": 0
+        },
+        {
+          "x": 0.74,
+          "score": 0.173,
+          "text": 0
+        },
+        {
+          "x": 0.76,
+          "score": 0.134,
+          "text": 0
+        },
+        {
+          "x": 0.78,
+          "score": 0.115,
+          "text": 0
+        },
+        {
+          "x": 0.8,
+          "score": 0.047,
+          "text": 0
+        },
+        {
+          "x": 0.82,
+          "score": 0,
+          "text": 0
+        }
+      ],
+      "diagnostics": {
+        "workingPixels": "260 × 400",
+        "edgeThreshold": 0.24,
+        "candidates": 65,
+        "detail": 0.0946,
+        "edgeMean": 0.0946,
+        "colorMean": 0.716
+      }
+    },
+    "rock-paper-scissors": {
+      "slug": "rock-paper-scissors",
+      "title": "Rock Paper Scissors",
+      "author": "Alice Feeney",
+      "isbn": "9781250266118",
+      "edition": "Flatiron Books US, 2021",
+      "source": "Apple Books/iTunes Search API (US)",
+      "coverPage": "https://books.apple.com/us/book/rock-paper-scissors/id1550616355",
+      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/b7/dd/3c/b7dd3ca0-ca75-afd1-66a4-1da048aa42ff/9781250266118.jpg/2000x2000bb.jpg",
+      "credit": "Cover design: Flatiron Books; cover image as published by Apple Books",
+      "coverFile": "covers/source/rock-paper-scissors.jpg",
+      "sourcePixels": "1303 × 2000",
+      "aspect": 0.6515,
+      "spine": {
+        "w": 52,
+        "h": 236
+      },
+      "cropPercent": 33.8,
+      "focus": 0.18,
+      "cropLeft": 0.011,
+      "cropRight": 0.349,
+      "bandFraction": 0.22,
+      "bandTop": 0.78,
+      "bandHeightPx": 52,
+      "topCapFraction": 0.09,
+      "topCapPx": 21,
+      "topCapCovered": 1,
+      "topCapNote": "covers 1 top marketing line without cutting one",
+      "railWidthPx": 26,
+      "railShiftPx": -0.5,
+      "tone": "light",
+      "ink": "#24180f",
+      "paper": "#f7eedb",
+      "accent": "#e1d6d5",
+      "meanLuma": 0.62,
+      "p05Luma": 0.15,
+      "p95Luma": 0.863,
+      "cropStd": 0.678,
+      "bareCreamContrast": 1.07,
+      "bareDarkContrast": 3.3,
+      "railContrast": 14.66,
+      "textCollision": 0.082,
+      "marketingCollision": 0.137,
+      "titleCoverage": 0.415,
+      "cutPenalty": 1,
+      "status": "review",
+      "statusLabel": "AUTO · REVIEW",
+      "reasons": [
+        "the cover title still crosses the visible crop above the band",
+        "the band covers less than two thirds of the detected title block",
+        "the band edge cuts through a detected title line",
+        "marketing copy remains visible above the band (not the book title)"
+      ],
+      "textBands": [
+        {
+          "top": 0.003,
+          "bottom": 0.083,
+          "density": 0.258
+        },
+        {
+          "top": 0.098,
+          "bottom": 0.223,
+          "density": 0.145
+        },
+        {
+          "top": 0.24,
+          "bottom": 0.347,
+          "density": 0.201
+        },
+        {
+          "top": 0.4,
+          "bottom": 0.455,
+          "density": 0.208
+        },
+        {
+          "top": 0.482,
+          "bottom": 0.925,
+          "density": 0.241
+        },
+        {
+          "top": 0.943,
+          "bottom": 0.963,
+          "density": 0.171
+        }
+      ],
+      "curve": [
+        {
+          "x": 0.18,
+          "score": 1,
+          "text": 0.082
+        },
+        {
+          "x": 0.2,
+          "score": 0.831,
+          "text": 0.099
+        },
+        {
+          "x": 0.22,
+          "score": 0.742,
+          "text": 0.111
+        },
+        {
+          "x": 0.24,
+          "score": 0.662,
+          "text": 0.121
+        },
+        {
+          "x": 0.26,
+          "score": 0.54,
+          "text": 0.135
+        },
+        {
+          "x": 0.28,
+          "score": 0.442,
+          "text": 0.146
+        },
+        {
+          "x": 0.3,
+          "score": 0.353,
+          "text": 0.158
+        },
+        {
+          "x": 0.32,
+          "score": 0.309,
+          "text": 0.166
+        },
+        {
+          "x": 0.34,
+          "score": 0.329,
+          "text": 0.165
+        },
+        {
+          "x": 0.36,
+          "score": 0.346,
+          "text": 0.166
+        },
+        {
+          "x": 0.38,
+          "score": 0.35,
+          "text": 0.167
+        },
+        {
+          "x": 0.4,
+          "score": 0.369,
+          "text": 0.165
+        },
+        {
+          "x": 0.42,
+          "score": 0.3,
+          "text": 0.174
+        },
+        {
+          "x": 0.44,
+          "score": 0.288,
+          "text": 0.176
+        },
+        {
+          "x": 0.46,
+          "score": 0.295,
+          "text": 0.175
+        },
+        {
+          "x": 0.48,
+          "score": 0.275,
+          "text": 0.177
+        },
+        {
+          "x": 0.5,
+          "score": 0.293,
+          "text": 0.177
+        },
+        {
+          "x": 0.52,
+          "score": 0.258,
+          "text": 0.177
+        },
+        {
+          "x": 0.54,
+          "score": 0.285,
+          "text": 0.172
+        },
+        {
+          "x": 0.56,
+          "score": 0.267,
+          "text": 0.171
+        },
+        {
+          "x": 0.58,
+          "score": 0.237,
+          "text": 0.171
+        },
+        {
+          "x": 0.6,
+          "score": 0.324,
+          "text": 0.16
+        },
+        {
+          "x": 0.62,
+          "score": 0.332,
+          "text": 0.158
+        },
+        {
+          "x": 0.64,
+          "score": 0.294,
+          "text": 0.159
+        },
+        {
+          "x": 0.66,
+          "score": 0.279,
+          "text": 0.158
+        },
+        {
+          "x": 0.68,
+          "score": 0.248,
+          "text": 0.159
+        },
+        {
+          "x": 0.7,
+          "score": 0.316,
+          "text": 0.151
+        },
+        {
+          "x": 0.72,
+          "score": 0.377,
+          "text": 0.143
+        },
+        {
+          "x": 0.74,
+          "score": 0.178,
+          "text": 0.161
+        },
+        {
+          "x": 0.76,
+          "score": 0.262,
+          "text": 0.149
+        },
+        {
+          "x": 0.78,
+          "score": 0.111,
+          "text": 0.161
+        },
+        {
+          "x": 0.8,
+          "score": 0,
+          "text": 0.17
+        },
+        {
+          "x": 0.82,
+          "score": 0.033,
+          "text": 0.162
+        }
+      ],
+      "diagnostics": {
+        "workingPixels": "260 × 400",
+        "edgeThreshold": 1.062,
+        "candidates": 65,
+        "detail": 0.4482,
+        "edgeMean": 0.4482,
+        "colorMean": 0.096
+      }
+    }
+  }
+}

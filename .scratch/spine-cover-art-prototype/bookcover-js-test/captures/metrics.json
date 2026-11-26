@@ -1,0 +1,1751 @@
+{
+  "app": "http://127.0.0.1:4173/spine-cover-art-prototype/bookcover-js-test/bookcover-js-src/bookcover-js-main/index.html",
+  "generatedAt": "2026-11-26T07:52:00.426Z",
+  "books": {
+    "whisper-man": {
+      "meta": {
+        "slug": "whisper-man",
+        "title": "The Whisper Man",
+        "author": "Alex North",
+        "spine": 1,
+        "textStyle": "1",
+        "artStyle": "4",
+        "frontSource": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg"
+      },
+      "metrics": {
+        "spineSvgWidth": 54,
+        "spineSvgHeight": 612,
+        "spineElementWidth": 72,
+        "textCount": 6,
+        "texts": [
+          {
+            "text": "The",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 648.9,
+              "y": 672.5,
+              "w": 34.3,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "Whisper",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 627.9,
+              "y": 693.5,
+              "w": 76.3,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "Man",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 645.4,
+              "y": 714.5,
+              "w": 41.2,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 639,
+              "y": 436,
+              "w": 0,
+              "h": 0
+            },
+            "outside": false
+          },
+          {
+            "text": "Alex",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 644.7,
+              "y": 756.5,
+              "w": 40.6,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "North",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 638.8,
+              "y": 777.5,
+              "w": 54.4,
+              "h": 21
+            },
+            "outside": false
+          }
+        ],
+        "outsideCount": 1,
+        "inputs": [
+          {
+            "id": "coverFontSizeInput",
+            "type": "number",
+            "value": "26"
+          },
+          {
+            "id": "spineFontSizeInput",
+            "type": "number",
+            "value": "18"
+          },
+          {
+            "id": "spineTextStyleInput",
+            "type": "select-one",
+            "value": "1"
+          },
+          {
+            "id": "spineArtStyleInput",
+            "type": "select-one",
+            "value": "4"
+          },
+          {
+            "id": "fontInput",
+            "type": "file",
+            "value": ""
+          },
+          {
+            "id": "endpaperCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "transparentCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "coverWidthInput",
+            "type": "number",
+            "value": "6"
+          },
+          {
+            "id": "coverHeightInput",
+            "type": "number",
+            "value": "9"
+          },
+          {
+            "id": "borderGapInput",
+            "type": "number",
+            "value": "0.25"
+          },
+          {
+            "id": "borderThicknessInput",
+            "type": "number",
+            "value": "0.05"
+          },
+          {
+            "id": "spineWidthInput",
+            "type": "number",
+            "value": "1"
+          },
+          {
+            "id": "lengthUnitInput",
+            "type": "select-one",
+            "value": "inches"
+          },
+          {
+            "id": "mirrorCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "flipCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "verticalLinesCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "elementColorInput",
+            "type": "color",
+            "value": "#c9a227"
+          },
+          {
+            "id": "backgroundColorInput",
+            "type": "color",
+            "value": "#14342b"
+          },
+          {
+            "id": "imageScale",
+            "type": "number",
+            "value": "1.25"
+          },
+          {
+            "id": "rotateInput",
+            "type": "number",
+            "value": "0"
+          },
+          {
+            "id": "numColumnsInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "maxPerColumnInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "increasePerColumnInput",
+            "type": "number",
+            "value": "1"
+          },
+          {
+            "id": "backCoverInitialCopiesInput",
+            "type": "number",
+            "value": "4"
+          },
+          {
+            "id": "frontCoverInitialCopiesInput",
+            "type": "number",
+            "value": "3"
+          },
+          {
+            "id": "yStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "xStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "fileInput",
+            "type": "file",
+            "value": ""
+          }
+        ]
+      }
+    },
+    "rock-paper-scissors": {
+      "meta": {
+        "slug": "rock-paper-scissors",
+        "title": "Rock Paper Scissors",
+        "author": "Alice Feeney",
+        "spine": 0.75,
+        "textStyle": "2",
+        "artStyle": "4",
+        "frontSource": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v3/assets/rock-paper-scissors-cover.jpg"
+      },
+      "metrics": {
+        "spineSvgWidth": 36,
+        "spineSvgHeight": 612,
+        "spineElementWidth": 54,
+        "textCount": 2,
+        "texts": [
+          {
+            "text": "Rock Paper Scissors",
+            "fontSize": "18",
+            "transform": "rotate(90 27,306)",
+            "bboxClient": {
+              "x": 671,
+              "y": 649.5,
+              "w": 21,
+              "h": 185
+            },
+            "outside": true
+          },
+          {
+            "text": "Alice Feeney",
+            "fontSize": "18",
+            "transform": "rotate(90 0,306)",
+            "bboxClient": {
+              "x": 644,
+              "y": 682.9,
+              "w": 21,
+              "h": 118
+            },
+            "outside": true
+          }
+        ],
+        "outsideCount": 2,
+        "inputs": [
+          {
+            "id": "coverFontSizeInput",
+            "type": "number",
+            "value": "26"
+          },
+          {
+            "id": "spineFontSizeInput",
+            "type": "number",
+            "value": "18"
+          },
+          {
+            "id": "spineTextStyleInput",
+            "type": "select-one",
+            "value": "2"
+          },
+          {
+            "id": "spineArtStyleInput",
+            "type": "select-one",
+            "value": "4"
+          },
+          {
+            "id": "fontInput",
+            "type": "file",
+            "value": ""
+          },
+          {
+            "id": "endpaperCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "transparentCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "coverWidthInput",
+            "type": "number",
+            "value": "6"
+          },
+          {
+            "id": "coverHeightInput",
+            "type": "number",
+            "value": "9"
+          },
+          {
+            "id": "borderGapInput",
+            "type": "number",
+            "value": "0.25"
+          },
+          {
+            "id": "borderThicknessInput",
+            "type": "number",
+            "value": "0.05"
+          },
+          {
+            "id": "spineWidthInput",
+            "type": "number",
+            "value": "0.75"
+          },
+          {
+            "id": "lengthUnitInput",
+            "type": "select-one",
+            "value": "inches"
+          },
+          {
+            "id": "mirrorCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "flipCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "verticalLinesCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "elementColorInput",
+            "type": "color",
+            "value": "#c9a227"
+          },
+          {
+            "id": "backgroundColorInput",
+            "type": "color",
+            "value": "#14342b"
+          },
+          {
+            "id": "imageScale",
+            "type": "number",
+            "value": "1.25"
+          },
+          {
+            "id": "rotateInput",
+            "type": "number",
+            "value": "0"
+          },
+          {
+            "id": "numColumnsInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "maxPerColumnInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "increasePerColumnInput",
+            "type": "number",
+            "value": "1"
+          },
+          {
+            "id": "backCoverInitialCopiesInput",
+            "type": "number",
+            "value": "4"
+          },
+          {
+            "id": "frontCoverInitialCopiesInput",
+            "type": "number",
+            "value": "3"
+          },
+          {
+            "id": "yStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "xStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "fileInput",
+            "type": "file",
+            "value": ""
+          }
+        ]
+      }
+    },
+    "moby-dick": {
+      "meta": {
+        "slug": "moby-dick",
+        "title": "Moby-Dick",
+        "author": "Herman Melville",
+        "spine": 1.5,
+        "textStyle": "3",
+        "artStyle": "7",
+        "frontSource": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v3/assets/classic-covers/moby-dick.jpg"
+      },
+      "metrics": {
+        "spineSvgWidth": 90,
+        "spineSvgHeight": 612,
+        "spineElementWidth": 108,
+        "textCount": 1,
+        "texts": [
+          {
+            "text": "Moby-Dick",
+            "fontSize": "18",
+            "transform": "rotate(90 45,301.5)",
+            "bboxClient": {
+              "x": 657.5,
+              "y": 679.4,
+              "w": 21,
+              "h": 116.2
+            },
+            "outside": false
+          }
+        ],
+        "outsideCount": 0,
+        "inputs": [
+          {
+            "id": "coverFontSizeInput",
+            "type": "number",
+            "value": "26"
+          },
+          {
+            "id": "spineFontSizeInput",
+            "type": "number",
+            "value": "18"
+          },
+          {
+            "id": "spineTextStyleInput",
+            "type": "select-one",
+            "value": "3"
+          },
+          {
+            "id": "spineArtStyleInput",
+            "type": "select-one",
+            "value": "7"
+          },
+          {
+            "id": "fontInput",
+            "type": "file",
+            "value": ""
+          },
+          {
+            "id": "endpaperCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "transparentCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "coverWidthInput",
+            "type": "number",
+            "value": "6"
+          },
+          {
+            "id": "coverHeightInput",
+            "type": "number",
+            "value": "9"
+          },
+          {
+            "id": "borderGapInput",
+            "type": "number",
+            "value": "0.25"
+          },
+          {
+            "id": "borderThicknessInput",
+            "type": "number",
+            "value": "0.05"
+          },
+          {
+            "id": "spineWidthInput",
+            "type": "number",
+            "value": "1.5"
+          },
+          {
+            "id": "lengthUnitInput",
+            "type": "select-one",
+            "value": "inches"
+          },
+          {
+            "id": "mirrorCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "flipCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "verticalLinesCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "elementColorInput",
+            "type": "color",
+            "value": "#c9a227"
+          },
+          {
+            "id": "backgroundColorInput",
+            "type": "color",
+            "value": "#14342b"
+          },
+          {
+            "id": "imageScale",
+            "type": "number",
+            "value": "1.25"
+          },
+          {
+            "id": "rotateInput",
+            "type": "number",
+            "value": "0"
+          },
+          {
+            "id": "numColumnsInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "maxPerColumnInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "increasePerColumnInput",
+            "type": "number",
+            "value": "1"
+          },
+          {
+            "id": "backCoverInitialCopiesInput",
+            "type": "number",
+            "value": "4"
+          },
+          {
+            "id": "frontCoverInitialCopiesInput",
+            "type": "number",
+            "value": "3"
+          },
+          {
+            "id": "yStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "xStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "fileInput",
+            "type": "file",
+            "value": ""
+          }
+        ]
+      }
+    }
+  },
+  "widths": {
+    "whisper-man-spine-040": {
+      "meta": {
+        "slug": "whisper-man-spine-040",
+        "title": "The Whisper Man",
+        "author": "Alex North",
+        "spine": 0.4,
+        "textStyle": "1",
+        "artStyle": "4"
+      },
+      "metrics": {
+        "spineSvgWidth": 10.8,
+        "spineSvgHeight": 612,
+        "spineElementWidth": 28.796875,
+        "textCount": 6,
+        "texts": [
+          {
+            "text": "The",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 648.9,
+              "y": 672.5,
+              "w": 34.3,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "Whisper",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 627.9,
+              "y": 693.5,
+              "w": 76.3,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "Man",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 645.4,
+              "y": 714.5,
+              "w": 41.2,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 660.6,
+              "y": 436,
+              "w": 0,
+              "h": 0
+            },
+            "outside": false
+          },
+          {
+            "text": "Alex",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 644.7,
+              "y": 756.5,
+              "w": 40.6,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "North",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 638.8,
+              "y": 777.5,
+              "w": 54.4,
+              "h": 21
+            },
+            "outside": true
+          }
+        ],
+        "outsideCount": 5,
+        "inputs": [
+          {
+            "id": "coverFontSizeInput",
+            "type": "number",
+            "value": "26"
+          },
+          {
+            "id": "spineFontSizeInput",
+            "type": "number",
+            "value": "18"
+          },
+          {
+            "id": "spineTextStyleInput",
+            "type": "select-one",
+            "value": "1"
+          },
+          {
+            "id": "spineArtStyleInput",
+            "type": "select-one",
+            "value": "4"
+          },
+          {
+            "id": "fontInput",
+            "type": "file",
+            "value": ""
+          },
+          {
+            "id": "endpaperCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "transparentCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "coverWidthInput",
+            "type": "number",
+            "value": "6"
+          },
+          {
+            "id": "coverHeightInput",
+            "type": "number",
+            "value": "9"
+          },
+          {
+            "id": "borderGapInput",
+            "type": "number",
+            "value": "0.25"
+          },
+          {
+            "id": "borderThicknessInput",
+            "type": "number",
+            "value": "0.05"
+          },
+          {
+            "id": "spineWidthInput",
+            "type": "number",
+            "value": "0.4"
+          },
+          {
+            "id": "lengthUnitInput",
+            "type": "select-one",
+            "value": "inches"
+          },
+          {
+            "id": "mirrorCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "flipCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "verticalLinesCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "elementColorInput",
+            "type": "color",
+            "value": "#c9a227"
+          },
+          {
+            "id": "backgroundColorInput",
+            "type": "color",
+            "value": "#14342b"
+          },
+          {
+            "id": "imageScale",
+            "type": "number",
+            "value": "1.25"
+          },
+          {
+            "id": "rotateInput",
+            "type": "number",
+            "value": "0"
+          },
+          {
+            "id": "numColumnsInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "maxPerColumnInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "increasePerColumnInput",
+            "type": "number",
+            "value": "1"
+          },
+          {
+            "id": "backCoverInitialCopiesInput",
+            "type": "number",
+            "value": "4"
+          },
+          {
+            "id": "frontCoverInitialCopiesInput",
+            "type": "number",
+            "value": "3"
+          },
+          {
+            "id": "yStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "xStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "fileInput",
+            "type": "file",
+            "value": ""
+          }
+        ]
+      }
+    },
+    "whisper-man-spine-080": {
+      "meta": {
+        "slug": "whisper-man-spine-080",
+        "title": "The Whisper Man",
+        "author": "Alex North",
+        "spine": 0.8,
+        "textStyle": "1",
+        "artStyle": "4"
+      },
+      "metrics": {
+        "spineSvgWidth": 39.6,
+        "spineSvgHeight": 612,
+        "spineElementWidth": 57.59375,
+        "textCount": 6,
+        "texts": [
+          {
+            "text": "The",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 648.9,
+              "y": 672.5,
+              "w": 34.3,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "Whisper",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 627.9,
+              "y": 693.5,
+              "w": 76.3,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "Man",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 645.4,
+              "y": 714.5,
+              "w": 41.2,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 646.2,
+              "y": 436,
+              "w": 0,
+              "h": 0
+            },
+            "outside": false
+          },
+          {
+            "text": "Alex",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 644.7,
+              "y": 756.5,
+              "w": 40.6,
+              "h": 21
+            },
+            "outside": true
+          },
+          {
+            "text": "North",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 638.8,
+              "y": 777.5,
+              "w": 54.4,
+              "h": 21
+            },
+            "outside": true
+          }
+        ],
+        "outsideCount": 4,
+        "inputs": [
+          {
+            "id": "coverFontSizeInput",
+            "type": "number",
+            "value": "26"
+          },
+          {
+            "id": "spineFontSizeInput",
+            "type": "number",
+            "value": "18"
+          },
+          {
+            "id": "spineTextStyleInput",
+            "type": "select-one",
+            "value": "1"
+          },
+          {
+            "id": "spineArtStyleInput",
+            "type": "select-one",
+            "value": "4"
+          },
+          {
+            "id": "fontInput",
+            "type": "file",
+            "value": ""
+          },
+          {
+            "id": "endpaperCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "transparentCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "coverWidthInput",
+            "type": "number",
+            "value": "6"
+          },
+          {
+            "id": "coverHeightInput",
+            "type": "number",
+            "value": "9"
+          },
+          {
+            "id": "borderGapInput",
+            "type": "number",
+            "value": "0.25"
+          },
+          {
+            "id": "borderThicknessInput",
+            "type": "number",
+            "value": "0.05"
+          },
+          {
+            "id": "spineWidthInput",
+            "type": "number",
+            "value": "0.8"
+          },
+          {
+            "id": "lengthUnitInput",
+            "type": "select-one",
+            "value": "inches"
+          },
+          {
+            "id": "mirrorCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "flipCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "verticalLinesCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "elementColorInput",
+            "type": "color",
+            "value": "#c9a227"
+          },
+          {
+            "id": "backgroundColorInput",
+            "type": "color",
+            "value": "#14342b"
+          },
+          {
+            "id": "imageScale",
+            "type": "number",
+            "value": "1.25"
+          },
+          {
+            "id": "rotateInput",
+            "type": "number",
+            "value": "0"
+          },
+          {
+            "id": "numColumnsInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "maxPerColumnInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "increasePerColumnInput",
+            "type": "number",
+            "value": "1"
+          },
+          {
+            "id": "backCoverInitialCopiesInput",
+            "type": "number",
+            "value": "4"
+          },
+          {
+            "id": "frontCoverInitialCopiesInput",
+            "type": "number",
+            "value": "3"
+          },
+          {
+            "id": "yStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "xStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "fileInput",
+            "type": "file",
+            "value": ""
+          }
+        ]
+      }
+    },
+    "whisper-man-spine-150": {
+      "meta": {
+        "slug": "whisper-man-spine-150",
+        "title": "The Whisper Man",
+        "author": "Alex North",
+        "spine": 1.5,
+        "textStyle": "1",
+        "artStyle": "4"
+      },
+      "metrics": {
+        "spineSvgWidth": 90,
+        "spineSvgHeight": 612,
+        "spineElementWidth": 108,
+        "textCount": 6,
+        "texts": [
+          {
+            "text": "The",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 648.9,
+              "y": 672.5,
+              "w": 34.3,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "Whisper",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 627.9,
+              "y": 693.5,
+              "w": 76.3,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "Man",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 645.4,
+              "y": 714.5,
+              "w": 41.2,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 621,
+              "y": 436,
+              "w": 0,
+              "h": 0
+            },
+            "outside": false
+          },
+          {
+            "text": "Alex",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 644.7,
+              "y": 756.5,
+              "w": 40.6,
+              "h": 21
+            },
+            "outside": false
+          },
+          {
+            "text": "North",
+            "fontSize": "18",
+            "transform": null,
+            "bboxClient": {
+              "x": 638.8,
+              "y": 777.5,
+              "w": 54.4,
+              "h": 21
+            },
+            "outside": false
+          }
+        ],
+        "outsideCount": 0,
+        "inputs": [
+          {
+            "id": "coverFontSizeInput",
+            "type": "number",
+            "value": "26"
+          },
+          {
+            "id": "spineFontSizeInput",
+            "type": "number",
+            "value": "18"
+          },
+          {
+            "id": "spineTextStyleInput",
+            "type": "select-one",
+            "value": "1"
+          },
+          {
+            "id": "spineArtStyleInput",
+            "type": "select-one",
+            "value": "4"
+          },
+          {
+            "id": "fontInput",
+            "type": "file",
+            "value": ""
+          },
+          {
+            "id": "endpaperCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "transparentCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "coverWidthInput",
+            "type": "number",
+            "value": "6"
+          },
+          {
+            "id": "coverHeightInput",
+            "type": "number",
+            "value": "9"
+          },
+          {
+            "id": "borderGapInput",
+            "type": "number",
+            "value": "0.25"
+          },
+          {
+            "id": "borderThicknessInput",
+            "type": "number",
+            "value": "0.05"
+          },
+          {
+            "id": "spineWidthInput",
+            "type": "number",
+            "value": "1.5"
+          },
+          {
+            "id": "lengthUnitInput",
+            "type": "select-one",
+            "value": "inches"
+          },
+          {
+            "id": "mirrorCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "flipCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "verticalLinesCheckbox",
+            "type": "checkbox",
+            "value": "on"
+          },
+          {
+            "id": "elementColorInput",
+            "type": "color",
+            "value": "#c9a227"
+          },
+          {
+            "id": "backgroundColorInput",
+            "type": "color",
+            "value": "#14342b"
+          },
+          {
+            "id": "imageScale",
+            "type": "number",
+            "value": "1.25"
+          },
+          {
+            "id": "rotateInput",
+            "type": "number",
+            "value": "0"
+          },
+          {
+            "id": "numColumnsInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "maxPerColumnInput",
+            "type": "number",
+            "value": "5"
+          },
+          {
+            "id": "increasePerColumnInput",
+            "type": "number",
+            "value": "1"
+          },
+          {
+            "id": "backCoverInitialCopiesInput",
+            "type": "number",
+            "value": "4"
+          },
+          {
+            "id": "frontCoverInitialCopiesInput",
+            "type": "number",
+            "value": "3"
+          },
+          {
+            "id": "yStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "xStretchInput",
+            "type": "range",
+            "value": "1"
+          },
+          {
+            "id": "fileInput",
+            "type": "file",
+            "value": ""
+          }
+        ]
+      }
+    }
+  },
+  "rasterUpload": {
+    "note": "The only art input accepts .svg; this embeds the real JPEG inside an SVG wrapper.",
+    "metrics": {
+      "spineSvgWidth": 54,
+      "spineSvgHeight": 612,
+      "spineElementWidth": 72,
+      "textCount": 6,
+      "texts": [
+        {
+          "text": "The",
+          "fontSize": "18",
+          "transform": null,
+          "bboxClient": {
+            "x": 648.9,
+            "y": 672.5,
+            "w": 34.3,
+            "h": 21
+          },
+          "outside": false
+        },
+        {
+          "text": "Whisper",
+          "fontSize": "18",
+          "transform": null,
+          "bboxClient": {
+            "x": 627.9,
+            "y": 693.5,
+            "w": 76.3,
+            "h": 21
+          },
+          "outside": true
+        },
+        {
+          "text": "Man",
+          "fontSize": "18",
+          "transform": null,
+          "bboxClient": {
+            "x": 645.4,
+            "y": 714.5,
+            "w": 41.2,
+            "h": 21
+          },
+          "outside": false
+        },
+        {
+          "text": "",
+          "fontSize": "18",
+          "transform": null,
+          "bboxClient": {
+            "x": 639,
+            "y": 436,
+            "w": 0,
+            "h": 0
+          },
+          "outside": false
+        },
+        {
+          "text": "Alex",
+          "fontSize": "18",
+          "transform": null,
+          "bboxClient": {
+            "x": 644.7,
+            "y": 756.5,
+            "w": 40.6,
+            "h": 21
+          },
+          "outside": false
+        },
+        {
+          "text": "North",
+          "fontSize": "18",
+          "transform": null,
+          "bboxClient": {
+            "x": 638.8,
+            "y": 777.5,
+            "w": 54.4,
+            "h": 21
+          },
+          "outside": false
+        }
+      ],
+      "outsideCount": 1,
+      "inputs": [
+        {
+          "id": "coverFontSizeInput",
+          "type": "number",
+          "value": "26"
+        },
+        {
+          "id": "spineFontSizeInput",
+          "type": "number",
+          "value": "18"
+        },
+        {
+          "id": "spineTextStyleInput",
+          "type": "select-one",
+          "value": "1"
+        },
+        {
+          "id": "spineArtStyleInput",
+          "type": "select-one",
+          "value": "4"
+        },
+        {
+          "id": "fontInput",
+          "type": "file",
+          "value": ""
+        },
+        {
+          "id": "endpaperCheckbox",
+          "type": "checkbox",
+          "value": "on"
+        },
+        {
+          "id": "transparentCheckbox",
+          "type": "checkbox",
+          "value": "on"
+        },
+        {
+          "id": "coverWidthInput",
+          "type": "number",
+          "value": "6"
+        },
+        {
+          "id": "coverHeightInput",
+          "type": "number",
+          "value": "9"
+        },
+        {
+          "id": "borderGapInput",
+          "type": "number",
+          "value": "0.25"
+        },
+        {
+          "id": "borderThicknessInput",
+          "type": "number",
+          "value": "0.05"
+        },
+        {
+          "id": "spineWidthInput",
+          "type": "number",
+          "value": "1"
+        },
+        {
+          "id": "lengthUnitInput",
+          "type": "select-one",
+          "value": "inches"
+        },
+        {
+          "id": "mirrorCheckbox",
+          "type": "checkbox",
+          "value": "on"
+        },
+        {
+          "id": "flipCheckbox",
+          "type": "checkbox",
+          "value": "on"
+        },
+        {
+          "id": "verticalLinesCheckbox",
+          "type": "checkbox",
+          "value": "on"
+        },
+        {
+          "id": "elementColorInput",
+          "type": "color",
+          "value": "#c9a227"
+        },
+        {
+          "id": "backgroundColorInput",
+          "type": "color",
+          "value": "#14342b"
+        },
+        {
+          "id": "imageScale",
+          "type": "number",
+          "value": "1.25"
+        },
+        {
+          "id": "rotateInput",
+          "type": "number",
+          "value": "0"
+        },
+        {
+          "id": "numColumnsInput",
+          "type": "number",
+          "value": "5"
+        },
+        {
+          "id": "maxPerColumnInput",
+          "type": "number",
+          "value": "5"
+        },
+        {
+          "id": "increasePerColumnInput",
+          "type": "number",
+          "value": "1"
+        },
+        {
+          "id": "backCoverInitialCopiesInput",
+          "type": "number",
+          "value": "4"
+        },
+        {
+          "id": "frontCoverInitialCopiesInput",
+          "type": "number",
+          "value": "3"
+        },
+        {
+          "id": "yStretchInput",
+          "type": "range",
+          "value": "1"
+        },
+        {
+          "id": "xStretchInput",
+          "type": "range",
+          "value": "1"
+        },
+        {
+          "id": "fileInput",
+          "type": "file",
+          "value": "C:\\fakepath\\whisper-man-embedded.svg"
+        }
+      ]
+    }
+  },
+  "errors": [],
+  "narrowLongTitle": {
+    "spineSvgWidth": 18,
+    "spineSvgHeight": 612,
+    "spineElementWidth": 36,
+    "textCount": 6,
+    "texts": [
+      {
+        "text": "The",
+        "fontSize": "18",
+        "transform": null,
+        "bboxClient": {
+          "x": 648.9,
+          "y": 672.5,
+          "w": 34.3,
+          "h": 21
+        },
+        "outside": true
+      },
+      {
+        "text": "Whisper",
+        "fontSize": "18",
+        "transform": null,
+        "bboxClient": {
+          "x": 627.9,
+          "y": 693.5,
+          "w": 76.3,
+          "h": 21
+        },
+        "outside": true
+      },
+      {
+        "text": "Man",
+        "fontSize": "18",
+        "transform": null,
+        "bboxClient": {
+          "x": 645.4,
+          "y": 714.5,
+          "w": 41.2,
+          "h": 21
+        },
+        "outside": true
+      },
+      {
+        "text": "",
+        "fontSize": "18",
+        "transform": null,
+        "bboxClient": {
+          "x": 657,
+          "y": 436,
+          "w": 0,
+          "h": 0
+        },
+        "outside": false
+      },
+      {
+        "text": "Alex",
+        "fontSize": "18",
+        "transform": null,
+        "bboxClient": {
+          "x": 644.7,
+          "y": 756.5,
+          "w": 40.6,
+          "h": 21
+        },
+        "outside": true
+      },
+      {
+        "text": "North",
+        "fontSize": "18",
+        "transform": null,
+        "bboxClient": {
+          "x": 638.8,
+          "y": 777.5,
+          "w": 54.4,
+          "h": 21
+        },
+        "outside": true
+      }
+    ],
+    "outsideCount": 5,
+    "inputs": [
+      {
+        "id": "coverFontSizeInput",
+        "type": "number",
+        "value": "26"
+      },
+      {
+        "id": "spineFontSizeInput",
+        "type": "number",
+        "value": "18"
+      },
+      {
+        "id": "spineTextStyleInput",
+        "type": "select-one",
+        "value": "1"
+      },
+      {
+        "id": "spineArtStyleInput",
+        "type": "select-one",
+        "value": "4"
+      },
+      {
+        "id": "fontInput",
+        "type": "file",
+        "value": ""
+      },
+      {
+        "id": "endpaperCheckbox",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "id": "transparentCheckbox",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "id": "coverWidthInput",
+        "type": "number",
+        "value": "6"
+      },
+      {
+        "id": "coverHeightInput",
+        "type": "number",
+        "value": "9"
+      },
+      {
+        "id": "borderGapInput",
+        "type": "number",
+        "value": "0.25"
+      },
+      {
+        "id": "borderThicknessInput",
+        "type": "number",
+        "value": "0.05"
+      },
+      {
+        "id": "spineWidthInput",
+        "type": "number",
+        "value": "0.5"
+      },
+      {
+        "id": "lengthUnitInput",
+        "type": "select-one",
+        "value": "inches"
+      },
+      {
+        "id": "mirrorCheckbox",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "id": "flipCheckbox",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "id": "verticalLinesCheckbox",
+        "type": "checkbox",
+        "value": "on"
+      },
+      {
+        "id": "elementColorInput",
+        "type": "color",
+        "value": "#c9a227"
+      },
+      {
+        "id": "backgroundColorInput",
+        "type": "color",
+        "value": "#14342b"
+      },
+      {
+        "id": "imageScale",
+        "type": "number",
+        "value": "1.25"
+      },
+      {
+        "id": "rotateInput",
+        "type": "number",
+        "value": "0"
+      },
+      {
+        "id": "numColumnsInput",
+        "type": "number",
+        "value": "5"
+      },
+      {
+        "id": "maxPerColumnInput",
+        "type": "number",
+        "value": "5"
+      },
+      {
+        "id": "increasePerColumnInput",
+        "type": "number",
+        "value": "1"
+      },
+      {
+        "id": "backCoverInitialCopiesInput",
+        "type": "number",
+        "value": "4"
+      },
+      {
+        "id": "frontCoverInitialCopiesInput",
+        "type": "number",
+        "value": "3"
+      },
+      {
+        "id": "yStretchInput",
+        "type": "range",
+        "value": "1"
+      },
+      {
+        "id": "xStretchInput",
+        "type": "range",
+        "value": "1"
+      },
+      {
+        "id": "fileInput",
+        "type": "file",
+        "value": ""
+      }
+    ]
+  }
+}

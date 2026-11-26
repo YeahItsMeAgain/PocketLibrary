@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=0.35, viewport-fit=main" />
+  <link rel="icon" type="image/x-icon" href="bookcover-js-favicon.png" />
+  <title>Book Cover JS</title>
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+
+<body>
+  <header>
+    <h1>Penguin Clothbound Cover Generator</h1>
+    <small id="subHeading">
+      Created by Acestronautical -
+      <a href="https://github.com/acestronautical/bookcover-js" target="_blank">GitHub</a>
+    </small>
+  </header>
+  <main>
+    <div id="coverSection">
+      <div id="coverSectionHeader">
+        <div class="center column pb-4">
+          <div class="center pb-2">
+            <button class="button-save button-split-left" id="saveCombinedSVG"
+              title="SVG will save as actual size with 72DPI.&#013;SVG will require manual cropping at inner border.">SVG</button>
+            <button class="button-save button-split-right darker" id="saveCombinedPNG"
+              title="PNG saves as 10X size for high resolution.&#013;Scale down to 10% for actual size.&#013;PNG saves with transparent background.">PNG</button>
+          </div>
+          <small>Save Combined</small>
+        </div>
+      </div>
+      <div class="center">
+        <div class="center column pr-12" id="backCoverSection">
+          <div id="back-cover" class="cover"></div>
+          <small id="saveBackSVGLabel">Save Back</small>
+          <div class="center">
+            <button class="button-save button-split-left" id="saveBackSVG"
+              title="SVG will save as actual size with 72DPI.&#013;SVG will require manual cropping at inner border.">SVG</button>
+            <button class="button-save button-split-right darker" id="saveBackPNG"
+              title="PNG saves as 10X size for high resolution.&#013;Scale down to 10% for actual size.&#013;PNG saves with transparent background.">PNG</button>
+          </div>
+        </div>
+        <div class="center column" id="spineCoverSection">
+          <div id="spine-cover" class="cover"></div>
+          <small>Save Spine</small>
+          <div class="center">
+            <button class="button-save button-split-left" id="saveSpineSVG"
+              title="SVG will save as actual size with 72DPI.&#013;SVG will require manual cropping at inner border.">SVG</button>
+            <button class="button-save button-split-right darker" id="saveSpinePNG"
+              title="PNG saves as 10X size for high resolution.&#013;Scale down to 10% for actual size.&#013;PNG saves with transparent background.">PNG</button>
+          </div>
+        </div>
+        <div class="center column pl-12" id="frontCoverSection">
+          <div id="front-cover" class="cover"></div>
+          <small>Save Front</small>
+          <div class="center">
+            <button class="button-save button-split-left" id="saveFrontSVG"
+              title="SVG will save as actual size with 72DPI.&#013;SVG will require manual cropping at inner border.">SVG</button>
+            <button class="button-save button-split-right darker" id="saveFrontPNG"
+              title="PNG saves as 10X size for high resolution.&#013;Scale down to 10% for actual size.&#013;PNG saves with transparent background.">PNG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="settingsSection">
+      <div class="space-out">
+        <div class="input-group">
+          <label for="titleInput">Title</label>
+          <textarea type="text" id="titleInput"></textarea>
+        </div>
+        <div class="input-group">
+          <label for="authorInput">Author</label>
+          <textarea id="authorInput"></textarea>
+        </div>
+      </div>
+      <div class="space-out">
+        <div class="input-group">
+          <label for="coverFontSizeInput">Cover Font Size</label>
+          <input type="number" id="coverFontSizeInput" min="4" max="40" step="0.5" />
+        </div>
+        <div class="input-group">
+          <label for="spineFontSizeInput">Spine Font Size</label>
+          <input type="number" id="spineFontSizeInput" min="4" max="40" step="0.5" />
+        </div>
+      </div>
+      <div class="space-out">
+
+        <div class="input-group">
+          <label for="spineTextStyleInput">Spine Text Style</label>
+          <select id="spineTextStyleInput">
+            <option value="1">both centered</option>
+            <option value="2">both rotated</option>
+            <option value="3">title rotated</option>
+            <option value="4">author top</option>
+            <option value="5">centered preserve format</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="spineArtStyleInput">Spine Art Style</label>
+          <select id="spineArtStyleInput">
+            <option value="0">no art</option>
+            <option value="2">2 x 2 sides</option>
+            <option value="3">3 x 3 sides</option>
+            <option value="4">4 x 4 sides</option>
+            <option value="5">1 x 1 center</option>
+            <option value="6">2 x 2 center</option>
+            <option value="7">3 x 2 sides</option>
+            <option value="8">4 x 3 sides</option>
+            <option value="9">2 x 3 sides</option>
+            <option value="10">3 x 4 sides</option>
+            <option value="11">1 top</option>
+            <option value="12">1 bottom</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group space-out">
+        <label for="fontInput">Upload a Font:</label>
+        <input
+          title="Beta Feature: file name should be the same as the font&#013;E.G. CinzelDecorative-Regular.ttf for Cinzel Decorative&#013;Font should also be installed on your system"
+          type="file" id="fontInput" accept=".ttf, .otf" />
+      </div>
+      <hr>
+      <div class="space-out">
+        <div class="input-group space-out">
+          <label for="endpaperCheckbox">Endpaper Mode: </label>
+          <input
+            title="Enter mode to create patterned endpaper&#013;Uses same controls as back cover when enabled&#013;Endpaper PNGs can be printed onto cardstock&#013;Endpaper SVGs can be drawn via pen holder"
+            type="checkbox" id="endpaperCheckbox" />
+        </div>
+        <div class="input-group space-out">
+          <label for="transparentCheckbox">Save Transparent: </label>
+          <input title="Save PNG without background color" type="checkbox" id="transparentCheckbox" />
+        </div>
+      </div>
+      <div class="space-out">
+        <div class="input-group">
+          <label for="coverWidthInput">Cover Width</label>
+          <input type="number" id="coverWidthInput" min="1" max="300" step="0.1" />
+        </div>
+        <div class="input-group">
+          <label for="coverHeightInput">Cover Height</label>
+          <input type="number" id="coverHeightInput" min="1" max="300" step="0.1" />
+        </div>
+      </div>
+      <div class="space-out">
+        <div class="input-group">
+          <label for="borderGapInput">Border Gap</label>
+          <input type="number" id="borderGapInput" min="0" max="150" step="0.05" />
+        </div>
+        <div class="input-group">
+          <label for="borderThicknessInput">Border Thickness</label>
+          <input type="number" id="borderThicknessInput" min="0" max="20" step="0.01" />
+        </div>
+      </div>
+      <div class="space-out">
+        <div class="input-group">
+          <label for="spineWidthInput">Spine Width</label>
+          <input type="number" id="spineWidthInput" min="1" max="150" step="0.1" />
+        </div>
+        <div class="input-group">
+          <label for="lengthUnitInput">Length Unit</label>
+          <select id="lengthUnitInput">
+            <option value="inches">inches</option>
+            <option value="millimeters">millimeters</option>
+          </select>
+        </div>
+      </div>
+      <hr>
+      <div class="space-out">
+        <div class="input-group space-out">
+          <label for="mirrorCheckbox">Mirror Diagonals: </label>
+          <input type="checkbox" id="mirrorCheckbox" />
+        </div>
+        <div class="input-group space-out">
+          <label for="flipCheckbox">Flip Diagonals: </label>
+          <input type="checkbox" id="flipCheckbox" />
+        </div>
+        <div class="input-group space-out hidden">
+          <label for="verticalLinesCheckbox">Lines</label>
+          <input type="checkbox" id="verticalLinesCheckbox" />
+        </div>
+      </div>
+      <div class="space-out">
+        <div class="input-group color-input">
+          <label for="elementColorInput">Element Color</label>
+          <input type="color" id="elementColorInput" title="This color will show up in the saved SVG or PNG" />
+        </div>
+        <div class="input-group color-input">
+          <label for="backgroundColorInput">Background Color</label>
+          <input type="color" id="backgroundColorInput"
+            title="This color will not show up in the saved SVG or PNG&#013;Its just to help you choose a matching bookcloth color" />
+        </div>
+      </div>
+      <div class="space-out">
+        <div class="input-group">
+          <label for="imageScale">Image Size</label>
+          <input type="number" id="imageScale" min="0.05" max="8" step="0.05" />
+        </div>
+        <div class="input-group">
+          <label for="rotateInput">Image Rotation</label>
+          <input type="number" id="rotateInput" min="-720" max="720" step="5" />
+        </div>
+      </div>
+      <div class="input-group">
+        <label for="numColumnsInput">Number of Columns</label>
+        <input style="width: 97%" type="number" id="numColumnsInput" min="1" max="20" />
+      </div>
+      <div class="space-out">
+        <div class="input-group">
+          <label for="maxPerColumnInput">Maximum Rows</label>
+          <input type="number" id="maxPerColumnInput" title="Maximum rows allowed in a column" min="1" max="8" />
+        </div>
+        <div class="input-group">
+          <label for="increasePerColumnInput">Increase Per Column</label>
+          <input type="number" id="increasePerColumnInput"
+            title="Number of elements to add each&#013;column going outwards from the middle" min="0" max="8" />
+        </div>
+      </div>
+      <div class="space-out">
+        <div class="input-group">
+          <label for="backCoverInitialCopiesInput">Back Middle Rows</label>
+          <input type="number" id="backCoverInitialCopiesInput"
+            title="Number of elements to populate in the&#013;middle column of the back cover" min="0" max="8" />
+        </div>
+        <div class="input-group">
+          <label for="frontCoverInitialCopiesInput">Front Middle Rows</label>
+          <input type="number" id="frontCoverInitialCopiesInput"
+            title="Number of elements to populate in the&#013;middle column of the front cover" min="0" max="8" />
+        </div>
+      </div>
+      <div class="space-out pb-12">
+        <div class="input-group">
+          <label for="yStretchInput">Stretch Y</label>
+          <input type="range" id="yStretchInput" min="-0.5" max="1.5" step=".1" list="tickmarks" />
+        </div>
+        <div class="input-group">
+          <label for="xStretchInput">Stretch X</label>
+          <input type="range" id="xStretchInput" min="-0.5" max="1.5" step=".1" list="tickmarks" />
+        </div>
+        <datalist id="tickmarks">
+          <option>-0.5</option>
+          <option>0</option>
+          <option>1</option>
+          <option>1.5</option>
+        </datalist>
+      </div>
+      <div class="center force-height">
+        <div id="uploadSection">
+          <label
+            title="Replace the default image with your own!&#013;freesvg.org has many free images or use&#013;convertio.co to convert an image to SVG"
+            for="fileInput" id="fileInputLabel" class="file-label button">Upload An SVG</label>
+          <input type="file" id="fileInput" accept=".svg" />
+        </div>
+        <button id="fileDelete" class="button-split-right hidden">Remove</button>
+      </div>
+    </div>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

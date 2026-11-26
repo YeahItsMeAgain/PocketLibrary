@@ -1,0 +1,456 @@
+{
+  "generatedAt": "2026-11-26T08:29:33.894Z",
+  "url": "http://127.0.0.1:4173/spine-cover-art-prototype/v4-wrap/",
+  "viewports": {
+    "320": {
+      "overflow": {
+        "document": 0,
+        "body": 0,
+        "hasHorizontalScroll": false
+      },
+      "allImagesLoaded": true,
+      "images": [
+        {
+          "src": "assets/whisper-man-cover.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rock-paper-scissors-cover.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/moby-dick.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/bookcover-js/bookcover-js-1in-spine.png",
+          "ok": true
+        },
+        {
+          "src": "assets/bookcover-js/bookcover-js-combined.png",
+          "ok": true
+        },
+        {
+          "src": "assets/rock-paper-scissors-spine.jpg",
+          "ok": true
+        }
+      ],
+      "canvases": {
+        "wrapCanvas": {
+          "width": 640,
+          "height": 458
+        },
+        "compareV4": {
+          "width": 73,
+          "height": 975
+        },
+        "compareV4Zoom": {
+          "width": 73,
+          "height": 409
+        },
+        "faceFront": {
+          "width": 650,
+          "height": 975
+        },
+        "faceBack": {
+          "width": 650,
+          "height": 975
+        },
+        "faceSpine": {
+          "width": 73,
+          "height": 975
+        }
+      },
+      "foldContinuity": {
+        "backFoldEqualsSpineX": true,
+        "spineEndEqualsFrontFold": true
+      },
+      "foldPixels": [
+        {
+          "x": 303,
+          "transparentPixels": 0,
+          "nearWhitePixels": 0,
+          "total": 458
+        },
+        {
+          "x": 337,
+          "transparentPixels": 0,
+          "nearWhitePixels": 0,
+          "total": 458
+        }
+      ],
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "fontsLoaded": true
+    },
+    "360": {
+      "overflow": {
+        "document": 0,
+        "body": 0,
+        "hasHorizontalScroll": false
+      },
+      "allImagesLoaded": true,
+      "images": [
+        {
+          "src": "assets/whisper-man-cover.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rock-paper-scissors-cover.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/moby-dick.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/bookcover-js/bookcover-js-1in-spine.png",
+          "ok": true
+        },
+        {
+          "src": "assets/bookcover-js/bookcover-js-combined.png",
+          "ok": true
+        },
+        {
+          "src": "assets/rock-paper-scissors-spine.jpg",
+          "ok": true
+        }
+      ],
+      "canvases": {
+        "wrapCanvas": {
+          "width": 640,
+          "height": 458
+        },
+        "compareV4": {
+          "width": 73,
+          "height": 975
+        },
+        "compareV4Zoom": {
+          "width": 73,
+          "height": 409
+        },
+        "faceFront": {
+          "width": 650,
+          "height": 975
+        },
+        "faceBack": {
+          "width": 650,
+          "height": 975
+        },
+        "faceSpine": {
+          "width": 73,
+          "height": 975
+        }
+      },
+      "foldContinuity": {
+        "backFoldEqualsSpineX": true,
+        "spineEndEqualsFrontFold": true
+      },
+      "foldPixels": [
+        {
+          "x": 303,
+          "transparentPixels": 0,
+          "nearWhitePixels": 0,
+          "total": 458
+        },
+        {
+          "x": 337,
+          "transparentPixels": 0,
+          "nearWhitePixels": 0,
+          "total": 458
+        }
+      ],
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "fontsLoaded": true
+    },
+    "390": {
+      "overflow": {
+        "document": 0,
+        "body": 0,
+        "hasHorizontalScroll": false
+      },
+      "allImagesLoaded": true,
+      "images": [
+        {
+          "src": "assets/whisper-man-cover.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rock-paper-scissors-cover.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/moby-dick.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/bookcover-js/bookcover-js-1in-spine.png",
+          "ok": true
+        },
+        {
+          "src": "assets/bookcover-js/bookcover-js-combined.png",
+          "ok": true
+        },
+        {
+          "src": "assets/rock-paper-scissors-spine.jpg",
+          "ok": true
+        }
+      ],
+      "canvases": {
+        "wrapCanvas": {
+          "width": 688,
+          "height": 492
+        },
+        "compareV4": {
+          "width": 73,
+          "height": 975
+        },
+        "compareV4Zoom": {
+          "width": 73,
+          "height": 409
+        },
+        "faceFront": {
+          "width": 650,
+          "height": 975
+        },
+        "faceBack": {
+          "width": 650,
+          "height": 975
+        },
+        "faceSpine": {
+          "width": 73,
+          "height": 975
+        }
+      },
+      "foldContinuity": {
+        "backFoldEqualsSpineX": true,
+        "spineEndEqualsFrontFold": true
+      },
+      "foldPixels": [
+        {
+          "x": 326,
+          "transparentPixels": 0,
+          "nearWhitePixels": 0,
+          "total": 492
+        },
+        {
+          "x": 362,
+          "transparentPixels": 0,
+          "nearWhitePixels": 0,
+          "total": 492
+        }
+      ],
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": [],
+      "fontsLoaded": true
+    }
+  },
+  "samples": [
+    {
+      "label": "Whisper Man · cover-derived",
+      "book": "The Whisper Man",
+      "mode": "cover",
+      "pages": 320,
+      "spineIn": 0.6771653543307087,
+      "spineMm": 17.2,
+      "wrapIn": [
+        12.927165354330707,
+        9.25
+      ],
+      "printPx": [
+        3878,
+        2775
+      ],
+      "fitPt": 17.28884409448819,
+      "fitOk": true,
+      "fitRatio": 0.9844961240310077,
+      "stressOk": true,
+      "edge": "#0f0703",
+      "edgeSd": 6.107917622667358
+    },
+    {
+      "label": "Whisper Man · typographic",
+      "book": "The Whisper Man",
+      "mode": "type",
+      "pages": 320,
+      "spineIn": 0.6771653543307087,
+      "spineMm": 17.2,
+      "wrapIn": [
+        12.927165354330707,
+        9.25
+      ],
+      "printPx": [
+        3878,
+        2775
+      ],
+      "fitPt": 34,
+      "fitOk": true,
+      "fitRatio": 0.9367283950617284,
+      "stressOk": true,
+      "edge": "#0f0703",
+      "edgeSd": 6.107917622667358
+    },
+    {
+      "label": "Rock Paper Scissors · typographic",
+      "book": "Rock Paper Scissors",
+      "mode": "type",
+      "pages": 320,
+      "spineIn": 0.6771653543307087,
+      "spineMm": 17.2,
+      "wrapIn": [
+        12.927165354330707,
+        9.25
+      ],
+      "printPx": [
+        3878,
+        2775
+      ],
+      "fitPt": 30.774214285714294,
+      "fitOk": true,
+      "fitRatio": 0.986343362857939,
+      "stressOk": true,
+      "edge": "#dad2d1",
+      "edgeSd": 25.254955654075008
+    },
+    {
+      "label": "Moby-Dick · cover-derived",
+      "book": "Moby-Dick",
+      "mode": "cover",
+      "pages": 320,
+      "spineIn": 0.6771653543307087,
+      "spineMm": 17.2,
+      "wrapIn": [
+        12.927165354330707,
+        9.25
+      ],
+      "printPx": [
+        3878,
+        2775
+      ],
+      "fitPt": 17.28884409448819,
+      "fitOk": true,
+      "fitRatio": 0.9844961240310077,
+      "stressOk": true,
+      "edge": "#625b3b",
+      "edgeSd": 53.793771742508824
+    }
+  ],
+  "stressAtOneInch": {
+    "320": {
+      "whisper-man": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 768.935302734375,
+        "stressAvailableLengthPx": 1458
+      },
+      "rock-paper-scissors": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 831.3180541992188,
+        "stressAvailableLengthPx": 1458
+      },
+      "moby-dick": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 488.3612060546875,
+        "stressAvailableLengthPx": 1458
+      }
+    },
+    "360": {
+      "whisper-man": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 768.935302734375,
+        "stressAvailableLengthPx": 1458
+      },
+      "rock-paper-scissors": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 831.3180541992188,
+        "stressAvailableLengthPx": 1458
+      },
+      "moby-dick": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 488.3612060546875,
+        "stressAvailableLengthPx": 1458
+      }
+    },
+    "390": {
+      "whisper-man": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 768.935302734375,
+        "stressAvailableLengthPx": 1458
+      },
+      "rock-paper-scissors": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 831.3180541992188,
+        "stressAvailableLengthPx": 1458
+      },
+      "moby-dick": {
+        "stressPt": 25.531200000000002,
+        "stressOk": true,
+        "stressAcrossPx": 106,
+        "stressAvailableAcrossPx": 108,
+        "stressLengthPx": 488.3612060546875,
+        "stressAvailableLengthPx": 1458
+      }
+    }
+  },
+  "fallback48Pages": {
+    "spineIn": 0.2,
+    "effectiveMode": "type",
+    "fitPt": 11.046575342465756,
+    "fitOk": true,
+    "decisions": [
+      "Cover rail could not fit the title at 7 pt; switched to the typographic fallback.",
+      "Textless source is 38.8% inpainted (v3: pass), not original pixels."
+    ]
+  },
+  "rpsForcedCover": {
+    "effectiveMode": "cover",
+    "fitPt": 17.28884409448819,
+    "fitOk": true,
+    "decisions": [
+      "v3 rates this textless reconstruction review / fail; the cover-derived strip is mostly inpainted."
+    ]
+  },
+  "export": {
+    "suggestedFilename": "pocketlibrary-wrap-whisper-man-320pp-0.677in-cover-300dpi.png",
+    "savedAs": "screenshots/17-export-whisper-320pp-300dpi.png",
+    "width": 3878,
+    "height": 2775,
+    "bytes": 9390573,
+    "guides": "omitted by export renderer"
+  },
+  "stressButton": {
+    "pages": 484,
+    "spineIn": 1.0000000000000002,
+    "fitPt": 25.531200000000005,
+    "fitOk": true,
+    "stressPt": 25.531200000000002,
+    "stressOk": true
+  }
+}

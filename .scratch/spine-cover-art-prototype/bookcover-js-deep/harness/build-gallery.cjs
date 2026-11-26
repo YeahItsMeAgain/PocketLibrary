@@ -1,0 +1,280 @@
+/* Build the static gallery from results.json. */
+const fs = require('fs');
+const path = require('path');
+const ROOT = __dirname;
+const r = JSON.parse(fs.readFileSync(path.join(ROOT, 'results.json'), 'utf8'));
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const rel = (p) => p.replace(/\\/g, '/');
+const bookOrder = ['whisper-man', 'rock-paper-scissors', 'moby-dick'];
+const styleNames = { 1: 'both centred (words stacked)', 2: 'both rotated', 3: 'title rotated', 4: 'author top', 5: 'centred preserve format' };
+
+const naturalCards = bookOrder.map((slug) => {
+  const b = r.books[slug];
+  const fit = b.metrics.clipped ? `<span class="badge bad">clips +${b.metrics.maxOver}px</span>` : '<span class="badge ok">fits</span>';
+  return `<figure class="shot">
+    <img src="${rel(b.appShot)}" alt="${esc(b.meta.title)} live app spine">
+    <figcaption><b>${esc(b.meta.title)}</b><br>${b.meta.widthIn.toFixed(2)} in spine · ${fit}<br>
+    <a href="${rel(b.svg.file)}">SVG ${b.svg.width}×${b.svg.height}</a> · <a href="${rel(b.png.file)}">PNG ${b.png.width}×${b.png.height}</a></figcaption>
+  </figure>`;
+}).join('');
+
+const dimRows = r.dimensions.map((d) => `<tr><td>${d.widthIn.toFixed(3)}</td><td>${d.outerPx.toFixed(1)}</td><td>${d.svgWidth.toFixed(1)} × ${d.svgHeight}</td><td>${d.pngWidth} × ${d.pngHeight}</td><td>${d.cleanWidth} × ${d.cleanHeight}</td></tr>`).join('');
+
+const fitRows = bookOrder.map((slug) => {
+  const b = r.books[slug];
+  const cells = [1, 2, 3, 4, 5].map((s) => {
+    const t = r.titleFit[slug][s];
+    let txt = t.minOuterWidthIn == null ? 'no fit ≤ 2.50' : `${t.minOuterWidthIn.toFixed(2)} in`;
+    let cls = '';
+    if (t.minOuterWidthIn != null && b.meta.widthIn < t.minOuterWidthIn) cls = 'class="warn"';
+    if (s === 4 && slug === 'whisper-man') txt = 'never in 0.26–2.50';
+    if (s === 5 && slug === 'rock-paper-scissors') txt = 'no fit ≤ 2.50';
+    return `<td ${cls}>${txt}</td>`;
+  }).join('');
+  return `<tr><td><b>${esc(b.meta.title)}</b><br><small>${b.meta.widthIn.toFixed(2)} in natural</small></td>${cells}</tr>`;
+}).join('');
+
+const compCards = bookOrder.map((slug) => {
+  const b = r.books[slug];
+  const v4 = r.v4.books[slug];
+  return `<figure class="wide">
+    <img src="${rel(r.comparisons[slug])}" alt="${esc(b.meta.title)} comparison">
+    <figcaption><b>${esc(b.meta.title)}</b> — bookcover-js SVG ${b.svg.width}×${b.svg.height} · v4-wrap 1.000 in / 300 px wide (${v4.stress.effectiveMode}) · v3 160×727 fixed crop.</figcaption>
+  </figure>`;
+}).join('');
+
+const patchedCards = bookOrder.map((slug) => {
+  const p = r.patched.books[slug];
+  return `<figure class="shot">
+    <img src="${rel(p.app)}" alt="patched ${esc(slug)} spine">
+    <figcaption><b>${esc(r.books[slug].meta.title)}</b><br>
+    direct JPEG → full-bleed crop<br>
+    <a href="${rel(p.svg.file)}">SVG ${p.svg.width}×${p.svg.height}</a> · <a href="${rel(p.png.file)}">PNG ${p.png.width}×${p.png.height}</a></figcaption>
+  </figure>`;
+}).join('');
+
+const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bookcover-js spine-only — deep hands-on</title>
+<style>
+  :root { --bg:#0e1015; --panel:#171a21; --panel2:#1d212b; --ink:#e9e3d7; --muted:#a5a9b4; --gold:#f3dfa9; --line:#2c313d; --bad:#ffc2cb; --badbg:#57222a; --ok:#b7f0c8; --okbg:#1f4d34; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif; }
+  header { padding:54px 24px 34px; background:radial-gradient(1200px 500px at 15% -10%, #2a2135 0%, transparent 62%), linear-gradient(180deg,#17131d,#0e1015); border-bottom:1px solid var(--line); }
+  .wrap { max-width:1180px; margin:0 auto; }
+  h1 { margin:0 0 10px; font:600 38px/1.12 ui-serif,Georgia,serif; letter-spacing:-.02em; color:#fbf2dc; }
+  h2 { margin:0 0 14px; font:600 25px/1.2 ui-serif,Georgia,serif; color:var(--gold); }
+  h3 { margin:0 0 8px; font:600 17px/1.3 ui-sans-serif,system-ui; color:#f0e8d4; }
+  p { margin:0 0 12px; color:#cfd2da; }
+  a { color:#f3dfa9; text-decoration-thickness:1px; text-underline-offset:2px; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  code { font-size:.88em; background:#20242e; border:1px solid #303644; border-radius:4px; padding:1px 5px; }
+  pre { background:#11141a; border:1px solid #2c313d; border-radius:8px; padding:14px 16px; overflow:auto; font-size:12.5px; line-height:1.55; color:#dfe3ea; }
+  .lede { font-size:17px; max-width:850px; color:#d9d4c7; }
+  .verdict { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0 4px; }
+  .vcard { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 16px 14px; }
+  .vcard b { display:block; color:var(--gold); font-size:13px; letter-spacing:.04em; text-transform:uppercase; margin-bottom:4px; }
+  .vcard span { color:#d7d9df; font-size:14px; }
+  main { padding:34px 24px 70px; }
+  section { margin:0 0 44px; }
+  .section-head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:18px; }
+  .section-head p { margin:0; color:var(--muted); font-size:14px; }
+  .badge { display:inline-block; padding:1px 7px; border-radius:999px; font:11px/1.6 ui-monospace,monospace; white-space:nowrap; }
+  .ok { background:var(--okbg); color:var(--ok); } .bad { background:var(--badbg); color:var(--bad); }
+  .note { background:#1b1f28; border-left:3px solid #7d6a3d; padding:12px 15px; border-radius:0 7px 7px 0; color:#cfd2da; font-size:14px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start; }
+  figure { margin:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  figure img { display:block; max-width:100%; max-height:560px; margin:0 auto; background:#20232b; }
+  figure.shot img { height:500px; width:auto; }
+  figcaption { margin-top:10px; color:var(--muted); font-size:12.5px; line-height:1.5; text-align:center; }
+  figure.wide img { max-height:none; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th,td { text-align:left; padding:9px 10px; border-bottom:1px solid #262b36; vertical-align:top; }
+  th { color:var(--gold); font-weight:600; font-size:12px; letter-spacing:.04em; text-transform:uppercase; }
+  td.warn { color:#ffd3a1; }
+  small { color:var(--muted); }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+  .raster { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .raster figure img { height:380px; width:auto; }
+  .raster .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .raster .card img { height:300px; width:auto; display:block; margin:6px auto 8px; background:#20232b; }
+  .links { columns:2; font-size:13px; }
+  .links a { display:block; margin-bottom:4px; }
+  footer { color:var(--muted); font-size:12.5px; border-top:1px solid var(--line); padding:18px 24px 40px; }
+  @media (max-width:900px) { .verdict,.grid3,.two,.raster { grid-template-columns:1fr; } figure.shot img { height:420px; } .links { columns:1; } }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <p style="color:#b9a77c;font:12px/1.4 ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px">PocketLibrary · spine-cover-art-prototype · bookcover-js-deep</p>
+  <h1>bookcover-js can export a spine by itself.</h1>
+  <p class="lede">Hands-on test of the upstream <a href="https://github.com/acestronautical/bookcover-js">bookcover-js</a> “Save Spine” SVG/PNG buttons with real PocketLibrary covers, at real spine widths — plus raster workarounds and a minimal patch.</p>
+  <div class="verdict">
+    <div class="vcard"><b>Spine-only export</b><span>Yes. Separate <code>Save Spine</code> SVG and PNG buttons produce a spine rectangle with no front/back panels and no combined-export gaps.</span></div>
+    <div class="vcard"><b>Clean rectangle?</b><span>SVG is exactly the inner spine: <code>outerWidth − 0.25 in</code>. PNG is 10× that plus transparent gutters (<code>0.125 in</code> sides, <code>0.25 in</code> top/bottom).</span></div>
+    <div class="vcard"><b>Cover-derived?</b><span>No. It is a standalone typographic/ornament spine. Real raster covers require a wrapper or a patch; even then it is not a wrap compositor.</span></div>
+  </div>
+</div></header>
+
+<main class="wrap">
+
+<section>
+  <div class="section-head"><h2>1 · The three spine-only exports</h2><p>Real covers, natural PocketLibrary-ish widths, text style 2, ship ornament.</p></div>
+  <div class="grid3">${naturalCards}</div>
+  <p class="note" style="margin-top:16px"><b>Correction to the earlier test.</b> The earlier “cut-panel generator” verdict was based on the combined export and the front-cover input. It missed the dedicated <code>#saveSpineSVG</code> / <code>#saveSpinePNG</code> controls. Those are real, and the SVG is a clean spine rectangle. The spine is still not derived from the front cover and still needs a manually entered width.</p>
+</section>
+
+<section>
+  <div class="section-head"><h2>2 · Exact dimensions and gutters</h2><p>Default 0.25 in border gap, 0.05 in border thickness, 6×9 in cover.</p></div>
+  <div class="two">
+    <div>
+      <table>
+        <thead><tr><th>Spine</th><th>Outer px</th><th>SVG px</th><th>PNG 10×</th><th>Clean 10×</th></tr></thead>
+        <tbody>${dimRows}</tbody>
+      </table>
+      <p style="margin-top:12px;font-size:13px;color:var(--muted)">Outer = <code>inches × 72</code>. SVG width = <code>outer − 18 px</code>; height = <code>648 − 36</code> = 612. PNG = SVG × 10 plus 90 px transparent on each side and 180 px top/bottom. “Clean 10×” is a re-render of the SVG at 10× with the gutters removed.</p>
+    </div>
+    <figure class="wide"><img src="out/comparisons/all-three-natural.png" alt="all three natural spine exports"><figcaption>Natural widths: 1.00, 0.75 and 1.50 in. The 0.75 in Rock Paper Scissors export clips at the default 18 px font.</figcaption></figure>
+  </div>
+  <p class="note">PNG was checked at the pixel level: <code>(0,0)</code>, the gutter edge at <code>(89,180)</code> and the bottom gutter all have alpha 0; content starts at <code>(91,181)</code>. So the PNG is not a clean spine rectangle unless you crop 90/180 px. The SVG has no margins at all.</p>
+</section>
+
+<section>
+  <div class="section-head"><h2>3 · Real raster covers</h2><p>What happens when the input is a JPEG, not line art.</p></div>
+  <div class="raster">
+    <figure><img src="out/raster/direct-jpg-spine.png" alt="direct JPEG upload"><figcaption><b>Direct JPEG upload — fails.</b> The file reader uses <code>readAsText()</code> and the parser returns a <code>parsererror</code> node. The app throws <code>child.getBBox is not a function</code>; the spine stays on the previous/default design. <span class="badge bad">not accepted</span></figcaption></figure>
+    <figure><img src="out/raster/raster-in-svg-spine-scale8.png" alt="raster wrapped in SVG"><figcaption><b>JPEG embedded in an SVG wrapper — accepted, but wrong.</b> The image is treated as a tile/ornament; at image size 8 and style 5 it paints two huge copies top and bottom and cuts the title. <span class="badge bad">ornament only</span></figcaption></figure>
+    <figure><img src="out/raster/raster-in-svg-artoff-spine.png" alt="art off with wrapper uploaded"><figcaption><b>Same wrapper with art off.</b> The uploaded cover is ignored completely; only type + border remain. There is no “use this as the spine background” path. <span class="badge bad">ignored</span></figcaption></figure>
+    <figure><img src="out/raster/dominant-colour-spine-render.png" alt="dominant colour fallback"><figcaption><b>Closest unpatched alternative: dominant colour + type.</b> Cover dominant <code>${r.rasterTests.dominantColour.background}</code>; the exported SVG is transparent, so this render puts the colour behind cream ink. It is a legitimate typographic spine, but no cover pixels. <span class="badge ok">works as fallback</span></figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>4 · A minimal patch makes raster spines work</h2><p>Direct JPEG upload, full-bleed cover-edge crop, contrast scrim, no PNG gutters.</p></div>
+  <div class="grid3">${patchedCards}</div>
+  <pre>index.html
+-  &lt;input type="file" id="fileInput" accept=".svg" /&gt;
++  &lt;input type="file" id="fileInput" accept=".svg,.jpg,.jpeg,.png,.webp" /&gt;
+
+js/main.js
++  if (/\\.(jpe?g|png|webp)$/i.test(file.name)) {
++    reader.onload = () =&gt; {
++      Cover.spine.background = reader.result;   // data: URL
++      Cover.spine.artStyle = 0;
++      Cover.generateCovers();
++    };
++    reader.readAsDataURL(file);
++    return;
++  }
+
+js/penguinstyle.js
++  // in genSpine(), before the border/type group:
++  &lt;image href="{spine.background}" x="0" y="0"
++         width="{innerWidth}" height="{innerHeight}"
++         preserveAspectRatio="xMinYMid slice"/&gt;
++  &lt;rect fill="{spine.scrim}" width="{innerWidth}" height="{innerHeight}"/&gt;
+
+-  saveSpine(filename) { this.save(filename, this.spine.svgElem, this.borderGap / 2, this.borderGap); }
++  saveSpine(filename) { this.save(filename, this.spine.svgElem, 0, 0); }   // no PNG gutters</pre>
+  <p>This patch is in <code>harness/patched-bookcover-js/</code>. It is a harness copy only; upstream is untouched. The exported SVG embeds the JPEG as a data URI and the PNG is exactly <code>spine inner width × 6120</code> (540×6120, 360×6120, 900×6120). It proves the limitation is fixable, not that bookcover-js already does it.</p>
+</section>
+
+<section>
+  <div class="section-head"><h2>5 · Title fitting: where it clips</h2><p>18 px font, art off, measured glyph bounds against the saved SVG rectangle.</p></div>
+  <div class="two">
+    <div>
+      <table>
+        <thead><tr><th>Book</th><th>Style 1<br>stacked</th><th>Style 2<br>rotated</th><th>Style 3<br>title rot.</th><th>Style 4<br>author top</th><th>Style 5<br>preserve</th></tr></thead>
+        <tbody>${fitRows}</tbody>
+      </table>
+      <p style="margin-top:10px;font-size:13px;color:var(--muted)">Values are the first tested width with no glyph overflow, refined by binary search. <b>Style 2 needs ~0.96 in for any title</b> — the limit is font height across the spine, not string length. <b>Style 1</b> depends on the longest word (1.28–1.62 in). <b>Style 4</b> computes the author font from a width-dependent formula; for a short name such as “Alex North” it clips at every width from 0.26 to 2.50 in, because the author grows with the spine.</p>
+    </div>
+    <figure><img src="out/titlefit/whisper-man-style-1.png" alt="Whisper Man style 1 contact sheet"><figcaption>Style 1 on The Whisper Man: “Whisper” is cut at 1.00 in and only clears at 1.30 in.</figcaption></figure>
+  </div>
+  <div class="two" style="margin-top:16px">
+    <figure><img src="out/titlefit/clip-detail-whisper-1in.png" alt="Whisper 1 inch style 1 vs style 2"><figcaption>The earlier “clips at 1 in” result was style 1. Style 2 fits at the same 1.00 in spine with the same 18 px font.</figcaption></figure>
+    <figure><img src="out/titlefit/clip-detail-rps-075.png" alt="RPS 0.75 inch 18 px vs 13 px"><figcaption>Rock Paper Scissors at 0.75 in: 18 px clips by 8 px; the largest fitting size is 13 px. The app has no auto-fit.</figcaption></figure>
+  </div>
+  <div class="two" style="margin-top:16px">
+    <figure><img src="out/titlefit/rock-paper-scissors-style-2.png" alt="RPS style 2 contact sheet"><figcaption>Style 2 width sweep for Rock Paper Scissors. Thin spines clip, 1.00 in and above fit.</figcaption></figure>
+    <figure><img src="out/rock-paper-scissors/card-fitted.png" alt="fitted RPS spine"><figcaption>Manually fitted 0.75 in RPS spine at 13 px — the work an auto-fit patch should do.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>6 · Compared with v4-wrap and v3</h2><p>Same displayed height, not the same native resolution.</p></div>
+  ${compCards}
+  <p class="note">v4-wrap solves the things bookcover-js does not: page-count → spine arithmetic (0.677 in for 320 pages), a continuous no-gap wrap, measured auto-fit (17.3 pt at the computed spine, 25.5 pt at the 1.00 in stress), and real cover pixels. v3 is the best-looking art but has a fixed 160×727 crop and no thickness model. bookcover-js is the only one of the three with a standalone <em>decorative</em> spine export; it is not a substitute for either.</p>
+</section>
+
+<section>
+  <div class="section-head"><h2>7 · Verdict</h2><p>Good enough for what, exactly?</p></div>
+  <div class="two">
+    <div>
+      <h3>Good enough as a 2D spine generator</h3>
+      <p><b>Yes, for a standalone typographic/ornament spine.</b> The SVG is crisp, editable, correctly sized at 72 dpi, and contains only the spine. It drops into a shelf as an <code>&lt;img&gt;</code> or inline SVG. At 1.00 in with rotated type it looks deliberate and reads well. The ship ornament is a Penguin-clothbound signature, which suits classics.</p>
+      <h3 style="margin-top:20px">Not good enough as-is for PocketLibrary</h3>
+      <p>No cover-derived art (raster fails or becomes a tile), no page-count → width, no auto-fit (0.75 in RPS clips at 18 px), and PNG exports carry transparent gutters. Style 1 clips at every normal 1 in spine; style 4's author formula misbehaves on thick spines. The SVG also has no background, so the shelf must supply it.</p>
+    </div>
+    <div>
+      <h3>What exactly needs patching</h3>
+      <ol style="margin:0;padding-left:20px;color:#cfd2da">
+        <li><b>Raster input</b> — accept JPEG/PNG and store a data URL on <code>spine.background</code>; do not route it through the SVG line-art parser.</li>
+        <li><b>Full-bleed placement</b> — insert an <code>&lt;image preserveAspectRatio="xMinYMid slice"&gt;</code> behind the border/type, plus a contrast scrim. Do not use the tiling path.</li>
+        <li><b>Type fit</b> — measure the across-spine extent and reduce font size until it fits (13 px at 0.75 in, 11.3 px at 0.677 in for style 2).</li>
+        <li><b>PNG gutters</b> — call <code>saveSpine</code> with zero padding if the shelf expects an exact rectangle; keep the padded version only for cutting-plotters.</li>
+        <li><b>Optional</b> — a background parameter so the SVG/PNG can carry the bookcloth colour, and a page-count/caliper input to replace manual spine width.</li>
+      </ol>
+      <p style="margin-top:14px"><b>Bottom line:</b> bookcover-js is a usable <em>spine renderer</em>, not a cover pipeline. With the five patches above it can produce a good-looking 2D shelf spine; without them, use it only for typographic/ornament spines and keep v4-wrap for cover-derived wraps.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>8 · Files and commands</h2><p>Everything is under <code>.scratch/spine-cover-art-prototype/bookcover-js-deep/harness/</code>.</p></div>
+  <div class="two">
+    <div>
+      <h3>Commands</h3>
+      <pre>cd .scratch/spine-cover-art-prototype/bookcover-js-deep/harness
+
+# upstream clone (MPL-2.0, commit 7a99ad9, 2024-08-14)
+git clone --depth 1 https://github.com/acestronautical/bookcover-js.git vendor/bookcover-js
+
+# serve the repo root; the existing static host is on :4173
+# (from the repo root, an equivalent is: python3 -m http.server 4173)
+
+node capture-deep.cjs     # exports, raster tests, fit sweep, v4/v3 compares
+node rebuild-contact.cjs  # readable per-book fit sheets + clip close-ups
+node fix-v4.cjs           # re-capture v4 at each book's 320-page width
+node build-gallery.cjs    # this page</pre>
+    </div>
+    <div>
+      <h3>Key files</h3>
+      <div class="links">
+        <a href="out/whisper-man/whisper-man-spine.svg">whisper-man-spine.svg (54×612)</a>
+        <a href="out/whisper-man/whisper-man-spine.png">whisper-man-spine.png (720×6480)</a>
+        <a href="out/rock-paper-scissors/rock-paper-scissors-spine.svg">rock-paper-scissors-spine.svg</a>
+        <a href="out/moby-dick/moby-dick-spine.svg">moby-dick-spine.svg (90×612)</a>
+        <a href="out/rock-paper-scissors/rock-paper-scissors-fitted.svg">RPS fitted 13 px SVG</a>
+        <a href="out/patched/whisper-man-spine.svg">patched full-bleed SVG</a>
+        <a href="out/patched/whisper-man-spine.png">patched full-bleed PNG</a>
+        <a href="out/v4/whisper-man-spine-1.000in.png">v4 1.000 in spine crop</a>
+        <a href="out/v3/whisper-man-art-only.jpg">v3 art-only spine</a>
+        <a href="results.json">results.json (all measurements)</a>
+        <a href="HANDS-ON.md">HANDS-ON.md</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer><div class="wrap">Throwaway prototype evidence. No production files, other prototypes, tests, manifests or specs were modified. No commit or release. Generated ${esc(new Date(r.generatedAt).toISOString().slice(0, 10))}.</div></footer>
+</body>
+</html>`;
+
+fs.writeFileSync(path.join(ROOT, 'index.html'), html);
+console.log('wrote index.html', html.length, 'bytes');

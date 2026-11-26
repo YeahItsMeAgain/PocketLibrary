@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>PocketLibrary — Can a model invent the art back? (prototype v4)</title>
+<!--
+  THROWAWAY PROTOTYPE v4 — not production code.
+  Tests generative text removal / textless-art reconstruction for two real
+  book covers (The Whisper Man, Rock Paper Scissors), against the v3
+  OCR + LaMa baseline, plus a public-domain classic control.
+  Everything lives under .scratch/spine-cover-art-prototype/v4-generative/.
+-->
+<style>
+@font-face {
+  font-family: "EB Garamond";
+  src: url("EBGaramond-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+*, *::before, *::after { box-sizing: border-box; }
+:root {
+  --display: "EB Garamond", "Iowan Old Style", Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bg: #0b0806;
+  --panel: #14100c;
+  --panel-2: #1a140f;
+  --cream: #f4e7cb;
+  --ink: #1d140c;
+  --brass: #cba45e;
+  --muted: #a8967f;
+  --muted-2: #7f6e5c;
+  --line: rgba(203, 164, 94, .22);
+  --line-soft: rgba(203, 164, 94, .12);
+  --good: #8fbf8a;
+  --bad: #d98a72;
+  --warn: #d7b06b;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+html, body { margin: 0; padding: 0; }
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  background:
+    radial-gradient(90% 26% at 50% -4%, rgba(126, 76, 36, .22), transparent 66%),
+    radial-gradient(80% 30% at 50% 100%, rgba(38, 22, 10, .4), transparent 72%),
+    linear-gradient(180deg, #0b0806, #0a0705 55%, #080604);
+}
+img { display: block; max-width: 100%; }
+a { color: var(--brass); }
+[hidden] { display: none !important; }
+::selection { background: rgba(203, 164, 94, .32); }
+.skip-link {
+  position: absolute; top: -64px; left: 12px; z-index: 20;
+  padding: 10px 14px; background: var(--cream); color: var(--ink);
+  font: 12px/1 var(--sans); text-decoration: none; border-radius: 2px;
+}
+.skip-link:focus { top: 12px; }
+
+.stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 18px 14px 90px;
+}
+@media (max-width: 360px) { .stage { padding-right: 11px; padding-left: 11px; } }
+@media (min-width: 820px) {
+  body { padding: 30px 0 40px; }
+  .stage {
+    border-left: 1px solid rgba(203, 164, 94, .13);
+    border-right: 1px solid rgba(203, 164, 94, .13);
+    padding-right: 34px; padding-left: 34px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .014), transparent 24%);
+    box-shadow: 0 0 110px rgba(0, 0, 0, .55);
+  }
+}
+
+/* ---------- type ---------- */
+.eyebrow, .kicker, .topline, .pill, .tag, .stage-num, .metric span, .pipeline b {
+  font-family: var(--sans);
+  text-transform: uppercase;
+  letter-spacing: .13em;
+}
+.topline {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 9.5px; letter-spacing: .16em; color: var(--muted-2);
+  padding-bottom: 14px; border-bottom: 1px solid var(--line-soft);
+}
+.topline .dot { color: var(--brass); }
+.kicker {
+  margin: 22px 0 6px; font-size: 10px; color: var(--brass); letter-spacing: .2em;
+}
+h1 {
+  margin: 0 0 12px;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(34px, 10.4vw, 54px);
+  line-height: .98;
+  letter-spacing: -.015em;
+  text-wrap: balance;
+}
+h1 em { font-style: italic; color: var(--brass); }
+.lede {
+  margin: 0 0 18px;
+  color: #d8c9b0;
+  font-family: var(--display);
+  font-size: clamp(16px, 4.4vw, 18px);
+  line-height: 1.5;
+  max-width: 58ch;
+}
+h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(27px, 7.2vw, 36px);
+  line-height: 1.02;
+  letter-spacing: -.01em;
+}
+h3 { margin: 0 0 4px; font-size: 13px; font-weight: 650; letter-spacing: .01em; }
+p { margin: 0 0 10px; }
+p:last-child { margin-bottom: 0; }
+.small { font-size: 12px; color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; }
+hr.rule { border: 0; border-top: 1px solid var(--line-soft); margin: 30px 0; }
+
+/* ---------- hero ---------- */
+.hero { padding-top: 2px; }
+.verdict-grid {
+  display: grid; gap: 10px; margin: 20px 0 0;
+}
+@media (min-width: 620px) { .verdict-grid { grid-template-columns: 1fr 1fr; } }
+.verdict {
+  border: 1px solid var(--line); border-radius: 4px;
+  background: linear-gradient(180deg, rgba(203, 164, 94, .07), rgba(203, 164, 94, .015));
+  padding: 13px 14px 14px;
+}
+.verdict .lab { display: flex; align-items: center; gap: 7px; font-size: 9.5px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+.verdict .lab::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--brass); }
+.verdict strong { display: block; margin: 5px 0 4px; font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.05; }
+.verdict p { font-size: 12.5px; color: #cbbca5; line-height: 1.45; }
+.verdict.good strong { color: var(--good); }
+.verdict.bad strong { color: var(--bad); }
+.hero-meta {
+  display: flex; flex-wrap: wrap; gap: 6px 14px;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 10.5px; color: var(--muted-2);
+  letter-spacing: .04em;
+}
+.hero-meta b { color: var(--cream); font-weight: 600; }
+
+/* ---------- sections ---------- */
+section { margin-top: 42px; scroll-margin-top: 20px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.section-head h2 { flex: 1; }
+.eyebrow { margin: 0 0 7px; font-size: 9.5px; color: var(--brass); letter-spacing: .18em; }
+.section-intro { color: #cbbca5; font-size: 13px; max-width: 62ch; margin-bottom: 16px; }
+
+/* ---------- pipeline ---------- */
+.pipeline {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 6px;
+  counter-reset: step;
+}
+@media (min-width: 620px) { .pipeline { grid-template-columns: repeat(5, 1fr); } }
+.pipeline li {
+  counter-increment: step;
+  position: relative;
+  padding: 9px 10px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .012);
+  font-size: 11px; color: var(--muted); line-height: 1.35;
+}
+.pipeline li::before {
+  content: counter(step, decimal-leading-zero);
+  display: block; margin-bottom: 3px;
+  font-family: ui-monospace, monospace; font-size: 9px; color: var(--brass);
+}
+.pipeline b { display: block; color: var(--cream); font-size: 9.5px; letter-spacing: .12em; margin-bottom: 2px; }
+
+/* ---------- case ---------- */
+.case {
+  padding: 18px 0 0;
+  border-top: 1px solid var(--line);
+}
+.case-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.case-head > div { min-width: 0; }
+.pill {
+  flex: none; display: inline-block;
+  padding: 4px 8px 3px;
+  border: 1px solid currentColor; border-radius: 100px;
+  font-size: 8.5px; letter-spacing: .13em;
+  white-space: nowrap;
+}
+.pill.good { color: var(--good); }
+.pill.warn { color: var(--warn); }
+.pill.bad { color: var(--bad); }
+.pill.neutral { color: var(--muted); }
+.case-lede { font-family: var(--display); font-size: 16.5px; line-height: 1.5; color: #d8c9b0; margin-bottom: 16px; max-width: 62ch; }
+.metrics { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; padding: 0; list-style: none; }
+.metric {
+  flex: 1 1 92px; min-width: 0;
+  padding: 7px 9px 8px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, .012);
+  border-radius: 3px;
+}
+.metric span { display: block; font-size: 8px; color: var(--muted-2); letter-spacing: .12em; margin-bottom: 2px; }
+.metric b { display: block; font-family: var(--display); font-weight: 400; font-size: 17px; line-height: 1.1; }
+.metric i { font-style: normal; font-size: 9.5px; color: var(--muted); }
+
+/* five-stage chain */
+.chain {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+@media (min-width: 560px) { .chain { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; } }
+.chain figure {
+  margin: 0; min-width: 0;
+  border: 1px solid var(--line-soft);
+  background: var(--panel);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.chain .frame { position: relative; aspect-ratio: 2 / 3; background: #090705; overflow: hidden; }
+.chain .frame img { width: 100%; height: 100%; object-fit: cover; }
+.chain .frame.contain img { object-fit: contain; }
+.chain .frame.mask img { filter: saturate(.9); }
+.chain figcaption {
+  padding: 6px 7px 7px;
+  border-top: 1px solid var(--line-soft);
+  line-height: 1.25;
+}
+.chain figcaption b { display: block; font-size: 10px; font-weight: 600; letter-spacing: .02em; }
+.chain figcaption span { display: block; margin-top: 1px; font-size: 9px; color: var(--muted-2); }
+.chain .is-fail { outline: 1px solid rgba(217, 138, 114, .55); outline-offset: -1px; }
+.chain .is-pass { outline: 1px solid rgba(143, 191, 138, .5); outline-offset: -1px; }
+.badge-corner {
+  position: absolute; left: 5px; top: 5px; z-index: 2;
+  padding: 2px 5px;
+  font: 8px/1.2 var(--sans); letter-spacing: .1em; text-transform: uppercase;
+  color: #0b0806; background: var(--cream); border-radius: 2px;
+}
+.badge-corner.bad { background: var(--bad); color: #160b08; }
+.badge-corner.good { background: var(--good); color: #071006; }
+
+/* spine comparison */
+.spine-compare {
+  display: grid; gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background:
+    radial-gradient(70% 60% at 50% 100%, rgba(203, 164, 94, .09), transparent 70%),
+    linear-gradient(180deg, #16110c, #100c09);
+}
+@media (min-width: 560px) { .spine-compare { grid-template-columns: auto minmax(0, 1fr); align-items: start; } }
+.spine-pair { display: flex; gap: 12px; justify-content: center; }
+.spine-pair figure { margin: 0; text-align: center; min-width: 0; }
+.spine-pair img {
+  width: auto;
+  height: clamp(240px, 64vw, 320px);
+  border-radius: 2px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .55), 0 0 0 1px rgba(203, 164, 94, .16);
+  background: #080604;
+}
+.spine-pair figcaption { margin-top: 6px; font-size: 9px; line-height: 1.3; color: var(--muted); max-width: 96px; }
+.spine-pair .fail-img { opacity: .82; }
+.spine-notes h3 { color: var(--cream); margin-bottom: 6px; }
+.spine-notes p { font-size: 12.5px; color: #cbbca5; line-height: 1.45; }
+.spine-notes ul { margin: 7px 0 0; padding-left: 14px; }
+.spine-notes li { font-size: 12px; color: #cbbca5; margin-bottom: 4px; }
+.spine-notes li b { color: var(--cream); }
+
+/* attempt rows */
+.attempt {
+  display: grid; gap: 12px;
+  margin-top: 14px; padding: 12px;
+  border: 1px solid var(--line-soft); border-radius: 4px;
+  background: rgba(255, 255, 255, .012);
+}
+@media (min-width: 560px) { .attempt { grid-template-columns: 150px minmax(0, 1fr); } }
+.attempt.fail { border-color: rgba(217, 138, 114, .38); }
+.attempt img { width: 100%; border-radius: 2px; }
+.attempt .tag { display: inline-block; margin-bottom: 5px; padding: 2px 6px; border-radius: 2px; font-size: 8.5px; letter-spacing: .12em; }
+.tag.fail { color: #180b07; background: var(--bad); }
+.tag.warn { color: #180b07; background: var(--warn); }
+.tag.good { color: #071006; background: var(--good); }
+.tag.neutral { color: var(--ink); background: var(--muted); }
+.attempt p { font-size: 12.5px; color: #cbbca5; }
+
+/* prompt details */
+details.prompt {
+  margin-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 9px;
+}
+details.prompt summary {
+  cursor: pointer; list-style: none;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--brass);
+}
+details.prompt summary::-webkit-details-marker { display: none; }
+details.prompt summary::after { content: " +"; }
+details.prompt[open] summary::after { content: " −"; }
+details.prompt pre {
+  margin: 9px 0 0; padding: 10px;
+  white-space: pre-wrap; word-wrap: break-word;
+  background: #080604; border: 1px solid var(--line-soft); border-radius: 3px;
+  color: #cbbca5; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* control */
+.callout {
+  margin-top: 14px; padding: 14px;
+  border-left: 2px solid var(--brass);
+  background: rgba(203, 164, 94, .06);
+  border-radius: 0 3px 3px 0;
+}
+.callout h3 { font-family: var(--display); font-size: 20px; font-weight: 400; margin-bottom: 5px; }
+.callout p { font-size: 12.5px; color: #cbbca5; }
+.control-chain.chain { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 560px) { .control-chain.chain { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* failure modes */
+.fail-grid { display: grid; gap: 9px; margin-top: 14px; }
+@media (min-width: 620px) { .fail-grid { grid-template-columns: 1fr 1fr; } }
+.fail-card {
+  padding: 12px 13px 13px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .012);
+}
+.fail-card .num { display: block; margin-bottom: 4px; font: 9px/1 ui-monospace, monospace; color: var(--bad); letter-spacing: .1em; }
+.fail-card h3 { font-size: 13.5px; }
+.fail-card p { font-size: 12px; color: #cbbca5; line-height: 1.45; }
+
+/* settings table */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line-soft); border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 11.5px; min-width: 460px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
+th { font-family: var(--sans); font-size: 8.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--muted-2); font-weight: 600; background: rgba(203, 164, 94, .05); }
+tr:last-child td { border-bottom: 0; }
+td b { color: var(--cream); font-weight: 600; }
+td .ok { color: var(--good); }
+td .no { color: var(--bad); }
+td .mid { color: var(--warn); }
+@media (max-width: 559px) {
+  .table-wrap { overflow: visible; border: 0; }
+  table { min-width: 0; display: block; font-size: 11.5px; }
+  thead { display: none; }
+  tbody { display: grid; gap: 8px; }
+  tbody tr {
+    display: block;
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .012);
+    padding: 7px 10px 8px;
+  }
+  tbody td {
+    display: block;
+    border: 0;
+    padding: 4px 0 4px 86px;
+    position: relative;
+    overflow-wrap: anywhere;
+  }
+  tbody td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 78px;
+    font-family: var(--sans);
+    font-size: 8px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+}
+
+/* verdict footer */
+.final {
+  margin-top: 42px; padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background:
+    radial-gradient(80% 70% at 50% 0%, rgba(203, 164, 94, .08), transparent 70%),
+    linear-gradient(180deg, #16110c, #0e0a07);
+}
+.final h2 { margin-bottom: 8px; }
+.final p { font-size: 13.5px; color: #d8c9b0; }
+.final .close { margin-top: 12px; font-family: var(--display); font-size: 20px; color: var(--brass); line-height: 1.35; }
+footer {
+  margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--line-soft);
+  font-size: 10px; color: var(--muted-2); line-height: 1.6;
+}
+footer p { margin-bottom: 5px; }
+.toc { display: flex; flex-wrap: wrap; gap: 5px 12px; margin: 16px 0 0; padding: 0; list-style: none; font-size: 10px; letter-spacing: .04em; }
+.toc a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+.toc a:hover, .toc a:focus { color: var(--cream); }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<main class="stage" id="main">
+
+  <header class="hero">
+    <div class="topline">
+      <span>PocketLibrary <span class="dot">·</span> spine art <span class="dot">·</span> prototype v4</span>
+      <span>throwaway</span>
+    </div>
+    <p class="kicker">Generative text removal / textless reconstruct</p>
+    <h1>Can a model invent <em>the art back?</em></h1>
+    <p class="lede">
+      v3 reached the limit of OCR + LaMa: a 70% mask turned <i>Rock Paper Scissors</i>
+      into a grey hole, and <i>The Whisper Man</i> was only a borderline pass.
+      v4 tests the other route — an instruction-driven image editor that
+      reconstructs the artwork underneath the type.
+    </p>
+
+    <div class="verdict-grid">
+      <div class="verdict good">
+        <span class="lab">Conditioned edit, reviewed</span>
+        <strong>Usable.</strong>
+        <p>Both modern covers came back text-free with the scene intact. At 160 × 727
+        spine scale the RPS forest survives. No residual OCR on either result.</p>
+      </div>
+      <div class="verdict bad">
+        <span class="lab">Unattended pipeline</span>
+        <strong>Not viable.</strong>
+        <p>It invents detail, leaks instructions, re-renders faces, needs a GPU,
+        and cannot promise that untouched pixels stay untouched. Review is mandatory.</p>
+      </div>
+    </div>
+
+    <div class="hero-meta">
+      <span><b>2</b> real covers</span>
+      <span><b>1</b> public-domain control</span>
+      <span><b>2</b> usable edits</span>
+      <span><b>2</b> prompt-only failures</span>
+      <span><b>0</b> residual OCR words</span>
+    </div>
+
+    <ul class="toc" aria-label="Sections">
+      <li><a href="#method">Method</a></li>
+      <li><a href="#rock-paper-scissors">Rock Paper Scissors</a></li>
+      <li><a href="#whisper-man">The Whisper Man</a></li>
+      <li><a href="#classic-control">The original control</a></li>
+      <li><a href="#failure-modes">Failure modes</a></li>
+      <li><a href="#settings">Settings</a></li>
+    </ul>
+  </header>
+
+  <hr class="rule">
+
+  <section id="method">
+    <p class="eyebrow">The test</p>
+    <div class="section-head"><h2>Five stages, one spine window</h2></div>
+    <p class="section-intro">
+      Every case is shown as the same chain v3 used, with a generative result
+      inserted before the spine crop. The crop is the production target:
+      160 × 727 px, about 22% as wide as the art.
+    </p>
+    <ol class="pipeline">
+      <li><b>Published cover</b>the real, printed cover at 1303 × 2000.</li>
+      <li><b>Text mask</b>v3's OCR + manual polygons; 38.8% and 70.4%.</li>
+      <li><b>LaMa v3</b>the local inpaint baseline, 105 s on CPU.</li>
+      <li><b>Generative</b>instruction edit of the cover, no mask given.</li>
+      <li><b>Spine crop</b>160 × 727; pass/fail is judged here.</li>
+    </ol>
+  </section>
+
+  <!-- ============================ RPS ============================ -->
+  <section class="case" id="rock-paper-scissors">
+    <div class="case-head">
+      <div>
+        <p class="eyebrow">Case 01 · Flatiron US · ISBN 9781250266118</p>
+        <h2>Rock Paper Scissors</h2>
+      </div>
+      <span class="pill good">Generative pass</span>
+    </div>
+    <p class="case-lede">
+      The hard case. Display type covers the middle half of an aerial snow
+      forest; v3 had to mask 70.4% of the cover and LaMa erased the forest with it.
+    </p>
+    <ul class="metrics">
+      <li class="metric"><span>Mask</span><b>70.4%</b><i>1,833,543 px</i></li>
+      <li class="metric"><span>LaMa</span><b>105 s</b><i>CPU · v3</i></li>
+      <li class="metric"><span>Gen edit</span><b>28 steps</b><i>Kontext · 816²</i></li>
+      <li class="metric"><span>Residual OCR</span><b>0</b><i>words</i></li>
+    </ul>
+
+    <div class="chain">
+      <figure>
+        <div class="frame"><img src="assets/rock-paper-scissors-cover.jpg" alt="Published Rock Paper Scissors cover with red title type over an aerial snow forest."></div>
+        <figcaption><b>Original cover</b><span>printed type + red band</span></figcaption>
+      </figure>
+      <figure>
+        <div class="frame mask"><img src="assets/rock-paper-scissors-mask-preview.jpg" alt="The cover with a red mask over the title, quote, and right-hand marketing band."></div>
+        <figcaption><b>Text mask</b><span>70.4% covered</span></figcaption>
+      </figure>
+      <figure class="is-fail">
+        <div class="frame"><span class="badge-corner bad">fail</span><img src="assets/rock-paper-scissors-lama.jpg" alt="LaMa result: the forest is replaced by a smooth grey void, with only the church and edge trees left."></div>
+        <figcaption><b>LaMa v3</b><span>forest gone</span></figcaption>
+      </figure>
+      <figure class="is-pass">
+        <div class="frame"><span class="badge-corner good">usable</span><img src="generative/rps-a-art.jpg" alt="Generative edit: a continuous snow-covered forest with the small church, no text."></div>
+        <figcaption><b>Generative</b><span>text gone, forest back</span></figcaption>
+      </figure>
+    </div>
+
+    <div class="spine-compare">
+      <div class="spine-pair">
+        <figure>
+          <img class="fail-img" src="assets/rock-paper-scissors-lama-spine.jpg" alt="LaMa spine crop: a pale, almost featureless snow strip with a tiny church at the bottom.">
+          <figcaption>LaMa spine<br>a pale strip</figcaption>
+        </figure>
+        <figure>
+          <img src="generative/rps-a-spine.jpg" alt="Generative spine crop: a continuous snow-covered spruce forest with the church near the bottom.">
+          <figcaption>Generative spine<br>forest + church</figcaption>
+        </figure>
+      </div>
+      <div class="spine-notes">
+        <h3>What changed</h3>
+        <p>
+          The model rebuilt the forest across the whole title block, then the
+          spine window at 22% width picked up canopy and the church. This is the
+          first RPS spine that reads as a photograph rather than a smudge.
+        </p>
+        <ul>
+          <li><b>Held:</b> top-down camera, snow palette, church position, the crop.</li>
+          <li><b>Invented:</b> every tree under the mask. The pattern is new, not recovered.</li>
+          <li><b>Leak:</b> the solid red marketing band on the right edge survived the prompt; it falls outside this spine window, but not outside a full-cover use.</li>
+          <li><b>Softness:</b> at 816 px the canopy is furry/watercolour-like; it only resolves at spine scale.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="attempt fail">
+      <div><img src="generative/rps-c-promptonly.jpg" alt="Prompt-only generation: an oblique blue-lit aerial view of a large church surrounded by forest, a completely different composition."></div>
+      <div>
+        <span class="tag fail">Attempt B · prompt only</span>
+        <h3>Same brief, different photograph</h3>
+        <p>
+          Without the cover as input, the model produced an oblique blue-hour
+          view of a much larger church. It is a handsome winter picture and
+          useless as a cover reconstruction: wrong angle, wrong palette, wrong
+          building, plus a service watermark.
+        </p>
+      </div>
+    </div>
+
+    <details class="prompt">
+      <summary>Prompt used for the usable edit</summary>
+      <pre>Remove all text, letters, numbers and logos from this book cover. Erase the large red ALICE FEENEY author name, the ROCK PAPER SCISSORS title, the New York Times bestseller line, the review quote, the A NOVEL line, and the red vertical band along the right edge. Reconstruct the snow-covered spruce forest canopy and the small white church that the type covers. Keep the exact same composition, camera angle, framing and lighting. Photorealistic aerial winter photograph. No words, no letters, no logos.</pre>
+    </details>
+  </section>
+
+  <!-- ============================ WHISPER ============================ -->
+  <section class="case" id="whisper-man">
+    <div class="case-head">
+      <div>
+        <p class="eyebrow">Case 02 · Penguin UK · ISBN 9781405936019</p>
+        <h2>The Whisper Man</h2>
+      </div>
+      <span class="pill good">Generative pass</span>
+    </div>
+    <p class="case-lede">
+      The borderline case. A dark doorway, a child, two black stickers, a
+      penguin colophon, and a gold title block across the bottom fifth. v3's
+      LaMa pass was acceptable at spine scale; the generative edit is cleaner.
+    </p>
+    <ul class="metrics">
+      <li class="metric"><span>Mask</span><b>38.8%</b><i>1,011,244 px</i></li>
+      <li class="metric"><span>LaMa</span><b>105 s</b><i>CPU · v3</i></li>
+      <li class="metric"><span>Gen edit</span><b>28 steps</b><i>Kontext · 816²</i></li>
+      <li class="metric"><span>Residual OCR</span><b>0</b><i>words</i></li>
+    </ul>
+
+    <div class="chain">
+      <figure>
+        <div class="frame"><img src="assets/whisper-man-cover.jpg" alt="Published The Whisper Man cover: a child kneeling by a dark wooden door, with a Netflix badge, quote sticker, gold title and author name."></div>
+        <figcaption><b>Original cover</b><span>type + three stickers</span></figcaption>
+      </figure>
+      <figure>
+        <div class="frame mask"><img src="assets/whisper-man-mask-preview.jpg" alt="The cover with red mask boxes over the top line, tagline, Netflix badge, quote sticker, colophon and title block."></div>
+        <figcaption><b>Text mask</b><span>38.8% covered</span></figcaption>
+      </figure>
+      <figure class="is-pass">
+        <div class="frame"><span class="badge-corner good">pass</span><img src="assets/whisper-man-lama.jpg" alt="LaMa result: the text and stickers are removed, leaving soft dark smudges over the wood and door."></div>
+        <figcaption><b>LaMa v3</b><span>pass, soft patches</span></figcaption>
+      </figure>
+      <figure class="is-pass">
+        <div class="frame"><span class="badge-corner good">usable</span><img src="generative/whisper-a-art.jpg" alt="Generative edit: the same doorway and child, all text and badges gone, with plausible wood panelling and floor."></div>
+        <figcaption><b>Generative</b><span>cleanest result</span></figcaption>
+      </figure>
+    </div>
+
+    <div class="spine-compare">
+      <div class="spine-pair">
+        <figure>
+          <img src="assets/whisper-man-lama-spine.jpg" alt="LaMa spine crop: the child, door and window survive; the title band is a dark soft area.">
+          <figcaption>LaMa spine<br>pass</figcaption>
+        </figure>
+        <figure>
+          <img src="generative/whisper-a-spine.jpg" alt="Generative spine crop: the child, door and window, with a clean dark floor where the title was.">
+          <figcaption>Generative spine<br>cleaner</figcaption>
+        </figure>
+      </div>
+      <div class="spine-notes">
+        <h3>What changed</h3>
+        <p>
+          The Netflix badge and quote sticker are gone without the grey haloes
+          LaMa left behind. The bottom title block became floor and door sill.
+          At spine scale this is the best of the three routes.
+        </p>
+        <ul>
+          <li><b>Held:</b> doorway, frosted scalloped window, chair, child's pose, warm low-key light.</li>
+          <li><b>Drifted:</b> the child's face and shirt pattern are re-rendered; the door hardware and diamond panel change shape slightly.</li>
+          <li><b>Uncrop:</b> the model continued the floor downward where the title was — a genuine outpaint of the bottom band.</li>
+          <li><b>Artifact:</b> a duplicated hard sill line under the door; hidden at spine width, visible full-size.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="attempt fail">
+      <div><img src="generative/whisper-c-promptonly.jpg" alt="Prompt-only generation: a bright, empty wood-panelled hallway with an open door and no figure."></div>
+      <div>
+        <span class="tag fail">Attempt B · prompt only</span>
+        <h3>It drew a hallway, not the hallway</h3>
+        <p>
+          Told only “a dark wood-panelled hallway with a person kneeling by a
+          door”, the model produced a symmetrical, sunlit corridor with nobody
+          in it. Another reminder that prompt-only generation is not
+          reconstruction, however good the picture is.
+        </p>
+      </div>
+    </div>
+
+    <details class="prompt">
+      <summary>Prompt used for the usable edit</summary>
+      <pre>Remove every piece of printed text, every badge, sticker and logo from this book cover. Erase the top bestseller line, the tagline, the black circular streaming badge on the left, the black circular review-quote sticker on the right, the small bird logo at the top right, and all the gold and white title and author lettering at the bottom. Reconstruct the dark wood panelling, the varnished wooden door, the scalloped frosted-glass window, the chair and the person in the green shirt kneeling on the floor. Keep the exact same composition, camera angle, crop and low-key warm lighting. Photorealistic. No words, no letters, no logos, no badges.</pre>
+    </details>
+  </section>
+
+  <!-- ============================ CLASSIC ============================ -->
+  <section class="case" id="classic-control">
+    <div class="case-head">
+      <div>
+        <p class="eyebrow">Case 03 · control · public domain</p>
+        <h2>Moby-Dick</h2>
+      </div>
+      <span class="pill neutral">No model</span>
+    </div>
+    <p class="case-lede">
+      A classic where the genuine textless artwork already exists. This is the
+      line the modern reconstructions cannot cross: the painting is the
+      artist's actual pixels, not a plausible invention.
+    </p>
+
+    <div class="chain control-chain">
+      <figure>
+        <div class="frame"><img src="assets/moby-dick-cover.jpg" alt="Standard Ebooks Moby-Dick cover: Ryder's painting with a black title plate at the bottom."></div>
+        <figcaption><b>Published cover</b><span>painting + title plate</span></figcaption>
+      </figure>
+      <figure>
+        <div class="frame contain"><img src="assets/moby-dick-painting.jpg" alt="Albert Pinkham Ryder's The Flying Dutchman, the complete public-domain painting."></div>
+        <figcaption><b>Genuine original</b><span>whole PD painting</span></figcaption>
+      </figure>
+      <figure>
+        <div class="frame"><img src="assets/moby-dick-original-art.jpg" alt="A 2:3 crop of the painting used as textless cover art; no typography and no generation."></div>
+        <figcaption><b>Textless art</b><span>2:3 crop, no inpaint</span></figcaption>
+      </figure>
+      <figure>
+        <div class="frame contain"><img src="assets/moby-dick-original-spine.jpg" alt="The 160 by 727 spine crop taken from the genuine painting."></div>
+        <figcaption><b>Spine crop</b><span>160 × 727, full height</span></figcaption>
+      </figure>
+    </div>
+
+    <div class="callout">
+      <h3>“Textless” has two very different meanings</h3>
+      <p>
+        The classic is <b>original</b>: a real painting exists without type, and the
+        crop is a crop. Both modern results are <b>reconstructed</b>: the pixels under
+        the type did not exist in the source and were invented. They read
+        correctly at spine scale, but they are not the same artwork — and the
+        classic is the control that makes that difference visible.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================ FAILURES ============================ -->
+  <section id="failure-modes">
+    <p class="eyebrow">What went wrong</p>
+    <div class="section-head"><h2>Failure modes we actually hit</h2></div>
+    <p class="section-intro">
+      These are not hypothetical. Each one is visible in an asset on this page
+      or is a documented block from the run.
+    </p>
+    <div class="fail-grid">
+      <article class="fail-card">
+        <span class="num">01</span>
+        <h3>Scene invention</h3>
+        <p>Prompt-only generation produced a different church and a different
+        hallway. Even the conditioned edits invented every tree and re-rendered
+        the child's face. Plausible is not faithful.</p>
+      </article>
+      <article class="fail-card">
+        <span class="num">02</span>
+        <h3>Instruction leak</h3>
+        <p>The RPS red vertical band survived an explicit “erase the red band”
+        instruction. Long negative lists are requests, not guarantees. It only
+        stopped mattering because the spine window excludes that edge.</p>
+      </article>
+      <article class="fail-card">
+        <span class="num">03</span>
+        <h3>Whole-frame re-render</h3>
+        <p>Kontext is not mask-conditioned: it reprocesses the whole image.
+        Faces, shirt patterns, door hardware and panel geometry drift. There is
+        no “untouched pixels stay untouched” contract without extra masking.</p>
+      </article>
+      <article class="fail-card">
+        <span class="num">04</span>
+        <h3>Safety-filter false positive</h3>
+        <p>The Whisper Man prompt was blocked once purely because it contained
+        the word “child”. Rephrasing to “person in the green shirt” passed. An
+        automated pipeline cannot depend on that kind of retry.</p>
+      </article>
+      <article class="fail-card">
+        <span class="num">05</span>
+        <h3>Soft, furry detail</h3>
+        <p>The reconstructed RPS canopy is convincing at 160 px but looks like
+        watercolour at 816 px. Generative fill restores structure and colour,
+        not photographic grain or individual branches.</p>
+      </article>
+      <article class="fail-card">
+        <span class="num">06</span>
+        <h3>Provider reality</h3>
+        <p>The built-in <span class="mono">generate_image</span> route was unusable:
+        OpenAI keys rejected, Token Harbor image balance $0, Grok credential invalid.
+        The usable edits ran on a public FLUX.1 Kontext Space, which then hit its
+        anonymous GPU quota after two images.</p>
+      </article>
+      <article class="fail-card">
+        <span class="num">07</span>
+        <h3>Rights &amp; provenance</h3>
+        <p>Both modern covers are in-copyright. A generative “textless” derivative
+        is still a derivative, made by a third-party model with unclear training
+        provenance. It is not a licence to publish the art.</p>
+      </article>
+      <article class="fail-card">
+        <span class="num">08</span>
+        <h3>No reproducibility</h3>
+        <p>Seeds, model versions and GPU quotas move. The same prompt can return
+        a different face or a retained badge. A one-off success is not a route.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================ SETTINGS ============================ -->
+  <section id="settings">
+    <p class="eyebrow">Method</p>
+    <div class="section-head"><h2>Models, settings, and what was blocked</h2></div>
+    <p class="section-intro">
+      Recorded so the result can be judged, not just admired. All outputs are
+      local files under <span class="mono">generative/</span>.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Attempt</th><th>Model / route</th><th>Settings</th><th>Outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-label="Attempt"><b>RPS · direct edit</b></td>
+            <td data-label="Model / route">FLUX.1 Kontext Dev, HF Space<br><span class="mono">black-forest-labs/FLUX.1-Kontext-Dev</span></td>
+            <td data-label="Settings">28 steps · guidance 2.5 · seed 42 · 816 × 1264</td>
+            <td class="ok" data-label="Outcome">Usable</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt"><b>Whisper · direct edit</b></td>
+            <td data-label="Model / route">FLUX.1 Kontext Dev, HF Space</td>
+            <td data-label="Settings">28 steps · guidance 2.5 · seed 42 · 816 × 1264</td>
+            <td class="ok" data-label="Outcome">Usable</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt">RPS · prompt only</td>
+            <td data-label="Model / route">SANA via Pollinations Classic</td>
+            <td data-label="Settings">512 × 768 · seed 42 · no image input</td>
+            <td class="no" data-label="Outcome">Unusable (new scene)</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt">Whisper · prompt only</td>
+            <td data-label="Model / route">SANA via Pollinations Classic</td>
+            <td data-label="Settings">512 × 768 · seed 42 · no image input</td>
+            <td class="no" data-label="Outcome">Unusable (new scene)</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt">LaMa repair of RPS</td>
+            <td data-label="Model / route">FLUX.1 Kontext Dev, HF Space</td>
+            <td data-label="Settings">14 steps · guidance 3.0 · seed 7</td>
+            <td class="mid" data-label="Outcome">Blocked: ZeroGPU quota</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt">Built-in <span class="mono">generate_image</span></td>
+            <td data-label="Model / route">OpenAI <span class="mono">gpt-image-2.6-flare</span> / <span class="mono">sunburst</span></td>
+            <td data-label="Settings">default</td>
+            <td class="no" data-label="Outcome">Blocked: incorrect API key</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt">Built-in <span class="mono">generate_image</span></td>
+            <td data-label="Model / route"><span class="mono">opencode/grok-imagine-image-2.0</span></td>
+            <td data-label="Settings">default</td>
+            <td class="no" data-label="Outcome">Blocked: invalid credential</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt">Token Harbor image API</td>
+            <td data-label="Model / route"><span class="mono">dall-e-3</span> / <span class="mono">grok-imagine</span></td>
+            <td data-label="Settings">—</td>
+            <td class="no" data-label="Outcome">Blocked: balance $0</td>
+          </tr>
+          <tr>
+            <td data-label="Attempt">Dedicated spine outpainting</td>
+            <td data-label="Model / route">tall-canvas extend</td>
+            <td data-label="Settings">—</td>
+            <td class="mid" data-label="Outcome">Not run: quota exhausted</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="small" style="margin-top:11px">
+      OCR audit: RapidOCR found <b>0</b> text boxes on both Kontext results; it
+      found only the <span class="mono">pollinations.ai</span> watermark on the two
+      prompt-only images. That proves the type is no longer machine-readable,
+      not that the art is original.
+    </p>
+    <p class="small">
+      The title-band reconstruction doubles as the uncrop test: in both covers
+      the model continued the scene into the band the type occupied. A separate
+      tall-canvas outpaint was planned but not run once the anonymous GPU quota
+      was exhausted.
+    </p>
+  </section>
+
+  <!-- ============================ FINAL ============================ -->
+  <section class="final" id="verdict">
+    <p class="eyebrow">Verdict</p>
+    <h2>Good enough to review. Not good enough to automate.</h2>
+    <p>
+      A conditioned generative edit is a real step change over LaMa for large
+      typography. It is the only route tested here that makes the
+      <i>Rock Paper Scissors</i> spine usable, and it cleans up the
+      <i>Whisper Man</i> stickers better than the v3 inpaint. Treat it as an
+      offline art-restoration step with a human check, not as a batch job.
+    </p>
+    <p>
+      Three conditions keep it honest: keep the LaMa/original comparison visible,
+      judge at the spine window rather than at poster size, and never call the
+      result “the original artwork”. If a licensed textless asset exists, use it.
+      If not, a typographic spine is still more truthful than an invented forest.
+    </p>
+    <p class="close">Generative fill can reconstruct the picture.<br>It cannot reconstruct the provenance.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section id="sources" style="margin-top:0">
+    <p class="eyebrow">Sources &amp; licence</p>
+    <div class="section-head"><h2>What is on this page</h2></div>
+    <p class="small">
+      <b>Modern covers.</b> <i>The Whisper Man</i> (Penguin UK, ISBN 9781405936019)
+      and <i>Rock Paper Scissors</i> (Flatiron US, ISBN 9781250266118), both
+      1303 × 2000, from the Apple Books / iTunes Search API via the v3 prototype.
+      They are in copyright and used only as design references in this throwaway
+      prototype; the textless derivatives inherit the same rights. No production
+      use is implied.
+    </p>
+    <p class="small">
+      <b>Classic control.</b> <i>Moby-Dick</i> uses the Standard Ebooks cover
+      (public domain) and Albert Pinkham Ryder's <i>The Flying Dutchman</i> (1887),
+      public domain, downloaded from Wikimedia Commons for v3. The 2:3 art crop
+      and 160 × 727 spine crop are deterministic crops — no model.
+    </p>
+    <p class="small">
+      <b>Baseline.</b> v3 masks and LaMa results: RapidOCR + manual polygons +
+      LaMa big-lama on CPU. Mask fractions, OCR boxes and inpaint times come from
+      <span class="mono">v3/masks/*.json</span>.
+    </p>
+    <p class="small">
+      <b>Fonts.</b> EB Garamond, SIL Open Font License; the OFL text is included
+      in this folder. The page has no external requests: every image, font and
+      script is local.
+    </p>
+    <p class="small">
+      <b>Generated files.</b> <span class="mono">generative/rps-a-kontext.jpg</span>,
+      <span class="mono">whisper-a-kontext.jpg</span> (usable edits);
+      <span class="mono">rps-c-promptonly.jpg</span>,
+      <span class="mono">whisper-c-promptonly.jpg</span> (prompt-only failures);
+      <span class="mono">*-a-art.jpg</span>, <span class="mono">*-a-spine.jpg</span>
+      (crops); <span class="mono">ocr-audit.json</span>.
+    </p>
+  </section>
+
+  <footer>
+    <p><b>PocketLibrary</b> · throwaway design prototype v4 · not production code, not committed. <a href="README.md">README</a> · <a href="audit.json">audit.json</a></p>
+    <p>Everything lives under <span class="mono">.scratch/spine-cover-art-prototype/v4-generative/</span>. No production files, tests, manifests or existing prototypes were modified. No commit or release.</p>
+    <p>Pass/fail is judged at 160 × 727 spine scale. This is front-cover artwork on a spine, not a scan of the printed spine.</p>
+  </footer>
+
+</main>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

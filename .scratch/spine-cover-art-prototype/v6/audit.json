@@ -1,0 +1,5714 @@
+{
+  "url": "http://127.0.0.1:4173/spine-cover-art-prototype/v6/",
+  "generated": "2026-11-26T10:36:39.623Z",
+  "passes": [
+    {
+      "width": 390,
+      "direction": "editorial",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        6,
+        5,
+        5,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "editorial",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 10.2,
+          "authorSize": 5.45,
+          "fitLength": 0.5673295347345382,
+          "fitThickness": 0.36786362598127015,
+          "limiting": 0.5673295347345382,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.487573233853116,
+          "titleText": "MOBY-DICK",
+          "stacked": false,
+          "lines": [
+            "MOBY-DICK"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "editorial",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 10.2,
+          "authorSize": 5.3,
+          "fitLength": 0.5730798332179596,
+          "fitThickness": 0.3761596136739102,
+          "limiting": 0.5730798332179596,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.296055771630579,
+          "titleText": "JANE EYRE",
+          "stacked": false,
+          "lines": [
+            "JANE EYRE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "editorial",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.55,
+          "authorSize": 5.15,
+          "fitLength": 0.962609775258831,
+          "fitThickness": 0.3754455117759949,
+          "limiting": 0.962609775258831,
+          "limitedBy": "length",
+          "contrast": 14.012537881014977,
+          "titleText": "PRIDE AND PREJUDICE",
+          "stacked": false,
+          "lines": [
+            "PRIDE AND PREJUDICE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "editorial",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 9,
+          "authorSize": 4.6,
+          "fitLength": 0.6268541209854249,
+          "fitThickness": 0.3992202364971343,
+          "limiting": 0.6268541209854249,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.087379624022352,
+          "titleText": "FRANKENSTEIN",
+          "stacked": false,
+          "lines": [
+            "FRANKENSTEIN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "editorial",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.7,
+          "authorSize": 4.95,
+          "fitLength": 0.3806904879881604,
+          "fitThickness": 0.39639843096768645,
+          "limiting": 0.39639843096768645,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.166946523264498,
+          "titleText": "DRACULA",
+          "stacked": false,
+          "lines": [
+            "DRACULA"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "editorial",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 8.85,
+          "authorSize": 5.4,
+          "fitLength": 0.9616462656079616,
+          "fitThickness": 0.32920803588690634,
+          "limiting": 0.9616462656079616,
+          "limitedBy": "length",
+          "contrast": 15.149279012422147,
+          "titleText": "GREAT EXPECTATIONS",
+          "stacked": false,
+          "lines": [
+            "GREAT EXPECTATIONS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "editorial",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 10.2,
+          "authorSize": 5.5,
+          "fitLength": 0.7231267234144586,
+          "fitThickness": 0.3662633297267672,
+          "limiting": 0.7231267234144586,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.395939105083926,
+          "titleText": "BLEAK HOUSE",
+          "stacked": false,
+          "lines": [
+            "BLEAK HOUSE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "editorial",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 10.2,
+          "authorSize": 5.5,
+          "fitLength": 0.712968471148126,
+          "fitThickness": 0.3553181607059916,
+          "limiting": 0.712968471148126,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.77169882230766,
+          "titleText": "MIDDLEMARCH",
+          "stacked": false,
+          "lines": [
+            "MIDDLEMARCH"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "editorial",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 10.2,
+          "authorSize": 5.2,
+          "fitLength": 0.7788461538461539,
+          "fitThickness": 0.39357046393793854,
+          "limiting": 0.7788461538461539,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.280265302215087,
+          "titleText": "THE MOONSTONE",
+          "stacked": false,
+          "lines": [
+            "THE MOONSTONE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "editorial",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8.5,
+          "authorSize": 4.35,
+          "fitLength": 0.6600987697759458,
+          "fitThickness": 0.3975864165770148,
+          "limiting": 0.6600987697759458,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.16400983998534,
+          "titleText": "THE TIME MACHINE",
+          "stacked": false,
+          "lines": [
+            "THE TIME MACHINE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "editorial",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 9.2,
+          "authorSize": 4.45,
+          "fitLength": 0.9388448717224355,
+          "fitThickness": 0.3995816736482972,
+          "limiting": 0.9388448717224355,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.426576707614167,
+          "titleText": "TREASURE ISLAND",
+          "stacked": false,
+          "lines": [
+            "TREASURE ISLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "editorial",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 7.45,
+          "authorSize": 4.35,
+          "fitLength": 0.5898606876411875,
+          "fitThickness": 0.9630986971885739,
+          "limiting": 0.9630986971885739,
+          "limitedBy": "thickness",
+          "contrast": 15.109470635081768,
+          "titleText": "DR JEKYLL AND MR HYDE",
+          "stacked": true,
+          "lines": [
+            "DR JEKYLL",
+            "AND MR HYDE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.25,
+          "authorSize": 4.85,
+          "fitLength": 0.7849229100488105,
+          "fitThickness": 0.9592733874307213,
+          "limiting": 0.9592733874307213,
+          "limitedBy": "thickness",
+          "contrast": 13.862386436150087,
+          "titleText": "THE HOUND OF THE BASKERVILLES",
+          "stacked": true,
+          "lines": [
+            "THE HOUND OF",
+            "THE BASKERVILLES"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "editorial",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 7.45,
+          "authorSize": 4.8,
+          "fitLength": 0.9631601697579376,
+          "fitThickness": 0.31696448564646873,
+          "limiting": 0.9631601697579376,
+          "limitedBy": "length",
+          "contrast": 14.96689153122045,
+          "titleText": "THE PICTURE OF DORIAN GRAY",
+          "stacked": false,
+          "lines": [
+            "THE PICTURE OF DORIAN GRAY"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "editorial",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.45,
+          "authorSize": 4.5,
+          "fitLength": 0.9601091102998481,
+          "fitThickness": 0.38308165389628396,
+          "limiting": 0.9601091102998481,
+          "limitedBy": "length",
+          "contrast": 14.947664525835995,
+          "titleText": "THE SCARLET LETTER",
+          "stacked": false,
+          "lines": [
+            "THE SCARLET LETTER"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "editorial",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 8.2,
+          "authorSize": 4.2,
+          "fitLength": 0.9045859478924526,
+          "fitThickness": 0.40732026143790845,
+          "limiting": 0.9045859478924526,
+          "limitedBy": "aesthetic cap",
+          "contrast": 13.936373036250183,
+          "titleText": "THE TURN OF THE SCREW",
+          "stacked": false,
+          "lines": [
+            "THE TURN OF THE SCREW"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "editorial",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 8.35,
+          "authorSize": 4.25,
+          "fitLength": 0.8925877530563658,
+          "fitThickness": 0.39977912402887983,
+          "limiting": 0.8925877530563658,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.69085680179052,
+          "titleText": "ALICE IN WONDERLAND",
+          "stacked": false,
+          "lines": [
+            "ALICE IN WONDERLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "editorial",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.85,
+          "authorSize": 5.05,
+          "fitLength": 0.9084443607910622,
+          "fitThickness": 0.39468966826243745,
+          "limiting": 0.9084443607910622,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.851282154815918,
+          "titleText": "WUTHERING HEIGHTS",
+          "stacked": false,
+          "lines": [
+            "WUTHERING HEIGHTS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "editorial",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.85,
+          "authorSize": 5.05,
+          "fitLength": 0.78435838272931,
+          "fitThickness": 0.39468966826243745,
+          "limiting": 0.78435838272931,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.842565041336385,
+          "titleText": "THE WHISPER MAN",
+          "stacked": false,
+          "lines": [
+            "THE WHISPER MAN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 9.4,
+          "authorSize": 4.85,
+          "fitLength": 0.963718286427284,
+          "fitThickness": 0.39182670553488125,
+          "limiting": 0.963718286427284,
+          "limitedBy": "length",
+          "contrast": 12.718887981672628,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 9.15,
+          "authorSize": 4.85,
+          "fitLength": 0.9648402965920432,
+          "fitThickness": 0.3814057825153365,
+          "limiting": 0.9648402965920432,
+          "limitedBy": "length",
+          "contrast": 12.718887981672628,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9648402965920432,
+      "smallestFont": 7.45,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 390,
+      "direction": "cloth",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        6,
+        5,
+        5,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "cloth",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.5316536369816451,
+          "fitThickness": 0.14768166089965398,
+          "limiting": 0.5316536369816451,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.44509172520121,
+          "titleText": "MOBY-DICK",
+          "stacked": false,
+          "lines": [
+            "MOBY-DICK"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "cloth",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 9.7,
+          "authorSize": 5.4,
+          "fitLength": 0.5237295825771325,
+          "fitThickness": 0.20697674418604647,
+          "limiting": 0.5237295825771325,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.677102911037325,
+          "titleText": "JANE EYRE",
+          "stacked": false,
+          "lines": [
+            "JANE EYRE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "cloth",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.45,
+          "authorSize": 5.2,
+          "fitLength": 0.9117406273909715,
+          "fitThickness": 0.20994757863205188,
+          "limiting": 0.9117406273909715,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.0254679480942865,
+          "titleText": "PRIDE AND PREJUDICE",
+          "stacked": false,
+          "lines": [
+            "PRIDE AND PREJUDICE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "cloth",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 8.5,
+          "authorSize": 4.7,
+          "fitLength": 0.5822009796176331,
+          "fitThickness": 0.16457858769931666,
+          "limiting": 0.5822009796176331,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.559900229381917,
+          "titleText": "FRANKENSTEIN",
+          "stacked": false,
+          "lines": [
+            "FRANKENSTEIN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "cloth",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.15,
+          "authorSize": 5.05,
+          "fitLength": 0.36285787551873216,
+          "fitThickness": 0.15722468107263737,
+          "limiting": 0.36285787551873216,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.101065276453328,
+          "titleText": "DRACULA",
+          "stacked": false,
+          "lines": [
+            "DRACULA"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "cloth",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 8.9,
+          "authorSize": 5.5,
+          "fitLength": 0.9616275590887722,
+          "fitThickness": 0.14229955325652482,
+          "limiting": 0.9616275590887722,
+          "limitedBy": "length",
+          "contrast": 8.337654869277722,
+          "titleText": "GREAT EXPECTATIONS",
+          "stacked": false,
+          "lines": [
+            "GREAT EXPECTATIONS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "cloth",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6717331474730145,
+          "fitThickness": 0.14490719782707107,
+          "limiting": 0.6717331474730145,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.135998608749121,
+          "titleText": "BLEAK HOUSE",
+          "stacked": false,
+          "lines": [
+            "BLEAK HOUSE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "cloth",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6878574753923915,
+          "fitThickness": 0.14226666666666668,
+          "limiting": 0.6878574753923915,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.975319319105759,
+          "titleText": "MIDDLEMARCH",
+          "stacked": false,
+          "lines": [
+            "MIDDLEMARCH"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "cloth",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 9.6,
+          "authorSize": 5.3,
+          "fitLength": 0.7278792376609563,
+          "fitThickness": 0.15968688845401174,
+          "limiting": 0.7278792376609563,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.733213066657453,
+          "titleText": "THE MOONSTONE",
+          "stacked": false,
+          "lines": [
+            "THE MOONSTONE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "cloth",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8,
+          "authorSize": 4.45,
+          "fitLength": 0.6087923028141642,
+          "fitThickness": 0.16661562021439513,
+          "limiting": 0.6087923028141642,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.591104636818976,
+          "titleText": "THE TIME MACHINE",
+          "stacked": false,
+          "lines": [
+            "THE TIME MACHINE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "cloth",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 8.65,
+          "authorSize": 4.65,
+          "fitLength": 0.8968800075407672,
+          "fitThickness": 0.16366165831942128,
+          "limiting": 0.8968800075407672,
+          "limitedBy": "aesthetic cap",
+          "contrast": 8.289716921343166,
+          "titleText": "TREASURE ISLAND",
+          "stacked": false,
+          "lines": [
+            "TREASURE ISLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "cloth",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 8.15,
+          "authorSize": 4.5,
+          "fitLength": 0.6561771679362357,
+          "fitThickness": 0.5162234837167614,
+          "limiting": 0.6561771679362357,
+          "limitedBy": "two-line cap",
+          "contrast": 10.99787146736917,
+          "titleText": "DR JEKYLL AND MR HYDE",
+          "stacked": true,
+          "lines": [
+            "DR JEKYLL",
+            "AND MR HYDE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8368688965110436,
+          "fitThickness": 0.5047619047619047,
+          "limiting": 0.8368688965110436,
+          "limitedBy": "two-line cap",
+          "contrast": 5.90233123051239,
+          "titleText": "THE HOUND OF THE BASKERVILLES",
+          "stacked": true,
+          "lines": [
+            "THE HOUND OF",
+            "THE BASKERVILLES"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "cloth",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 7.5,
+          "authorSize": 4.85,
+          "fitLength": 0.960725401651584,
+          "fitThickness": 0.13873775843307945,
+          "limiting": 0.960725401651584,
+          "limitedBy": "length",
+          "contrast": 9.015073841306744,
+          "titleText": "THE PICTURE OF DORIAN GRAY",
+          "stacked": false,
+          "lines": [
+            "THE PICTURE OF DORIAN GRAY"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "cloth",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.35,
+          "authorSize": 4.6,
+          "fitLength": 0.9605121725848119,
+          "fitThickness": 0.16558763487897346,
+          "limiting": 0.9605121725848119,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.048403816279158,
+          "titleText": "THE SCARLET LETTER",
+          "stacked": false,
+          "lines": [
+            "THE SCARLET LETTER"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "cloth",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 7.7,
+          "authorSize": 4.25,
+          "fitLength": 0.818561603745976,
+          "fitThickness": 0.16890322580645165,
+          "limiting": 0.818561603745976,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.709724609879622,
+          "titleText": "THE TURN OF THE SCREW",
+          "stacked": false,
+          "lines": [
+            "THE TURN OF THE SCREW"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "cloth",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 7.85,
+          "authorSize": 4.35,
+          "fitLength": 0.8395388132392406,
+          "fitThickness": 0.1628221244500314,
+          "limiting": 0.8395388132392406,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.186398705352881,
+          "titleText": "ALICE IN WONDERLAND",
+          "stacked": false,
+          "lines": [
+            "ALICE IN WONDERLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.8568922899305811,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.8568922899305811,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.602684646259534,
+          "titleText": "WUTHERING HEIGHTS",
+          "stacked": false,
+          "lines": [
+            "WUTHERING HEIGHTS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.7268099568225183,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.7268099568225183,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.079720959479129,
+          "titleText": "THE WHISPER MAN",
+          "stacked": false,
+          "lines": [
+            "THE WHISPER MAN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8734638907011257,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.8734638907011257,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.42269675380308,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.9009629801619002,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.9009629801619002,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.465972327389458,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9616275590887722,
+      "smallestFont": 7.5,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 390,
+      "direction": "hybrid",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        6,
+        5,
+        5,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "hybrid",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.3535997785442275,
+          "fitThickness": 0.4291835988971443,
+          "limiting": 0.4291835988971443,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.064860207066118,
+          "titleText": "Moby-Dick",
+          "stacked": false,
+          "lines": [
+            "Moby-Dick"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "hybrid",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 9.5,
+          "authorSize": 5.15,
+          "fitLength": 0.3123981072806076,
+          "fitThickness": 0.40367370786309276,
+          "limiting": 0.40367370786309276,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.24310051397701,
+          "titleText": "Jane Eyre",
+          "stacked": false,
+          "lines": [
+            "Jane Eyre"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "hybrid",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.45,
+          "authorSize": 5,
+          "fitLength": 0.5682374224672638,
+          "fitThickness": 0.46522740106858956,
+          "limiting": 0.5682374224672638,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.322983981632678,
+          "titleText": "Pride and Prejudice",
+          "stacked": false,
+          "lines": [
+            "Pride and Prejudice"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "hybrid",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 8.5,
+          "authorSize": 4.5,
+          "fitLength": 0.34588484634404804,
+          "fitThickness": 0.3555929896585192,
+          "limiting": 0.3555929896585192,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.24310051397701,
+          "titleText": "Frankenstein",
+          "stacked": false,
+          "lines": [
+            "Frankenstein"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "hybrid",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.15,
+          "authorSize": 4.8,
+          "fitLength": 0.20731997548380363,
+          "fitThickness": 0.3468247530531951,
+          "limiting": 0.3468247530531951,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.030132162033812,
+          "titleText": "Dracula",
+          "stacked": false,
+          "lines": [
+            "Dracula"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "hybrid",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 9.5,
+          "authorSize": 5.25,
+          "fitLength": 0.6072359660145918,
+          "fitThickness": 0.3952167022015018,
+          "limiting": 0.6072359660145918,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.172536778980477,
+          "titleText": "Great Expectations",
+          "stacked": false,
+          "lines": [
+            "Great Expectations"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "hybrid",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.4060963962075151,
+          "fitThickness": 0.3091548898540789,
+          "limiting": 0.4060963962075151,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.08226353250158,
+          "titleText": "Bleak House",
+          "stacked": false,
+          "lines": [
+            "Bleak House"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "hybrid",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.4122694201513926,
+          "fitThickness": 0.30306252658443217,
+          "limiting": 0.4122694201513926,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.267340188862045,
+          "titleText": "Middlemarch",
+          "stacked": false,
+          "lines": [
+            "Middlemarch"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "hybrid",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 9.5,
+          "authorSize": 5.05,
+          "fitLength": 0.4432640429716124,
+          "fitThickness": 0.33636732728422924,
+          "limiting": 0.4432640429716124,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.843464020513188,
+          "titleText": "The Moonstone",
+          "stacked": false,
+          "lines": [
+            "The Moonstone"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "hybrid",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8,
+          "authorSize": 4.2,
+          "fitLength": 0.41101500353681386,
+          "fitThickness": 0.3629270063058568,
+          "limiting": 0.41101500353681386,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.316243392513659,
+          "titleText": "The Time Machine",
+          "stacked": false,
+          "lines": [
+            "The Time Machine"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "hybrid",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 8.65,
+          "authorSize": 4.55,
+          "fitLength": 0.5031537933006432,
+          "fitThickness": 0.3527521464186482,
+          "limiting": 0.5031537933006432,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.1552239636407,
+          "titleText": "Treasure Island",
+          "stacked": false,
+          "lines": [
+            "Treasure Island"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "hybrid",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 8.15,
+          "authorSize": 4.3,
+          "fitLength": 0.7049014405176619,
+          "fitThickness": 0.48912803645660197,
+          "limiting": 0.7049014405176619,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.058164829589858,
+          "titleText": "Dr Jekyll and Mr Hyde",
+          "stacked": false,
+          "lines": [
+            "Dr Jekyll and Mr Hyde"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.9140730433456594,
+          "fitThickness": 0.34737765449572666,
+          "limiting": 0.9140730433456594,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.316243392513659,
+          "titleText": "The Hound of the Baskervilles",
+          "stacked": false,
+          "lines": [
+            "The Hound of the Baskervilles"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "hybrid",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 8.8,
+          "authorSize": 4.65,
+          "fitLength": 0.6951908166151385,
+          "fitThickness": 0.4760692464358454,
+          "limiting": 0.6951908166151385,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.119939173981896,
+          "titleText": "The Picture of Dorian Gray",
+          "stacked": false,
+          "lines": [
+            "The Picture of Dorian Gray"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "hybrid",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.35,
+          "authorSize": 4.4,
+          "fitLength": 0.5472489985996679,
+          "fitThickness": 0.3587006017005702,
+          "limiting": 0.5472489985996679,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.054513043528406,
+          "titleText": "The Scarlet Letter",
+          "stacked": false,
+          "lines": [
+            "The Scarlet Letter"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "hybrid",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 7.7,
+          "authorSize": 4.05,
+          "fitLength": 0.5056344977630894,
+          "fitThickness": 0.37019230769230776,
+          "limiting": 0.5056344977630894,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.274080777981064,
+          "titleText": "The Turn of the Screw",
+          "stacked": false,
+          "lines": [
+            "The Turn of the Screw"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "hybrid",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 7.85,
+          "authorSize": 4.15,
+          "fitLength": 0.5168137019016557,
+          "fitThickness": 0.3665187103521692,
+          "limiting": 0.5168137019016557,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.334399166616395,
+          "titleText": "Alice in Wonderland",
+          "stacked": false,
+          "lines": [
+            "Alice in Wonderland"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "hybrid",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.3,
+          "authorSize": 4.9,
+          "fitLength": 0.5248398077693232,
+          "fitThickness": 0.4683149351290508,
+          "limiting": 0.5248398077693232,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.305247547047605,
+          "titleText": "Wuthering Heights",
+          "stacked": false,
+          "lines": [
+            "Wuthering Heights"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "hybrid",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.3,
+          "authorSize": 4.9,
+          "fitLength": 0.4843685766950894,
+          "fitThickness": 0.46372361223562875,
+          "limiting": 0.4843685766950894,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.95783581807513,
+          "titleText": "The Whisper Man",
+          "stacked": false,
+          "lines": [
+            "The Whisper Man"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.5444225496915694,
+          "fitThickness": 0.4678019080542452,
+          "limiting": 0.5444225496915694,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.7137739462376,
+          "titleText": "Rock Paper Scissors",
+          "stacked": false,
+          "lines": [
+            "Rock Paper Scissors"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.5597692036645524,
+          "fitThickness": 0.4678019080542452,
+          "limiting": 0.5597692036645524,
+          "limitedBy": "aesthetic cap",
+          "contrast": 12.075833598441147,
+          "titleText": "Rock Paper Scissors",
+          "stacked": false,
+          "lines": [
+            "Rock Paper Scissors"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9140730433456594,
+      "smallestFont": 7.7,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 360,
+      "direction": "editorial",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        6,
+        5,
+        5,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "editorial",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 10.2,
+          "authorSize": 5.45,
+          "fitLength": 0.5673295347345382,
+          "fitThickness": 0.36786362598127015,
+          "limiting": 0.5673295347345382,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.487573233853116,
+          "titleText": "MOBY-DICK",
+          "stacked": false,
+          "lines": [
+            "MOBY-DICK"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "editorial",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 10.2,
+          "authorSize": 5.3,
+          "fitLength": 0.5730798332179596,
+          "fitThickness": 0.3761596136739102,
+          "limiting": 0.5730798332179596,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.296055771630579,
+          "titleText": "JANE EYRE",
+          "stacked": false,
+          "lines": [
+            "JANE EYRE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "editorial",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.55,
+          "authorSize": 5.15,
+          "fitLength": 0.962609775258831,
+          "fitThickness": 0.3754455117759949,
+          "limiting": 0.962609775258831,
+          "limitedBy": "length",
+          "contrast": 14.012537881014977,
+          "titleText": "PRIDE AND PREJUDICE",
+          "stacked": false,
+          "lines": [
+            "PRIDE AND PREJUDICE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "editorial",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 9,
+          "authorSize": 4.6,
+          "fitLength": 0.6268541209854249,
+          "fitThickness": 0.3992202364971343,
+          "limiting": 0.6268541209854249,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.087379624022352,
+          "titleText": "FRANKENSTEIN",
+          "stacked": false,
+          "lines": [
+            "FRANKENSTEIN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "editorial",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.7,
+          "authorSize": 4.95,
+          "fitLength": 0.3806904879881604,
+          "fitThickness": 0.39639843096768645,
+          "limiting": 0.39639843096768645,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.166946523264498,
+          "titleText": "DRACULA",
+          "stacked": false,
+          "lines": [
+            "DRACULA"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "editorial",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 8.85,
+          "authorSize": 5.4,
+          "fitLength": 0.9616462656079616,
+          "fitThickness": 0.32920803588690634,
+          "limiting": 0.9616462656079616,
+          "limitedBy": "length",
+          "contrast": 15.149279012422147,
+          "titleText": "GREAT EXPECTATIONS",
+          "stacked": false,
+          "lines": [
+            "GREAT EXPECTATIONS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "editorial",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 10.2,
+          "authorSize": 5.5,
+          "fitLength": 0.7231267234144586,
+          "fitThickness": 0.3662633297267672,
+          "limiting": 0.7231267234144586,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.395939105083926,
+          "titleText": "BLEAK HOUSE",
+          "stacked": false,
+          "lines": [
+            "BLEAK HOUSE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "editorial",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 10.2,
+          "authorSize": 5.5,
+          "fitLength": 0.712968471148126,
+          "fitThickness": 0.3553181607059916,
+          "limiting": 0.712968471148126,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.77169882230766,
+          "titleText": "MIDDLEMARCH",
+          "stacked": false,
+          "lines": [
+            "MIDDLEMARCH"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "editorial",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 10.2,
+          "authorSize": 5.2,
+          "fitLength": 0.7788461538461539,
+          "fitThickness": 0.39357046393793854,
+          "limiting": 0.7788461538461539,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.280265302215087,
+          "titleText": "THE MOONSTONE",
+          "stacked": false,
+          "lines": [
+            "THE MOONSTONE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "editorial",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8.5,
+          "authorSize": 4.35,
+          "fitLength": 0.6600987697759458,
+          "fitThickness": 0.3975864165770148,
+          "limiting": 0.6600987697759458,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.16400983998534,
+          "titleText": "THE TIME MACHINE",
+          "stacked": false,
+          "lines": [
+            "THE TIME MACHINE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "editorial",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 9.2,
+          "authorSize": 4.45,
+          "fitLength": 0.9388448717224355,
+          "fitThickness": 0.3995816736482972,
+          "limiting": 0.9388448717224355,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.426576707614167,
+          "titleText": "TREASURE ISLAND",
+          "stacked": false,
+          "lines": [
+            "TREASURE ISLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "editorial",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 7.45,
+          "authorSize": 4.35,
+          "fitLength": 0.5898606876411875,
+          "fitThickness": 0.9630986971885739,
+          "limiting": 0.9630986971885739,
+          "limitedBy": "thickness",
+          "contrast": 15.109470635081768,
+          "titleText": "DR JEKYLL AND MR HYDE",
+          "stacked": true,
+          "lines": [
+            "DR JEKYLL",
+            "AND MR HYDE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.25,
+          "authorSize": 4.85,
+          "fitLength": 0.7849229100488105,
+          "fitThickness": 0.9592733874307213,
+          "limiting": 0.9592733874307213,
+          "limitedBy": "thickness",
+          "contrast": 13.862386436150087,
+          "titleText": "THE HOUND OF THE BASKERVILLES",
+          "stacked": true,
+          "lines": [
+            "THE HOUND OF",
+            "THE BASKERVILLES"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "editorial",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 7.45,
+          "authorSize": 4.8,
+          "fitLength": 0.9631601697579376,
+          "fitThickness": 0.31696448564646873,
+          "limiting": 0.9631601697579376,
+          "limitedBy": "length",
+          "contrast": 14.96689153122045,
+          "titleText": "THE PICTURE OF DORIAN GRAY",
+          "stacked": false,
+          "lines": [
+            "THE PICTURE OF DORIAN GRAY"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "editorial",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.45,
+          "authorSize": 4.5,
+          "fitLength": 0.9601091102998481,
+          "fitThickness": 0.38308165389628396,
+          "limiting": 0.9601091102998481,
+          "limitedBy": "length",
+          "contrast": 14.947664525835995,
+          "titleText": "THE SCARLET LETTER",
+          "stacked": false,
+          "lines": [
+            "THE SCARLET LETTER"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "editorial",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 8.2,
+          "authorSize": 4.2,
+          "fitLength": 0.9045859478924526,
+          "fitThickness": 0.40732026143790845,
+          "limiting": 0.9045859478924526,
+          "limitedBy": "aesthetic cap",
+          "contrast": 13.936373036250183,
+          "titleText": "THE TURN OF THE SCREW",
+          "stacked": false,
+          "lines": [
+            "THE TURN OF THE SCREW"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "editorial",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 8.35,
+          "authorSize": 4.25,
+          "fitLength": 0.8925877530563658,
+          "fitThickness": 0.39977912402887983,
+          "limiting": 0.8925877530563658,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.69085680179052,
+          "titleText": "ALICE IN WONDERLAND",
+          "stacked": false,
+          "lines": [
+            "ALICE IN WONDERLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "editorial",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.85,
+          "authorSize": 5.05,
+          "fitLength": 0.9084443607910622,
+          "fitThickness": 0.39468966826243745,
+          "limiting": 0.9084443607910622,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.851282154815918,
+          "titleText": "WUTHERING HEIGHTS",
+          "stacked": false,
+          "lines": [
+            "WUTHERING HEIGHTS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "editorial",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.85,
+          "authorSize": 5.05,
+          "fitLength": 0.78435838272931,
+          "fitThickness": 0.39468966826243745,
+          "limiting": 0.78435838272931,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.842565041336385,
+          "titleText": "THE WHISPER MAN",
+          "stacked": false,
+          "lines": [
+            "THE WHISPER MAN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 9.4,
+          "authorSize": 4.85,
+          "fitLength": 0.963718286427284,
+          "fitThickness": 0.39182670553488125,
+          "limiting": 0.963718286427284,
+          "limitedBy": "length",
+          "contrast": 12.718887981672628,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 9.15,
+          "authorSize": 4.85,
+          "fitLength": 0.9648402965920432,
+          "fitThickness": 0.3814057825153365,
+          "limiting": 0.9648402965920432,
+          "limitedBy": "length",
+          "contrast": 12.718887981672628,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9648402965920432,
+      "smallestFont": 7.45,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 360,
+      "direction": "cloth",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        6,
+        5,
+        5,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "cloth",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.5316536369816451,
+          "fitThickness": 0.14768166089965398,
+          "limiting": 0.5316536369816451,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.44509172520121,
+          "titleText": "MOBY-DICK",
+          "stacked": false,
+          "lines": [
+            "MOBY-DICK"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "cloth",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 9.7,
+          "authorSize": 5.4,
+          "fitLength": 0.5237295825771325,
+          "fitThickness": 0.20697674418604647,
+          "limiting": 0.5237295825771325,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.677102911037325,
+          "titleText": "JANE EYRE",
+          "stacked": false,
+          "lines": [
+            "JANE EYRE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "cloth",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.45,
+          "authorSize": 5.2,
+          "fitLength": 0.9117406273909715,
+          "fitThickness": 0.20994757863205188,
+          "limiting": 0.9117406273909715,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.0254679480942865,
+          "titleText": "PRIDE AND PREJUDICE",
+          "stacked": false,
+          "lines": [
+            "PRIDE AND PREJUDICE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "cloth",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 8.5,
+          "authorSize": 4.7,
+          "fitLength": 0.5822009796176331,
+          "fitThickness": 0.16457858769931666,
+          "limiting": 0.5822009796176331,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.559900229381917,
+          "titleText": "FRANKENSTEIN",
+          "stacked": false,
+          "lines": [
+            "FRANKENSTEIN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "cloth",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.15,
+          "authorSize": 5.05,
+          "fitLength": 0.36285787551873216,
+          "fitThickness": 0.15722468107263737,
+          "limiting": 0.36285787551873216,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.101065276453328,
+          "titleText": "DRACULA",
+          "stacked": false,
+          "lines": [
+            "DRACULA"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "cloth",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 8.9,
+          "authorSize": 5.5,
+          "fitLength": 0.9616275590887722,
+          "fitThickness": 0.14229955325652482,
+          "limiting": 0.9616275590887722,
+          "limitedBy": "length",
+          "contrast": 8.337654869277722,
+          "titleText": "GREAT EXPECTATIONS",
+          "stacked": false,
+          "lines": [
+            "GREAT EXPECTATIONS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "cloth",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6717331474730145,
+          "fitThickness": 0.14490719782707107,
+          "limiting": 0.6717331474730145,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.135998608749121,
+          "titleText": "BLEAK HOUSE",
+          "stacked": false,
+          "lines": [
+            "BLEAK HOUSE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "cloth",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6878574753923915,
+          "fitThickness": 0.14226666666666668,
+          "limiting": 0.6878574753923915,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.975319319105759,
+          "titleText": "MIDDLEMARCH",
+          "stacked": false,
+          "lines": [
+            "MIDDLEMARCH"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "cloth",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 9.6,
+          "authorSize": 5.3,
+          "fitLength": 0.7278792376609563,
+          "fitThickness": 0.15968688845401174,
+          "limiting": 0.7278792376609563,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.733213066657453,
+          "titleText": "THE MOONSTONE",
+          "stacked": false,
+          "lines": [
+            "THE MOONSTONE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "cloth",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8,
+          "authorSize": 4.45,
+          "fitLength": 0.6087923028141642,
+          "fitThickness": 0.16661562021439513,
+          "limiting": 0.6087923028141642,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.591104636818976,
+          "titleText": "THE TIME MACHINE",
+          "stacked": false,
+          "lines": [
+            "THE TIME MACHINE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "cloth",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 8.65,
+          "authorSize": 4.65,
+          "fitLength": 0.8968800075407672,
+          "fitThickness": 0.16366165831942128,
+          "limiting": 0.8968800075407672,
+          "limitedBy": "aesthetic cap",
+          "contrast": 8.289716921343166,
+          "titleText": "TREASURE ISLAND",
+          "stacked": false,
+          "lines": [
+            "TREASURE ISLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "cloth",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 8.15,
+          "authorSize": 4.5,
+          "fitLength": 0.6561771679362357,
+          "fitThickness": 0.5162234837167614,
+          "limiting": 0.6561771679362357,
+          "limitedBy": "two-line cap",
+          "contrast": 10.99787146736917,
+          "titleText": "DR JEKYLL AND MR HYDE",
+          "stacked": true,
+          "lines": [
+            "DR JEKYLL",
+            "AND MR HYDE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8368688965110436,
+          "fitThickness": 0.5047619047619047,
+          "limiting": 0.8368688965110436,
+          "limitedBy": "two-line cap",
+          "contrast": 5.90233123051239,
+          "titleText": "THE HOUND OF THE BASKERVILLES",
+          "stacked": true,
+          "lines": [
+            "THE HOUND OF",
+            "THE BASKERVILLES"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "cloth",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 7.5,
+          "authorSize": 4.85,
+          "fitLength": 0.960725401651584,
+          "fitThickness": 0.13873775843307945,
+          "limiting": 0.960725401651584,
+          "limitedBy": "length",
+          "contrast": 9.015073841306744,
+          "titleText": "THE PICTURE OF DORIAN GRAY",
+          "stacked": false,
+          "lines": [
+            "THE PICTURE OF DORIAN GRAY"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "cloth",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.35,
+          "authorSize": 4.6,
+          "fitLength": 0.9605121725848119,
+          "fitThickness": 0.16558763487897346,
+          "limiting": 0.9605121725848119,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.048403816279158,
+          "titleText": "THE SCARLET LETTER",
+          "stacked": false,
+          "lines": [
+            "THE SCARLET LETTER"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "cloth",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 7.7,
+          "authorSize": 4.25,
+          "fitLength": 0.818561603745976,
+          "fitThickness": 0.16890322580645165,
+          "limiting": 0.818561603745976,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.709724609879622,
+          "titleText": "THE TURN OF THE SCREW",
+          "stacked": false,
+          "lines": [
+            "THE TURN OF THE SCREW"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "cloth",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 7.85,
+          "authorSize": 4.35,
+          "fitLength": 0.8395388132392406,
+          "fitThickness": 0.1628221244500314,
+          "limiting": 0.8395388132392406,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.186398705352881,
+          "titleText": "ALICE IN WONDERLAND",
+          "stacked": false,
+          "lines": [
+            "ALICE IN WONDERLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.8568922899305811,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.8568922899305811,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.602684646259534,
+          "titleText": "WUTHERING HEIGHTS",
+          "stacked": false,
+          "lines": [
+            "WUTHERING HEIGHTS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.7268099568225183,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.7268099568225183,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.079720959479129,
+          "titleText": "THE WHISPER MAN",
+          "stacked": false,
+          "lines": [
+            "THE WHISPER MAN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8734638907011257,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.8734638907011257,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.42269675380308,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.9009629801619002,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.9009629801619002,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.465972327389458,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9616275590887722,
+      "smallestFont": 7.5,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 360,
+      "direction": "hybrid",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        6,
+        5,
+        5,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "hybrid",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.3535997785442275,
+          "fitThickness": 0.4291835988971443,
+          "limiting": 0.4291835988971443,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.064860207066118,
+          "titleText": "Moby-Dick",
+          "stacked": false,
+          "lines": [
+            "Moby-Dick"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "hybrid",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 9.5,
+          "authorSize": 5.15,
+          "fitLength": 0.3123981072806076,
+          "fitThickness": 0.40367370786309276,
+          "limiting": 0.40367370786309276,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.24310051397701,
+          "titleText": "Jane Eyre",
+          "stacked": false,
+          "lines": [
+            "Jane Eyre"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "hybrid",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.45,
+          "authorSize": 5,
+          "fitLength": 0.5682374224672638,
+          "fitThickness": 0.46522740106858956,
+          "limiting": 0.5682374224672638,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.322983981632678,
+          "titleText": "Pride and Prejudice",
+          "stacked": false,
+          "lines": [
+            "Pride and Prejudice"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "hybrid",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 8.5,
+          "authorSize": 4.5,
+          "fitLength": 0.34588484634404804,
+          "fitThickness": 0.3555929896585192,
+          "limiting": 0.3555929896585192,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.24310051397701,
+          "titleText": "Frankenstein",
+          "stacked": false,
+          "lines": [
+            "Frankenstein"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "hybrid",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.15,
+          "authorSize": 4.8,
+          "fitLength": 0.20731997548380363,
+          "fitThickness": 0.3468247530531951,
+          "limiting": 0.3468247530531951,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.030132162033812,
+          "titleText": "Dracula",
+          "stacked": false,
+          "lines": [
+            "Dracula"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "hybrid",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 9.5,
+          "authorSize": 5.25,
+          "fitLength": 0.6072359660145918,
+          "fitThickness": 0.3952167022015018,
+          "limiting": 0.6072359660145918,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.172536778980477,
+          "titleText": "Great Expectations",
+          "stacked": false,
+          "lines": [
+            "Great Expectations"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "hybrid",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.4060963962075151,
+          "fitThickness": 0.3091548898540789,
+          "limiting": 0.4060963962075151,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.08226353250158,
+          "titleText": "Bleak House",
+          "stacked": false,
+          "lines": [
+            "Bleak House"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "hybrid",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.4122694201513926,
+          "fitThickness": 0.30306252658443217,
+          "limiting": 0.4122694201513926,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.267340188862045,
+          "titleText": "Middlemarch",
+          "stacked": false,
+          "lines": [
+            "Middlemarch"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "hybrid",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 9.5,
+          "authorSize": 5.05,
+          "fitLength": 0.4432640429716124,
+          "fitThickness": 0.33636732728422924,
+          "limiting": 0.4432640429716124,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.843464020513188,
+          "titleText": "The Moonstone",
+          "stacked": false,
+          "lines": [
+            "The Moonstone"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "hybrid",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8,
+          "authorSize": 4.2,
+          "fitLength": 0.41101500353681386,
+          "fitThickness": 0.3629270063058568,
+          "limiting": 0.41101500353681386,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.316243392513659,
+          "titleText": "The Time Machine",
+          "stacked": false,
+          "lines": [
+            "The Time Machine"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "hybrid",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 8.65,
+          "authorSize": 4.55,
+          "fitLength": 0.5031537933006432,
+          "fitThickness": 0.3527521464186482,
+          "limiting": 0.5031537933006432,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.1552239636407,
+          "titleText": "Treasure Island",
+          "stacked": false,
+          "lines": [
+            "Treasure Island"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "hybrid",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 8.15,
+          "authorSize": 4.3,
+          "fitLength": 0.7049014405176619,
+          "fitThickness": 0.48912803645660197,
+          "limiting": 0.7049014405176619,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.058164829589858,
+          "titleText": "Dr Jekyll and Mr Hyde",
+          "stacked": false,
+          "lines": [
+            "Dr Jekyll and Mr Hyde"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.9140730433456594,
+          "fitThickness": 0.34737765449572666,
+          "limiting": 0.9140730433456594,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.316243392513659,
+          "titleText": "The Hound of the Baskervilles",
+          "stacked": false,
+          "lines": [
+            "The Hound of the Baskervilles"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "hybrid",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 8.8,
+          "authorSize": 4.65,
+          "fitLength": 0.6951908166151385,
+          "fitThickness": 0.4760692464358454,
+          "limiting": 0.6951908166151385,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.119939173981896,
+          "titleText": "The Picture of Dorian Gray",
+          "stacked": false,
+          "lines": [
+            "The Picture of Dorian Gray"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "hybrid",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.35,
+          "authorSize": 4.4,
+          "fitLength": 0.5472489985996679,
+          "fitThickness": 0.3587006017005702,
+          "limiting": 0.5472489985996679,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.054513043528406,
+          "titleText": "The Scarlet Letter",
+          "stacked": false,
+          "lines": [
+            "The Scarlet Letter"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "hybrid",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 7.7,
+          "authorSize": 4.05,
+          "fitLength": 0.5056344977630894,
+          "fitThickness": 0.37019230769230776,
+          "limiting": 0.5056344977630894,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.274080777981064,
+          "titleText": "The Turn of the Screw",
+          "stacked": false,
+          "lines": [
+            "The Turn of the Screw"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "hybrid",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 7.85,
+          "authorSize": 4.15,
+          "fitLength": 0.5168137019016557,
+          "fitThickness": 0.3665187103521692,
+          "limiting": 0.5168137019016557,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.334399166616395,
+          "titleText": "Alice in Wonderland",
+          "stacked": false,
+          "lines": [
+            "Alice in Wonderland"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "hybrid",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.3,
+          "authorSize": 4.9,
+          "fitLength": 0.5248398077693232,
+          "fitThickness": 0.4683149351290508,
+          "limiting": 0.5248398077693232,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.305247547047605,
+          "titleText": "Wuthering Heights",
+          "stacked": false,
+          "lines": [
+            "Wuthering Heights"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "hybrid",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.3,
+          "authorSize": 4.9,
+          "fitLength": 0.4843685766950894,
+          "fitThickness": 0.46372361223562875,
+          "limiting": 0.4843685766950894,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.95783581807513,
+          "titleText": "The Whisper Man",
+          "stacked": false,
+          "lines": [
+            "The Whisper Man"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.5444225496915694,
+          "fitThickness": 0.4678019080542452,
+          "limiting": 0.5444225496915694,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.7137739462376,
+          "titleText": "Rock Paper Scissors",
+          "stacked": false,
+          "lines": [
+            "Rock Paper Scissors"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.5597692036645524,
+          "fitThickness": 0.4678019080542452,
+          "limiting": 0.5597692036645524,
+          "limitedBy": "aesthetic cap",
+          "contrast": 12.075833598441147,
+          "titleText": "Rock Paper Scissors",
+          "stacked": false,
+          "lines": [
+            "Rock Paper Scissors"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9140730433456594,
+      "smallestFont": 7.7,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 320,
+      "direction": "editorial",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        5,
+        5,
+        6,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "editorial",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 10.2,
+          "authorSize": 5.45,
+          "fitLength": 0.5673295347345382,
+          "fitThickness": 0.36786362598127015,
+          "limiting": 0.5673295347345382,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.487573233853116,
+          "titleText": "MOBY-DICK",
+          "stacked": false,
+          "lines": [
+            "MOBY-DICK"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "editorial",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 10.2,
+          "authorSize": 5.3,
+          "fitLength": 0.5730798332179596,
+          "fitThickness": 0.3761596136739102,
+          "limiting": 0.5730798332179596,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.296055771630579,
+          "titleText": "JANE EYRE",
+          "stacked": false,
+          "lines": [
+            "JANE EYRE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "editorial",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.55,
+          "authorSize": 5.15,
+          "fitLength": 0.962609775258831,
+          "fitThickness": 0.3754455117759949,
+          "limiting": 0.962609775258831,
+          "limitedBy": "length",
+          "contrast": 14.012537881014977,
+          "titleText": "PRIDE AND PREJUDICE",
+          "stacked": false,
+          "lines": [
+            "PRIDE AND PREJUDICE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "editorial",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 9,
+          "authorSize": 4.6,
+          "fitLength": 0.6268541209854249,
+          "fitThickness": 0.3992202364971343,
+          "limiting": 0.6268541209854249,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.087379624022352,
+          "titleText": "FRANKENSTEIN",
+          "stacked": false,
+          "lines": [
+            "FRANKENSTEIN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "editorial",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.7,
+          "authorSize": 4.95,
+          "fitLength": 0.3806904879881604,
+          "fitThickness": 0.39639843096768645,
+          "limiting": 0.39639843096768645,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.166946523264498,
+          "titleText": "DRACULA",
+          "stacked": false,
+          "lines": [
+            "DRACULA"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "editorial",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 8.85,
+          "authorSize": 5.4,
+          "fitLength": 0.9616462656079616,
+          "fitThickness": 0.32920803588690634,
+          "limiting": 0.9616462656079616,
+          "limitedBy": "length",
+          "contrast": 15.149279012422147,
+          "titleText": "GREAT EXPECTATIONS",
+          "stacked": false,
+          "lines": [
+            "GREAT EXPECTATIONS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "editorial",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 10.2,
+          "authorSize": 5.5,
+          "fitLength": 0.7231267234144586,
+          "fitThickness": 0.3662633297267672,
+          "limiting": 0.7231267234144586,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.395939105083926,
+          "titleText": "BLEAK HOUSE",
+          "stacked": false,
+          "lines": [
+            "BLEAK HOUSE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "editorial",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 10.2,
+          "authorSize": 5.5,
+          "fitLength": 0.712968471148126,
+          "fitThickness": 0.3553181607059916,
+          "limiting": 0.712968471148126,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.77169882230766,
+          "titleText": "MIDDLEMARCH",
+          "stacked": false,
+          "lines": [
+            "MIDDLEMARCH"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "editorial",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 10.2,
+          "authorSize": 5.2,
+          "fitLength": 0.7788461538461539,
+          "fitThickness": 0.39357046393793854,
+          "limiting": 0.7788461538461539,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.280265302215087,
+          "titleText": "THE MOONSTONE",
+          "stacked": false,
+          "lines": [
+            "THE MOONSTONE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "editorial",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8.5,
+          "authorSize": 4.35,
+          "fitLength": 0.6600987697759458,
+          "fitThickness": 0.3975864165770148,
+          "limiting": 0.6600987697759458,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.16400983998534,
+          "titleText": "THE TIME MACHINE",
+          "stacked": false,
+          "lines": [
+            "THE TIME MACHINE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "editorial",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 9.2,
+          "authorSize": 4.45,
+          "fitLength": 0.9388448717224355,
+          "fitThickness": 0.3995816736482972,
+          "limiting": 0.9388448717224355,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.426576707614167,
+          "titleText": "TREASURE ISLAND",
+          "stacked": false,
+          "lines": [
+            "TREASURE ISLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "editorial",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 7.45,
+          "authorSize": 4.35,
+          "fitLength": 0.5898606876411875,
+          "fitThickness": 0.9630986971885739,
+          "limiting": 0.9630986971885739,
+          "limitedBy": "thickness",
+          "contrast": 15.109470635081768,
+          "titleText": "DR JEKYLL AND MR HYDE",
+          "stacked": true,
+          "lines": [
+            "DR JEKYLL",
+            "AND MR HYDE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.25,
+          "authorSize": 4.85,
+          "fitLength": 0.7849229100488105,
+          "fitThickness": 0.9592733874307213,
+          "limiting": 0.9592733874307213,
+          "limitedBy": "thickness",
+          "contrast": 13.862386436150087,
+          "titleText": "THE HOUND OF THE BASKERVILLES",
+          "stacked": true,
+          "lines": [
+            "THE HOUND OF",
+            "THE BASKERVILLES"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "editorial",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 7.45,
+          "authorSize": 4.8,
+          "fitLength": 0.9631601697579376,
+          "fitThickness": 0.31696448564646873,
+          "limiting": 0.9631601697579376,
+          "limitedBy": "length",
+          "contrast": 14.96689153122045,
+          "titleText": "THE PICTURE OF DORIAN GRAY",
+          "stacked": false,
+          "lines": [
+            "THE PICTURE OF DORIAN GRAY"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "editorial",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.45,
+          "authorSize": 4.5,
+          "fitLength": 0.9601091102998481,
+          "fitThickness": 0.38308165389628396,
+          "limiting": 0.9601091102998481,
+          "limitedBy": "length",
+          "contrast": 14.947664525835995,
+          "titleText": "THE SCARLET LETTER",
+          "stacked": false,
+          "lines": [
+            "THE SCARLET LETTER"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "editorial",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 8.2,
+          "authorSize": 4.2,
+          "fitLength": 0.9045859478924526,
+          "fitThickness": 0.40732026143790845,
+          "limiting": 0.9045859478924526,
+          "limitedBy": "aesthetic cap",
+          "contrast": 13.936373036250183,
+          "titleText": "THE TURN OF THE SCREW",
+          "stacked": false,
+          "lines": [
+            "THE TURN OF THE SCREW"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "editorial",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 8.35,
+          "authorSize": 4.25,
+          "fitLength": 0.8925877530563658,
+          "fitThickness": 0.39977912402887983,
+          "limiting": 0.8925877530563658,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.69085680179052,
+          "titleText": "ALICE IN WONDERLAND",
+          "stacked": false,
+          "lines": [
+            "ALICE IN WONDERLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "editorial",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.85,
+          "authorSize": 5.05,
+          "fitLength": 0.9084443607910622,
+          "fitThickness": 0.39468966826243745,
+          "limiting": 0.9084443607910622,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.851282154815918,
+          "titleText": "WUTHERING HEIGHTS",
+          "stacked": false,
+          "lines": [
+            "WUTHERING HEIGHTS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "editorial",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.85,
+          "authorSize": 5.05,
+          "fitLength": 0.78435838272931,
+          "fitThickness": 0.39468966826243745,
+          "limiting": 0.78435838272931,
+          "limitedBy": "aesthetic cap",
+          "contrast": 15.842565041336385,
+          "titleText": "THE WHISPER MAN",
+          "stacked": false,
+          "lines": [
+            "THE WHISPER MAN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 9.4,
+          "authorSize": 4.85,
+          "fitLength": 0.963718286427284,
+          "fitThickness": 0.39182670553488125,
+          "limiting": 0.963718286427284,
+          "limitedBy": "length",
+          "contrast": 12.718887981672628,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "editorial",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 9.15,
+          "authorSize": 4.85,
+          "fitLength": 0.9648402965920432,
+          "fitThickness": 0.3814057825153365,
+          "limiting": 0.9648402965920432,
+          "limitedBy": "length",
+          "contrast": 12.718887981672628,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9648402965920432,
+      "smallestFont": 7.45,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 320,
+      "direction": "cloth",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        5,
+        5,
+        6,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "cloth",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.5316536369816451,
+          "fitThickness": 0.14768166089965398,
+          "limiting": 0.5316536369816451,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.44509172520121,
+          "titleText": "MOBY-DICK",
+          "stacked": false,
+          "lines": [
+            "MOBY-DICK"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "cloth",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 9.7,
+          "authorSize": 5.4,
+          "fitLength": 0.5237295825771325,
+          "fitThickness": 0.20697674418604647,
+          "limiting": 0.5237295825771325,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.677102911037325,
+          "titleText": "JANE EYRE",
+          "stacked": false,
+          "lines": [
+            "JANE EYRE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "cloth",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.45,
+          "authorSize": 5.2,
+          "fitLength": 0.9117406273909715,
+          "fitThickness": 0.20994757863205188,
+          "limiting": 0.9117406273909715,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.0254679480942865,
+          "titleText": "PRIDE AND PREJUDICE",
+          "stacked": false,
+          "lines": [
+            "PRIDE AND PREJUDICE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "cloth",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 8.5,
+          "authorSize": 4.7,
+          "fitLength": 0.5822009796176331,
+          "fitThickness": 0.16457858769931666,
+          "limiting": 0.5822009796176331,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.559900229381917,
+          "titleText": "FRANKENSTEIN",
+          "stacked": false,
+          "lines": [
+            "FRANKENSTEIN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "cloth",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.15,
+          "authorSize": 5.05,
+          "fitLength": 0.36285787551873216,
+          "fitThickness": 0.15722468107263737,
+          "limiting": 0.36285787551873216,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.101065276453328,
+          "titleText": "DRACULA",
+          "stacked": false,
+          "lines": [
+            "DRACULA"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "cloth",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 8.9,
+          "authorSize": 5.5,
+          "fitLength": 0.9616275590887722,
+          "fitThickness": 0.14229955325652482,
+          "limiting": 0.9616275590887722,
+          "limitedBy": "length",
+          "contrast": 8.337654869277722,
+          "titleText": "GREAT EXPECTATIONS",
+          "stacked": false,
+          "lines": [
+            "GREAT EXPECTATIONS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "cloth",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6717331474730145,
+          "fitThickness": 0.14490719782707107,
+          "limiting": 0.6717331474730145,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.135998608749121,
+          "titleText": "BLEAK HOUSE",
+          "stacked": false,
+          "lines": [
+            "BLEAK HOUSE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "cloth",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6878574753923915,
+          "fitThickness": 0.14226666666666668,
+          "limiting": 0.6878574753923915,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.975319319105759,
+          "titleText": "MIDDLEMARCH",
+          "stacked": false,
+          "lines": [
+            "MIDDLEMARCH"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "cloth",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 9.6,
+          "authorSize": 5.3,
+          "fitLength": 0.7278792376609563,
+          "fitThickness": 0.15968688845401174,
+          "limiting": 0.7278792376609563,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.733213066657453,
+          "titleText": "THE MOONSTONE",
+          "stacked": false,
+          "lines": [
+            "THE MOONSTONE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "cloth",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8,
+          "authorSize": 4.45,
+          "fitLength": 0.6087923028141642,
+          "fitThickness": 0.16661562021439513,
+          "limiting": 0.6087923028141642,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.591104636818976,
+          "titleText": "THE TIME MACHINE",
+          "stacked": false,
+          "lines": [
+            "THE TIME MACHINE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "cloth",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 8.65,
+          "authorSize": 4.65,
+          "fitLength": 0.8968800075407672,
+          "fitThickness": 0.16366165831942128,
+          "limiting": 0.8968800075407672,
+          "limitedBy": "aesthetic cap",
+          "contrast": 8.289716921343166,
+          "titleText": "TREASURE ISLAND",
+          "stacked": false,
+          "lines": [
+            "TREASURE ISLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "cloth",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 8.15,
+          "authorSize": 4.5,
+          "fitLength": 0.6561771679362357,
+          "fitThickness": 0.5162234837167614,
+          "limiting": 0.6561771679362357,
+          "limitedBy": "two-line cap",
+          "contrast": 10.99787146736917,
+          "titleText": "DR JEKYLL AND MR HYDE",
+          "stacked": true,
+          "lines": [
+            "DR JEKYLL",
+            "AND MR HYDE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8368688965110436,
+          "fitThickness": 0.5047619047619047,
+          "limiting": 0.8368688965110436,
+          "limitedBy": "two-line cap",
+          "contrast": 5.90233123051239,
+          "titleText": "THE HOUND OF THE BASKERVILLES",
+          "stacked": true,
+          "lines": [
+            "THE HOUND OF",
+            "THE BASKERVILLES"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "cloth",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 7.5,
+          "authorSize": 4.85,
+          "fitLength": 0.960725401651584,
+          "fitThickness": 0.13873775843307945,
+          "limiting": 0.960725401651584,
+          "limitedBy": "length",
+          "contrast": 9.015073841306744,
+          "titleText": "THE PICTURE OF DORIAN GRAY",
+          "stacked": false,
+          "lines": [
+            "THE PICTURE OF DORIAN GRAY"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "cloth",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.35,
+          "authorSize": 4.6,
+          "fitLength": 0.9605121725848119,
+          "fitThickness": 0.16558763487897346,
+          "limiting": 0.9605121725848119,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.048403816279158,
+          "titleText": "THE SCARLET LETTER",
+          "stacked": false,
+          "lines": [
+            "THE SCARLET LETTER"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "cloth",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 7.7,
+          "authorSize": 4.25,
+          "fitLength": 0.818561603745976,
+          "fitThickness": 0.16890322580645165,
+          "limiting": 0.818561603745976,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.709724609879622,
+          "titleText": "THE TURN OF THE SCREW",
+          "stacked": false,
+          "lines": [
+            "THE TURN OF THE SCREW"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "cloth",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 7.85,
+          "authorSize": 4.35,
+          "fitLength": 0.8395388132392406,
+          "fitThickness": 0.1628221244500314,
+          "limiting": 0.8395388132392406,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.186398705352881,
+          "titleText": "ALICE IN WONDERLAND",
+          "stacked": false,
+          "lines": [
+            "ALICE IN WONDERLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.8568922899305811,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.8568922899305811,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.602684646259534,
+          "titleText": "WUTHERING HEIGHTS",
+          "stacked": false,
+          "lines": [
+            "WUTHERING HEIGHTS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.7268099568225183,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.7268099568225183,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.079720959479129,
+          "titleText": "THE WHISPER MAN",
+          "stacked": false,
+          "lines": [
+            "THE WHISPER MAN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8734638907011257,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.8734638907011257,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.42269675380308,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.9009629801619002,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.9009629801619002,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.465972327389458,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9616275590887722,
+      "smallestFont": 7.5,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 320,
+      "direction": "hybrid",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        5,
+        5,
+        6,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "hybrid",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.3535997785442275,
+          "fitThickness": 0.4291835988971443,
+          "limiting": 0.4291835988971443,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.064860207066118,
+          "titleText": "Moby-Dick",
+          "stacked": false,
+          "lines": [
+            "Moby-Dick"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "hybrid",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 9.5,
+          "authorSize": 5.15,
+          "fitLength": 0.3123981072806076,
+          "fitThickness": 0.40367370786309276,
+          "limiting": 0.40367370786309276,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.24310051397701,
+          "titleText": "Jane Eyre",
+          "stacked": false,
+          "lines": [
+            "Jane Eyre"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "hybrid",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.45,
+          "authorSize": 5,
+          "fitLength": 0.5682374224672638,
+          "fitThickness": 0.46522740106858956,
+          "limiting": 0.5682374224672638,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.322983981632678,
+          "titleText": "Pride and Prejudice",
+          "stacked": false,
+          "lines": [
+            "Pride and Prejudice"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "hybrid",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 8.5,
+          "authorSize": 4.5,
+          "fitLength": 0.34588484634404804,
+          "fitThickness": 0.3555929896585192,
+          "limiting": 0.3555929896585192,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.24310051397701,
+          "titleText": "Frankenstein",
+          "stacked": false,
+          "lines": [
+            "Frankenstein"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "hybrid",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.15,
+          "authorSize": 4.8,
+          "fitLength": 0.20731997548380363,
+          "fitThickness": 0.3468247530531951,
+          "limiting": 0.3468247530531951,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.030132162033812,
+          "titleText": "Dracula",
+          "stacked": false,
+          "lines": [
+            "Dracula"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "hybrid",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 9.5,
+          "authorSize": 5.25,
+          "fitLength": 0.6072359660145918,
+          "fitThickness": 0.3952167022015018,
+          "limiting": 0.6072359660145918,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.172536778980477,
+          "titleText": "Great Expectations",
+          "stacked": false,
+          "lines": [
+            "Great Expectations"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "hybrid",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.4060963962075151,
+          "fitThickness": 0.3091548898540789,
+          "limiting": 0.4060963962075151,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.08226353250158,
+          "titleText": "Bleak House",
+          "stacked": false,
+          "lines": [
+            "Bleak House"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "hybrid",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.4122694201513926,
+          "fitThickness": 0.30306252658443217,
+          "limiting": 0.4122694201513926,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.267340188862045,
+          "titleText": "Middlemarch",
+          "stacked": false,
+          "lines": [
+            "Middlemarch"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "hybrid",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 9.5,
+          "authorSize": 5.05,
+          "fitLength": 0.4432640429716124,
+          "fitThickness": 0.33636732728422924,
+          "limiting": 0.4432640429716124,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.843464020513188,
+          "titleText": "The Moonstone",
+          "stacked": false,
+          "lines": [
+            "The Moonstone"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "hybrid",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8,
+          "authorSize": 4.2,
+          "fitLength": 0.41101500353681386,
+          "fitThickness": 0.3629270063058568,
+          "limiting": 0.41101500353681386,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.316243392513659,
+          "titleText": "The Time Machine",
+          "stacked": false,
+          "lines": [
+            "The Time Machine"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "hybrid",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 8.65,
+          "authorSize": 4.55,
+          "fitLength": 0.5031537933006432,
+          "fitThickness": 0.3527521464186482,
+          "limiting": 0.5031537933006432,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.1552239636407,
+          "titleText": "Treasure Island",
+          "stacked": false,
+          "lines": [
+            "Treasure Island"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "hybrid",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 8.15,
+          "authorSize": 4.3,
+          "fitLength": 0.7049014405176619,
+          "fitThickness": 0.48912803645660197,
+          "limiting": 0.7049014405176619,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.058164829589858,
+          "titleText": "Dr Jekyll and Mr Hyde",
+          "stacked": false,
+          "lines": [
+            "Dr Jekyll and Mr Hyde"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.9140730433456594,
+          "fitThickness": 0.34737765449572666,
+          "limiting": 0.9140730433456594,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.316243392513659,
+          "titleText": "The Hound of the Baskervilles",
+          "stacked": false,
+          "lines": [
+            "The Hound of the Baskervilles"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "hybrid",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 8.8,
+          "authorSize": 4.65,
+          "fitLength": 0.6951908166151385,
+          "fitThickness": 0.4760692464358454,
+          "limiting": 0.6951908166151385,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.119939173981896,
+          "titleText": "The Picture of Dorian Gray",
+          "stacked": false,
+          "lines": [
+            "The Picture of Dorian Gray"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "hybrid",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.35,
+          "authorSize": 4.4,
+          "fitLength": 0.5472489985996679,
+          "fitThickness": 0.3587006017005702,
+          "limiting": 0.5472489985996679,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.054513043528406,
+          "titleText": "The Scarlet Letter",
+          "stacked": false,
+          "lines": [
+            "The Scarlet Letter"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "hybrid",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 7.7,
+          "authorSize": 4.05,
+          "fitLength": 0.5056344977630894,
+          "fitThickness": 0.37019230769230776,
+          "limiting": 0.5056344977630894,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.274080777981064,
+          "titleText": "The Turn of the Screw",
+          "stacked": false,
+          "lines": [
+            "The Turn of the Screw"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "hybrid",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 7.85,
+          "authorSize": 4.15,
+          "fitLength": 0.5168137019016557,
+          "fitThickness": 0.3665187103521692,
+          "limiting": 0.5168137019016557,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.334399166616395,
+          "titleText": "Alice in Wonderland",
+          "stacked": false,
+          "lines": [
+            "Alice in Wonderland"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "hybrid",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.3,
+          "authorSize": 4.9,
+          "fitLength": 0.5248398077693232,
+          "fitThickness": 0.4683149351290508,
+          "limiting": 0.5248398077693232,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.305247547047605,
+          "titleText": "Wuthering Heights",
+          "stacked": false,
+          "lines": [
+            "Wuthering Heights"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "hybrid",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.3,
+          "authorSize": 4.9,
+          "fitLength": 0.4843685766950894,
+          "fitThickness": 0.46372361223562875,
+          "limiting": 0.4843685766950894,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.95783581807513,
+          "titleText": "The Whisper Man",
+          "stacked": false,
+          "lines": [
+            "The Whisper Man"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.5444225496915694,
+          "fitThickness": 0.4678019080542452,
+          "limiting": 0.5444225496915694,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.7137739462376,
+          "titleText": "Rock Paper Scissors",
+          "stacked": false,
+          "lines": [
+            "Rock Paper Scissors"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "hybrid",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 8.95,
+          "authorSize": 4.75,
+          "fitLength": 0.5597692036645524,
+          "fitThickness": 0.4678019080542452,
+          "limiting": 0.5597692036645524,
+          "limitedBy": "aesthetic cap",
+          "contrast": 12.075833598441147,
+          "titleText": "Rock Paper Scissors",
+          "stacked": false,
+          "lines": [
+            "Rock Paper Scissors"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9140730433456594,
+      "smallestFont": 7.7,
+      "lowContrast": 0,
+      "artless": 1
+    },
+    {
+      "width": 320,
+      "direction": "cloth-long-title",
+      "overflow": 0,
+      "titleClips": [],
+      "overflowEls": [],
+      "shelves": 4,
+      "shelfSizes": [
+        5,
+        5,
+        6,
+        5
+      ],
+      "spines": 21,
+      "fonts": "loaded",
+      "fontChecks": {
+        "inter": true,
+        "cormorant": true,
+        "garamond": true,
+        "literata": true
+      },
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "moby-dick",
+          "title": "Moby-Dick",
+          "direction": "cloth",
+          "widthPx": 52.35,
+          "heightPx": 239,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.5316536369816451,
+          "fitThickness": 0.14768166089965398,
+          "limiting": 0.5316536369816451,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.44509172520121,
+          "titleText": "MOBY-DICK",
+          "stacked": false,
+          "lines": [
+            "MOBY-DICK"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "jane-eyre",
+          "title": "Jane Eyre",
+          "direction": "cloth",
+          "widthPx": 50.71,
+          "heightPx": 235,
+          "fontSize": 9.7,
+          "authorSize": 5.4,
+          "fitLength": 0.5237295825771325,
+          "fitThickness": 0.20697674418604647,
+          "limiting": 0.5237295825771325,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.677102911037325,
+          "titleText": "JANE EYRE",
+          "stacked": false,
+          "lines": [
+            "JANE EYRE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "pride-and-prejudice",
+          "title": "Pride and Prejudice",
+          "direction": "cloth",
+          "widthPx": 49.06,
+          "heightPx": 231,
+          "fontSize": 9.45,
+          "authorSize": 5.2,
+          "fitLength": 0.9117406273909715,
+          "fitThickness": 0.20994757863205188,
+          "limiting": 0.9117406273909715,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.0254679480942865,
+          "titleText": "PRIDE AND PREJUDICE",
+          "stacked": false,
+          "lines": [
+            "PRIDE AND PREJUDICE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "frankenstein",
+          "title": "Frankenstein",
+          "direction": "cloth",
+          "widthPx": 44.12,
+          "heightPx": 227,
+          "fontSize": 8.5,
+          "authorSize": 4.7,
+          "fitLength": 0.5822009796176331,
+          "fitThickness": 0.16457858769931666,
+          "limiting": 0.5822009796176331,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.559900229381917,
+          "titleText": "FRANKENSTEIN",
+          "stacked": false,
+          "lines": [
+            "FRANKENSTEIN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 5,
+          "slug": "dracula",
+          "title": "Dracula",
+          "direction": "cloth",
+          "widthPx": 47.41,
+          "heightPx": 240,
+          "fontSize": 9.15,
+          "authorSize": 5.05,
+          "fitLength": 0.36285787551873216,
+          "fitThickness": 0.15722468107263737,
+          "limiting": 0.36285787551873216,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.101065276453328,
+          "titleText": "DRACULA",
+          "stacked": false,
+          "lines": [
+            "DRACULA"
+          ],
+          "visible": true
+        },
+        {
+          "id": 6,
+          "slug": "great-expectations",
+          "title": "Great Expectations",
+          "direction": "cloth",
+          "widthPx": 51.53,
+          "heightPx": 236,
+          "fontSize": 8.9,
+          "authorSize": 5.5,
+          "fitLength": 0.9616275590887722,
+          "fitThickness": 0.14229955325652482,
+          "limiting": 0.9616275590887722,
+          "limitedBy": "length",
+          "contrast": 8.337654869277722,
+          "titleText": "GREAT EXPECTATIONS",
+          "stacked": false,
+          "lines": [
+            "GREAT EXPECTATIONS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 7,
+          "slug": "bleak-house",
+          "title": "Bleak House",
+          "direction": "cloth",
+          "widthPx": 53.18,
+          "heightPx": 232,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6717331474730145,
+          "fitThickness": 0.14490719782707107,
+          "limiting": 0.6717331474730145,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.135998608749121,
+          "titleText": "BLEAK HOUSE",
+          "stacked": false,
+          "lines": [
+            "BLEAK HOUSE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 8,
+          "slug": "middlemarch",
+          "title": "Middlemarch",
+          "direction": "cloth",
+          "widthPx": 54,
+          "heightPx": 228,
+          "fontSize": 9.7,
+          "authorSize": 5.6,
+          "fitLength": 0.6878574753923915,
+          "fitThickness": 0.14226666666666668,
+          "limiting": 0.6878574753923915,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.975319319105759,
+          "titleText": "MIDDLEMARCH",
+          "stacked": false,
+          "lines": [
+            "MIDDLEMARCH"
+          ],
+          "visible": true
+        },
+        {
+          "id": 9,
+          "slug": "moonstone",
+          "title": "The Moonstone",
+          "direction": "cloth",
+          "widthPx": 49.88,
+          "heightPx": 241,
+          "fontSize": 9.6,
+          "authorSize": 5.3,
+          "fitLength": 0.7278792376609563,
+          "fitThickness": 0.15968688845401174,
+          "limiting": 0.7278792376609563,
+          "limitedBy": "aesthetic cap",
+          "contrast": 7.733213066657453,
+          "titleText": "THE MOONSTONE",
+          "stacked": false,
+          "lines": [
+            "THE MOONSTONE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 10,
+          "slug": "time-machine",
+          "title": "The Time Machine",
+          "direction": "cloth",
+          "widthPx": 41.65,
+          "heightPx": 237,
+          "fontSize": 8,
+          "authorSize": 4.45,
+          "fitLength": 0.6087923028141642,
+          "fitThickness": 0.16661562021439513,
+          "limiting": 0.6087923028141642,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.591104636818976,
+          "titleText": "THE TIME MACHINE",
+          "stacked": false,
+          "lines": [
+            "THE TIME MACHINE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 11,
+          "slug": "treasure-island",
+          "title": "Treasure Island",
+          "direction": "cloth",
+          "widthPx": 44.94,
+          "heightPx": 233,
+          "fontSize": 8.65,
+          "authorSize": 4.65,
+          "fitLength": 0.8968800075407672,
+          "fitThickness": 0.16366165831942128,
+          "limiting": 0.8968800075407672,
+          "limitedBy": "aesthetic cap",
+          "contrast": 8.289716921343166,
+          "titleText": "TREASURE ISLAND",
+          "stacked": false,
+          "lines": [
+            "TREASURE ISLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 12,
+          "slug": "jekyll-and-hyde",
+          "title": "Dr Jekyll and Mr Hyde",
+          "direction": "cloth",
+          "widthPx": 42.47,
+          "heightPx": 229,
+          "fontSize": 8.15,
+          "authorSize": 4.5,
+          "fitLength": 0.6561771679362357,
+          "fitThickness": 0.5162234837167614,
+          "limiting": 0.6561771679362357,
+          "limitedBy": "two-line cap",
+          "contrast": 10.99787146736917,
+          "titleText": "DR JEKYLL AND MR HYDE",
+          "stacked": true,
+          "lines": [
+            "DR JEKYLL",
+            "AND MR HYDE"
+          ],
+          "visible": true
+        },
+        {
+          "id": 13,
+          "slug": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 242,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8368688965110436,
+          "fitThickness": 0.5047619047619047,
+          "limiting": 0.8368688965110436,
+          "limitedBy": "two-line cap",
+          "contrast": 5.90233123051239,
+          "titleText": "THE HOUND OF THE BASKERVILLES",
+          "stacked": true,
+          "lines": [
+            "THE HOUND OF",
+            "THE BASKERVILLES"
+          ],
+          "visible": true
+        },
+        {
+          "id": 14,
+          "slug": "dorian-gray",
+          "title": "The Picture of Dorian Gray",
+          "direction": "cloth",
+          "widthPx": 45.76,
+          "heightPx": 238,
+          "fontSize": 7.5,
+          "authorSize": 4.85,
+          "fitLength": 0.960725401651584,
+          "fitThickness": 0.13873775843307945,
+          "limiting": 0.960725401651584,
+          "limitedBy": "length",
+          "contrast": 9.015073841306744,
+          "titleText": "THE PICTURE OF DORIAN GRAY",
+          "stacked": false,
+          "lines": [
+            "THE PICTURE OF DORIAN GRAY"
+          ],
+          "visible": true
+        },
+        {
+          "id": 15,
+          "slug": "scarlet-letter",
+          "title": "The Scarlet Letter",
+          "direction": "cloth",
+          "widthPx": 43.29,
+          "heightPx": 234,
+          "fontSize": 8.35,
+          "authorSize": 4.6,
+          "fitLength": 0.9605121725848119,
+          "fitThickness": 0.16558763487897346,
+          "limiting": 0.9605121725848119,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.048403816279158,
+          "titleText": "THE SCARLET LETTER",
+          "stacked": false,
+          "lines": [
+            "THE SCARLET LETTER"
+          ],
+          "visible": true
+        },
+        {
+          "id": 16,
+          "slug": "turn-of-the-screw",
+          "title": "The Turn of the Screw",
+          "direction": "cloth",
+          "widthPx": 40,
+          "heightPx": 230,
+          "fontSize": 7.7,
+          "authorSize": 4.25,
+          "fitLength": 0.818561603745976,
+          "fitThickness": 0.16890322580645165,
+          "limiting": 0.818561603745976,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.709724609879622,
+          "titleText": "THE TURN OF THE SCREW",
+          "stacked": false,
+          "lines": [
+            "THE TURN OF THE SCREW"
+          ],
+          "visible": true
+        },
+        {
+          "id": 17,
+          "slug": "alice",
+          "title": "Alice in Wonderland",
+          "direction": "cloth",
+          "widthPx": 40.82,
+          "heightPx": 226,
+          "fontSize": 7.85,
+          "authorSize": 4.35,
+          "fitLength": 0.8395388132392406,
+          "fitThickness": 0.1628221244500314,
+          "limiting": 0.8395388132392406,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.186398705352881,
+          "titleText": "ALICE IN WONDERLAND",
+          "stacked": false,
+          "lines": [
+            "ALICE IN WONDERLAND"
+          ],
+          "visible": true
+        },
+        {
+          "id": 18,
+          "slug": "wuthering-heights",
+          "title": "Wuthering Heights",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 239,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.8568922899305811,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.8568922899305811,
+          "limitedBy": "aesthetic cap",
+          "contrast": 6.602684646259534,
+          "titleText": "WUTHERING HEIGHTS",
+          "stacked": false,
+          "lines": [
+            "WUTHERING HEIGHTS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 19,
+          "slug": "whisper-man",
+          "title": "The Whisper Man",
+          "direction": "cloth",
+          "widthPx": 48.24,
+          "heightPx": 235,
+          "fontSize": 9.3,
+          "authorSize": 5.15,
+          "fitLength": 0.7268099568225183,
+          "fitThickness": 0.16116207951070338,
+          "limiting": 0.7268099568225183,
+          "limitedBy": "aesthetic cap",
+          "contrast": 14.079720959479129,
+          "titleText": "THE WHISPER MAN",
+          "stacked": false,
+          "lines": [
+            "THE WHISPER MAN"
+          ],
+          "visible": true
+        },
+        {
+          "id": 20,
+          "slug": "rock-paper-scissors",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 231,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.8734638907011257,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.8734638907011257,
+          "limitedBy": "aesthetic cap",
+          "contrast": 5.42269675380308,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        },
+        {
+          "id": 21,
+          "slug": "rock-paper-scissors-fallback",
+          "title": "Rock Paper Scissors",
+          "direction": "cloth",
+          "widthPx": 46.59,
+          "heightPx": 227,
+          "fontSize": 8.95,
+          "authorSize": 4.95,
+          "fitLength": 0.9009629801619002,
+          "fitThickness": 0.15714285714285714,
+          "limiting": 0.9009629801619002,
+          "limitedBy": "aesthetic cap",
+          "contrast": 11.465972327389458,
+          "titleText": "ROCK PAPER SCISSORS",
+          "stacked": false,
+          "lines": [
+            "ROCK PAPER SCISSORS"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9616275590887722,
+      "smallestFont": 7.5,
+      "lowContrast": 0,
+      "artless": 1
+    }
+  ],
+  "interactions": {
+    "actualSize": true,
+    "railOff": {
+      "state": {
+        "direction": "editorial",
+        "rail": false,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "selected": 1,
+        "actual": true
+      },
+      "audit": {
+        "direction": "editorial",
+        "rail": false,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "visible": 21,
+        "shelves": 4,
+        "metrics": [
+          {
+            "id": 1,
+            "slug": "moby-dick",
+            "title": "Moby-Dick",
+            "direction": "editorial",
+            "widthPx": 52.35,
+            "heightPx": 239,
+            "fontSize": 10.2,
+            "authorSize": 5.45,
+            "fitLength": 0.5673295347345382,
+            "fitThickness": 0.36786362598127015,
+            "limiting": 0.5673295347345382,
+            "limitedBy": "aesthetic cap",
+            "contrast": 14.487573233853116,
+            "titleText": "MOBY-DICK",
+            "stacked": false,
+            "lines": [
+              "MOBY-DICK"
+            ],
+            "visible": false
+          },
+          {
+            "id": 2,
+            "slug": "jane-eyre",
+            "title": "Jane Eyre",
+            "direction": "editorial",
+            "widthPx": 50.71,
+            "heightPx": 235,
+            "fontSize": 10.2,
+            "authorSize": 5.3,
+            "fitLength": 0.5730798332179596,
+            "fitThickness": 0.3761596136739102,
+            "limiting": 0.5730798332179596,
+            "limitedBy": "aesthetic cap",
+            "contrast": 15.296055771630579,
+            "titleText": "JANE EYRE",
+            "stacked": false,
+            "lines": [
+              "JANE EYRE"
+            ],
+            "visible": false
+          },
+          {
+            "id": 3,
+            "slug": "pride-and-prejudice",
+            "title": "Pride and Prejudice",
+            "direction": "editorial",
+            "widthPx": 49.06,
+            "heightPx": 231,
+            "fontSize": 9.55,
+            "authorSize": 5.15,
+            "fitLength": 0.962609775258831,
+            "fitThickness": 0.3754455117759949,
+            "limiting": 0.962609775258831,
+            "limitedBy": "length",
+            "contrast": 14.012537881014977,
+            "titleText": "PRIDE AND PREJUDICE",
+            "stacked": false,
+            "lines": [
+              "PRIDE AND PREJUDICE"
+            ],
+            "visible": false
+          },
+          {
+            "id": 4,
+            "slug": "frankenstein",
+            "title": "Frankenstein",
+            "direction": "editorial",
+            "widthPx": 44.12,
+            "heightPx": 227,
+            "fontSize": 9,
+            "authorSize": 4.6,
+            "fitLength": 0.6268541209854249,
+            "fitThickness": 0.3992202364971343,
+            "limiting": 0.6268541209854249,
+            "limitedBy": "aesthetic cap",
+            "contrast": 15.087379624022352,
+            "titleText": "FRANKENSTEIN",
+            "stacked": false,
+            "lines": [
+              "FRANKENSTEIN"
+            ],
+            "visible": false
+          },
+          {
+            "id": 5,
+            "slug": "dracula",
+            "title": "Dracula",
+            "direction": "editorial",
+            "widthPx": 47.41,
+            "heightPx": 240,
+            "fontSize": 9.7,
+            "authorSize": 4.95,
+            "fitLength": 0.3806904879881604,
+            "fitThickness": 0.39639843096768645,
+            "limiting": 0.39639843096768645,
+            "limitedBy": "aesthetic cap",
+            "contrast": 15.166946523264498,
+            "titleText": "DRACULA",
+            "stacked": false,
+            "lines": [
+              "DRACULA"
+            ],
+            "visible": false
+          },
+          {
+            "id": 6,
+            "slug": "great-expectations",
+            "title": "Great Expectations",
+            "direction": "editorial",
+            "widthPx": 51.53,
+            "heightPx": 236,
+            "fontSize": 8.85,
+            "authorSize": 5.4,
+            "fitLength": 0.9616462656079616,
+            "fitThickness": 0.32920803588690634,
+            "limiting": 0.9616462656079616,
+            "limitedBy": "length",
+            "contrast": 15.149279012422147,
+            "titleText": "GREAT EXPECTATIONS",
+            "stacked": false,
+            "lines": [
+              "GREAT EXPECTATIONS"
+            ],
+            "visible": false
+          },
+          {
+            "id": 7,
+            "slug": "bleak-house",
+            "title": "Bleak House",
+            "direction": "editorial",
+            "widthPx": 53.18,
+            "heightPx": 232,
+            "fontSize": 10.2,
+            "authorSize": 5.5,
+            "fitLength": 0.7231267234144586,
+            "fitThickness": 0.3662633297267672,
+            "limiting": 0.7231267234144586,
+            "limitedBy": "aesthetic cap",
+            "contrast": 15.395939105083926,
+            "titleText": "BLEAK HOUSE",
+            "stacked": false,
+            "lines": [
+              "BLEAK HOUSE"
+            ],
+            "visible": false
+          },
+          {
+            "id": 8,
+            "slug": "middlemarch",
+            "title": "Middlemarch",
+            "direction": "editorial",
+            "widthPx": 54,
+            "heightPx": 228,
+            "fontSize": 10.2,
+            "authorSize": 5.5,
+            "fitLength": 0.712968471148126,
+            "fitThickness": 0.3553181607059916,
+            "limiting": 0.712968471148126,
+            "limitedBy": "aesthetic cap",
+            "contrast": 14.77169882230766,
+            "titleText": "MIDDLEMARCH",
+            "stacked": false,
+            "lines": [
+              "MIDDLEMARCH"
+            ],
+            "visible": false
+          },
+          {
+            "id": 9,
+            "slug": "moonstone",
+            "title": "The Moonstone",
+            "direction": "editorial",
+            "widthPx": 49.88,
+            "heightPx": 241,
+            "fontSize": 10.2,
+            "authorSize": 5.2,
+            "fitLength": 0.7788461538461539,
+            "fitThickness": 0.39357046393793854,
+            "limiting": 0.7788461538461539,
+            "limitedBy": "aesthetic cap",
+            "contrast": 14.280265302215087,
+            "titleText": "THE MOONSTONE",
+            "stacked": false,
+            "lines": [
+              "THE MOONSTONE"
+            ],
+            "visible": false
+          },
+          {
+            "id": 10,
+            "slug": "time-machine",
+            "title": "The Time Machine",
+            "direction": "editorial",
+            "widthPx": 41.65,
+            "heightPx": 237,
+            "fontSize": 8.5,
+            "authorSize": 4.35,
+            "fitLength": 0.6600987697759458,
+            "fitThickness": 0.3975864165770148,
+            "limiting": 0.6600987697759458,
+            "limitedBy": "aesthetic cap",
+            "contrast": 14.16400983998534,
+            "titleText": "THE TIME MACHINE",
+            "stacked": false,
+            "lines": [
+              "THE TIME MACHINE"
+            ],
+            "visible": false
+          },
+          {
+            "id": 11,
+            "slug": "treasure-island",
+            "title": "Treasure Island",
+            "direction": "editorial",
+            "widthPx": 44.94,
+            "heightPx": 233,
+            "fontSize": 9.2,
+            "authorSize": 4.45,
+            "fitLength": 0.9388448717224355,
+            "fitThickness": 0.3995816736482972,
+            "limiting": 0.9388448717224355,
+            "limitedBy": "aesthetic cap",
+            "contrast": 14.426576707614167,
+            "titleText": "TREASURE ISLAND",
+            "stacked": false,
+            "lines": [
+              "TREASURE ISLAND"
+            ],
+            "visible": false
+          },
+          {
+            "id": 12,
+            "slug": "jekyll-and-hyde",
+            "title": "Dr Jekyll and Mr Hyde",
+            "direction": "editorial",
+            "widthPx": 42.47,
+            "heightPx": 229,
+            "fontSize": 7.45,
+            "authorSize": 4.35,
+            "fitLength": 0.5898606876411875,
+            "fitThickness": 0.9630986971885739,
+            "limiting": 0.9630986971885739,
+            "limitedBy": "thickness",
+            "contrast": 15.109470635081768,
+            "titleText": "DR JEKYLL AND MR HYDE",
+            "stacked": true,
+            "lines": [
+              "DR JEKYLL",
+              "AND MR HYDE"
+            ],
+            "visible": false
+          },
+          {
+            "id": 13,
+            "slug": "hound-of-the-baskervilles",
+            "title": "The Hound of the Baskervilles",
+            "direction": "editorial",
+            "widthPx": 46.59,
+            "heightPx": 242,
+            "fontSize": 8.25,
+            "authorSize": 4.85,
+            "fitLength": 0.7849229100488105,
+            "fitThickness": 0.9592733874307213,
+            "limiting": 0.9592733874307213,
+            "limitedBy": "thickness",
+            "contrast": 13.862386436150087,
+            "titleText": "THE HOUND OF THE BASKERVILLES",
+            "stacked": true,
+            "lines": [
+              "THE HOUND OF",
+              "THE BASKERVILLES"
+            ],
+            "visible": false
+          },
+          {
+            "id": 14,
+            "slug": "dorian-gray",
+            "title": "The Picture of Dorian Gray",
+            "direction": "editorial",
+            "widthPx": 45.76,
+            "heightPx": 238,
+            "fontSize": 7.45,
+            "authorSize": 4.8,
+            "fitLength": 0.9631601697579376,
+            "fitThickness": 0.31696448564646873,
+            "limiting": 0.9631601697579376,
+            "limitedBy": "length",
+            "contrast": 14.96689153122045,
+            "titleText": "THE PICTURE OF DORIAN GRAY",
+            "stacked": false,
+            "lines": [
+              "THE PICTURE OF DORIAN GRAY"
+            ],
+            "visible": false
+          },
+          {
+            "id": 15,
+            "slug": "scarlet-letter",
+            "title": "The Scarlet Letter",
+            "direction": "editorial",
+            "widthPx": 43.29,
+            "heightPx": 234,
+            "fontSize": 8.45,
+            "authorSize": 4.5,
+            "fitLength": 0.9601091102998481,
+            "fitThickness": 0.38308165389628396,
+            "limiting": 0.9601091102998481,
+            "limitedBy": "length",
+            "contrast": 14.947664525835995,
+            "titleText": "THE SCARLET LETTER",
+            "stacked": false,
+            "lines": [
+              "THE SCARLET LETTER"
+            ],
+            "visible": false
+          },
+          {
+            "id": 16,
+            "slug": "turn-of-the-screw",
+            "title": "The Turn of the Screw",
+            "direction": "editorial",
+            "widthPx": 40,
+            "heightPx": 230,
+            "fontSize": 8.2,
+            "authorSize": 4.2,
+            "fitLength": 0.9045859478924526,
+            "fitThickness": 0.40732026143790845,
+            "limiting": 0.9045859478924526,
+            "limitedBy": "aesthetic cap",
+            "contrast": 13.936373036250183,
+            "titleText": "THE TURN OF THE SCREW",
+            "stacked": false,
+            "lines": [
+              "THE TURN OF THE SCREW"
+            ],
+            "visible": false
+          },
+          {
+            "id": 17,
+            "slug": "alice",
+            "title": "Alice in Wonderland",
+            "direction": "editorial",
+            "widthPx": 40.82,
+            "heightPx": 226,
+            "fontSize": 8.35,
+            "authorSize": 4.25,
+            "fitLength": 0.8925877530563658,
+            "fitThickness": 0.39977912402887983,
+            "limiting": 0.8925877530563658,
+            "limitedBy": "aesthetic cap",
+            "contrast": 14.69085680179052,
+            "titleText": "ALICE IN WONDERLAND",
+            "stacked": false,
+            "lines": [
+              "ALICE IN WONDERLAND"
+            ],
+            "visible": false
+          },
+          {
+            "id": 18,
+            "slug": "wuthering-heights",
+            "title": "Wuthering Heights",
+            "direction": "editorial",
+            "widthPx": 48.24,
+            "heightPx": 239,
+            "fontSize": 9.85,
+            "authorSize": 5.05,
+            "fitLength": 0.9084443607910622,
+            "fitThickness": 0.39468966826243745,
+            "limiting": 0.9084443607910622,
+            "limitedBy": "aesthetic cap",
+            "contrast": 14.851282154815918,
+            "titleText": "WUTHERING HEIGHTS",
+            "stacked": false,
+            "lines": [
+              "WUTHERING HEIGHTS"
+            ],
+            "visible": false
+          },
+          {
+            "id": 19,
+            "slug": "whisper-man",
+            "title": "The Whisper Man",
+            "direction": "editorial",
+            "widthPx": 48.24,
+            "heightPx": 235,
+            "fontSize": 9.85,
+            "authorSize": 5.05,
+            "fitLength": 0.78435838272931,
+            "fitThickness": 0.39468966826243745,
+            "limiting": 0.78435838272931,
+            "limitedBy": "aesthetic cap",
+            "contrast": 15.842565041336385,
+            "titleText": "THE WHISPER MAN",
+            "stacked": false,
+            "lines": [
+              "THE WHISPER MAN"
+            ],
+            "visible": false
+          },
+          {
+            "id": 20,
+            "slug": "rock-paper-scissors",
+            "title": "Rock Paper Scissors",
+            "direction": "editorial",
+            "widthPx": 46.59,
+            "heightPx": 231,
+            "fontSize": 9.4,
+            "authorSize": 4.85,
+            "fitLength": 0.963718286427284,
+            "fitThickness": 0.39182670553488125,
+            "limiting": 0.963718286427284,
+            "limitedBy": "length",
+            "contrast": 12.718887981672628,
+            "titleText": "ROCK PAPER SCISSORS",
+            "stacked": false,
+            "lines": [
+              "ROCK PAPER SCISSORS"
+            ],
+            "visible": false
+          },
+          {
+            "id": 21,
+            "slug": "rock-paper-scissors-fallback",
+            "title": "Rock Paper Scissors",
+            "direction": "editorial",
+            "widthPx": 46.59,
+            "heightPx": 227,
+            "fontSize": 9.15,
+            "authorSize": 4.85,
+            "fitLength": 0.9648402965920432,
+            "fitThickness": 0.3814057825153365,
+            "limiting": 0.9648402965920432,
+            "limitedBy": "length",
+            "contrast": 12.718887981672628,
+            "titleText": "ROCK PAPER SCISSORS",
+            "stacked": false,
+            "lines": [
+              "ROCK PAPER SCISSORS"
+            ],
+            "visible": true
+          }
+        ],
+        "tightest": 0.9648402965920432,
+        "smallestFont": 7.45,
+        "lowContrast": 0
+      }
+    },
+    "materialOff": {
+      "direction": "hybrid",
+      "rail": true,
+      "light": "gallery",
+      "material": false,
+      "filter": "all",
+      "selected": 1,
+      "actual": true
+    },
+    "light-lamp": {
+      "direction": "hybrid",
+      "rail": true,
+      "light": "lamp",
+      "material": true,
+      "filter": "all",
+      "selected": 1,
+      "actual": true
+    },
+    "light-dusk": {
+      "direction": "hybrid",
+      "rail": true,
+      "light": "dusk",
+      "material": true,
+      "filter": "all",
+      "selected": 1,
+      "actual": true
+    },
+    "filter-reconstructed": {
+      "shelves": 1,
+      "spines": 2,
+      "shelfSizes": [
+        2
+      ],
+      "overflow": 0,
+      "titleClips": []
+    },
+    "filter-fallback": {
+      "shelves": 1,
+      "spines": 1,
+      "shelfSizes": [
+        1
+      ],
+      "overflow": 0,
+      "titleClips": []
+    }
+  },
+  "screenshots": [
+    "screenshots/00-hero-390.png",
+    "screenshots/01-shelf-editorial-390.png",
+    "screenshots/02-shelf-cloth-390.png",
+    "screenshots/03-shelf-hybrid-390.png",
+    "screenshots/04-full-390.png",
+    "screenshots/05-shelf-editorial-360.png",
+    "screenshots/06-shelf-cloth-360.png",
+    "screenshots/07-shelf-hybrid-360.png",
+    "screenshots/08-full-360.png",
+    "screenshots/09-shelf-editorial-320.png",
+    "screenshots/10-shelf-cloth-320.png",
+    "screenshots/11-shelf-hybrid-320.png",
+    "screenshots/12-full-320.png",
+    "screenshots/20-shelf-editorial-390.png",
+    "screenshots/21-shelf-cloth-390.png",
+    "screenshots/22-shelf-hybrid-390.png",
+    "screenshots/23-shelves-hybrid-390.png",
+    "screenshots/24-detail-editorial-390.png",
+    "screenshots/24-detail-cloth-390.png",
+    "screenshots/24-detail-hybrid-390.png",
+    "screenshots/25-detail-actual-size-390.png",
+    "screenshots/26-rail-off-390.png",
+    "screenshots/27-material-off-390.png",
+    "screenshots/28-light-lamp-390.png",
+    "screenshots/28-light-dusk-390.png",
+    "screenshots/29-filter-reconstructed-390.png",
+    "screenshots/29-filter-fallback-390.png",
+    "screenshots/30-fallback-detail-390.png",
+    "screenshots/31-long-title-cloth-320.png"
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": [],
+  "assetResponses": [
+    {
+      "status": 200,
+      "file": "styles.css"
+    },
+    {
+      "status": 200,
+      "file": "data.js"
+    },
+    {
+      "status": 200,
+      "file": "app.js"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Inter-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/EBGaramond-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Literata-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Italic-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moby-dick-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jane-eyre-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/pride-and-prejudice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/frankenstein-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/great-expectations-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dracula-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/bleak-house-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moonstone-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/middlemarch-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/time-machine-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/treasure-island-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jekyll-and-hyde-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/hound-of-the-baskervilles-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dorian-gray-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/scarlet-letter-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/turn-of-the-screw-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/alice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/wuthering-heights-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/whisper-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/rps-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "styles.css"
+    },
+    {
+      "status": 200,
+      "file": "data.js"
+    },
+    {
+      "status": 200,
+      "file": "app.js"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Inter-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Italic-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Literata-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/EBGaramond-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moby-dick-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/pride-and-prejudice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jane-eyre-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/frankenstein-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dracula-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/great-expectations-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/bleak-house-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moonstone-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/middlemarch-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/time-machine-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/treasure-island-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/hound-of-the-baskervilles-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jekyll-and-hyde-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dorian-gray-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/scarlet-letter-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/turn-of-the-screw-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/wuthering-heights-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/alice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/whisper-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/rps-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "styles.css"
+    },
+    {
+      "status": 200,
+      "file": "app.js"
+    },
+    {
+      "status": 200,
+      "file": "data.js"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Italic-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Literata-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Inter-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/EBGaramond-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moby-dick-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jane-eyre-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/frankenstein-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dracula-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/pride-and-prejudice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/great-expectations-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/bleak-house-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/middlemarch-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moonstone-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/time-machine-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/treasure-island-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jekyll-and-hyde-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/hound-of-the-baskervilles-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/scarlet-letter-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dorian-gray-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/turn-of-the-screw-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/alice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/wuthering-heights-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/whisper-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/rps-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "styles.css"
+    },
+    {
+      "status": 200,
+      "file": "app.js"
+    },
+    {
+      "status": 200,
+      "file": "data.js"
+    },
+    {
+      "status": 200,
+      "file": "fonts/EBGaramond-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Literata-Regular.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/Inter-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "fonts/CormorantGaramond-Italic-Variable.woff2"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moby-dick-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dracula-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/frankenstein-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jane-eyre-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/bleak-house-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/pride-and-prejudice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/great-expectations-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/middlemarch-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/time-machine-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/treasure-island-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/moonstone-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/jekyll-and-hyde-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/hound-of-the-baskervilles-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/dorian-gray-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/scarlet-letter-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/turn-of-the-screw-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/alice-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/classics/wuthering-heights-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/whisper-art.jpg"
+    },
+    {
+      "status": 200,
+      "file": "assets/modern/rps-art.jpg"
+    }
+  ],
+  "assetSummary": {
+    "assets": 28,
+    "failures": 0
+  }
+}

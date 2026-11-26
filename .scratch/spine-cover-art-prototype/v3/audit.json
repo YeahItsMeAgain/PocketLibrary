@@ -1,0 +1,249 @@
+{
+  "widths": {
+    "320": {
+      "scrollWidth": 320,
+      "bodyScrollWidth": 320,
+      "clientWidth": 320,
+      "spines": 20,
+      "rail": {
+        "clippedTitles": [],
+        "scrollWidth": 320
+      }
+    },
+    "360": {
+      "scrollWidth": 360,
+      "bodyScrollWidth": 360,
+      "clientWidth": 360,
+      "spines": 20,
+      "rail": {
+        "clippedTitles": [],
+        "scrollWidth": 360
+      }
+    },
+    "390": {
+      "scrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "clientWidth": 390,
+      "spines": 20,
+      "clippedTitles": [],
+      "images": [
+        {
+          "src": "assets/rock-paper-scissors-cover.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "masks/rock-paper-scissors-mask-preview.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "art/rock-paper-scissors-art.jpg",
+          "ok": true,
+          "w": 1304,
+          "h": 1956
+        },
+        {
+          "src": "crops/moby-dick-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/jane-eyre-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/pride-and-prejudice-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/frankenstein-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/dracula-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/great-expectations-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/bleak-house-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/middlemarch-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/moonstone-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/time-machine-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/treasure-island-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/jekyll-and-hyde-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/hound-of-the-baskervilles-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/dorian-gray-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/scarlet-letter-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/turn-of-the-screw-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/alice-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/wuthering-heights-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/whisper-man-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "crops/rock-paper-scissors-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "art/moby-dick-art.jpg",
+          "ok": true,
+          "w": 1042,
+          "h": 1563
+        }
+      ],
+      "overflowers": [
+        {
+          "tag": "BUTTON",
+          "cls": "film-item"
+        },
+        {
+          "tag": "IMG",
+          "cls": ""
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "film-item"
+        },
+        {
+          "tag": "IMG",
+          "cls": ""
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "film-item"
+        },
+        {
+          "tag": "IMG",
+          "cls": ""
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "film-item"
+        },
+        {
+          "tag": "IMG",
+          "cls": ""
+        }
+      ],
+      "rail": "on",
+      "cropPct": "OCR + LaMa"
+    }
+  },
+  "interactions": {
+    "railOn": {
+      "rail": "on",
+      "pressedOn": "true",
+      "pressedOff": "false"
+    },
+    "selected": {
+      "title": "Great Expectations",
+      "pressed": "Inspect Great Expectations"
+    },
+    "open": {
+      "sheetOpen": true,
+      "title": "Moby-Dick",
+      "focus": "sheet",
+      "bodyOverflow": "hidden"
+    },
+    "closed": {
+      "sheetHidden": true,
+      "bodyOverflow": ""
+    },
+    "rps": {
+      "title": "Rock Paper Scissors",
+      "audit": "Review. 70% masked; LaMa destroys the snow-forest texture. Residual OCR: none.",
+      "mask": [
+        "OCR + LaMa",
+        "1304 × 1956",
+        "33% of art · focus 22%",
+        "vellum / dark ink · art only available"
+      ]
+    }
+  },
+  "images": {
+    "total": 23,
+    "bad": []
+  },
+  "errors": []
+}

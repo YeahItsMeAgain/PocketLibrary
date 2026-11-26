@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spine generation test — bookcover-js & comparables</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font: 15px/1.55 system-ui, -apple-system, Segoe UI, sans-serif; background: #f6f3ec; color: #221f1a; }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 24px 80px; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 21px; margin: 40px 0 10px; border-top: 1px solid #d8d2c6; padding-top: 24px; }
+  h3 { font-size: 16px; margin: 24px 0 8px; }
+  p { max-width: 78ch; }
+  .lead { font-size: 17px; max-width: 80ch; }
+  .verdict { background: #fff; border-left: 4px solid #b8860b; padding: 14px 18px; margin: 20px 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin: 18px 0; }
+  figure { margin: 0; background: #fff; border: 1px solid #ddd6c8; padding: 10px; }
+  figure img { width: 100%; display: block; background: #eee; }
+  figcaption { font-size: 12.5px; color: #5f584c; margin-top: 8px; }
+  code { background: #ece7dc; padding: 1px 4px; border-radius: 3px; }
+  a { color: #7a4b00; }
+  ul { max-width: 85ch; }
+  .small { font-size: 13px; color: #5f584c; }
+  .bad { color: #9b1c1c; font-weight: 600; }
+  .good { color: #1f6b3a; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Spine generation test: bookcover-js &amp; comparables</h1>
+  <p class="lead">Isolated test harness under <code>.scratch/spine-cover-art-prototype/bookcover-js-test/</code>. Full findings, commands and measurements are in <a href="REPORT.md"><strong>REPORT.md</strong></a>.</p>
+
+  <div class="verdict">
+    <strong>Verdict:</strong> bookcover-js does <span class="bad">not</span> generate a spine from a front cover, and it is not a 3D mockup either.
+    It is a 2D Penguin-clothbound <em>print-panel</em> generator whose spine is a separate, manually-sized decorative strip.
+    For PocketLibrary, use neither bookcover-js nor the tested 3D front-cover mockups as-is; compose a real wrap
+    (back + computed spine + front) yourself. Details below.
+  </div>
+
+  <h2>1. bookcover-js</h2>
+  <p>Live: <a href="https://acestronautical.github.io/bookcover-js/">acestronautical.github.io/bookcover-js</a> ·
+  Repo: <a href="https://github.com/acestronautical/bookcover-js">github.com/acestronautical/bookcover-js</a>.
+  Source is 1,395 lines including a single HTML file; last commit 2024-08-14; 30 stars; 6 open issues; MPL-2.0; no npm package or reusable API.</p>
+
+  <div class="grid">
+    <figure>
+      <img src="captures/app-whisper-man.png" alt="bookcover-js app with The Whisper Man metadata">
+      <figcaption>App with real metadata at a 6×9 in trim and 1 in spine. The spine text <em>“Whisper”</em> is clipped; the front and back are generic tiled cat ornaments.</figcaption>
+    </figure>
+    <figure>
+      <img src="captures/whisper-man-wrap.png" alt="Front, spine and back panels side by side">
+      <figcaption>Front / spine / back panels. There is no continuous wrap and no use of the real cover art.</figcaption>
+    </figure>
+  </div>
+
+  <h3>Spine width is manual; text does not fit itself</h3>
+  <div class="grid">
+    <figure><img src="captures/whisper-man-spine-040.png" alt="0.4 inch spine"><figcaption>0.4 in spine: 10.8 px inner width; all title/author words overflow.</figcaption></figure>
+    <figure><img src="captures/whisper-man-spine-080.png" alt="0.8 inch spine"><figcaption>0.8 in: “Whisper”, “Man”, “Alex”, “North” overflow.</figcaption></figure>
+    <figure><img src="captures/whisper-man-spine-150.png" alt="1.5 inch spine"><figcaption>1.5 in: only here does the 18 px default text fit.</figcaption></figure>
+  </div>
+
+  <h3>“Upload a cover” is not a thing</h3>
+  <div class="grid">
+    <figure><img src="captures/raster-upload-front.png" alt="Real cover embedded in SVG used as repeating ornament"><figcaption>The file input accepts <code>.svg</code> only. Embedding the real Whisper Man JPEG in an SVG wrapper makes it tile as a small ornamental motif on the front — it is never used as the cover.</figcaption></figure>
+    <figure><img src="captures/raster-upload-spine.png" alt="Real cover tiled on the spine"><figcaption>The same image on the spine: tiled, cropped by the panel, with no relationship to spine text.</figcaption></figure>
+  </div>
+
+  <h3>Combined export is not a printable wrap</h3>
+  <figure>
+    <img src="captures/combined-preview.png" alt="Combined SVG preview showing gaps">
+    <figcaption>Combined SVG: 936×612 at 72 dpi. Panels at x=0 (396), x=441 (54), x=540 (396). The 45 px gaps are hinge/plotter spacing, the outer cloth margin is missing, and the 1 in spine becomes a 144 px central zone. Not a continuous, bleed-ready wrap.</figcaption>
+  </figure>
+
+  <h2>2. Comparable: 3D Book Image CSS Generator (scastiel)</h2>
+  <p><a href="https://github.com/scastiel/3d-book-image-css-generator">GitHub</a> · MIT · 658 stars · last push 2023-04-19 · demo now at <a href="https://scastiel.dev/3dbook/">scastiel.dev/3dbook</a>.
+  Tested by reproducing its exact generated HTML/CSS locally with real PocketLibrary covers: <code>comparables/3d-book-css/book.html</code>.</p>
+  <div class="grid">
+    <figure><img src="comparables/3d-book-css/captures/whisper-man-1in.png" alt="CSS 3D mock of Whisper Man"><figcaption>Believable 3D <em>front-cover</em> mock. The right side is a page block; the left side is the back cover. No spine face, no spine text.</figcaption></figure>
+    <figure><img src="comparables/3d-book-css/captures/whisper-man-1in-rotate-30.png" alt="CSS 3D mock rotated the other way"><figcaption>Rotated the other way, the spine is still an empty gap. Thickness is a raw pixel value; there is no page count.</figcaption></figure>
+  </div>
+  <p class="small">Note: the Rock Paper Scissors cover already has a red spine strip <em>baked into the front JPEG</em>, which makes the mock look as if it generated a spine. It did not; it mapped the rightmost pixels of the front image onto the front plane.</p>
+
+  <h2>3. Comparable: book-3d (React + Three.js)</h2>
+  <p><a href="https://www.npmjs.com/package/book-3d">npm book-3d</a> · 1.0.0 published 2026-11-12 · React/R3F/Three.js.
+  Local harness: <code>comparables/book-3d-harness/</code>.</p>
+  <div class="grid">
+    <figure><img src="comparables/book-3d-harness/captures/whisper-man-12sheets.png" alt="Three.js book with 12 sheets"><figcaption>Real 3D canvas, front cover texture, page edges. The spine is a plain <code>coverColor</code> box whose thickness is derived from <code>pages.length</code>.</figcaption></figure>
+    <figure><img src="comparables/book-3d-harness/captures/whisper-man-40sheets.png" alt="Three.js book with 40 sheets"><figcaption>40 sheets: visibly thicker, but still no spine texture, title or author. The explicit <code>thickness</code> prop is ignored in 1.0.0.</figcaption></figure>
+  </div>
+
+  <h2>What this means for PocketLibrary</h2>
+  <ul>
+    <li>bookcover-js solves a different problem: decorative Penguin-style print panels for cutting plotters. It cannot preserve a commercial front cover, derive a spine from page count, or export a physically continuous wrap.</li>
+    <li>The CSS and Three.js comparables produce attractive 3D <em>front-cover</em> mockups, but neither generates a spine from the cover; they hide or ignore the spine.</li>
+    <li>PocketLibrary should compute spine width from page count + paper stock, compose a back/spine/front texture at the correct pixel aspect, and map that onto a box. A small in-house CSS/Three.js renderer is lower risk than adopting any of these projects.</li>
+  </ul>
+
+  <p class="small">Screenshots were captured with Playwright 1.65.1/Chromium at 127.0.0.1:4173 (bookcover-js) and a local Vite server on 4174 (book-3d). No production files, tests or manifests were modified.</p>
+</main>
+</body>
+</html>

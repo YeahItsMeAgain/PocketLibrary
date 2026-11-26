@@ -1,0 +1,5387 @@
+{
+  "generatedAt": "2026-11-26T09:26:35.020Z",
+  "sources": {
+    "app": "http://127.0.0.1:4173/spine-cover-art-prototype/bookcover-js-deep/harness/vendor/bookcover-js/index.html",
+    "patched": "http://127.0.0.1:4173/spine-cover-art-prototype/bookcover-js-deep/harness/patched-bookcover-js/index.html",
+    "v4": "http://127.0.0.1:4173/spine-cover-art-prototype/v4-wrap/",
+    "covers": "/mnt/ssd2/Projects/PocketLibrary/.scratch/spine-cover-art-prototype/v3/assets"
+  },
+  "books": {
+    "whisper-man": {
+      "meta": {
+        "title": "The Whisper Man",
+        "author": "Alex North",
+        "widthIn": 1,
+        "textStyle": 2,
+        "artStyle": 4
+      },
+      "svg": {
+        "file": "out/whisper-man/whisper-man-spine.svg",
+        "width": 54,
+        "height": 612,
+        "bytes": 23155
+      },
+      "png": {
+        "file": "out/whisper-man/whisper-man-spine.png",
+        "width": 720,
+        "height": 6480,
+        "bytes": 271990
+      },
+      "expectedPng": {
+        "width": 720,
+        "height": 6480,
+        "padX": 90,
+        "padY": 180
+      },
+      "clean10": {
+        "file": "out/whisper-man/whisper-man-clean-10x.png",
+        "width": 540,
+        "height": 6120
+      },
+      "outerWidthPx": 72,
+      "metrics": {
+        "svgAttrs": {
+          "width": 54,
+          "height": 612,
+          "overflow": "hidden",
+          "viewBox": null
+        },
+        "borderGapPx": 18,
+        "spineOuterPx": 72,
+        "textCount": 2,
+        "texts": [
+          {
+            "text": "The Whisper Man",
+            "fontSize": "18",
+            "transform": "rotate(90 36,306)",
+            "bbox": {
+              "x": 32,
+              "y": 224.84,
+              "w": 21,
+              "h": 162.72
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0
+          },
+          {
+            "text": "Alex North",
+            "fontSize": "18",
+            "transform": "rotate(90 9,306)",
+            "bbox": {
+              "x": 5,
+              "y": 255.34,
+              "w": 21,
+              "h": 100.71
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0
+          }
+        ],
+        "clipped": false,
+        "maxOver": 0,
+        "hasImage": false,
+        "hasBackgroundRect": false
+      },
+      "appShot": "out/whisper-man/app-spine.png",
+      "v3": {
+        "file": "out/v3/whisper-man-art-only.jpg",
+        "width": 160,
+        "height": 727
+      }
+    },
+    "rock-paper-scissors": {
+      "meta": {
+        "title": "Rock Paper Scissors",
+        "author": "Alice Feeney",
+        "widthIn": 0.75,
+        "textStyle": 2,
+        "artStyle": 4
+      },
+      "svg": {
+        "file": "out/rock-paper-scissors/rock-paper-scissors-spine.svg",
+        "width": 36,
+        "height": 612,
+        "bytes": 23153
+      },
+      "png": {
+        "file": "out/rock-paper-scissors/rock-paper-scissors-spine.png",
+        "width": 540,
+        "height": 6480,
+        "bytes": 208408
+      },
+      "expectedPng": {
+        "width": 540,
+        "height": 6480,
+        "padX": 90,
+        "padY": 180
+      },
+      "clean10": {
+        "file": "out/rock-paper-scissors/rock-paper-scissors-clean-10x.png",
+        "width": 360,
+        "height": 6120
+      },
+      "outerWidthPx": 54,
+      "metrics": {
+        "svgAttrs": {
+          "width": 36,
+          "height": 612,
+          "overflow": "hidden",
+          "viewBox": null
+        },
+        "borderGapPx": 18,
+        "spineOuterPx": 54,
+        "textCount": 2,
+        "texts": [
+          {
+            "text": "Rock Paper Scissors",
+            "fontSize": "18",
+            "transform": "rotate(90 27,306)",
+            "bbox": {
+              "x": 23,
+              "y": 213.52,
+              "w": 21,
+              "h": 184.97
+            },
+            "outside": {
+              "left": false,
+              "right": true,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": true,
+            "overLeft": 0,
+            "overRight": 8
+          },
+          {
+            "text": "Alice Feeney",
+            "fontSize": "18",
+            "transform": "rotate(90 0,306)",
+            "bbox": {
+              "x": -4,
+              "y": 246.9,
+              "w": 21,
+              "h": 118.02
+            },
+            "outside": {
+              "left": true,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": true,
+            "overLeft": 4,
+            "overRight": 0
+          }
+        ],
+        "clipped": true,
+        "maxOver": 8,
+        "hasImage": false,
+        "hasBackgroundRect": false
+      },
+      "appShot": "out/rock-paper-scissors/app-spine.png",
+      "v3": {
+        "file": "out/v3/rock-paper-scissors-art-only.jpg",
+        "width": 160,
+        "height": 727
+      }
+    },
+    "moby-dick": {
+      "meta": {
+        "title": "Moby-Dick",
+        "author": "Herman Melville",
+        "widthIn": 1.5,
+        "textStyle": 2,
+        "artStyle": 4
+      },
+      "svg": {
+        "file": "out/moby-dick/moby-dick-spine.svg",
+        "width": 90,
+        "height": 612,
+        "bytes": 23172
+      },
+      "png": {
+        "file": "out/moby-dick/moby-dick-spine.png",
+        "width": 1080,
+        "height": 6480,
+        "bytes": 386721
+      },
+      "expectedPng": {
+        "width": 1080,
+        "height": 6480,
+        "padX": 90,
+        "padY": 180
+      },
+      "clean10": {
+        "file": "out/moby-dick/moby-dick-clean-10x.png",
+        "width": 900,
+        "height": 6120
+      },
+      "outerWidthPx": 108,
+      "metrics": {
+        "svgAttrs": {
+          "width": 90,
+          "height": 612,
+          "overflow": "hidden",
+          "viewBox": null
+        },
+        "borderGapPx": 18,
+        "spineOuterPx": 108,
+        "textCount": 2,
+        "texts": [
+          {
+            "text": "Moby-Dick",
+            "fontSize": "18",
+            "transform": "rotate(90 54,306)",
+            "bbox": {
+              "x": 50,
+              "y": 256.89,
+              "w": 21,
+              "h": 99.31
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0
+          },
+          {
+            "text": "Herman Melville",
+            "fontSize": "18",
+            "transform": "rotate(90 27,306)",
+            "bbox": {
+              "x": 23,
+              "y": 229.5,
+              "w": 21,
+              "h": 153
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0
+          }
+        ],
+        "clipped": false,
+        "maxOver": 0,
+        "hasImage": false,
+        "hasBackgroundRect": false
+      },
+      "appShot": "out/moby-dick/app-spine.png",
+      "v3": {
+        "file": "out/v3/moby-dick-art-only.jpg",
+        "width": 160,
+        "height": 727
+      }
+    }
+  },
+  "rasterTests": {
+    "directJpeg": {
+      "attempted": true,
+      "errors": [
+        "child.getBBox is not a function"
+      ],
+      "spine": {
+        "svgAttrs": {
+          "width": 54,
+          "height": 612,
+          "overflow": "hidden",
+          "viewBox": null
+        },
+        "borderGapPx": 18,
+        "spineOuterPx": 72,
+        "textCount": 2,
+        "texts": [
+          {
+            "text": "The Whisper Man",
+            "fontSize": "18",
+            "transform": "rotate(90 36,306)",
+            "bbox": {
+              "x": 32,
+              "y": 224.84,
+              "w": 21,
+              "h": 162.72
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0
+          },
+          {
+            "text": "Alex North",
+            "fontSize": "18",
+            "transform": "rotate(90 9,306)",
+            "bbox": {
+              "x": 5,
+              "y": 255.34,
+              "w": 21,
+              "h": 100.71
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0
+          }
+        ],
+        "clipped": false,
+        "maxOver": 0,
+        "hasImage": false,
+        "hasBackgroundRect": false
+      },
+      "appPanel": "raster/direct-jpg-spine.png",
+      "frontPanel": "raster/direct-jpg-front.png"
+    },
+    "rasterInSvg": {
+      "wrapperFile": "out/raster/whisper-man-wrapper.svg",
+      "artScale8": {
+        "metrics": {
+          "svgAttrs": {
+            "width": 54,
+            "height": 612,
+            "overflow": "hidden",
+            "viewBox": null
+          },
+          "borderGapPx": 18,
+          "spineOuterPx": 72,
+          "textCount": 2,
+          "texts": [
+            {
+              "text": "The Whisper Man",
+              "fontSize": "18",
+              "transform": "rotate(90 36,306)",
+              "bbox": {
+                "x": 32,
+                "y": 224.84,
+                "w": 21,
+                "h": 162.72
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            },
+            {
+              "text": "Alex North",
+              "fontSize": "18",
+              "transform": "rotate(90 9,306)",
+              "bbox": {
+                "x": 5,
+                "y": 255.34,
+                "w": 21,
+                "h": 100.71
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            }
+          ],
+          "clipped": false,
+          "maxOver": 0,
+          "hasImage": true,
+          "hasBackgroundRect": false
+        },
+        "screenshot": "raster/raster-in-svg-spine-scale8.png"
+      },
+      "artOff": {
+        "metrics": {
+          "svgAttrs": {
+            "width": 54,
+            "height": 612,
+            "overflow": "hidden",
+            "viewBox": null
+          },
+          "borderGapPx": 18,
+          "spineOuterPx": 72,
+          "textCount": 2,
+          "texts": [
+            {
+              "text": "The Whisper Man",
+              "fontSize": "18",
+              "transform": "rotate(90 36,306)",
+              "bbox": {
+                "x": 32,
+                "y": 224.84,
+                "w": 21,
+                "h": 162.72
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            },
+            {
+              "text": "Alex North",
+              "fontSize": "18",
+              "transform": "rotate(90 9,306)",
+              "bbox": {
+                "x": 5,
+                "y": 255.34,
+                "w": 21,
+                "h": 100.71
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            }
+          ],
+          "clipped": false,
+          "maxOver": 0,
+          "hasImage": false,
+          "hasBackgroundRect": false
+        },
+        "screenshot": "raster/raster-in-svg-artoff-spine.png"
+      },
+      "note": "Accepted, but the wrapper becomes a tiled/cropped ornament; it is never used as a full-bleed spine or front cover."
+    },
+    "dominantColour": {
+      "stats": {
+        "avg": "#21110b",
+        "dominant": "#0d0603",
+        "edge": "#120703",
+        "dominantShare": 0.568,
+        "edgeLum": 0.003,
+        "avgLum": 0.007
+      },
+      "ink": "#f3e7cf",
+      "background": "#0d0603",
+      "screenshot": "raster/dominant-colour-spine.png",
+      "render": "raster/dominant-colour-spine-render.png",
+      "note": "The saved SVG is transparent; the dominant colour must be supplied by the shelf/UI behind it. This render fills that colour behind the cream ink."
+    }
+  },
+  "titleFit": {
+    "whisper-man": {
+      "1": {
+        "name": "both centred (words stacked)",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 37.84,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "The",
+                "overLeft": 16.8,
+                "overRight": 16.81
+              },
+              {
+                "text": "Whisper",
+                "overLeft": 37.84,
+                "overRight": 37.84
+              },
+              {
+                "text": "Man",
+                "overLeft": 20.26,
+                "overRight": 20.25
+              },
+              {
+                "text": "Alex",
+                "overLeft": 20.96,
+                "overRight": 18.95
+              },
+              {
+                "text": "North",
+                "overLeft": 26.9,
+                "overRight": 26.9
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 36.41,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "The",
+                "overLeft": 15.36,
+                "overRight": 15.37
+              },
+              {
+                "text": "Whisper",
+                "overLeft": 36.39,
+                "overRight": 36.41
+              },
+              {
+                "text": "Man",
+                "overLeft": 18.81,
+                "overRight": 18.82
+              },
+              {
+                "text": "Alex",
+                "overLeft": 19.52,
+                "overRight": 17.51
+              },
+              {
+                "text": "North",
+                "overLeft": 25.46,
+                "overRight": 25.46
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 34.61,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "The",
+                "overLeft": 13.56,
+                "overRight": 13.57
+              },
+              {
+                "text": "Whisper",
+                "overLeft": 34.59,
+                "overRight": 34.61
+              },
+              {
+                "text": "Man",
+                "overLeft": 17.01,
+                "overRight": 17.02
+              },
+              {
+                "text": "Alex",
+                "overLeft": 17.71,
+                "overRight": 15.72
+              },
+              {
+                "text": "North",
+                "overLeft": 23.65,
+                "overRight": 23.67
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 32.74,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "The",
+                "overLeft": 11.74,
+                "overRight": 11.74
+              },
+              {
+                "text": "Whisper",
+                "overLeft": 32.74,
+                "overRight": 32.74
+              },
+              {
+                "text": "Man",
+                "overLeft": 15.19,
+                "overRight": 15.18
+              },
+              {
+                "text": "Alex",
+                "overLeft": 15.89,
+                "overRight": 13.88
+              },
+              {
+                "text": "North",
+                "overLeft": 21.82,
+                "overRight": 21.82
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 29.13,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "The",
+                "overLeft": 8.13,
+                "overRight": 8.14
+              },
+              {
+                "text": "Whisper",
+                "overLeft": 29.13,
+                "overRight": 29.13
+              },
+              {
+                "text": "Man",
+                "overLeft": 11.58,
+                "overRight": 11.58
+              },
+              {
+                "text": "Alex",
+                "overLeft": 12.28,
+                "overRight": 10.28
+              },
+              {
+                "text": "North",
+                "overLeft": 18.21,
+                "overRight": 18.21
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 25.56,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "The",
+                "overLeft": 4.54,
+                "overRight": 4.54
+              },
+              {
+                "text": "Whisper",
+                "overLeft": 25.54,
+                "overRight": 25.56
+              },
+              {
+                "text": "Man",
+                "overLeft": 7.99,
+                "overRight": 7.99
+              },
+              {
+                "text": "Alex",
+                "overLeft": 8.69,
+                "overRight": 6.69
+              },
+              {
+                "text": "North",
+                "overLeft": 14.62,
+                "overRight": 14.63
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 22.78,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "The",
+                "overLeft": 1.76,
+                "overRight": 1.78
+              },
+              {
+                "text": "Whisper",
+                "overLeft": 22.77,
+                "overRight": 22.78
+              },
+              {
+                "text": "Man",
+                "overLeft": 5.21,
+                "overRight": 5.22
+              },
+              {
+                "text": "Alex",
+                "overLeft": 5.91,
+                "overRight": 3.93
+              },
+              {
+                "text": "North",
+                "overLeft": 11.84,
+                "overRight": 11.86
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 20.13,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "Whisper",
+                "overLeft": 20.13,
+                "overRight": 20.13
+              },
+              {
+                "text": "Man",
+                "overLeft": 2.58,
+                "overRight": 2.58
+              },
+              {
+                "text": "Alex",
+                "overLeft": 3.28,
+                "overRight": 1.28
+              },
+              {
+                "text": "North",
+                "overLeft": 9.21,
+                "overRight": 9.21
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 14.74,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "Whisper",
+                "overLeft": 14.73,
+                "overRight": 14.74
+              },
+              {
+                "text": "North",
+                "overLeft": 3.81,
+                "overRight": 3.82
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": true,
+            "maxOver": 11.13,
+            "svgWidth": 54,
+            "clips": [
+              {
+                "text": "Whisper",
+                "overLeft": 11.13,
+                "overRight": 11.13
+              }
+            ]
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": true,
+            "maxOver": 2.13,
+            "svgWidth": 72,
+            "clips": [
+              {
+                "text": "Whisper",
+                "overLeft": 2.13,
+                "overRight": 2.13
+              }
+            ]
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 1.5,
+        "minOuterWidthIn": 1.3
+      },
+      "2": {
+        "name": "both rotated",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 25.69,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 25.69
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 21.68,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 24.25,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 24.25
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 20.24,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 22.45,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 22.45
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 18.43,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 20.61,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 20.61
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 16.6,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 17,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 17
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 13,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 13.42,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 13.42
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 9.4,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 10.65,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 10.65
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 6.63,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 8,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 8
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 4,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 2.6,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 2.6
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 1,
+        "minOuterWidthIn": 0.96
+      },
+      "3": {
+        "name": "title rotated",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 12.17,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 8.15,
+                "overRight": 12.17
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 10.73,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 6.71,
+                "overRight": 10.73
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 8.93,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 4.91,
+                "overRight": 8.93
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 7.11,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 3.1,
+                "overRight": 7.11
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 3.5,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 3.5
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 25.200000762939453,
+            "clips": []
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 30.743999481201172,
+            "clips": []
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 36,
+            "clips": []
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 46.79999923706055,
+            "clips": []
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 0.6,
+        "minOuterWidthIn": 0.58
+      },
+      "4": {
+        "name": "author top",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 12.17,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 8.15,
+                "overRight": 12.17
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 10.73,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 6.71,
+                "overRight": 10.73
+              },
+              {
+                "text": "Alex",
+                "overLeft": 1.3,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 8.93,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 4.91,
+                "overRight": 8.93
+              },
+              {
+                "text": "Alex",
+                "overLeft": 1.11,
+                "overRight": 0
+              },
+              {
+                "text": "North",
+                "overLeft": 0.59,
+                "overRight": 0.6
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 7.11,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 3.1,
+                "overRight": 7.11
+              },
+              {
+                "text": "Alex",
+                "overLeft": 0.92,
+                "overRight": 0
+              },
+              {
+                "text": "North",
+                "overLeft": 0.89,
+                "overRight": 0.89
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 3.5,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 0,
+                "overRight": 3.5
+              },
+              {
+                "text": "North",
+                "overLeft": 1.47,
+                "overRight": 1.48
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 1.67,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 1.66,
+                "overRight": 1.67
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 2.29,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 2.27,
+                "overRight": 2.29
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 2.49,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 2.48,
+                "overRight": 2.49
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 3.06,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 3.05,
+                "overRight": 3.06
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": true,
+            "maxOver": 3.53,
+            "svgWidth": 54,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 3.53,
+                "overRight": 3.53
+              }
+            ]
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": true,
+            "maxOver": 4.71,
+            "svgWidth": 72,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 4.7,
+                "overRight": 4.71
+              }
+            ]
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": true,
+            "maxOver": 5.91,
+            "svgWidth": 90,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 5.91,
+                "overRight": 5.9
+              }
+            ]
+          },
+          {
+            "widthIn": 2,
+            "clipped": true,
+            "maxOver": 8.28,
+            "svgWidth": 126,
+            "clips": [
+              {
+                "text": "North",
+                "overLeft": 8.27,
+                "overRight": 8.28
+              }
+            ]
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": true,
+            "maxOver": 10.63,
+            "svgWidth": 162,
+            "clips": [
+              {
+                "text": "Alex",
+                "overLeft": 0,
+                "overRight": 0
+              },
+              {
+                "text": "North",
+                "overLeft": 10.63,
+                "overRight": 10.62
+              }
+            ]
+          }
+        ],
+        "firstFitTested": null,
+        "minOuterWidthIn": null
+      },
+      "5": {
+        "name": "centred preserve format",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 81.15,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 81.14,
+                "overRight": 81.15
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 51.08,
+                "overRight": 49.08
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 79.71,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 79.7,
+                "overRight": 79.71
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 49.64,
+                "overRight": 47.64
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 77.91,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 77.9,
+                "overRight": 77.91
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 47.84,
+                "overRight": 45.84
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 75.99,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 75.98,
+                "overRight": 75.99
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 45.97,
+                "overRight": 43.97
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 72.36,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 72.36,
+                "overRight": 72.36
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 42.35,
+                "overRight": 40.36
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 68.8,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 68.8,
+                "overRight": 68.8
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 38.77,
+                "overRight": 36.79
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 66.02,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 66.01,
+                "overRight": 66.02
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 35.99,
+                "overRight": 34.01
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 63.36,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 63.36,
+                "overRight": 63.36
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 33.35,
+                "overRight": 31.36
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 57.97,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 57.97,
+                "overRight": 57.96
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 27.95,
+                "overRight": 25.96
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": true,
+            "maxOver": 54.36,
+            "svgWidth": 54,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 54.36,
+                "overRight": 54.36
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 24.35,
+                "overRight": 22.36
+              }
+            ]
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": true,
+            "maxOver": 45.36,
+            "svgWidth": 72,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 45.36,
+                "overRight": 45.36
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 15.35,
+                "overRight": 13.36
+              }
+            ]
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": true,
+            "maxOver": 36.36,
+            "svgWidth": 90,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 36.36,
+                "overRight": 36.36
+              },
+              {
+                "text": "Alex North",
+                "overLeft": 6.35,
+                "overRight": 4.36
+              }
+            ]
+          },
+          {
+            "widthIn": 2,
+            "clipped": true,
+            "maxOver": 18.36,
+            "svgWidth": 126,
+            "clips": [
+              {
+                "text": "The Whisper Man",
+                "overLeft": 18.36,
+                "overRight": 18.36
+              }
+            ]
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0.36,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 2.5,
+        "minOuterWidthIn": 2.5
+      }
+    },
+    "rock-paper-scissors": {
+      "1": {
+        "name": "both centred (words stacked)",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 37.37,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 22.92,
+                "overRight": 22.91
+              },
+              {
+                "text": "Paper",
+                "overLeft": 26.29,
+                "overRight": 26.29
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 37.37,
+                "overRight": 37.37
+              },
+              {
+                "text": "Alice",
+                "overLeft": 23.81,
+                "overRight": 21.8
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 32.72,
+                "overRight": 32.73
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 35.93,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 21.47,
+                "overRight": 21.48
+              },
+              {
+                "text": "Paper",
+                "overLeft": 24.85,
+                "overRight": 24.85
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 35.93,
+                "overRight": 35.93
+              },
+              {
+                "text": "Alice",
+                "overLeft": 22.36,
+                "overRight": 20.37
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 31.28,
+                "overRight": 31.29
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 34.14,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 19.67,
+                "overRight": 19.68
+              },
+              {
+                "text": "Paper",
+                "overLeft": 23.04,
+                "overRight": 23.06
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 34.12,
+                "overRight": 34.14
+              },
+              {
+                "text": "Alice",
+                "overLeft": 20.56,
+                "overRight": 18.57
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 29.48,
+                "overRight": 29.49
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 32.28,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 17.84,
+                "overRight": 17.84
+              },
+              {
+                "text": "Paper",
+                "overLeft": 21.21,
+                "overRight": 21.21
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 32.27,
+                "overRight": 32.28
+              },
+              {
+                "text": "Alice",
+                "overLeft": 18.73,
+                "overRight": 16.73
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 27.64,
+                "overRight": 27.63
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 28.67,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 14.24,
+                "overRight": 14.23
+              },
+              {
+                "text": "Paper",
+                "overLeft": 17.6,
+                "overRight": 17.61
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 28.66,
+                "overRight": 28.67
+              },
+              {
+                "text": "Alice",
+                "overLeft": 15.13,
+                "overRight": 13.12
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 24.03,
+                "overRight": 24.02
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 25.09,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 10.64,
+                "overRight": 10.65
+              },
+              {
+                "text": "Paper",
+                "overLeft": 14.01,
+                "overRight": 14.03
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 25.08,
+                "overRight": 25.09
+              },
+              {
+                "text": "Alice",
+                "overLeft": 11.53,
+                "overRight": 9.54
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 20.44,
+                "overRight": 20.45
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 22.31,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 7.87,
+                "overRight": 7.88
+              },
+              {
+                "text": "Paper",
+                "overLeft": 11.24,
+                "overRight": 11.25
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 22.3,
+                "overRight": 22.31
+              },
+              {
+                "text": "Alice",
+                "overLeft": 8.76,
+                "overRight": 6.76
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 17.66,
+                "overRight": 17.68
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 19.67,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "Rock",
+                "overLeft": 5.24,
+                "overRight": 5.23
+              },
+              {
+                "text": "Paper",
+                "overLeft": 8.6,
+                "overRight": 8.61
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 19.66,
+                "overRight": 19.67
+              },
+              {
+                "text": "Alice",
+                "overLeft": 6.13,
+                "overRight": 4.12
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 15.03,
+                "overRight": 15.02
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 14.27,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "Paper",
+                "overLeft": 3.2,
+                "overRight": 3.21
+              },
+              {
+                "text": "Scissors",
+                "overLeft": 14.26,
+                "overRight": 14.27
+              },
+              {
+                "text": "Alice",
+                "overLeft": 0.73,
+                "overRight": 0
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 9.63,
+                "overRight": 9.63
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": true,
+            "maxOver": 10.67,
+            "svgWidth": 54,
+            "clips": [
+              {
+                "text": "Scissors",
+                "overLeft": 10.66,
+                "overRight": 10.67
+              },
+              {
+                "text": "Feeney",
+                "overLeft": 6.03,
+                "overRight": 6.02
+              }
+            ]
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": true,
+            "maxOver": 1.67,
+            "svgWidth": 72,
+            "clips": [
+              {
+                "text": "Scissors",
+                "overLeft": 1.66,
+                "overRight": 1.67
+              }
+            ]
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 1.5,
+        "minOuterWidthIn": 1.28
+      },
+      "2": {
+        "name": "both rotated",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 25.69,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 25.69
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 21.68,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 24.25,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 24.25
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 20.24,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 22.45,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 22.45
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 18.43,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 20.61,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 20.61
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 16.6,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 17,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 17
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 13,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 13.42,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 13.42
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 9.4,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 10.65,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 10.65
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 6.63,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 8,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 8
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 4,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 2.6,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 2.6
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 1,
+        "minOuterWidthIn": 0.96
+      },
+      "3": {
+        "name": "title rotated",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 12.17,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 8.15,
+                "overRight": 12.17
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 10.73,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 6.71,
+                "overRight": 10.73
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 8.93,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 4.91,
+                "overRight": 8.93
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 7.11,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 3.1,
+                "overRight": 7.11
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 3.5,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 3.5
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 25.200000762939453,
+            "clips": []
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 30.743999481201172,
+            "clips": []
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 36,
+            "clips": []
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 46.79999923706055,
+            "clips": []
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 0.6,
+        "minOuterWidthIn": 0.58
+      },
+      "4": {
+        "name": "author top",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 12.17,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 8.15,
+                "overRight": 12.17
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 10.73,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 6.71,
+                "overRight": 10.73
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 8.93,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 4.91,
+                "overRight": 8.93
+              },
+              {
+                "text": "Alice",
+                "overLeft": 0.79,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 7.11,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 3.1,
+                "overRight": 7.11
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 3.5,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 0,
+                "overRight": 3.5
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": false,
+            "maxOver": 0.02,
+            "svgWidth": 25.200000762939453,
+            "clips": []
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": false,
+            "maxOver": 0.09,
+            "svgWidth": 30.743999481201172,
+            "clips": []
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": false,
+            "maxOver": 0.15,
+            "svgWidth": 36,
+            "clips": []
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": false,
+            "maxOver": 0.32,
+            "svgWidth": 46.79999923706055,
+            "clips": []
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0.25,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0.33,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0.1,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0.27,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 0.6,
+        "minOuterWidthIn": 0.58
+      },
+      "5": {
+        "name": "centred preserve format",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 92.29,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 92.28,
+                "overRight": 92.29
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 59.75,
+                "overRight": 57.76
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 90.85,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 90.84,
+                "overRight": 90.85
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 58.31,
+                "overRight": 56.32
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 89.05,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 89.04,
+                "overRight": 89.05
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 56.51,
+                "overRight": 54.52
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 87.11,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 87.11,
+                "overRight": 87.11
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 54.63,
+                "overRight": 52.63
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 83.49,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 83.48,
+                "overRight": 83.49
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 51.01,
+                "overRight": 49.01
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 79.94,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 79.92,
+                "overRight": 79.94
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 47.43,
+                "overRight": 45.45
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 77.15,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 77.14,
+                "overRight": 77.15
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 44.65,
+                "overRight": 42.67
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 74.49,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 74.48,
+                "overRight": 74.49
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 42.01,
+                "overRight": 40.01
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 69.09,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 69.09,
+                "overRight": 69.09
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 36.61,
+                "overRight": 34.62
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": true,
+            "maxOver": 65.49,
+            "svgWidth": 54,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 65.48,
+                "overRight": 65.49
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 33.01,
+                "overRight": 31.01
+              }
+            ]
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": true,
+            "maxOver": 56.49,
+            "svgWidth": 72,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 56.48,
+                "overRight": 56.49
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 24.01,
+                "overRight": 22.01
+              }
+            ]
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": true,
+            "maxOver": 47.49,
+            "svgWidth": 90,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 47.48,
+                "overRight": 47.49
+              },
+              {
+                "text": "Alice Feeney",
+                "overLeft": 15.01,
+                "overRight": 13.01
+              }
+            ]
+          },
+          {
+            "widthIn": 2,
+            "clipped": true,
+            "maxOver": 29.49,
+            "svgWidth": 126,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 29.48,
+                "overRight": 29.49
+              }
+            ]
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": true,
+            "maxOver": 11.49,
+            "svgWidth": 162,
+            "clips": [
+              {
+                "text": "Rock Paper Scissors",
+                "overLeft": 11.48,
+                "overRight": 11.49
+              }
+            ]
+          }
+        ],
+        "firstFitTested": null,
+        "minOuterWidthIn": null
+      }
+    },
+    "moby-dick": {
+      "1": {
+        "name": "both centred (words stacked)",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 49.38,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 49.38,
+                "overRight": 49.38
+              },
+              {
+                "text": "Herman",
+                "overLeft": 37.08,
+                "overRight": 37.08
+              },
+              {
+                "text": "Melville",
+                "overLeft": 36.17,
+                "overRight": 36.17
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 47.94,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 47.94,
+                "overRight": 47.94
+              },
+              {
+                "text": "Herman",
+                "overLeft": 35.64,
+                "overRight": 35.64
+              },
+              {
+                "text": "Melville",
+                "overLeft": 34.73,
+                "overRight": 34.73
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 46.14,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 46.14,
+                "overRight": 46.14
+              },
+              {
+                "text": "Herman",
+                "overLeft": 33.84,
+                "overRight": 33.84
+              },
+              {
+                "text": "Melville",
+                "overLeft": 32.93,
+                "overRight": 32.93
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 44.27,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 44.27,
+                "overRight": 44.27
+              },
+              {
+                "text": "Herman",
+                "overLeft": 31.99,
+                "overRight": 31.99
+              },
+              {
+                "text": "Melville",
+                "overLeft": 31.08,
+                "overRight": 31.08
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 40.66,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 40.66,
+                "overRight": 40.65
+              },
+              {
+                "text": "Herman",
+                "overLeft": 28.38,
+                "overRight": 28.37
+              },
+              {
+                "text": "Melville",
+                "overLeft": 27.47,
+                "overRight": 27.47
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 37.09,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 37.07,
+                "overRight": 37.09
+              },
+              {
+                "text": "Herman",
+                "overLeft": 24.79,
+                "overRight": 24.8
+              },
+              {
+                "text": "Melville",
+                "overLeft": 23.88,
+                "overRight": 23.89
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 34.31,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 34.29,
+                "overRight": 34.31
+              },
+              {
+                "text": "Herman",
+                "overLeft": 22.01,
+                "overRight": 22.03
+              },
+              {
+                "text": "Melville",
+                "overLeft": 21.1,
+                "overRight": 21.12
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 31.66,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 31.66,
+                "overRight": 31.65
+              },
+              {
+                "text": "Herman",
+                "overLeft": 19.38,
+                "overRight": 19.37
+              },
+              {
+                "text": "Melville",
+                "overLeft": 18.47,
+                "overRight": 18.47
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 26.26,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 26.26,
+                "overRight": 26.26
+              },
+              {
+                "text": "Herman",
+                "overLeft": 13.98,
+                "overRight": 13.98
+              },
+              {
+                "text": "Melville",
+                "overLeft": 13.07,
+                "overRight": 13.07
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": true,
+            "maxOver": 22.66,
+            "svgWidth": 54,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 22.66,
+                "overRight": 22.65
+              },
+              {
+                "text": "Herman",
+                "overLeft": 10.38,
+                "overRight": 10.37
+              },
+              {
+                "text": "Melville",
+                "overLeft": 9.47,
+                "overRight": 9.47
+              }
+            ]
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": true,
+            "maxOver": 13.66,
+            "svgWidth": 72,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 13.66,
+                "overRight": 13.65
+              },
+              {
+                "text": "Herman",
+                "overLeft": 1.38,
+                "overRight": 1.37
+              }
+            ]
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": true,
+            "maxOver": 4.66,
+            "svgWidth": 90,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 4.66,
+                "overRight": 4.65
+              }
+            ]
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 2,
+        "minOuterWidthIn": 1.62
+      },
+      "2": {
+        "name": "both rotated",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 25.69,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 25.69
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 21.68,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 24.25,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 24.25
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 20.24,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 22.45,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 22.45
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 18.43,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 20.61,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 20.61
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 16.6,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 17,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 17
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 13,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 13.42,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 13.42
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 9.4,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 10.65,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 10.65
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 6.63,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 8,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 8
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 4,
+                "overRight": 0
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 2.6,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 2.6
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 1,
+        "minOuterWidthIn": 0.96
+      },
+      "3": {
+        "name": "title rotated",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 12.17,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 8.15,
+                "overRight": 12.17
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 10.73,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 6.71,
+                "overRight": 10.73
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 8.93,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 4.91,
+                "overRight": 8.93
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 7.11,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 3.1,
+                "overRight": 7.11
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 3.5,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 3.5
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 25.200000762939453,
+            "clips": []
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 30.743999481201172,
+            "clips": []
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 36,
+            "clips": []
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 46.79999923706055,
+            "clips": []
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 0.6,
+        "minOuterWidthIn": 0.58
+      },
+      "4": {
+        "name": "author top",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 12.17,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 8.15,
+                "overRight": 12.17
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 10.73,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 6.71,
+                "overRight": 10.73
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 8.93,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 4.91,
+                "overRight": 8.93
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 7.11,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 3.1,
+                "overRight": 7.11
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 3.5,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 0,
+                "overRight": 3.5
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 25.200000762939453,
+            "clips": []
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 30.743999481201172,
+            "clips": []
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 36,
+            "clips": []
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 46.79999923706055,
+            "clips": []
+          },
+          {
+            "widthIn": 1,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 54,
+            "clips": []
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 72,
+            "clips": []
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 90,
+            "clips": []
+          },
+          {
+            "widthIn": 2,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 126,
+            "clips": []
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 0.6,
+        "minOuterWidthIn": 0.58
+      },
+      "5": {
+        "name": "centred preserve format",
+        "sweep": [
+          {
+            "widthIn": 0.26,
+            "clipped": true,
+            "maxOver": 76.28,
+            "svgWidth": 0.7199999094009399,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 49.38,
+                "overRight": 49.38
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 76.27,
+                "overRight": 76.28
+              }
+            ]
+          },
+          {
+            "widthIn": 0.3,
+            "clipped": true,
+            "maxOver": 74.84,
+            "svgWidth": 3.5999999046325684,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 47.94,
+                "overRight": 47.94
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 74.83,
+                "overRight": 74.84
+              }
+            ]
+          },
+          {
+            "widthIn": 0.35,
+            "clipped": true,
+            "maxOver": 73.04,
+            "svgWidth": 7.199999809265137,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 46.14,
+                "overRight": 46.14
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 73.03,
+                "overRight": 73.04
+              }
+            ]
+          },
+          {
+            "widthIn": 0.4,
+            "clipped": true,
+            "maxOver": 71.12,
+            "svgWidth": 10.800000190734863,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 44.27,
+                "overRight": 44.27
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 71.12,
+                "overRight": 71.12
+              }
+            ]
+          },
+          {
+            "widthIn": 0.5,
+            "clipped": true,
+            "maxOver": 67.5,
+            "svgWidth": 18,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 40.66,
+                "overRight": 40.65
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 67.5,
+                "overRight": 67.5
+              }
+            ]
+          },
+          {
+            "widthIn": 0.6,
+            "clipped": true,
+            "maxOver": 63.95,
+            "svgWidth": 25.200000762939453,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 37.07,
+                "overRight": 37.09
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 63.93,
+                "overRight": 63.95
+              }
+            ]
+          },
+          {
+            "widthIn": 0.677,
+            "clipped": true,
+            "maxOver": 61.16,
+            "svgWidth": 30.743999481201172,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 34.29,
+                "overRight": 34.31
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 61.15,
+                "overRight": 61.16
+              }
+            ]
+          },
+          {
+            "widthIn": 0.75,
+            "clipped": true,
+            "maxOver": 58.5,
+            "svgWidth": 36,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 31.66,
+                "overRight": 31.65
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 58.5,
+                "overRight": 58.5
+              }
+            ]
+          },
+          {
+            "widthIn": 0.9,
+            "clipped": true,
+            "maxOver": 53.11,
+            "svgWidth": 46.79999923706055,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 26.26,
+                "overRight": 26.26
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 53.1,
+                "overRight": 53.11
+              }
+            ]
+          },
+          {
+            "widthIn": 1,
+            "clipped": true,
+            "maxOver": 49.5,
+            "svgWidth": 54,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 22.66,
+                "overRight": 22.65
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 49.5,
+                "overRight": 49.5
+              }
+            ]
+          },
+          {
+            "widthIn": 1.25,
+            "clipped": true,
+            "maxOver": 40.5,
+            "svgWidth": 72,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 13.66,
+                "overRight": 13.65
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 40.5,
+                "overRight": 40.5
+              }
+            ]
+          },
+          {
+            "widthIn": 1.5,
+            "clipped": true,
+            "maxOver": 31.5,
+            "svgWidth": 90,
+            "clips": [
+              {
+                "text": "Moby-Dick",
+                "overLeft": 4.66,
+                "overRight": 4.65
+              },
+              {
+                "text": "Herman Melville",
+                "overLeft": 31.5,
+                "overRight": 31.5
+              }
+            ]
+          },
+          {
+            "widthIn": 2,
+            "clipped": true,
+            "maxOver": 13.5,
+            "svgWidth": 126,
+            "clips": [
+              {
+                "text": "Herman Melville",
+                "overLeft": 13.5,
+                "overRight": 13.5
+              }
+            ]
+          },
+          {
+            "widthIn": 2.5,
+            "clipped": false,
+            "maxOver": 0,
+            "svgWidth": 162,
+            "clips": []
+          }
+        ],
+        "firstFitTested": 2.5,
+        "minOuterWidthIn": 2.36
+      }
+    },
+    "contact-1": "out/titlefit/style-1-contact.png",
+    "contact-2": "out/titlefit/style-2-contact.png",
+    "sheet-whisper-man-1": "out/titlefit/whisper-man-style-1.png",
+    "sheet-whisper-man-2": "out/titlefit/whisper-man-style-2.png",
+    "sheet-rock-paper-scissors-1": "out/titlefit/rock-paper-scissors-style-1.png",
+    "sheet-rock-paper-scissors-2": "out/titlefit/rock-paper-scissors-style-2.png",
+    "sheet-moby-dick-1": "out/titlefit/moby-dick-style-1.png",
+    "sheet-moby-dick-2": "out/titlefit/moby-dick-style-2.png",
+    "clip-detail-rps-075": "out/titlefit/clip-detail-rps-075.png",
+    "clip-detail-whisper-1in": "out/titlefit/clip-detail-whisper-1in.png"
+  },
+  "comparisons": {
+    "whisper-man": "out/comparisons/whisper-man-bookcover-vs-v4-vs-v3.png",
+    "rock-paper-scissors": "out/comparisons/rock-paper-scissors-bookcover-vs-v4-vs-v3.png",
+    "moby-dick": "out/comparisons/moby-dick-bookcover-vs-v4-vs-v3.png"
+  },
+  "v4": {
+    "books": {
+      "whisper-man": {
+        "variants": [
+          {
+            "kind": "computed",
+            "spineIn": 0.6771653543307087,
+            "file": "out/v4/whisper-man-spine-0.677in.png",
+            "mode": "cover",
+            "fit": {
+              "text": "The Whisper Man",
+              "pt": 17.28884409448819,
+              "fontPx": 72.03685039370079,
+              "lengthPx": 521.208251953125,
+              "acrossPx": 72,
+              "availableLengthPx": 1458,
+              "availableAcrossPx": 73.13385826771653,
+              "lengthRatio": 0.35748165428883744,
+              "acrossRatio": 0.9844961240310077,
+              "ratio": 0.9844961240310077,
+              "ok": true,
+              "cappedAtMax": false
+            }
+          },
+          {
+            "kind": "1in",
+            "spineIn": 1.0000000000000002,
+            "file": "out/v4/whisper-man-spine-1.000in.png",
+            "mode": "cover",
+            "fit": {
+              "text": "The Whisper Man",
+              "pt": 25.531200000000005,
+              "fontPx": 106.38000000000002,
+              "lengthPx": 768.935302734375,
+              "acrossPx": 106,
+              "availableLengthPx": 1458,
+              "availableAcrossPx": 108.00000000000003,
+              "lengthRatio": 0.5273904682677469,
+              "acrossRatio": 0.9814814814814812,
+              "ratio": 0.9814814814814812,
+              "ok": true,
+              "cappedAtMax": false
+            }
+          }
+        ],
+        "computed": {
+          "ready": true,
+          "book": {
+            "id": "whisper-man",
+            "title": "The Whisper Man",
+            "author": "Alex North"
+          },
+          "state": {
+            "bookId": "whisper-man",
+            "pages": 320,
+            "stockId": "cream80",
+            "caliperMm": 0.1,
+            "trimId": "6x9",
+            "bleedIn": 0.125,
+            "mode": "cover",
+            "stripSource": "art",
+            "guides": true,
+            "rotateY": 30
+          },
+          "spine": {
+            "pages": 320,
+            "leaves": 160,
+            "caliperMm": 0.1,
+            "textBlockMm": 16,
+            "allowanceMm": 1.2,
+            "spineMm": 17.2,
+            "spineIn": 0.6771653543307087,
+            "clamped": false
+          },
+          "layout": {
+            "trimW": 6,
+            "trimH": 9,
+            "bleedIn": 0.125,
+            "spineIn": 0.6771653543307087,
+            "totalW": 12.927165354330707,
+            "totalH": 9.25,
+            "backFold": 6.125,
+            "spineX": 6.125,
+            "frontFold": 6.802165354330708
+          },
+          "print": {
+            "width": 3878,
+            "height": 2775,
+            "dpi": 300
+          },
+          "effectiveMode": "cover",
+          "mode": "cover",
+          "fit": {
+            "text": "The Whisper Man",
+            "pt": 17.28884409448819,
+            "fontPx": 72.03685039370079,
+            "lengthPx": 521.208251953125,
+            "acrossPx": 72,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.35748165428883744,
+            "acrossRatio": 0.9844961240310077,
+            "ratio": 0.9844961240310077,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "authorFit": {
+            "text": "ALEX NORTH",
+            "pt": 10.946754617414248,
+            "fontPx": 45.61147757255937,
+            "lengthPx": 347.7337341308594,
+            "acrossPx": 33,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.9906943992332176,
+            "acrossRatio": 0.45122739018087854,
+            "ratio": 0.9906943992332176,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverFit": {
+            "text": "The Whisper Man",
+            "pt": 17.28884409448819,
+            "fontPx": 72.03685039370079,
+            "lengthPx": 521.208251953125,
+            "acrossPx": 72,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.35748165428883744,
+            "acrossRatio": 0.9844961240310077,
+            "ratio": 0.9844961240310077,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverAuthorFit": {
+            "text": "ALEX NORTH",
+            "pt": 10.946754617414248,
+            "fontPx": 45.61147757255937,
+            "lengthPx": 347.7337341308594,
+            "acrossPx": 33,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.9906943992332176,
+            "acrossRatio": 0.45122739018087854,
+            "ratio": 0.9906943992332176,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "typeFit": {
+            "text": "THE WHISPER MAN",
+            "pt": 34,
+            "fontPx": 141.66666666666666,
+            "lengthPx": 1365.75,
+            "acrossPx": 102,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 113.76377952755907,
+            "lengthRatio": 0.9367283950617284,
+            "acrossRatio": 0.8965946843853819,
+            "ratio": 0.9367283950617284,
+            "ok": true,
+            "cappedAtMax": true
+          },
+          "stress": {
+            "text": "The Whisper Man",
+            "pt": 25.531200000000002,
+            "fontPx": 106.38000000000001,
+            "lengthPx": 768.935302734375,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.5273904682677469,
+            "acrossRatio": 0.9814814814814815,
+            "ratio": 0.9814814814814815,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stressAuthor": {
+            "text": "ALEX NORTH",
+            "pt": 10.946754617414248,
+            "fontPx": 45.61147757255937,
+            "lengthPx": 347.7337341308594,
+            "acrossPx": 33,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.9906943992332176,
+            "acrossRatio": 0.3055555555555556,
+            "ratio": 0.9906943992332176,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "decisions": [
+            "Textless source is 38.8% inpainted (v3: pass), not original pixels."
+          ],
+          "edge": {
+            "hex": "#0f0703",
+            "sd": 6.107917622667358,
+            "lum": 0.0025334028649349337,
+            "contrastInk": 1.121728446462039,
+            "contrastCream": 16.734354334784015
+          },
+          "art": {
+            "hex": "#0e0603",
+            "sd": 4.409635920746961,
+            "verdict": "pass",
+            "removalPct": 38.8
+          },
+          "railContrast": 16.8266998512099,
+          "canvases": {
+            "display": {
+              "width": 724,
+              "height": 518
+            },
+            "preview": {
+              "width": 1400,
+              "height": 1002
+            },
+            "compare": {
+              "width": 73,
+              "height": 975
+            },
+            "zoom": {
+              "width": 73,
+              "height": 409
+            }
+          },
+          "fonts": {
+            "loaded": true,
+            "warning": ""
+          }
+        },
+        "stress": {
+          "ready": true,
+          "book": {
+            "id": "whisper-man",
+            "title": "The Whisper Man",
+            "author": "Alex North"
+          },
+          "state": {
+            "bookId": "whisper-man",
+            "pages": 484,
+            "stockId": "cream80",
+            "caliperMm": 0.1,
+            "trimId": "6x9",
+            "bleedIn": 0.125,
+            "mode": "cover",
+            "stripSource": "art",
+            "guides": true,
+            "rotateY": 30
+          },
+          "spine": {
+            "pages": 484,
+            "leaves": 242,
+            "caliperMm": 0.1,
+            "textBlockMm": 24.200000000000003,
+            "allowanceMm": 1.2,
+            "spineMm": 25.400000000000002,
+            "spineIn": 1.0000000000000002,
+            "clamped": false
+          },
+          "layout": {
+            "trimW": 6,
+            "trimH": 9,
+            "bleedIn": 0.125,
+            "spineIn": 1.0000000000000002,
+            "totalW": 13.25,
+            "totalH": 9.25,
+            "backFold": 6.125,
+            "spineX": 6.125,
+            "frontFold": 7.125
+          },
+          "print": {
+            "width": 3975,
+            "height": 2775,
+            "dpi": 300
+          },
+          "effectiveMode": "cover",
+          "mode": "cover",
+          "fit": {
+            "text": "The Whisper Man",
+            "pt": 25.531200000000005,
+            "fontPx": 106.38000000000002,
+            "lengthPx": 768.935302734375,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.5273904682677469,
+            "acrossRatio": 0.9814814814814812,
+            "ratio": 0.9814814814814812,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "authorFit": {
+            "text": "ALEX NORTH",
+            "pt": 10.946754617414248,
+            "fontPx": 45.61147757255937,
+            "lengthPx": 347.7337341308594,
+            "acrossPx": 33,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.9906943992332176,
+            "acrossRatio": 0.30555555555555547,
+            "ratio": 0.9906943992332176,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverFit": {
+            "text": "The Whisper Man",
+            "pt": 25.531200000000005,
+            "fontPx": 106.38000000000002,
+            "lengthPx": 768.935302734375,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.5273904682677469,
+            "acrossRatio": 0.9814814814814812,
+            "ratio": 0.9814814814814812,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverAuthorFit": {
+            "text": "ALEX NORTH",
+            "pt": 10.946754617414248,
+            "fontPx": 45.61147757255937,
+            "lengthPx": 347.7337341308594,
+            "acrossPx": 33,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.9906943992332176,
+            "acrossRatio": 0.30555555555555547,
+            "ratio": 0.9906943992332176,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "typeFit": {
+            "text": "THE WHISPER MAN",
+            "pt": 34,
+            "fontPx": 141.66666666666666,
+            "lengthPx": 1365.75,
+            "acrossPx": 102,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 168.00000000000006,
+            "lengthRatio": 0.9367283950617284,
+            "acrossRatio": 0.607142857142857,
+            "ratio": 0.9367283950617284,
+            "ok": true,
+            "cappedAtMax": true
+          },
+          "stress": {
+            "text": "The Whisper Man",
+            "pt": 25.531200000000002,
+            "fontPx": 106.38000000000001,
+            "lengthPx": 768.935302734375,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.5273904682677469,
+            "acrossRatio": 0.9814814814814815,
+            "ratio": 0.9814814814814815,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stressAuthor": {
+            "text": "ALEX NORTH",
+            "pt": 10.946754617414248,
+            "fontPx": 45.61147757255937,
+            "lengthPx": 347.7337341308594,
+            "acrossPx": 33,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.9906943992332176,
+            "acrossRatio": 0.3055555555555556,
+            "ratio": 0.9906943992332176,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "decisions": [
+            "Textless source is 38.8% inpainted (v3: pass), not original pixels."
+          ],
+          "edge": {
+            "hex": "#0f0703",
+            "sd": 6.107917622667358,
+            "lum": 0.0025334028649349337,
+            "contrastInk": 1.121728446462039,
+            "contrastCream": 16.734354334784015
+          },
+          "art": {
+            "hex": "#0e0603",
+            "sd": 4.409635920746961,
+            "verdict": "pass",
+            "removalPct": 38.8
+          },
+          "railContrast": 16.8266998512099,
+          "canvases": {
+            "display": {
+              "width": 724,
+              "height": 505
+            },
+            "preview": {
+              "width": 1400,
+              "height": 977
+            },
+            "compare": {
+              "width": 106,
+              "height": 951
+            },
+            "zoom": {
+              "width": 106,
+              "height": 399
+            }
+          },
+          "fonts": {
+            "loaded": true,
+            "warning": ""
+          }
+        }
+      },
+      "rock-paper-scissors": {
+        "variants": [
+          {
+            "kind": "computed",
+            "spineIn": 0.6771653543307087,
+            "file": "out/v4/rock-paper-scissors-spine-0.677in.png",
+            "mode": "type",
+            "fit": {
+              "text": "ROCK PAPER SCISSORS",
+              "pt": 30.774214285714294,
+              "fontPx": 128.2258928571429,
+              "lengthPx": 1438.088623046875,
+              "acrossPx": 91,
+              "availableLengthPx": 1458,
+              "availableAcrossPx": 113.76377952755907,
+              "lengthRatio": 0.986343362857939,
+              "acrossRatio": 0.7999031007751937,
+              "ratio": 0.986343362857939,
+              "ok": true,
+              "cappedAtMax": false
+            }
+          },
+          {
+            "kind": "1in",
+            "spineIn": 1.0000000000000002,
+            "file": "out/v4/rock-paper-scissors-spine-1.000in.png",
+            "mode": "type",
+            "fit": {
+              "text": "ROCK PAPER SCISSORS",
+              "pt": 30.774214285714294,
+              "fontPx": 128.2258928571429,
+              "lengthPx": 1438.088623046875,
+              "acrossPx": 91,
+              "availableLengthPx": 1458,
+              "availableAcrossPx": 168.00000000000006,
+              "lengthRatio": 0.986343362857939,
+              "acrossRatio": 0.5416666666666665,
+              "ratio": 0.986343362857939,
+              "ok": true,
+              "cappedAtMax": false
+            }
+          }
+        ],
+        "computed": {
+          "ready": true,
+          "book": {
+            "id": "rock-paper-scissors",
+            "title": "Rock Paper Scissors",
+            "author": "Alice Feeney"
+          },
+          "state": {
+            "bookId": "rock-paper-scissors",
+            "pages": 320,
+            "stockId": "cream80",
+            "caliperMm": 0.1,
+            "trimId": "6x9",
+            "bleedIn": 0.125,
+            "mode": "type",
+            "stripSource": "art",
+            "guides": true,
+            "rotateY": 30
+          },
+          "spine": {
+            "pages": 320,
+            "leaves": 160,
+            "caliperMm": 0.1,
+            "textBlockMm": 16,
+            "allowanceMm": 1.2,
+            "spineMm": 17.2,
+            "spineIn": 0.6771653543307087,
+            "clamped": false
+          },
+          "layout": {
+            "trimW": 6,
+            "trimH": 9,
+            "bleedIn": 0.125,
+            "spineIn": 0.6771653543307087,
+            "totalW": 12.927165354330707,
+            "totalH": 9.25,
+            "backFold": 6.125,
+            "spineX": 6.125,
+            "frontFold": 6.802165354330708
+          },
+          "print": {
+            "width": 3878,
+            "height": 2775,
+            "dpi": 300
+          },
+          "effectiveMode": "type",
+          "mode": "type",
+          "fit": {
+            "text": "ROCK PAPER SCISSORS",
+            "pt": 30.774214285714294,
+            "fontPx": 128.2258928571429,
+            "lengthPx": 1438.088623046875,
+            "acrossPx": 91,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 113.76377952755907,
+            "lengthRatio": 0.986343362857939,
+            "acrossRatio": 0.7999031007751937,
+            "ratio": 0.986343362857939,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "authorFit": {
+            "text": "ALICE FEENEY",
+            "pt": 9.973125,
+            "fontPx": 41.5546875,
+            "lengthPx": 344.81170654296875,
+            "acrossPx": 30,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 113.76377952755907,
+            "lengthRatio": 0.9823695343104523,
+            "acrossRatio": 0.26370431893687707,
+            "ratio": 0.9823695343104523,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverFit": {
+            "text": "Rock Paper Scissors",
+            "pt": 17.28884409448819,
+            "fontPx": 72.03685039370079,
+            "lengthPx": 561.5304565429688,
+            "acrossPx": 72,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.38513748734085645,
+            "acrossRatio": 0.9844961240310077,
+            "ratio": 0.9844961240310077,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverAuthorFit": {
+            "text": "ALICE FEENEY",
+            "pt": 10.269356435643564,
+            "fontPx": 42.788985148514854,
+            "lengthPx": 347.6160888671875,
+            "acrossPx": 31,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.9903592275418447,
+            "acrossRatio": 0.4238802756244617,
+            "ratio": 0.9903592275418447,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "typeFit": {
+            "text": "ROCK PAPER SCISSORS",
+            "pt": 30.774214285714294,
+            "fontPx": 128.2258928571429,
+            "lengthPx": 1438.088623046875,
+            "acrossPx": 91,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 113.76377952755907,
+            "lengthRatio": 0.986343362857939,
+            "acrossRatio": 0.7999031007751937,
+            "ratio": 0.986343362857939,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stress": {
+            "text": "Rock Paper Scissors",
+            "pt": 25.531200000000002,
+            "fontPx": 106.38000000000001,
+            "lengthPx": 831.3180541992188,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.5701769919061856,
+            "acrossRatio": 0.9814814814814815,
+            "ratio": 0.9814814814814815,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stressAuthor": {
+            "text": "ALICE FEENEY",
+            "pt": 10.269356435643564,
+            "fontPx": 42.788985148514854,
+            "lengthPx": 347.6160888671875,
+            "acrossPx": 31,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.9903592275418447,
+            "acrossRatio": 0.28703703703703703,
+            "ratio": 0.9903592275418447,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "decisions": [
+            "Typographic fallback: edge colour + fitted type, no cover pixels on the spine."
+          ],
+          "edge": {
+            "hex": "#dad2d1",
+            "sd": 25.254955654075008,
+            "lum": 0.6547845947240486,
+            "contrastInk": 11.96005387271508,
+            "contrastCream": 1.247349310037043
+          },
+          "art": {
+            "hex": "#dbd9d9",
+            "sd": 18.516340538310764,
+            "verdict": "review",
+            "removalPct": 70.4
+          },
+          "railContrast": 12.695612443228482,
+          "canvases": {
+            "display": {
+              "width": 724,
+              "height": 518
+            },
+            "preview": {
+              "width": 1400,
+              "height": 1002
+            },
+            "compare": {
+              "width": 73,
+              "height": 975
+            },
+            "zoom": {
+              "width": 73,
+              "height": 409
+            }
+          },
+          "fonts": {
+            "loaded": true,
+            "warning": ""
+          }
+        },
+        "stress": {
+          "ready": true,
+          "book": {
+            "id": "rock-paper-scissors",
+            "title": "Rock Paper Scissors",
+            "author": "Alice Feeney"
+          },
+          "state": {
+            "bookId": "rock-paper-scissors",
+            "pages": 484,
+            "stockId": "cream80",
+            "caliperMm": 0.1,
+            "trimId": "6x9",
+            "bleedIn": 0.125,
+            "mode": "type",
+            "stripSource": "art",
+            "guides": true,
+            "rotateY": 30
+          },
+          "spine": {
+            "pages": 484,
+            "leaves": 242,
+            "caliperMm": 0.1,
+            "textBlockMm": 24.200000000000003,
+            "allowanceMm": 1.2,
+            "spineMm": 25.400000000000002,
+            "spineIn": 1.0000000000000002,
+            "clamped": false
+          },
+          "layout": {
+            "trimW": 6,
+            "trimH": 9,
+            "bleedIn": 0.125,
+            "spineIn": 1.0000000000000002,
+            "totalW": 13.25,
+            "totalH": 9.25,
+            "backFold": 6.125,
+            "spineX": 6.125,
+            "frontFold": 7.125
+          },
+          "print": {
+            "width": 3975,
+            "height": 2775,
+            "dpi": 300
+          },
+          "effectiveMode": "type",
+          "mode": "type",
+          "fit": {
+            "text": "ROCK PAPER SCISSORS",
+            "pt": 30.774214285714294,
+            "fontPx": 128.2258928571429,
+            "lengthPx": 1438.088623046875,
+            "acrossPx": 91,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 168.00000000000006,
+            "lengthRatio": 0.986343362857939,
+            "acrossRatio": 0.5416666666666665,
+            "ratio": 0.986343362857939,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "authorFit": {
+            "text": "ALICE FEENEY",
+            "pt": 9.973125,
+            "fontPx": 41.5546875,
+            "lengthPx": 344.81170654296875,
+            "acrossPx": 30,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 168.00000000000006,
+            "lengthRatio": 0.9823695343104523,
+            "acrossRatio": 0.17857142857142852,
+            "ratio": 0.9823695343104523,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverFit": {
+            "text": "Rock Paper Scissors",
+            "pt": 25.531200000000005,
+            "fontPx": 106.38000000000002,
+            "lengthPx": 831.3180541992188,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.5701769919061856,
+            "acrossRatio": 0.9814814814814812,
+            "ratio": 0.9814814814814812,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverAuthorFit": {
+            "text": "ALICE FEENEY",
+            "pt": 10.269356435643564,
+            "fontPx": 42.788985148514854,
+            "lengthPx": 347.6160888671875,
+            "acrossPx": 31,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.9903592275418447,
+            "acrossRatio": 0.287037037037037,
+            "ratio": 0.9903592275418447,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "typeFit": {
+            "text": "ROCK PAPER SCISSORS",
+            "pt": 30.774214285714294,
+            "fontPx": 128.2258928571429,
+            "lengthPx": 1438.088623046875,
+            "acrossPx": 91,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 168.00000000000006,
+            "lengthRatio": 0.986343362857939,
+            "acrossRatio": 0.5416666666666665,
+            "ratio": 0.986343362857939,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stress": {
+            "text": "Rock Paper Scissors",
+            "pt": 25.531200000000002,
+            "fontPx": 106.38000000000001,
+            "lengthPx": 831.3180541992188,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.5701769919061856,
+            "acrossRatio": 0.9814814814814815,
+            "ratio": 0.9814814814814815,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stressAuthor": {
+            "text": "ALICE FEENEY",
+            "pt": 10.269356435643564,
+            "fontPx": 42.788985148514854,
+            "lengthPx": 347.6160888671875,
+            "acrossPx": 31,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.9903592275418447,
+            "acrossRatio": 0.28703703703703703,
+            "ratio": 0.9903592275418447,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "decisions": [
+            "Typographic fallback: edge colour + fitted type, no cover pixels on the spine."
+          ],
+          "edge": {
+            "hex": "#dad2d1",
+            "sd": 25.254955654075008,
+            "lum": 0.6547845947240486,
+            "contrastInk": 11.96005387271508,
+            "contrastCream": 1.247349310037043
+          },
+          "art": {
+            "hex": "#dbd9d9",
+            "sd": 18.516340538310764,
+            "verdict": "review",
+            "removalPct": 70.4
+          },
+          "railContrast": 12.695612443228482,
+          "canvases": {
+            "display": {
+              "width": 724,
+              "height": 505
+            },
+            "preview": {
+              "width": 1400,
+              "height": 977
+            },
+            "compare": {
+              "width": 106,
+              "height": 951
+            },
+            "zoom": {
+              "width": 106,
+              "height": 399
+            }
+          },
+          "fonts": {
+            "loaded": true,
+            "warning": ""
+          }
+        }
+      },
+      "moby-dick": {
+        "variants": [
+          {
+            "kind": "computed",
+            "spineIn": 0.6771653543307087,
+            "file": "out/v4/moby-dick-spine-0.677in.png",
+            "mode": "cover",
+            "fit": {
+              "text": "Moby-Dick",
+              "pt": 17.28884409448819,
+              "fontPx": 72.03685039370079,
+              "lengthPx": 331.7249755859375,
+              "acrossPx": 72,
+              "availableLengthPx": 1458,
+              "availableAcrossPx": 73.13385826771653,
+              "lengthRatio": 0.22752055938678842,
+              "acrossRatio": 0.9844961240310077,
+              "ratio": 0.9844961240310077,
+              "ok": true,
+              "cappedAtMax": false
+            }
+          },
+          {
+            "kind": "1in",
+            "spineIn": 1.0000000000000002,
+            "file": "out/v4/moby-dick-spine-1.000in.png",
+            "mode": "cover",
+            "fit": {
+              "text": "Moby-Dick",
+              "pt": 25.531200000000005,
+              "fontPx": 106.38000000000002,
+              "lengthPx": 488.3612060546875,
+              "acrossPx": 106,
+              "availableLengthPx": 1458,
+              "availableAcrossPx": 108.00000000000003,
+              "lengthRatio": 0.3349528162240655,
+              "acrossRatio": 0.9814814814814812,
+              "ratio": 0.9814814814814812,
+              "ok": true,
+              "cappedAtMax": false
+            }
+          }
+        ],
+        "computed": {
+          "ready": true,
+          "book": {
+            "id": "moby-dick",
+            "title": "Moby-Dick",
+            "author": "Herman Melville"
+          },
+          "state": {
+            "bookId": "moby-dick",
+            "pages": 320,
+            "stockId": "cream80",
+            "caliperMm": 0.1,
+            "trimId": "6x9",
+            "bleedIn": 0.125,
+            "mode": "cover",
+            "stripSource": "art",
+            "guides": true,
+            "rotateY": 30
+          },
+          "spine": {
+            "pages": 320,
+            "leaves": 160,
+            "caliperMm": 0.1,
+            "textBlockMm": 16,
+            "allowanceMm": 1.2,
+            "spineMm": 17.2,
+            "spineIn": 0.6771653543307087,
+            "clamped": false
+          },
+          "layout": {
+            "trimW": 6,
+            "trimH": 9,
+            "bleedIn": 0.125,
+            "spineIn": 0.6771653543307087,
+            "totalW": 12.927165354330707,
+            "totalH": 9.25,
+            "backFold": 6.125,
+            "spineX": 6.125,
+            "frontFold": 6.802165354330708
+          },
+          "print": {
+            "width": 3878,
+            "height": 2775,
+            "dpi": 300
+          },
+          "effectiveMode": "cover",
+          "mode": "cover",
+          "fit": {
+            "text": "Moby-Dick",
+            "pt": 17.28884409448819,
+            "fontPx": 72.03685039370079,
+            "lengthPx": 331.7249755859375,
+            "acrossPx": 72,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.22752055938678842,
+            "acrossRatio": 0.9844961240310077,
+            "ratio": 0.9844961240310077,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "authorFit": {
+            "text": "HERMAN MELVILLE",
+            "pt": 7.388815672306322,
+            "fontPx": 30.78673196794301,
+            "lengthPx": 345.41595458984375,
+            "acrossPx": 23,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.9840910387175036,
+            "acrossRatio": 0.31449181739879417,
+            "ratio": 0.9840910387175036,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverFit": {
+            "text": "Moby-Dick",
+            "pt": 17.28884409448819,
+            "fontPx": 72.03685039370079,
+            "lengthPx": 331.7249755859375,
+            "acrossPx": 72,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.22752055938678842,
+            "acrossRatio": 0.9844961240310077,
+            "ratio": 0.9844961240310077,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverAuthorFit": {
+            "text": "HERMAN MELVILLE",
+            "pt": 7.388815672306322,
+            "fontPx": 30.78673196794301,
+            "lengthPx": 345.41595458984375,
+            "acrossPx": 23,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 73.13385826771653,
+            "lengthRatio": 0.9840910387175036,
+            "acrossRatio": 0.31449181739879417,
+            "ratio": 0.9840910387175036,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "typeFit": {
+            "text": "MOBY-DICK",
+            "pt": 34,
+            "fontPx": 141.66666666666666,
+            "lengthPx": 819.25,
+            "acrossPx": 98,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 113.76377952755907,
+            "lengthRatio": 0.5618998628257887,
+            "acrossRatio": 0.8614341085271316,
+            "ratio": 0.8614341085271316,
+            "ok": true,
+            "cappedAtMax": true
+          },
+          "stress": {
+            "text": "Moby-Dick",
+            "pt": 25.531200000000002,
+            "fontPx": 106.38000000000001,
+            "lengthPx": 488.3612060546875,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.3349528162240655,
+            "acrossRatio": 0.9814814814814815,
+            "ratio": 0.9814814814814815,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stressAuthor": {
+            "text": "HERMAN MELVILLE",
+            "pt": 7.388815672306322,
+            "fontPx": 30.78673196794301,
+            "lengthPx": 345.41595458984375,
+            "acrossPx": 23,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.9840910387175036,
+            "acrossRatio": 0.21296296296296297,
+            "ratio": 0.9840910387175036,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "decisions": [],
+          "edge": {
+            "hex": "#625b3b",
+            "sd": 53.793771742508824,
+            "lum": 0.10391883530684123,
+            "contrastInk": 2.6119719075530563,
+            "contrastCream": 5.711533459834496
+          },
+          "art": {
+            "hex": "#6f683c",
+            "sd": 36.16819504881367,
+            "verdict": "source",
+            "removalPct": 0
+          },
+          "railContrast": 4.710745109623928,
+          "canvases": {
+            "display": {
+              "width": 724,
+              "height": 518
+            },
+            "preview": {
+              "width": 1400,
+              "height": 1002
+            },
+            "compare": {
+              "width": 73,
+              "height": 975
+            },
+            "zoom": {
+              "width": 73,
+              "height": 409
+            }
+          },
+          "fonts": {
+            "loaded": true,
+            "warning": ""
+          }
+        },
+        "stress": {
+          "ready": true,
+          "book": {
+            "id": "moby-dick",
+            "title": "Moby-Dick",
+            "author": "Herman Melville"
+          },
+          "state": {
+            "bookId": "moby-dick",
+            "pages": 484,
+            "stockId": "cream80",
+            "caliperMm": 0.1,
+            "trimId": "6x9",
+            "bleedIn": 0.125,
+            "mode": "cover",
+            "stripSource": "art",
+            "guides": true,
+            "rotateY": 30
+          },
+          "spine": {
+            "pages": 484,
+            "leaves": 242,
+            "caliperMm": 0.1,
+            "textBlockMm": 24.200000000000003,
+            "allowanceMm": 1.2,
+            "spineMm": 25.400000000000002,
+            "spineIn": 1.0000000000000002,
+            "clamped": false
+          },
+          "layout": {
+            "trimW": 6,
+            "trimH": 9,
+            "bleedIn": 0.125,
+            "spineIn": 1.0000000000000002,
+            "totalW": 13.25,
+            "totalH": 9.25,
+            "backFold": 6.125,
+            "spineX": 6.125,
+            "frontFold": 7.125
+          },
+          "print": {
+            "width": 3975,
+            "height": 2775,
+            "dpi": 300
+          },
+          "effectiveMode": "cover",
+          "mode": "cover",
+          "fit": {
+            "text": "Moby-Dick",
+            "pt": 25.531200000000005,
+            "fontPx": 106.38000000000002,
+            "lengthPx": 488.3612060546875,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.3349528162240655,
+            "acrossRatio": 0.9814814814814812,
+            "ratio": 0.9814814814814812,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "authorFit": {
+            "text": "HERMAN MELVILLE",
+            "pt": 7.388815672306322,
+            "fontPx": 30.78673196794301,
+            "lengthPx": 345.41595458984375,
+            "acrossPx": 23,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.9840910387175036,
+            "acrossRatio": 0.2129629629629629,
+            "ratio": 0.9840910387175036,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverFit": {
+            "text": "Moby-Dick",
+            "pt": 25.531200000000005,
+            "fontPx": 106.38000000000002,
+            "lengthPx": 488.3612060546875,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.3349528162240655,
+            "acrossRatio": 0.9814814814814812,
+            "ratio": 0.9814814814814812,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "coverAuthorFit": {
+            "text": "HERMAN MELVILLE",
+            "pt": 7.388815672306322,
+            "fontPx": 30.78673196794301,
+            "lengthPx": 345.41595458984375,
+            "acrossPx": 23,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108.00000000000003,
+            "lengthRatio": 0.9840910387175036,
+            "acrossRatio": 0.2129629629629629,
+            "ratio": 0.9840910387175036,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "typeFit": {
+            "text": "MOBY-DICK",
+            "pt": 34,
+            "fontPx": 141.66666666666666,
+            "lengthPx": 819.25,
+            "acrossPx": 98,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 168.00000000000006,
+            "lengthRatio": 0.5618998628257887,
+            "acrossRatio": 0.5833333333333331,
+            "ratio": 0.5833333333333331,
+            "ok": true,
+            "cappedAtMax": true
+          },
+          "stress": {
+            "text": "Moby-Dick",
+            "pt": 25.531200000000002,
+            "fontPx": 106.38000000000001,
+            "lengthPx": 488.3612060546875,
+            "acrossPx": 106,
+            "availableLengthPx": 1458,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.3349528162240655,
+            "acrossRatio": 0.9814814814814815,
+            "ratio": 0.9814814814814815,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "stressAuthor": {
+            "text": "HERMAN MELVILLE",
+            "pt": 7.388815672306322,
+            "fontPx": 30.78673196794301,
+            "lengthPx": 345.41595458984375,
+            "acrossPx": 23,
+            "availableLengthPx": 351,
+            "availableAcrossPx": 108,
+            "lengthRatio": 0.9840910387175036,
+            "acrossRatio": 0.21296296296296297,
+            "ratio": 0.9840910387175036,
+            "ok": true,
+            "cappedAtMax": false
+          },
+          "decisions": [],
+          "edge": {
+            "hex": "#625b3b",
+            "sd": 53.793771742508824,
+            "lum": 0.10391883530684123,
+            "contrastInk": 2.6119719075530563,
+            "contrastCream": 5.711533459834496
+          },
+          "art": {
+            "hex": "#6f683c",
+            "sd": 36.16819504881367,
+            "verdict": "source",
+            "removalPct": 0
+          },
+          "railContrast": 4.710745109623928,
+          "canvases": {
+            "display": {
+              "width": 724,
+              "height": 505
+            },
+            "preview": {
+              "width": 1400,
+              "height": 977
+            },
+            "compare": {
+              "width": 106,
+              "height": 951
+            },
+            "zoom": {
+              "width": 106,
+              "height": 399
+            }
+          },
+          "fonts": {
+            "loaded": true,
+            "warning": ""
+          }
+        }
+      }
+    }
+  },
+  "patch": {
+    "files": [
+      "js/main.js",
+      "js/penguinstyle.js",
+      "index.html"
+    ],
+    "summary": "accept raster directly, paint it full-bleed behind the spine text, remove PNG gutters"
+  },
+  "fitted": {
+    "at0677": {
+      "whisper-man": {
+        "fontPx": 11.31,
+        "clipped": false,
+        "maxOver": 0.29,
+        "svgWidth": 30.743999481201172
+      },
+      "rock-paper-scissors": {
+        "fontPx": 11.31,
+        "clipped": false,
+        "maxOver": 0.29,
+        "svgWidth": 30.743999481201172
+      },
+      "moby-dick": {
+        "fontPx": 11.31,
+        "clipped": false,
+        "maxOver": 0.29,
+        "svgWidth": 30.743999481201172
+      }
+    },
+    "rps075": {
+      "widthIn": 0.75,
+      "fontPx": 13,
+      "svg": {
+        "file": "out/rock-paper-scissors/rock-paper-scissors-fitted.svg",
+        "width": 36,
+        "height": 612
+      },
+      "png": {
+        "file": "out/rock-paper-scissors/rock-paper-scissors-fitted.png",
+        "width": 540,
+        "height": 6480
+      },
+      "metrics": {
+        "svgAttrs": {
+          "width": 36,
+          "height": 612,
+          "overflow": "hidden",
+          "viewBox": null
+        },
+        "borderGapPx": 18,
+        "spineOuterPx": 54,
+        "textCount": 2,
+        "texts": [
+          {
+            "text": "Rock Paper Scissors",
+            "fontSize": "13",
+            "transform": "rotate(90 24.5,306)",
+            "bbox": {
+              "x": 21.5,
+              "y": 239.2,
+              "w": 15,
+              "h": 133.59
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0.5
+          },
+          {
+            "text": "Alice Feeney",
+            "fontSize": "13",
+            "transform": "rotate(90 5,306)",
+            "bbox": {
+              "x": 2,
+              "y": 263.04,
+              "w": 15,
+              "h": 85.57
+            },
+            "outside": {
+              "left": false,
+              "right": false,
+              "top": false,
+              "bottom": false
+            },
+            "clipped": false,
+            "overLeft": 0,
+            "overRight": 0
+          }
+        ],
+        "clipped": false,
+        "maxOver": 0.5,
+        "hasImage": false,
+        "hasBackgroundRect": false
+      },
+      "preview": "rock-paper-scissors/rock-paper-scissors-fitted-preview.png"
+    }
+  },
+  "dimensions": [
+    {
+      "widthIn": 0.4,
+      "outerPx": 28.800000190734863,
+      "svgWidth": 10.800000190734863,
+      "svgHeight": 612,
+      "borderGapPx": 18,
+      "pngWidth": 288,
+      "pngHeight": 6480,
+      "cleanWidth": 108,
+      "cleanHeight": 6120
+    },
+    {
+      "widthIn": 0.677,
+      "outerPx": 48.74399948120117,
+      "svgWidth": 30.743999481201172,
+      "svgHeight": 612,
+      "borderGapPx": 18,
+      "pngWidth": 487,
+      "pngHeight": 6480,
+      "cleanWidth": 307,
+      "cleanHeight": 6120
+    },
+    {
+      "widthIn": 1,
+      "outerPx": 72,
+      "svgWidth": 54,
+      "svgHeight": 612,
+      "borderGapPx": 18,
+      "pngWidth": 720,
+      "pngHeight": 6480,
+      "cleanWidth": 540,
+      "cleanHeight": 6120
+    },
+    {
+      "widthIn": 1.5,
+      "outerPx": 108,
+      "svgWidth": 90,
+      "svgHeight": 612,
+      "borderGapPx": 18,
+      "pngWidth": 1080,
+      "pngHeight": 6480,
+      "cleanWidth": 900,
+      "cleanHeight": 6120
+    },
+    {
+      "widthIn": 2,
+      "outerPx": 144,
+      "svgWidth": 126,
+      "svgHeight": 612,
+      "borderGapPx": 18,
+      "pngWidth": 1440,
+      "pngHeight": 6480,
+      "cleanWidth": 1260,
+      "cleanHeight": 6120
+    }
+  ],
+  "patched": {
+    "books": {
+      "whisper-man": {
+        "svg": {
+          "file": "out/patched/whisper-man-spine.svg",
+          "width": 54,
+          "height": 612,
+          "bytes": 666535
+        },
+        "png": {
+          "file": "out/patched/whisper-man-spine.png",
+          "width": 540,
+          "height": 6120,
+          "bytes": 1069462
+        },
+        "metrics": {
+          "svgAttrs": {
+            "width": 54,
+            "height": 612,
+            "overflow": "hidden",
+            "viewBox": null
+          },
+          "borderGapPx": 18,
+          "spineOuterPx": 72,
+          "textCount": 2,
+          "texts": [
+            {
+              "text": "The Whisper Man",
+              "fontSize": "18",
+              "transform": "rotate(90 36,306)",
+              "bbox": {
+                "x": 32,
+                "y": 224.84,
+                "w": 21,
+                "h": 162.72
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            },
+            {
+              "text": "Alex North",
+              "fontSize": "18",
+              "transform": "rotate(90 9,306)",
+              "bbox": {
+                "x": 5,
+                "y": 255.34,
+                "w": 21,
+                "h": 100.71
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            }
+          ],
+          "clipped": false,
+          "maxOver": 0,
+          "hasImage": true,
+          "hasBackgroundRect": true
+        },
+        "app": "out/patched/whisper-man-app.png",
+        "preview": "out/patched/whisper-man-preview.png"
+      },
+      "rock-paper-scissors": {
+        "svg": {
+          "file": "out/patched/rock-paper-scissors-spine.svg",
+          "width": 36,
+          "height": 612,
+          "bytes": 1145166
+        },
+        "png": {
+          "file": "out/patched/rock-paper-scissors-spine.png",
+          "width": 360,
+          "height": 6120,
+          "bytes": 2147165
+        },
+        "metrics": {
+          "svgAttrs": {
+            "width": 36,
+            "height": 612,
+            "overflow": "hidden",
+            "viewBox": null
+          },
+          "borderGapPx": 18,
+          "spineOuterPx": 54,
+          "textCount": 2,
+          "texts": [
+            {
+              "text": "Rock Paper Scissors",
+              "fontSize": "13",
+              "transform": "rotate(90 24.5,306)",
+              "bbox": {
+                "x": 21.5,
+                "y": 239.2,
+                "w": 15,
+                "h": 133.59
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0.5
+            },
+            {
+              "text": "Alice Feeney",
+              "fontSize": "13",
+              "transform": "rotate(90 5,306)",
+              "bbox": {
+                "x": 2,
+                "y": 263.04,
+                "w": 15,
+                "h": 85.57
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            }
+          ],
+          "clipped": false,
+          "maxOver": 0.5,
+          "hasImage": true,
+          "hasBackgroundRect": true
+        },
+        "app": "out/patched/rock-paper-scissors-app.png",
+        "preview": "out/patched/rock-paper-scissors-preview.png"
+      },
+      "moby-dick": {
+        "svg": {
+          "file": "out/patched/moby-dick-spine.svg",
+          "width": 90,
+          "height": 612,
+          "bytes": 636128
+        },
+        "png": {
+          "file": "out/patched/moby-dick-spine.png",
+          "width": 900,
+          "height": 6120,
+          "bytes": 6263678
+        },
+        "metrics": {
+          "svgAttrs": {
+            "width": 90,
+            "height": 612,
+            "overflow": "hidden",
+            "viewBox": null
+          },
+          "borderGapPx": 18,
+          "spineOuterPx": 108,
+          "textCount": 2,
+          "texts": [
+            {
+              "text": "Moby-Dick",
+              "fontSize": "18",
+              "transform": "rotate(90 54,306)",
+              "bbox": {
+                "x": 50,
+                "y": 256.89,
+                "w": 21,
+                "h": 99.31
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            },
+            {
+              "text": "Herman Melville",
+              "fontSize": "18",
+              "transform": "rotate(90 27,306)",
+              "bbox": {
+                "x": 23,
+                "y": 229.5,
+                "w": 21,
+                "h": 153
+              },
+              "outside": {
+                "left": false,
+                "right": false,
+                "top": false,
+                "bottom": false
+              },
+              "clipped": false,
+              "overLeft": 0,
+              "overRight": 0
+            }
+          ],
+          "clipped": false,
+          "maxOver": 0,
+          "hasImage": true,
+          "hasBackgroundRect": true
+        },
+        "app": "out/patched/moby-dick-app.png",
+        "preview": "out/patched/moby-dick-preview.png"
+      }
+    },
+    "errors": [],
+    "errorCount": 0
+  },
+  "coverStats": {
+    "whisper-man": {
+      "avg": "#21110b",
+      "dominant": "#0d0603",
+      "edge": "#120703",
+      "dominantShare": 0.568,
+      "edgeLum": 0.003,
+      "avgLum": 0.007
+    },
+    "rock-paper-scissors": {
+      "avg": "#d3b2b0",
+      "dominant": "#d3d0d0",
+      "edge": "#dad2d1",
+      "dominantShare": 0.371,
+      "edgeLum": 0.656,
+      "avgLum": 0.488
+    },
+    "moby-dick": {
+      "avg": "#685f39",
+      "dominant": "#0e0e0a",
+      "edge": "#605a3a",
+      "dominantShare": 0.201,
+      "edgeLum": 0.101,
+      "avgLum": 0.114
+    }
+  },
+  "errorCount": 1674,
+  "errors": [
+    "console: Error: <rect> attribute width: A negative value is not valid. (\"-6.480000000000001\")",
+    "console: Error: <rect> attribute width: A negative value is not valid. (\"-3.6000000000000023\")",
+    "console: Error: <rect> attribute width: A negative value is not valid. (\"-8.881784197001252e-16\")",
+    "pageerror: child.getBBox is not a function"
+  ]
+}

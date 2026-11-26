@@ -1,0 +1,542 @@
+{
+  "moby-dick": {
+    "method": "original",
+    "art": "art/moby-dick-art.jpg",
+    "crop": "crops/moby-dick-spine.jpg",
+    "source_file": "assets/classic-originals/moby-dick.jpg",
+    "source_pixels": "1920 \u00d7 1563",
+    "art_pixels": "1042 \u00d7 1563",
+    "crop_box": [
+      395,
+      0,
+      1042,
+      1563
+    ],
+    "focus": [
+      0.45,
+      0.5
+    ],
+    "note": "Albert Pinkham Ryder, The Flying Dutchman (1887)",
+    "mean_lum": 0.208,
+    "p05": 0.009,
+    "p95": 0.723,
+    "contrast_cream": 1.2,
+    "contrast_ink": 1.6,
+    "rail_side": "left",
+    "busy_left": 34.6,
+    "busy_right": 36.0
+  },
+  "jane-eyre": {
+    "method": "original",
+    "art": "art/jane-eyre-art.jpg",
+    "crop": "crops/jane-eyre-spine.jpg",
+    "source_file": "assets/classic-originals/jane-eyre.jpg",
+    "source_pixels": "1920 \u00d7 2362",
+    "art_pixels": "1575 \u00d7 2362",
+    "crop_box": [
+      172,
+      0,
+      1575,
+      2362
+    ],
+    "focus": [
+      0.5,
+      0.42
+    ],
+    "note": "Vilhelm Hammersh\u00f8i, Portrait of a Young Woman (artist's sister Anna)",
+    "mean_lum": 0.089,
+    "p05": 0.003,
+    "p95": 0.263,
+    "contrast_cream": 2.9,
+    "contrast_ink": 1.8,
+    "rail_side": "right",
+    "busy_left": 15.1,
+    "busy_right": 14.5
+  },
+  "pride-and-prejudice": {
+    "method": "original",
+    "art": "art/pride-and-prejudice-art.jpg",
+    "crop": "crops/pride-and-prejudice-spine.jpg",
+    "source_file": "assets/classic-originals/pride-and-prejudice.jpg",
+    "source_pixels": "921 \u00d7 1349",
+    "art_pixels": "899 \u00d7 1349",
+    "crop_box": [
+      10,
+      0,
+      899,
+      1349
+    ],
+    "focus": [
+      0.45,
+      0.5
+    ],
+    "note": "Edmund Blair Leighton, A Wet Sunday Morning (1896)",
+    "mean_lum": 0.274,
+    "p05": 0.01,
+    "p95": 0.599,
+    "contrast_cream": 1.4,
+    "contrast_ink": 1.6,
+    "rail_side": "left",
+    "busy_left": 42.9,
+    "busy_right": 50.8
+  },
+  "frankenstein": {
+    "method": "cover-crop",
+    "art": "art/frankenstein-art.jpg",
+    "crop": "crops/frankenstein-spine.jpg",
+    "source_file": "assets/classic-covers/frankenstein.jpg",
+    "source_pixels": "1400 \u00d7 1562",
+    "art_pixels": "1041 \u00d7 1562",
+    "crop_box": [
+      187,
+      0,
+      1041,
+      1562
+    ],
+    "focus": [
+      0.52,
+      0.5
+    ],
+    "note": "Giuseppe Arcimboldo, Portrait of Adam (1578) \u2014 exact source file not found",
+    "mean_lum": 0.097,
+    "p05": 0.004,
+    "p95": 0.267,
+    "contrast_cream": 2.9,
+    "contrast_ink": 1.7,
+    "rail_side": "left",
+    "busy_left": 37.3,
+    "busy_right": 39.5
+  },
+  "dracula": {
+    "method": "original",
+    "art": "art/dracula-art.jpg",
+    "crop": "crops/dracula-spine.jpg",
+    "source_file": "assets/classic-originals/dracula.jpg",
+    "source_pixels": "1920 \u00d7 2203",
+    "art_pixels": "1469 \u00d7 2203",
+    "crop_box": [
+      248,
+      0,
+      1469,
+      2203
+    ],
+    "focus": [
+      0.55,
+      0.45
+    ],
+    "note": "Joseph Magnus St\u00e4ck, Italian Landscape of Ruins in the Moonlight (1850)",
+    "mean_lum": 0.081,
+    "p05": 0.015,
+    "p95": 0.253,
+    "contrast_cream": 3.0,
+    "contrast_ink": 1.5,
+    "rail_side": "right",
+    "busy_left": 18.6,
+    "busy_right": 14.3
+  },
+  "great-expectations": {
+    "method": "original",
+    "art": "art/great-expectations-art.jpg",
+    "crop": "crops/great-expectations-spine.jpg",
+    "source_file": "assets/classic-originals/great-expectations.jpg",
+    "source_pixels": "1920 \u00d7 2477",
+    "art_pixels": "1651 \u00d7 2477",
+    "crop_box": [
+      161,
+      0,
+      1651,
+      2477
+    ],
+    "focus": [
+      0.6,
+      0.4
+    ],
+    "note": "Joseph Paelinck, Self-Portrait (1812)",
+    "mean_lum": 0.086,
+    "p05": 0.015,
+    "p95": 0.363,
+    "contrast_cream": 2.2,
+    "contrast_ink": 1.5,
+    "rail_side": "right",
+    "busy_left": 21.0,
+    "busy_right": 12.2
+  },
+  "bleak-house": {
+    "method": "original",
+    "art": "art/bleak-house-art.jpg",
+    "crop": "crops/bleak-house-spine.jpg",
+    "source_file": "assets/classic-originals/bleak-house.jpg",
+    "source_pixels": "1920 \u00d7 1688",
+    "art_pixels": "1125 \u00d7 1688",
+    "crop_box": [
+      398,
+      0,
+      1125,
+      1688
+    ],
+    "focus": [
+      0.5,
+      0.45
+    ],
+    "note": "Thomas Eakins, The Writing Master (1882)",
+    "mean_lum": 0.13,
+    "p05": 0.005,
+    "p95": 0.525,
+    "contrast_cream": 1.6,
+    "contrast_ink": 1.7,
+    "rail_side": "right",
+    "busy_left": 18.6,
+    "busy_right": 17.2
+  },
+  "middlemarch": {
+    "method": "original",
+    "art": "art/middlemarch-art.jpg",
+    "crop": "crops/middlemarch-spine.jpg",
+    "source_file": "assets/classic-originals/middlemarch.jpg",
+    "source_pixels": "1920 \u00d7 1679",
+    "art_pixels": "1119 \u00d7 1679",
+    "crop_box": [
+      449,
+      0,
+      1119,
+      1679
+    ],
+    "focus": [
+      0.56,
+      0.5
+    ],
+    "note": "John Constable, The Grove, Hampstead (1821\u201322)",
+    "mean_lum": 0.156,
+    "p05": 0.013,
+    "p95": 0.575,
+    "contrast_cream": 1.5,
+    "contrast_ink": 1.5,
+    "rail_side": "right",
+    "busy_left": 47.0,
+    "busy_right": 29.4
+  },
+  "moonstone": {
+    "method": "original",
+    "art": "art/moonstone-art.jpg",
+    "crop": "crops/moonstone-spine.jpg",
+    "source_file": "assets/classic-originals/moonstone.jpg",
+    "source_pixels": "1920 \u00d7 2375",
+    "art_pixels": "1583 \u00d7 2375",
+    "crop_box": [
+      168,
+      0,
+      1583,
+      2375
+    ],
+    "focus": [
+      0.5,
+      0.45
+    ],
+    "note": "Anne-Louis Girodet, Study for Portrait of an Indian (1807)",
+    "mean_lum": 0.157,
+    "p05": 0.003,
+    "p95": 0.466,
+    "contrast_cream": 1.8,
+    "contrast_ink": 1.8,
+    "rail_side": "right",
+    "busy_left": 54.0,
+    "busy_right": 34.6
+  },
+  "time-machine": {
+    "method": "original",
+    "art": "art/time-machine-art.jpg",
+    "crop": "crops/time-machine-spine.jpg",
+    "source_file": "assets/classic-originals/time-machine.jpg",
+    "source_pixels": "1920 \u00d7 1419",
+    "art_pixels": "946 \u00d7 1419",
+    "crop_box": [
+      536,
+      0,
+      946,
+      1419
+    ],
+    "focus": [
+      0.55,
+      0.5
+    ],
+    "note": "Paul C\u00e9zanne, The Black Marble Clock (c. 1870)",
+    "mean_lum": 0.269,
+    "p05": 0.0,
+    "p95": 0.644,
+    "contrast_cream": 1.3,
+    "contrast_ink": 1.9,
+    "rail_side": "right",
+    "busy_left": 93.0,
+    "busy_right": 39.6
+  },
+  "treasure-island": {
+    "method": "original",
+    "art": "art/treasure-island-art.jpg",
+    "crop": "crops/treasure-island-spine.jpg",
+    "source_file": "assets/classic-originals/treasure-island.jpg",
+    "source_pixels": "1920 \u00d7 2353",
+    "art_pixels": "1569 \u00d7 2353",
+    "crop_box": [
+      193,
+      0,
+      1569,
+      2353
+    ],
+    "focus": [
+      0.55,
+      0.45
+    ],
+    "note": "N. C. Wyeth, One More Step, Mr. Hands (1911)",
+    "mean_lum": 0.204,
+    "p05": 0.009,
+    "p95": 0.788,
+    "contrast_cream": 1.1,
+    "contrast_ink": 1.6,
+    "rail_side": "right",
+    "busy_left": 55.9,
+    "busy_right": 50.6
+  },
+  "jekyll-and-hyde": {
+    "method": "original",
+    "art": "art/jekyll-and-hyde-art.jpg",
+    "crop": "crops/jekyll-and-hyde-spine.jpg",
+    "source_file": "assets/classic-originals/jekyll-and-hyde.jpg",
+    "source_pixels": "1920 \u00d7 1724",
+    "art_pixels": "1149 \u00d7 1724",
+    "crop_box": [
+      347,
+      0,
+      1149,
+      1724
+    ],
+    "focus": [
+      0.45,
+      0.45
+    ],
+    "note": "Hans von Mar\u00e9es, Double Portrait of Mar\u00e9es and Lenbach (1863)",
+    "mean_lum": 0.145,
+    "p05": 0.007,
+    "p95": 0.586,
+    "contrast_cream": 1.4,
+    "contrast_ink": 1.7,
+    "rail_side": "left",
+    "busy_left": 33.2,
+    "busy_right": 35.3
+  },
+  "hound-of-the-baskervilles": {
+    "method": "original",
+    "art": "art/hound-of-the-baskervilles-art.jpg",
+    "crop": "crops/hound-of-the-baskervilles-spine.jpg",
+    "source_file": "assets/classic-originals/hound-of-the-baskervilles.jpg",
+    "source_pixels": "1920 \u00d7 1494",
+    "art_pixels": "996 \u00d7 1494",
+    "crop_box": [
+      508,
+      0,
+      996,
+      1494
+    ],
+    "focus": [
+      0.55,
+      0.5
+    ],
+    "note": "Caspar David Friedrich, Riesengebirge Landscape with Rising Fog (1820)",
+    "mean_lum": 0.352,
+    "p05": 0.018,
+    "p95": 0.691,
+    "contrast_cream": 1.2,
+    "contrast_ink": 1.4,
+    "rail_side": "right",
+    "busy_left": 13.5,
+    "busy_right": 13.2
+  },
+  "dorian-gray": {
+    "method": "original",
+    "art": "art/dorian-gray-art.jpg",
+    "crop": "crops/dorian-gray-spine.jpg",
+    "source_file": "assets/classic-originals/dorian-gray.jpg",
+    "source_pixels": "1262 \u00d7 2000",
+    "art_pixels": "1262 \u00d7 1893",
+    "crop_box": [
+      0,
+      48,
+      1262,
+      1893
+    ],
+    "focus": [
+      0.52,
+      0.45
+    ],
+    "note": "John Collier, The Garden of Armida (1899)",
+    "mean_lum": 0.087,
+    "p05": 0.013,
+    "p95": 0.374,
+    "contrast_cream": 2.1,
+    "contrast_ink": 1.5,
+    "rail_side": "right",
+    "busy_left": 27.0,
+    "busy_right": 17.6
+  },
+  "scarlet-letter": {
+    "method": "original",
+    "art": "art/scarlet-letter-art.jpg",
+    "crop": "crops/scarlet-letter-spine.jpg",
+    "source_file": "assets/classic-originals/scarlet-letter.jpg",
+    "source_pixels": "1433 \u00d7 1768",
+    "art_pixels": "1179 \u00d7 1768",
+    "crop_box": [
+      140,
+      0,
+      1179,
+      1768
+    ],
+    "focus": [
+      0.55,
+      0.45
+    ],
+    "note": "Hugues Merle, The Scarlet Letter (1861)",
+    "mean_lum": 0.11,
+    "p05": 0.006,
+    "p95": 0.358,
+    "contrast_cream": 2.2,
+    "contrast_ink": 1.7,
+    "rail_side": "right",
+    "busy_left": 21.5,
+    "busy_right": 13.7
+  },
+  "turn-of-the-screw": {
+    "method": "cover-crop",
+    "art": "art/turn-of-the-screw-art.jpg",
+    "crop": "crops/turn-of-the-screw-spine.jpg",
+    "source_file": "assets/classic-covers/turn-of-the-screw.jpg",
+    "source_pixels": "1400 \u00d7 1562",
+    "art_pixels": "1041 \u00d7 1562",
+    "crop_box": [
+      223,
+      0,
+      1041,
+      1562
+    ],
+    "focus": [
+      0.62,
+      0.5
+    ],
+    "note": "John Atkinson Grimshaw, A Wintry Moon (1886) \u2014 exact source file not found",
+    "mean_lum": 0.244,
+    "p05": 0.015,
+    "p95": 0.453,
+    "contrast_cream": 1.8,
+    "contrast_ink": 1.5,
+    "rail_side": "left",
+    "busy_left": 41.8,
+    "busy_right": 61.1
+  },
+  "alice": {
+    "method": "cover-crop",
+    "art": "art/alice-art.jpg",
+    "crop": "crops/alice-spine.jpg",
+    "source_file": "assets/classic-covers/alice.jpg",
+    "source_pixels": "1400 \u00d7 1562",
+    "art_pixels": "1041 \u00d7 1562",
+    "crop_box": [
+      93,
+      0,
+      1041,
+      1562
+    ],
+    "focus": [
+      0.26,
+      0.45
+    ],
+    "note": "Ivan Shishkin, Amanita (1878\u201379) \u2014 exact source file not found",
+    "mean_lum": 0.128,
+    "p05": 0.021,
+    "p95": 0.414,
+    "contrast_cream": 2.0,
+    "contrast_ink": 1.3,
+    "rail_side": "left",
+    "busy_left": 57.4,
+    "busy_right": 58.1
+  },
+  "wuthering-heights": {
+    "method": "original",
+    "art": "art/wuthering-heights-art.jpg",
+    "crop": "crops/wuthering-heights-spine.jpg",
+    "source_file": "assets/classic-originals/wuthering-heights.jpg",
+    "source_pixels": "1265 \u00d7 2249",
+    "art_pixels": "1265 \u00d7 1898",
+    "crop_box": [
+      0,
+      119,
+      1265,
+      1898
+    ],
+    "focus": [
+      0.55,
+      0.34
+    ],
+    "note": "George Frederic Watts, Edith Villiers (1862)",
+    "mean_lum": 0.157,
+    "p05": 0.017,
+    "p95": 0.498,
+    "contrast_cream": 1.7,
+    "contrast_ink": 1.4,
+    "rail_side": "right",
+    "busy_left": 39.2,
+    "busy_right": 28.0
+  },
+  "whisper-man": {
+    "method": "ocr+lama",
+    "art": "art/whisper-man-art.jpg",
+    "crop": "crops/whisper-man-spine.jpg",
+    "source_file": "removed/whisper-man-textless.jpg",
+    "source_pixels": "1304 \u00d7 2000",
+    "art_pixels": "1304 \u00d7 1956",
+    "crop_box": [
+      0,
+      22,
+      1304,
+      1956
+    ],
+    "focus": [
+      0.5,
+      0.5
+    ],
+    "note": "Textless result from RapidOCR + LaMa; see masks/.",
+    "mean_lum": 0.024,
+    "p05": 0.001,
+    "p95": 0.109,
+    "contrast_cream": 5.7,
+    "contrast_ink": 1.9,
+    "rail_side": "right",
+    "busy_left": 23.0,
+    "busy_right": 14.2
+  },
+  "rock-paper-scissors": {
+    "method": "ocr+lama",
+    "art": "art/rock-paper-scissors-art.jpg",
+    "crop": "crops/rock-paper-scissors-spine.jpg",
+    "source_file": "removed/rock-paper-scissors-textless.jpg",
+    "source_pixels": "1304 \u00d7 2000",
+    "art_pixels": "1304 \u00d7 1956",
+    "crop_box": [
+      0,
+      22,
+      1304,
+      1956
+    ],
+    "focus": [
+      0.22,
+      0.5
+    ],
+    "note": "Textless result from RapidOCR + LaMa; see masks/.",
+    "mean_lum": 0.589,
+    "p05": 0.335,
+    "p95": 0.791,
+    "contrast_cream": 1.1,
+    "contrast_ink": 4.1,
+    "rail_side": "right",
+    "busy_left": 26.0,
+    "busy_right": 24.9
+  }
+}

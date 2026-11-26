@@ -1,0 +1,1543 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>v4 — continuous wrap compositor · PocketLibrary</title>
+    <meta
+      name="description"
+      content="Throwaway prototype: a continuous back + spine + front book wrap whose spine is computed from page count and paper caliper."
+    />
+    <style>
+      @font-face {
+        font-family: "EB Garamond";
+        src: url("./fonts/EBGaramond-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Literata";
+        src: url("./fonts/Literata-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      :root {
+        --paper: #f2ece1;
+        --paper-2: #e9e0d2;
+        --card: #faf6ee;
+        --ink: #1b1713;
+        --muted: #6f6357;
+        --faint: #938676;
+        --line: rgba(27, 23, 19, 0.14);
+        --line-strong: rgba(27, 23, 19, 0.26);
+        --red: #ae3a2b;
+        --red-soft: #f0d9d2;
+        --gold: #b78b3f;
+        --green: #3c6b4d;
+        --mat: #201c18;
+        --mat-2: #2b2620;
+        --radius: 18px;
+        --shadow: 0 18px 50px -30px rgba(35, 25, 16, 0.55);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--ink);
+        background:
+          radial-gradient(1100px 500px at 8% -8%, #fffaf1 0%, transparent 58%),
+          radial-gradient(900px 600px at 100% 8%, #eadfcc 0%, transparent 55%),
+          var(--paper);
+        font-family: "Literata", Georgia, "Times New Roman", serif;
+        line-height: 1.5;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.38;
+        background-image: repeating-linear-gradient(
+          0deg,
+          rgba(80, 60, 35, 0.042) 0,
+          rgba(80, 60, 35, 0.042) 1px,
+          transparent 1px,
+          transparent 4px
+        );
+        z-index: 0;
+      }
+
+      .page {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: clamp(16px, 3vw, 36px) clamp(16px, 3vw, 40px) 64px;
+      }
+
+      .ui {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+
+      a {
+        color: inherit;
+        text-decoration-color: rgba(174, 58, 43, 0.45);
+        text-underline-offset: 0.18em;
+      }
+
+      a:hover {
+        text-decoration-color: var(--red);
+      }
+
+      ::selection {
+        background: #e9c7a5;
+      }
+
+      .hero {
+        padding: clamp(8px, 2vw, 20px) 0 clamp(22px, 4vw, 42px);
+      }
+
+      .eyebrow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 18px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .eyebrow .dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--red);
+      }
+
+      .eyebrow .tag {
+        padding: 3px 8px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        letter-spacing: 0.12em;
+        color: var(--ink);
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 18ch;
+        font-family: "Literata", Georgia, serif;
+        font-weight: 400;
+        font-size: clamp(2.15rem, 6.2vw, 4.3rem);
+        line-height: 1.03;
+        letter-spacing: -0.035em;
+      }
+
+      h1 em {
+        font-style: italic;
+        color: var(--red);
+      }
+
+      .lede {
+        max-width: 62ch;
+        margin: 22px 0 0;
+        font-size: clamp(1rem, 2.3vw, 1.16rem);
+        color: #4d4339;
+      }
+
+      .hero-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 22px;
+      }
+
+      .hero-facts span {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        padding: 6px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(250, 246, 238, 0.6);
+        color: #4c4238;
+      }
+
+      .section {
+        margin-top: clamp(26px, 4vw, 46px);
+      }
+
+      .section-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px 20px;
+        margin-bottom: 14px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.74rem;
+        letter-spacing: 0.19em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .section-head .hint {
+        margin: 0;
+        max-width: 56ch;
+        font-size: 0.86rem;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: rgba(250, 246, 238, 0.76);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      /* ---------- controls ---------- */
+
+      .controls {
+        padding: clamp(14px, 2.4vw, 22px);
+      }
+
+      .book-picker {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .book-card {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 252, 246, 0.65);
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        font: inherit;
+        transition:
+          border-color 0.16s ease,
+          background 0.16s ease,
+          transform 0.16s ease;
+      }
+
+      .book-card:hover {
+        border-color: var(--line-strong);
+        transform: translateY(-1px);
+      }
+
+      .book-card[aria-pressed="true"] {
+        border-color: var(--ink);
+        background: #fffaf1;
+        box-shadow: inset 0 0 0 1px var(--ink);
+      }
+
+      .book-card img {
+        width: 46px;
+        height: 68px;
+        object-fit: cover;
+        border-radius: 3px;
+        background: #d8cbb8;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+      }
+
+      .book-card .t {
+        display: block;
+        font-family: "Literata", Georgia, serif;
+        font-size: 0.92rem;
+        line-height: 1.22;
+        margin-bottom: 3px;
+      }
+
+      .book-card .m {
+        display: block;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.68rem;
+        line-height: 1.3;
+        color: var(--muted);
+      }
+
+      .control-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 18px;
+        margin-top: 18px;
+      }
+
+      .field {
+        min-width: 0;
+      }
+
+      .field > label,
+      .field > .label {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .field .val {
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--ink);
+        font-size: 0.8rem;
+      }
+
+      .range-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 78px;
+        gap: 10px;
+        align-items: center;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--red);
+        margin: 0;
+      }
+
+      input[type="number"],
+      select {
+        width: 100%;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: #fffcf6;
+        color: var(--ink);
+        font: inherit;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.84rem;
+        line-height: 1.2;
+      }
+
+      input[type="number"] {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      select {
+        cursor: pointer;
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(27, 23, 19, 0.045);
+      }
+
+      .segmented button {
+        min-width: 0;
+        padding: 7px 8px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.73rem;
+        line-height: 1.2;
+        cursor: pointer;
+      }
+
+      .segmented button[aria-pressed="true"] {
+        background: #fffaf1;
+        border-color: var(--line-strong);
+        color: var(--ink);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+
+      .check-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 18px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      .check {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.78rem;
+        color: #4d4339;
+        cursor: pointer;
+      }
+
+      input[type="checkbox"] {
+        accent-color: var(--red);
+        width: 15px;
+        height: 15px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        padding: 8px 12px;
+        background: #fffaf1;
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .btn:hover {
+        border-color: var(--ink);
+      }
+
+      .btn.primary {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fbf5e7;
+      }
+
+      .btn.primary:hover {
+        background: #30281f;
+      }
+
+      .btn.small {
+        padding: 6px 9px;
+        font-size: 0.72rem;
+      }
+
+      .status {
+        margin: 12px 0 0;
+        min-height: 1.3em;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.74rem;
+        color: var(--muted);
+      }
+
+      /* ---------- stats ---------- */
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat {
+        min-width: 0;
+        padding: 13px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(250, 246, 238, 0.66);
+      }
+
+      .stat .k {
+        display: block;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.64rem;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+
+      .stat .v {
+        display: block;
+        font-family: "Literata", Georgia, serif;
+        font-size: clamp(0.98rem, 2.3vw, 1.14rem);
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .stat .d {
+        display: block;
+        margin-top: 4px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.69rem;
+        line-height: 1.35;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+
+      .stat.good {
+        border-color: rgba(60, 107, 77, 0.42);
+        background: rgba(240, 247, 239, 0.72);
+      }
+
+      .stat.warn {
+        border-color: rgba(174, 58, 43, 0.46);
+        background: rgba(250, 238, 233, 0.8);
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 999px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        vertical-align: 0.12em;
+      }
+
+      .pill.ok {
+        background: rgba(60, 107, 77, 0.14);
+        color: var(--green);
+      }
+
+      .pill.bad {
+        background: rgba(174, 58, 43, 0.14);
+        color: var(--red);
+      }
+
+      /* ---------- viewer ---------- */
+
+      .viewer-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.78fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .press {
+        padding: clamp(8px, 1.3vw, 14px);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(70% 60% at 50% 0%, #3a332b 0%, transparent 70%),
+          var(--mat);
+        border: 1px solid #120f0c;
+        box-shadow: 0 26px 60px -34px rgba(0, 0, 0, 0.8);
+      }
+
+      .canvas-holder {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #efe6d7;
+      }
+
+      #wrapCanvas {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        margin: 9px 2px 1px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.66rem;
+        color: #cbbba3;
+      }
+
+      .legend[hidden] {
+        display: none;
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .swatch {
+        display: inline-block;
+        width: 16px;
+        height: 0;
+        border-top: 2px dashed currentColor;
+      }
+
+      .swatch.trim {
+        color: #fff1c4;
+      }
+
+      .swatch.fold {
+        color: #ff684c;
+      }
+
+      .swatch.bleed {
+        color: #79ceff;
+      }
+
+      .viewer-meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 4px 14px;
+        margin-top: 9px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.72rem;
+        color: #c9bba6;
+      }
+
+      .decision {
+        padding: 16px;
+      }
+
+      .decision h3 {
+        margin: 0 0 4px;
+        font-family: "Literata", Georgia, serif;
+        font-size: 1.16rem;
+        font-weight: 400;
+      }
+
+      .decision .mode {
+        margin: 0 0 12px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--red);
+      }
+
+      .decision p {
+        margin: 0 0 12px;
+        font-size: 0.88rem;
+        line-height: 1.5;
+        color: #463c32;
+      }
+
+      .decision ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+      }
+
+      .decision li {
+        position: relative;
+        padding-left: 16px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.75rem;
+        line-height: 1.42;
+        color: #54493e;
+      }
+
+      .decision li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.45em;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      .fit-table {
+        margin-top: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 10px;
+        display: grid;
+        gap: 6px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.72rem;
+      }
+
+      .fit-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+      }
+
+      .fit-row b {
+        color: var(--ink);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      /* ---------- 3d ---------- */
+
+      .three-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.8fr);
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .stage-wrap {
+        position: relative;
+        min-height: 320px;
+        border-radius: var(--radius);
+        overflow: hidden;
+        background:
+          radial-gradient(70% 60% at 50% 20%, #3b342b 0%, transparent 72%),
+          #1d1915;
+        border: 1px solid #120f0c;
+        box-shadow: var(--shadow);
+      }
+
+      .stage-wrap::after {
+        content: "";
+        position: absolute;
+        left: 12%;
+        right: 12%;
+        bottom: 12%;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.55);
+        filter: blur(14px);
+        opacity: 0.7;
+      }
+
+      .book-stage {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        perspective: 1000px;
+        overflow: hidden;
+      }
+
+      .book3d {
+        --ry: 30;
+        position: relative;
+        width: var(--bw, 170px);
+        height: var(--bh, 255px);
+        transform-style: preserve-3d;
+        transform: rotateX(-9deg) rotateY(calc(var(--ry) * 1deg));
+        transition: transform 0.18s ease-out;
+      }
+
+      .face {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        width: var(--bw, 170px);
+        height: var(--bh, 255px);
+        margin: 0;
+        border-radius: 1px;
+        background: #2b241c;
+        backface-visibility: hidden;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+      }
+
+      .face canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .face-front {
+        transform: translateZ(calc(var(--sp, 18px) / 2));
+        border-radius: 1px 3px 3px 1px;
+      }
+
+      .face-back {
+        transform: translateZ(calc(var(--sp, 18px) / -2)) rotateY(180deg);
+      }
+
+      .face-spine {
+        width: var(--sp, 18px);
+        transform-origin: center center;
+        transform: translateX(calc(var(--sp, 18px) / -2)) rotateY(-90deg);
+        background: #2b241c;
+      }
+
+      .face-pages {
+        width: var(--sp, 18px);
+        height: calc(var(--bh, 255px) - 4px);
+        top: 2px;
+        transform-origin: center center;
+        transform: translateX(calc(var(--bw, 170px) - var(--sp, 18px) / 2))
+          rotateY(90deg);
+        background:
+          repeating-linear-gradient(
+            0deg,
+            #efe4d0 0,
+            #efe4d0 1px,
+            #c9bba4 2px,
+            #e5d8c2 3px
+          );
+        box-shadow: inset 0 0 10px rgba(64, 46, 28, 0.35);
+      }
+
+      .three-controls {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 12px;
+      }
+
+      .three-controls h3 {
+        margin: 0;
+        font-family: "Literata", Georgia, serif;
+        font-weight: 400;
+        font-size: 1.16rem;
+      }
+
+      .three-controls p {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+
+      .rotate-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 54px;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .rotate-out {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.78rem;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---------- compare ---------- */
+
+      .compare {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .compare-card {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(250, 246, 238, 0.7);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .compare-card .media {
+        display: grid;
+        place-items: center;
+        min-height: 268px;
+        padding: 14px;
+        background:
+          repeating-conic-gradient(
+            rgba(255, 255, 255, 0.045) 0 25%,
+            transparent 0 50%
+          )
+          0 0 / 18px 18px,
+          var(--mat-2);
+      }
+
+      .compare-card .media img,
+      .compare-card .media canvas {
+        display: block;
+        max-height: 250px;
+        max-width: 100%;
+        width: auto;
+        height: auto;
+        box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.7);
+      }
+
+      .v4-pair {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        max-width: 100%;
+      }
+
+      .v4-full,
+      .v4-zoom {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+      }
+
+      .v4-full canvas {
+        max-height: 250px;
+      }
+
+      .v4-zoom canvas {
+        max-height: 250px;
+      }
+
+      .zoom-label {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.58rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #a99a86;
+        white-space: nowrap;
+      }
+
+      .bc-pair {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        max-width: 100%;
+      }
+
+      .bc-pair .bc-spine {
+        max-height: 250px;
+        width: auto;
+      }
+
+      .bc-pair .bc-combined {
+        max-height: 180px;
+        width: auto;
+        opacity: 0.92;
+      }
+
+      .compare-card .body {
+        padding: 13px 14px 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+      }
+
+      .compare-card .tag {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.62rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--red);
+      }
+
+      .compare-card h3 {
+        margin: 0;
+        font-family: "Literata", Georgia, serif;
+        font-weight: 400;
+        font-size: 1.02rem;
+        line-height: 1.25;
+      }
+
+      .compare-card p {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.73rem;
+        line-height: 1.45;
+        color: #584d42;
+      }
+
+      .compare-card .metrics {
+        margin-top: auto;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.68rem;
+        line-height: 1.5;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .compare-card.v4 {
+        border-color: rgba(60, 107, 77, 0.4);
+        background: rgba(241, 247, 239, 0.66);
+      }
+
+      .compare-card.v4 .tag {
+        color: var(--green);
+      }
+
+      .compare-foot {
+        margin: 12px 0 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.72rem;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      /* ---------- method ---------- */
+
+      .method {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .method-card {
+        padding: 15px 16px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(250, 246, 238, 0.62);
+      }
+
+      .method-card h3 {
+        margin: 0 0 6px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.68rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .method-card p {
+        margin: 0;
+        font-size: 0.84rem;
+        line-height: 1.55;
+        color: #463c32;
+      }
+
+      .method-card code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.8em;
+        background: rgba(27, 23, 19, 0.06);
+        padding: 1px 4px;
+        border-radius: 4px;
+        overflow-wrap: anywhere;
+      }
+
+      footer {
+        margin-top: 42px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px 20px;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.7rem;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      .loading {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(242, 236, 225, 0.86);
+        backdrop-filter: blur(3px);
+        z-index: 50;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        transition: opacity 0.3s ease;
+      }
+
+      .loading.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* ---------- responsive ---------- */
+
+      @media (max-width: 980px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .viewer-grid,
+        .three-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .method {
+          grid-template-columns: 1fr;
+        }
+
+        .compare {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .control-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .compare {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .compare-card .media {
+          min-height: 220px;
+        }
+
+        .compare-card .media img,
+        .compare-card .media canvas {
+          max-height: 210px;
+        }
+
+        .compare-card .media .bc-pair {
+          gap: 8px;
+        }
+
+        .compare-card .media .bc-pair .bc-spine {
+          max-height: 200px;
+        }
+
+        .compare-card .media .bc-pair .bc-combined {
+          max-height: 140px;
+        }
+
+        .book-picker {
+          gap: 7px;
+        }
+
+        .book-card {
+          grid-template-columns: 34px minmax(0, 1fr);
+          gap: 7px;
+          padding: 6px;
+        }
+
+        .book-card img {
+          width: 34px;
+          height: 50px;
+        }
+
+        .book-card .t {
+          font-size: 0.8rem;
+        }
+
+        .book-card .m {
+          font-size: 0.61rem;
+        }
+
+        .actions {
+          margin-left: 0;
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .page {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+
+        .stats {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .segmented {
+          grid-template-columns: 1fr;
+        }
+
+        .book-card .m {
+          display: none;
+        }
+
+        .hero-facts span:nth-child(n + 4) {
+          display: none;
+        }
+
+        .stage-wrap {
+          min-height: 280px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading" id="loading">Loading fonts &amp; covers…</div>
+    <div class="page">
+      <header class="hero">
+        <p class="eyebrow">
+          <span class="dot"></span>
+          <span>PocketLibrary · spine study</span>
+          <span class="tag">v4 · wrap compositor</span>
+        </p>
+        <h1>A continuous wrap, sized by the <em>book</em>.</h1>
+        <p class="lede">
+          One canvas: back cover, spine and front cover with no gaps. The spine is
+          arithmetic, not a guessed strip — page count × paper caliper, plus the cover
+          allowance. Type is fitted against measured font metrics, not a hard-coded size.
+        </p>
+        <div class="hero-facts" aria-label="Prototype scope">
+          <span>real front covers</span>
+          <span>300 dpi PNG export</span>
+          <span>CSS 3D preview</span>
+          <span>cover-derived + typographic spines</span>
+          <span>390 / 360 / 320 px tested</span>
+        </div>
+      </header>
+
+      <section class="section" id="setup" aria-labelledby="setup-h">
+        <div class="section-head">
+          <h2 id="setup-h">01 · Book &amp; paper</h2>
+          <p class="hint">
+            The same three samples throughout: two modern covers and one public-domain
+            classic. Switch books to change the recommended spine treatment.
+          </p>
+        </div>
+        <div class="panel controls">
+          <div class="book-picker" id="bookPicker" role="group" aria-label="Sample book"></div>
+
+          <div class="control-grid">
+            <div class="field">
+              <label for="pagesNumber">Extent <span class="val" id="pagesOut">320 pages</span></label>
+              <div class="range-row">
+                <input id="pagesRange" type="range" min="48" max="900" step="2" value="320" />
+                <input id="pagesNumber" type="number" min="48" max="900" step="2" value="320" aria-label="Page count" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="stockSelect">Paper stock <span class="val" id="caliperOut">0.100 mm / leaf</span></label>
+              <select id="stockSelect"></select>
+            </div>
+
+            <div class="field">
+              <label for="caliperNumber">Caliper <span class="val">mm per leaf</span></label>
+              <input id="caliperNumber" type="number" min="0.06" max="0.2" step="0.001" value="0.1" />
+            </div>
+
+            <div class="field">
+              <label for="trimSelect">Trim <span class="val" id="trimOut">6 × 9 in</span></label>
+              <select id="trimSelect"></select>
+            </div>
+
+            <div class="field">
+              <label for="bleedSelect">Bleed <span class="val">per edge</span></label>
+              <select id="bleedSelect">
+                <option value="0.125">0.125 in — standard</option>
+                <option value="0.25">0.25 in — generous</option>
+                <option value="0.0625">0.0625 in — tight</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <span class="label">Spine treatment <span class="val" id="modeOut">Cover-derived</span></span>
+              <div class="segmented" role="group" aria-label="Spine treatment">
+                <button type="button" id="modeCover" data-mode="cover" aria-pressed="true">
+                  Cover-derived
+                </button>
+                <button type="button" id="modeType" data-mode="type" aria-pressed="false">
+                  Typographic
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="sourceSelect">Strip source <span class="val">cover-derived only</span></label>
+              <select id="sourceSelect">
+                <option value="art">v3 textless art</option>
+                <option value="cover">Published front cover</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <span class="label">Stress test <span class="val">bookcover-js width</span></span>
+              <button type="button" class="btn small" id="stressBtn">
+                Set a 1.00 in spine
+              </button>
+            </div>
+          </div>
+
+          <div class="check-row">
+            <label class="check"><input type="checkbox" id="guidesToggle" checked /> Show trim / fold / bleed guides</label>
+            <div class="actions">
+              <button type="button" class="btn" id="resetBtn">Reset</button>
+              <button type="button" class="btn primary" id="exportBtn">Download 2D wrap PNG</button>
+            </div>
+          </div>
+          <p class="status" id="statusLine" role="status" aria-live="polite">
+            Computed from the current extent and caliper.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="numbers" aria-labelledby="numbers-h">
+        <div class="section-head">
+          <h2 id="numbers-h">02 · Computed numbers</h2>
+          <p class="hint">
+            Spine width, wrap size, paper and the measured type fit. The 1-inch test is
+            always run on the cover rail even when the typographic mode is active.
+          </p>
+        </div>
+        <div class="stats" id="stats">
+          <div class="stat" id="statSpine">
+            <span class="k">Spine width</span>
+            <span class="v" id="statSpineV">—</span>
+            <span class="d" id="statSpineD"></span>
+          </div>
+          <div class="stat" id="statWrap">
+            <span class="k">Wrap / print</span>
+            <span class="v" id="statWrapV">—</span>
+            <span class="d" id="statWrapD"></span>
+          </div>
+          <div class="stat">
+            <span class="k">Trim &amp; bleed</span>
+            <span class="v" id="statTrimV">—</span>
+            <span class="d" id="statTrimD"></span>
+          </div>
+          <div class="stat">
+            <span class="k">Paper</span>
+            <span class="v" id="statPaperV">—</span>
+            <span class="d" id="statPaperD"></span>
+          </div>
+          <div class="stat" id="statFit">
+            <span class="k">Title fit</span>
+            <span class="v" id="statFitV">—</span>
+            <span class="d" id="statFitD"></span>
+          </div>
+          <div class="stat" id="statStress">
+            <span class="k">1-inch stress</span>
+            <span class="v" id="statStressV">—</span>
+            <span class="d" id="statStressD"></span>
+          </div>
+          <div class="stat">
+            <span class="k">Edge colour</span>
+            <span class="v" id="statEdgeV">—</span>
+            <span class="d" id="statEdgeD"></span>
+          </div>
+          <div class="stat" id="statMode">
+            <span class="k">Source decision</span>
+            <span class="v" id="statModeV">—</span>
+            <span class="d" id="statModeD"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="wrap" aria-labelledby="wrap-h">
+        <div class="section-head">
+          <h2 id="wrap-h">03 · The wrap</h2>
+          <p class="hint">
+            Back cover, spine and front cover on one sheet. The red dashed lines are the
+            folds; the cream dashed line is trim; the blue dashed edge is bleed.
+          </p>
+        </div>
+        <div class="viewer-grid">
+          <div class="press">
+            <div class="canvas-holder">
+              <canvas id="wrapCanvas" aria-label="Continuous book wrap: back cover, spine and front cover"></canvas>
+            </div>
+            <div class="legend" id="legend">
+              <span><i class="swatch trim"></i> trim</span>
+              <span><i class="swatch fold"></i> fold</span>
+              <span><i class="swatch bleed"></i> bleed edge</span>
+              <span>guides are display-only; the PNG export omits them</span>
+            </div>
+            <div class="viewer-meta">
+              <span id="viewerMeta">—</span>
+              <span id="viewerAspect">—</span>
+            </div>
+          </div>
+          <aside class="panel decision" aria-labelledby="decision-h">
+            <h3 id="decision-h">Decision record</h3>
+            <p class="mode" id="decisionMode">Cover-derived</p>
+            <p id="decisionReason"></p>
+            <ul id="decisionList"></ul>
+            <div class="fit-table">
+              <div class="fit-row"><span>Measured title</span><b id="fitTitle">—</b></div>
+              <div class="fit-row"><span>Length used</span><b id="fitLength">—</b></div>
+              <div class="fit-row"><span>Across spine</span><b id="fitAcross">—</b></div>
+              <div class="fit-row"><span>Limiting dimension</span><b id="fitLimit">—</b></div>
+              <div class="fit-row"><span>1 in cover rail</span><b id="fitStress">—</b></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section" id="three" aria-labelledby="three-h">
+        <div class="section-head">
+          <h2 id="three-h">04 · 3D preview</h2>
+          <p class="hint">
+            CSS 3D, no WebGL. The faces are crops of the same composed wrap, so the spine
+            width and front/back artwork match the 2D output exactly.
+          </p>
+        </div>
+        <div class="three-grid">
+          <div class="stage-wrap">
+            <div class="book-stage">
+              <div class="book3d" id="book3d">
+                <div class="face face-back" aria-hidden="true"><canvas id="faceBack"></canvas></div>
+                <div class="face face-front" aria-hidden="true"><canvas id="faceFront"></canvas></div>
+                <div class="face face-spine" aria-hidden="true"><canvas id="faceSpine"></canvas></div>
+                <div class="face face-pages" aria-hidden="true"></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel three-controls">
+            <h3>Turn the book</h3>
+            <p>
+              The spine face gets its width from the same page/caliper calculation as the
+              flat wrap. At 320 px the whole mock still fits without horizontal scroll.
+            </p>
+            <div class="rotate-row">
+              <input id="rotateRange" type="range" min="-55" max="55" step="1" value="30" aria-label="Rotate book" />
+              <span class="rotate-out" id="rotateOut">30°</span>
+            </div>
+            <p id="threeMeta">—</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="compare" aria-labelledby="compare-h">
+        <div class="section-head">
+          <h2 id="compare-h">05 · Side by side</h2>
+          <p class="hint">
+            The same brief, three answers. bookcover-js clips; v3 has beautiful art but no
+            wrap; v4 composes the wrap but is honest about reconstructed pixels.
+          </p>
+        </div>
+        <div class="compare">
+          <article class="compare-card">
+            <div class="media">
+              <div class="bc-pair">
+                <img class="bc-spine" src="assets/bookcover-js/bookcover-js-1in-spine.png" alt="bookcover-js 1-inch spine with clipped Whisper text" />
+                <img class="bc-combined" src="assets/bookcover-js/bookcover-js-combined.png" alt="bookcover-js combined export with gaps around the spine" />
+              </div>
+            </div>
+            <div class="body">
+              <span class="tag">bookcover-js · failure</span>
+              <h3>1.00 in spine, 18 px type, no measurement</h3>
+              <p>
+                The spine inner panel is 54 px. “Whisper” measures 76.3 px and clips. The
+                “combined” export adds 45 px gaps either side of the spine instead of a fold.
+              </p>
+              <div class="metrics">
+                inner spine 54 × 612 px · 1 of 5 lines outside · combined 936 × 612 px<br />
+                spine zone 144 px (2 in) for a 1 in spine · 0.25 in outer margins missing
+              </div>
+            </div>
+          </article>
+
+          <article class="compare-card">
+            <div class="media">
+              <img id="v3Image" src="assets/whisper-man-spine.jpg" alt="v3 art-only spine crop" />
+            </div>
+            <div class="body">
+              <span class="tag">v3 · art only</span>
+              <h3>160 × 727 crop, no thickness</h3>
+              <p id="v3Caption">
+                The right pixels, but a fixed crop on a shelf. There is no front cover, no
+                back cover and no page-derived spine width.
+              </p>
+              <div class="metrics" id="v3Metrics">160 × 727 px · 2:3 art crop · no wrap</div>
+            </div>
+          </article>
+
+          <article class="compare-card v4">
+            <div class="media">
+              <div class="v4-pair">
+                <div class="v4-full">
+                  <canvas id="compareV4" aria-label="v4 composed spine crop"></canvas>
+                </div>
+                <div class="v4-zoom">
+                  <canvas id="compareV4Zoom" aria-label="v4 title-zone detail, enlarged"></canvas>
+                  <span class="zoom-label">title zone · enlarged</span>
+                </div>
+              </div>
+            </div>
+            <div class="body">
+              <span class="tag">v4 · this wrap</span>
+              <h3 id="v4Title">Computed spine, measured type</h3>
+              <p id="v4Caption">
+                The spine is cut from the wrap at the fold, and the title is fitted from
+                measured glyph metrics.
+              </p>
+              <div class="metrics" id="v4Metrics">—</div>
+            </div>
+          </article>
+        </div>
+        <p class="compare-foot">
+          The v3 crop is shown at its native 160 × 727; the v4 spine is a crop of the
+          generated wrap at the current page count. They are not the same physical width,
+          which is the point: v3 never claims a thickness.
+        </p>
+      </section>
+
+      <section class="section" id="method" aria-labelledby="method-h">
+        <div class="section-head">
+          <h2 id="method-h">06 · What is real here</h2>
+          <p class="hint">The arithmetic and the measurements are real. The back cover is generated.</p>
+        </div>
+        <div class="method">
+          <div class="method-card">
+            <h3>Spine arithmetic</h3>
+            <p>
+              <code>spine = pages / 2 × caliper + 1.2 mm</code>. The 1.2 mm is the cover
+              allowance for two cover panels. A 320-page novel on 0.100 mm cream stock
+              therefore gets 17.2 mm, not a hand-entered inch.
+            </p>
+          </div>
+          <div class="method-card">
+            <h3>Wrap arithmetic</h3>
+            <p>
+              <code>wrap width = 2 × trim + spine + 2 × bleed</code> and
+              <code>height = trim + 2 × bleed</code>. Panels meet at the fold; the spine is
+              painted last with a 1 px overlap so there is no seam.
+            </p>
+          </div>
+          <div class="method-card">
+            <h3>Type fit</h3>
+            <p>
+              Canvas <code>measureText</code> supplies the real glyph box and advance width.
+              The fit takes the smaller of the across-spine and along-spine limits, then
+              reports the ratio. If it cannot reach 7 pt it says so and falls back.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <span>
+          Throwaway prototype · <code>.scratch/spine-cover-art-prototype/v4-wrap/</code>.
+          No production code, tests, manifests or specs were changed. No commit or release.
+        </span>
+        <span>
+          Modern covers are publisher artwork used as design reference only; the classic
+          painting is public domain. Back covers are generated, not publisher scans.
+        </span>
+      </footer>
+    </div>
+
+    <script type="module" src="src/app.js"></script>
+  <script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

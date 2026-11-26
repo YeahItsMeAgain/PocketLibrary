@@ -1,0 +1,3084 @@
+<!doctype html>
+<html lang="en" data-mode="high">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>PocketLibrary — Bound in its own cover (prototype v2)</title>
+<!--
+  THROWAWAY PROTOTYPE v2 — not production code.
+  Variant B (full-bleed spine wrap), rebuilt for image quality and legibility.
+
+  • 18 public-domain covers from Standard Ebooks, 1400 × 2100 sources.
+  • Two new arrivals from Apple Books, 1303 × 2000 sources, laid out by
+    auto-layout.cjs: focus, band, top cap, rail width/shift and ink are
+    derived from the cover pixels. One passes; one is flagged review.
+  • A deliberate per-cover crop window (x focus), not a blind centre crop.
+  • The shelf band deliberately masks each cover's printed title plate.
+  • A title rail gives a guaranteed contrast floor; the lightest covers use
+    a warm vellum fallback instead of cream on light art.
+  • "Old-style" mode reproduces the v1 pipeline (420 px, 1.45× centre crop,
+    flat guard) for a same-size comparison.
+  • Tap a spine for the lifted detail state and the crop map.
+  Everything lives under .scratch/spine-cover-art-prototype/v2/.
+-->
+<style>
+/* ============================================================
+   0. Fonts, tokens, reset
+   ============================================================ */
+@font-face {
+  font-family: "EB Garamond";
+  src: url("EBGaramond-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Literata";
+  src: url("Literata-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+*, *::before, *::after { box-sizing: border-box; }
+:root {
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  --display: "EB Garamond", "Iowan Old Style", Palatino, Georgia, serif;
+  --reading: "Literata", "Iowan Old Style", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bg: #0b0806;
+  --bg-2: #140e0a;
+  --panel: #17110c;
+  --panel-2: #0f0b08;
+  --cream: #f4e7cb;
+  --paper: #ead9b7;
+  --ink: #1d140c;
+  --brass: #cba45e;
+  --brass-dim: #9d7b44;
+  --brass-deep: #5e4524;
+  --muted: #a8967f;
+  --muted-2: #7f6e5c;
+  --line: rgba(203, 164, 94, .22);
+  --line-soft: rgba(203, 164, 94, .12);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --sw: 1;
+}
+html, body { margin: 0; padding: 0; }
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--cream);
+  font-family: var(--reading);
+  background:
+    radial-gradient(90% 30% at 50% -6%, rgba(126, 76, 36, .22), transparent 66%),
+    radial-gradient(80% 34% at 50% 100%, rgba(38, 22, 10, .42), transparent 72%),
+    linear-gradient(180deg, #0b0806, #0a0705 55%, #080604);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--noise);
+  background-size: 160px 160px;
+  opacity: .045;
+  mix-blend-mode: overlay;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+::selection { background: rgba(203, 164, 94, .32); }
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: absolute;
+  top: -64px; left: 12px;
+  z-index: 120;
+  padding: 10px 14px;
+  background: var(--cream);
+  color: var(--ink);
+  font: 12px/1 var(--sans);
+  text-decoration: none;
+  border-radius: 2px;
+}
+.skip-link:focus { top: 12px; }
+
+.stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 448px;
+  margin: 0 auto;
+  padding: 18px 12px 120px;
+}
+@media (max-width: 360px) {
+  .stage { padding-right: 9px; padding-left: 9px; }
+}
+@media (min-width: 520px) {
+  body { padding: 26px 0 34px; }
+  .stage {
+    border-left: 1px solid rgba(203, 164, 94, .13);
+    border-right: 1px solid rgba(203, 164, 94, .13);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .014), transparent 26%);
+    box-shadow: 0 0 110px rgba(0, 0, 0, .55);
+  }
+}
+
+/* ============================================================
+   1. Masthead
+   ============================================================ */
+.masthead { padding: 2px 2px 0; }
+.topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ead7b2;
+  font-family: var(--sans);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+.wordmark::before {
+  content: "";
+  width: 7px; height: 7px;
+  border: 1px solid var(--brass);
+  transform: rotate(45deg);
+  box-shadow: inset 0 0 0 1px rgba(203, 164, 94, .18);
+}
+.edition {
+  color: var(--muted-2);
+  font-family: var(--sans);
+  font-size: 6.5px;
+  letter-spacing: .18em;
+  text-align: right;
+  text-transform: uppercase;
+}
+.edition b { color: var(--brass); font-weight: 700; }
+.proto-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 15px;
+  padding: 3px 7px;
+  border: 1px dashed rgba(203, 164, 94, .46);
+  border-radius: 2px;
+  color: #d9bc82;
+  font-family: var(--sans);
+  font-size: 6.3px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.proto-stamp::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--brass);
+  box-shadow: 0 0 8px rgba(203, 164, 94, .8);
+}
+.kicker {
+  margin: 15px 0 0;
+  color: #a58e70;
+  font-family: var(--sans);
+  font-size: 7px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 6px 0 8px;
+  color: #f1e2c4;
+  font-family: var(--display);
+  font-size: clamp(34px, 10.4vw, 44px);
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+h1 em { color: var(--brass); font-weight: 400; }
+.lede {
+  margin: 0;
+  max-width: 354px;
+  color: #bfae97;
+  font-family: var(--reading);
+  font-size: 11.6px;
+  line-height: 1.55;
+}
+.spec-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 16px 0 0;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+}
+.spec {
+  min-width: 0;
+  padding: 8px 8px 7px;
+  background: linear-gradient(180deg, rgba(31, 22, 15, .86), rgba(14, 10, 7, .9));
+}
+.spec b {
+  display: block;
+  color: #e3cfaa;
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -.01em;
+}
+.spec span {
+  display: block;
+  margin-top: 4px;
+  color: #8f7d69;
+  font-family: var(--sans);
+  font-size: 5.8px;
+  letter-spacing: .09em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   2. Mode bar
+   ============================================================ */
+.modebar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 13px 0 0;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background:
+    radial-gradient(100% 130% at 10% 0%, rgba(89, 57, 30, .26), transparent 64%),
+    linear-gradient(180deg, rgba(28, 20, 14, .94), rgba(13, 9, 6, .96));
+  box-shadow: inset 0 1px 0 rgba(255, 232, 182, .06);
+}
+.mode-label {
+  flex: 0 0 auto;
+  padding-left: 3px;
+  color: #8f7c66;
+  font-family: var(--sans);
+  font-size: 5.8px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.mode-label b {
+  display: block;
+  color: #c5ad87;
+  font-size: 6.3px;
+  font-weight: 600;
+}
+.segment {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  min-width: 0;
+  padding: 2px;
+  border: 1px solid rgba(203, 164, 94, .2);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .28);
+}
+.seg-btn {
+  min-height: 31px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #a99781;
+  font-family: var(--sans);
+  font-size: 7.3px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: color .18s ease, background .18s ease;
+}
+.seg-btn:hover { color: #e2cda7; }
+.seg-btn[aria-pressed="true"] {
+  color: #21170e;
+  background: linear-gradient(180deg, #e3cc9f, #bd9554);
+  box-shadow: inset 0 1px 0 rgba(255, 249, 230, .6), 0 1px 3px rgba(0, 0, 0, .45);
+}
+.seg-btn:focus-visible {
+  outline: 2px solid #f3dfa9;
+  outline-offset: 1px;
+}
+.mode-note {
+  margin: 7px 2px 0;
+  color: #857461;
+  font-family: var(--sans);
+  font-size: 6.7px;
+  line-height: 1.4;
+}
+.mode-note b { color: #c0a77e; font-weight: 600; }
+
+/* ============================================================
+   3. Shelves
+   ============================================================ */
+.shelves { margin-top: 17px; }
+.case {
+  position: relative;
+  margin: 0 0 21px;
+}
+.case-crown {
+  position: relative;
+  height: 25px;
+  border-radius: 3px 3px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 222, 166, .25), transparent 30%),
+    repeating-linear-gradient(91deg, rgba(0, 0, 0, .2) 0 1px, transparent 1px 7px, rgba(255, 215, 160, .035) 7px 8px, transparent 8px 17px),
+    linear-gradient(180deg, #4a2f1b 0%, #321e11 46%, #1e110a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 233, 190, .3),
+    inset 0 -4px 7px rgba(0, 0, 0, .55),
+    0 5px 10px rgba(0, 0, 0, .62);
+}
+.case-crown::before {
+  content: "";
+  position: absolute;
+  top: 6px; right: 9%; left: 9%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(233, 194, 127, .45), transparent);
+}
+.case-crown::after {
+  content: "POCKET LIBRARY";
+  position: absolute;
+  bottom: 6px; left: 50%;
+  padding: 0 8px;
+  transform: translateX(-50%);
+  color: rgba(232, 197, 137, .62);
+  background: #2a190e;
+  font-family: var(--sans);
+  font-size: 5.4px;
+  font-weight: 700;
+  letter-spacing: .28em;
+  line-height: 1.2;
+  text-indent: .28em;
+  white-space: nowrap;
+}
+.case-crown .screw {
+  position: absolute;
+  top: 9px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e6c990, #906e3a 56%, #432d14);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .7);
+  opacity: .8;
+}
+.case-crown .screw.l { left: 7px; }
+.case-crown .screw.r { right: 7px; }
+.case-cavity {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  background:
+    radial-gradient(115% 74% at 50% -14%, rgba(212, 160, 92, .18), transparent 60%),
+    repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(203, 164, 94, .045) calc(25% - 1px) 25%),
+    repeating-linear-gradient(0deg, transparent 0 calc(50% - 1px), rgba(203, 164, 94, .028) calc(50% - 1px) 50%),
+    linear-gradient(180deg, #1b1410 0%, #100b08 60%, #080604 100%);
+  box-shadow:
+    inset 0 30px 42px rgba(0, 0, 0, .9),
+    inset 0 0 0 1px rgba(203, 164, 94, .15),
+    inset 20px 0 30px -22px #000,
+    inset -20px 0 30px -22px #000;
+}
+.case-cavity::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 222, 166, .028) 0 1px, transparent 1px 4px, rgba(0, 0, 0, .1) 4px 5px, transparent 5px 19px),
+    var(--noise);
+  background-size: auto, 92px 92px;
+  opacity: .42;
+}
+.cavity-lamp {
+  position: absolute;
+  top: -36px; left: 50%;
+  z-index: 0;
+  width: 92%; height: 190px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 16%, rgba(235, 193, 127, .2), rgba(120, 76, 34, .04) 46%, transparent 72%);
+}
+.case-post {
+  position: absolute;
+  top: 25px; bottom: 21px;
+  z-index: 6;
+  width: 8px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .75), rgba(255, 222, 166, .16) 30%, rgba(0, 0, 0, .35) 62%, rgba(255, 222, 166, .06) 78%, rgba(0, 0, 0, .8)),
+    linear-gradient(180deg, #452b18, #24140b 70%, #160c06);
+  box-shadow: inset 0 1px 0 rgba(255, 233, 190, .18);
+}
+.case-post.l { left: 0; border-radius: 1px 0 0 1px; }
+.case-post.r { right: 0; border-radius: 0 1px 1px 0; }
+.books {
+  position: absolute;
+  right: 8px; bottom: 0; left: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: calc(5px * var(--sw));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.books > li { flex: 0 0 auto; display: block; min-width: 0; }
+.case-lip {
+  position: relative;
+  height: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 174, .3), transparent 30%),
+    linear-gradient(180deg, #52331d 0%, #321d11 52%, #1d1009 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 235, 190, .24);
+}
+.case-board {
+  position: relative;
+  height: 21px;
+  background:
+    linear-gradient(180deg, rgba(255, 222, 166, .18), transparent 28%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .16) 0 1px, transparent 1px 8px),
+    linear-gradient(180deg, #4b301c 0%, #2d1b10 50%, #170d07 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 194, .2), 0 15px 24px rgba(0, 0, 0, .7), 0 3px 0 #080503;
+}
+.case-board::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(239, 203, 139, .48) 15%, rgba(239, 203, 139, .16) 50%, rgba(239, 203, 139, .44) 85%, transparent);
+}
+.case-plate,
+.case-count {
+  position: absolute;
+  top: 4px;
+  z-index: 4;
+  padding: 1px 6px;
+  border: 1px solid rgba(203, 164, 94, .45);
+  background: linear-gradient(180deg, #1d140e, #0f0a07);
+  box-shadow: inset 0 1px 0 rgba(233, 203, 150, .16), 0 1px 2px rgba(0, 0, 0, .55);
+  color: #ddc497;
+  font-family: var(--sans);
+  font-size: 5.8px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.case-plate { left: 11px; }
+.case-count {
+  right: 11px;
+  border-color: rgba(203, 164, 94, .24);
+  color: #9e886a;
+  letter-spacing: .12em;
+}
+.case-plinth {
+  height: 8px;
+  margin: 0 5px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(180deg, #1b1009, #0a0604 70%, #050302);
+  box-shadow: inset 0 1px 0 rgba(239, 203, 139, .1), 0 7px 14px rgba(0, 0, 0, .55);
+}
+.case-auto .case-plate {
+  border-color: rgba(227, 189, 110, .68);
+  color: #f2d9a4;
+  letter-spacing: .14em;
+}
+.case-auto .case-count {
+  border-color: rgba(227, 189, 110, .38);
+  color: #d3b074;
+}
+.shelf-caption {
+  margin: 9px 2px 0;
+  padding: 0 0 0 9px;
+  border-left: 1px solid rgba(203, 164, 94, .36);
+  color: #94816c;
+  font-family: var(--sans);
+  font-size: 6.8px;
+  line-height: 1.5;
+}
+.shelf-caption b {
+  color: #d6b77d;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+/* ============================================================
+   4. Spine shell
+   ============================================================ */
+.spine {
+  position: relative;
+  display: block;
+  width: calc(var(--w) * var(--sw));
+  height: var(--h);
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 2px 2px 1px 1px;
+  background: #100b08;
+  color: var(--cream);
+  font: inherit;
+  text-align: initial;
+  cursor: pointer;
+  transform: rotate(var(--lean, 0deg));
+  transform-origin: 50% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 190, .18),
+    inset 0 -1px 0 rgba(0, 0, 0, .7),
+    0 7px 10px -3px rgba(0, 0, 0, .6);
+  transition: transform .24s var(--ease), box-shadow .2s ease, opacity .2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.spine:hover { z-index: 9; }
+@media (hover: hover) {
+  .spine:hover { transform: rotate(var(--lean, 0deg)) translateY(-5px); }
+}
+.spine:focus-visible {
+  z-index: 10;
+  outline: 2px solid #f3dfa9;
+  outline-offset: -2px;
+}
+.spine.is-lifted {
+  z-index: 12;
+  transform: rotate(var(--lean, 0deg)) translateY(-12px) scale(1.012);
+  box-shadow: 0 23px 30px -9px rgba(0, 0, 0, .82), 0 0 0 1px rgba(243, 223, 169, .24);
+}
+
+.spine-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  background-image: var(--hi-fallback);
+  background-image: var(--hi);
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+  background-position: var(--pos, 50%) 50%;
+  transform: translateZ(0);
+}
+.spine-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .54) 0%, rgba(0, 0, 0, .08) 8%, transparent 20%, transparent 80%, rgba(0, 0, 0, .1) 92%, rgba(0, 0, 0, .58) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, .3) 0%, transparent 10%, transparent 72%, rgba(0, 0, 0, .34) 100%);
+}
+.spine-edge {
+  position: absolute;
+  top: 0; bottom: 0;
+  z-index: 8;
+  width: 2px;
+  pointer-events: none;
+}
+.spine-edge.l {
+  left: 0;
+  background: linear-gradient(90deg, rgba(255, 240, 210, .26), rgba(255, 240, 210, .04) 55%, transparent);
+}
+.spine-edge.r {
+  right: 0;
+  background: linear-gradient(270deg, rgba(0, 0, 0, .62), rgba(0, 0, 0, .18) 54%, transparent);
+}
+.spine-rule {
+  position: absolute;
+  right: 5px; left: 5px;
+  z-index: 7;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(236, 201, 138, .66), transparent);
+  opacity: .65;
+}
+.spine-rule.top { top: 10px; }
+.spine-rule.bottom { bottom: calc(var(--bandh, calc(var(--h) * .22)) + 4px); }
+.spine[data-auto="true"] .spine-rule.top { display: none; }
+
+/* the title rail: a smoked-glass channel over the art */
+.title-rail {
+  position: absolute;
+  top: calc(var(--toph, 0px) + 13px);
+  bottom: calc(var(--bandh, calc(var(--h) * .22)) + 7px);
+  left: 50%;
+  z-index: 3;
+  width: var(--railw, 70%);
+  transform: translateX(calc(-50% + var(--railshift, 0px)));
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(11, 8, 6, 0) 0%,
+    rgba(11, 8, 6, .92) 12%,
+    rgba(11, 8, 6, .94) 50%,
+    rgba(11, 8, 6, .92) 88%,
+    rgba(11, 8, 6, 0) 100%);
+}
+.spine[data-tone="light"] .title-rail {
+  background: linear-gradient(90deg,
+    rgba(247, 238, 219, 0) 0%,
+    rgba(247, 238, 219, .94) 12%,
+    rgba(247, 238, 219, .97) 50%,
+    rgba(247, 238, 219, .94) 88%,
+    rgba(247, 238, 219, 0) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 250, 235, .28);
+}
+.title-wrap {
+  position: absolute;
+  top: calc(var(--toph, 0px) + 15px);
+  bottom: calc(var(--bandh, calc(var(--h) * .22)) + 9px);
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  width: calc(var(--railw, 70%) - 5px);
+  transform: translateX(calc(-50% + var(--railshift, 0px)));
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.spine-title {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  color: #f6ead2;
+  font-family: var(--reading);
+  font-size: var(--fs, 12px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .003em;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .95), 0 0 5px rgba(0, 0, 0, .72);
+  text-wrap: balance;
+  white-space: normal;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.spine[data-tone="light"] .spine-title {
+  color: #24180f;
+  text-shadow: 0 1px 0 rgba(255, 250, 235, .62);
+}
+
+/* foot band masks the cover's printed title plate */
+.spine-band {
+  position: absolute;
+  right: 0; bottom: 0; left: 0;
+  z-index: 6;
+  height: var(--bandh, calc(var(--h) * .22));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 3px 5px;
+  border-top: 2px solid var(--accent, var(--brass));
+  background:
+    linear-gradient(180deg, rgba(255, 226, 174, .06), transparent 22%),
+    linear-gradient(180deg, #1b140e 0%, #100b07 58%, #090604 100%);
+  box-shadow: 0 -7px 18px rgba(0, 0, 0, .46), inset 0 1px 0 rgba(255, 236, 194, .08);
+}
+.spine-band .band-author {
+  max-width: 100%;
+  overflow: hidden;
+  color: #dcc9a7;
+  font-family: var(--sans);
+  font-size: calc(var(--af, 6.1px) * var(--sw));
+  font-weight: 700;
+  letter-spacing: .06em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.spine-band .band-labels {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+.spine-band .chip {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 90%;
+  overflow: hidden;
+  padding: 1px 4px;
+  border: 1px solid rgba(12, 8, 5, .55);
+  border-radius: 1px;
+  background: var(--lc);
+  color: #fbf0da;
+  font-family: var(--sans);
+  font-size: 5.3px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  line-height: 1.3;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .55);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.status-ribbon {
+  position: absolute;
+  top: 0; right: 5px;
+  z-index: 7;
+  width: 6px; height: 31px;
+  background: linear-gradient(90deg, #5c0e12 0%, #a9242b 36%, #d85055 52%, #8f1a20 78%, #4b090d 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .65));
+}
+.finish-mark {
+  position: absolute;
+  top: 1px; left: 4px;
+  z-index: 7;
+  width: 12px; height: 12px;
+  color: #f1d797;
+  font-family: var(--display);
+  font-size: 10px;
+  line-height: 12px;
+  text-align: center;
+  text-shadow: 0 1px 2px #000, 0 0 7px rgba(0, 0, 0, .8);
+}
+.risk-dot {
+  display: none;
+  position: absolute;
+  top: 3px; right: 4px;
+  z-index: 9;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #e3bd6e;
+  box-shadow: 0 0 0 1px rgba(34, 18, 2, .9), 0 0 8px rgba(227, 189, 110, .65);
+}
+.auto-cap {
+  position: absolute;
+  top: 0; right: 0; left: 0;
+  z-index: 9;
+  height: var(--toph, 0px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(203, 164, 94, .58);
+  background:
+    linear-gradient(180deg, rgba(255, 222, 166, .12), transparent 30%),
+    linear-gradient(180deg, #2b1d12 0%, #160e09 58%, #0c0705 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 235, 190, .14), 0 2px 6px rgba(0, 0, 0, .5);
+  color: #e2c98f;
+}
+.auto-cap-label {
+  font-family: var(--sans);
+  font-size: 5.2px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  line-height: 1;
+  text-indent: .22em;
+}
+.auto-cap-sub {
+  color: #9f845a;
+  font-family: var(--sans);
+  font-size: 3.8px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  line-height: 1;
+  text-indent: .13em;
+  white-space: nowrap;
+}
+.auto-cap i {
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #b9ce92;
+  box-shadow: 0 0 4px rgba(185, 206, 146, .7);
+}
+.spine[data-auto-status="review"] .auto-cap {
+  border-bottom-color: rgba(227, 189, 110, .86);
+  color: #f0d39a;
+}
+.spine[data-auto-status="review"] .auto-cap i {
+  background: #e3bd6e;
+  box-shadow: 0 0 5px rgba(227, 189, 110, .85);
+}
+.spine .old-guard {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent 0 5%, rgba(5, 4, 3, .82) 19% 81%, transparent 95%);
+  mix-blend-mode: multiply;
+  transition: opacity .2s ease;
+}
+html[data-mode="old"] .title-rail,
+html[data-mode="old"] .spine-band,
+html[data-mode="old"] .spine-rule { display: none; }
+html[data-mode="old"] .spine-art {
+  background-image: var(--old);
+  background-size: cover;
+  background-position: 50% 46%;
+  filter: saturate(.9) contrast(1.02);
+  transform: scale(1.45);
+  transform-origin: 50% 25%;
+}
+html[data-mode="old"] .old-guard { opacity: 1; }
+html[data-mode="old"] .title-wrap {
+  top: calc(var(--toph, 0px) + 8px);
+  bottom: calc(var(--bandh, calc(var(--h) * .22)) + 4px);
+  left: 2px;
+  width: calc(100% - 4px);
+  transform: none;
+}
+html[data-mode="old"] .spine-title {
+  color: #f4e6c4;
+  font-size: calc(var(--fs) - .2px);
+  text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, .9);
+}
+html[data-mode="old"] .spine[data-risk="1"] .risk-dot { display: block; }
+html[data-mode="old"] .spine {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 190, .18),
+    inset 0 -1px 0 rgba(0, 0, 0, .7),
+    0 7px 10px -3px rgba(0, 0, 0, .6);
+}
+
+/* subtle difference marker */
+.spine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .22);
+}
+
+/* ============================================================
+   5. Compare strip
+   ============================================================ */
+.compare {
+  margin-top: 8px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line-soft);
+}
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.eyebrow {
+  margin: 0;
+  color: #a38a69;
+  font-family: var(--sans);
+  font-size: 6.3px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.section-head h2 {
+  margin: 4px 0 0;
+  color: #f0dfbf;
+  font-family: var(--display);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.018em;
+}
+.section-head h2 em { color: var(--brass); font-weight: 400; }
+.compare-blurb {
+  margin: 8px 0 0;
+  color: #a99680;
+  font-size: 10.2px;
+  line-height: 1.5;
+}
+.compare-card {
+  margin-top: 13px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background:
+    radial-gradient(110% 92% at 12% 0%, rgba(101, 64, 33, .2), transparent 62%),
+    linear-gradient(180deg, rgba(29, 21, 15, .97), rgba(12, 8, 6, .98));
+  box-shadow: inset 0 1px 0 rgba(255, 232, 182, .06), 0 10px 30px rgba(0, 0, 0, .3);
+}
+.compare-visual {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+.cover-map {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(52vw, 202px);
+  margin: 0;
+  overflow: hidden;
+  border-radius: 1px;
+  background: #0b0705;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .6), 0 0 0 1px rgba(203, 164, 94, .36), 4px 0 0 rgba(214, 188, 142, .18);
+}
+.cover-map > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+}
+.crop-window {
+  position: absolute;
+  z-index: 2;
+  border: 1.5px solid #e8c67f;
+  background: rgba(255, 219, 148, .055);
+  box-shadow: 0 0 0 999px rgba(3, 2, 1, .47), inset 0 0 0 1px rgba(0, 0, 0, .24);
+  pointer-events: none;
+}
+.crop-window::before,
+.crop-window::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 9px; height: 1px;
+  transform: translateX(-50%);
+  background: #f7dfa9;
+  box-shadow: 0 0 4px rgba(0, 0, 0, .8);
+}
+.crop-window::before { top: -1px; }
+.crop-window::after { bottom: -1px; }
+.crop-window .mask {
+  position: absolute;
+  right: 0; bottom: 0; left: 0;
+  height: 22%;
+  border-top: 1px dashed rgba(247, 223, 169, .85);
+  background:
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, .42) 0 3px, rgba(255, 255, 255, .05) 3px 6px),
+    rgba(10, 7, 4, .34);
+}
+.crop-window .mask span {
+  position: absolute;
+  right: 2px; bottom: 2px;
+  color: #f4dfb5;
+  font-family: var(--sans);
+  font-size: 4.2px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.crop-window .top-mask {
+  position: absolute;
+  top: 0; right: 0; left: 0;
+  border-bottom: 1px dashed rgba(247, 223, 169, .85);
+  background:
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, .42) 0 3px, rgba(255, 255, 255, .05) 3px 6px),
+    rgba(10, 7, 4, .34);
+}
+.crop-window .top-mask span {
+  position: absolute;
+  top: 2px; left: 2px;
+  color: #f4dfb5;
+  font-family: var(--sans);
+  font-size: 4.2px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.cover-map figcaption {
+  position: absolute;
+  top: 0; right: 0; left: 0;
+  z-index: 3;
+  padding: 4px 5px 14px;
+  background: linear-gradient(180deg, rgba(5, 3, 2, .88), transparent);
+  color: #e5d0ab;
+  font-family: var(--sans);
+  font-size: 5.5px;
+  letter-spacing: .12em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.compare-spine-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.compare-spine-col .spine { cursor: default; }
+.compare-spine-col .spine:hover { transform: none; }
+.preview-caption {
+  max-width: 74px;
+  color: #8f7c66;
+  font-family: var(--sans);
+  font-size: 5.4px;
+  letter-spacing: .1em;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+}
+.compare-copy { margin-top: 12px; }
+.compare-copy h3 {
+  margin: 3px 0 1px;
+  color: #f0dfbf;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.015em;
+}
+.compare-copy .byline {
+  margin: 0;
+  color: #b8a17f;
+  font-size: 9.5px;
+  font-style: italic;
+}
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 10px 0 0;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+}
+.stats div { min-width: 0; padding: 6px 7px; background: rgba(19, 14, 10, .94); }
+.stats dt {
+  color: #867462;
+  font-family: var(--sans);
+  font-size: 5.3px;
+  letter-spacing: .1em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+.stats dd {
+  margin: 2px 0 0;
+  color: #e0cba6;
+  font-family: var(--sans);
+  font-size: 7.4px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.stats dd em {
+  color: #9c8a75;
+  font-style: normal;
+  font-weight: 400;
+}
+.audit-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 9px 0 0;
+  color: #b4a18a;
+  font-size: 8.4px;
+  line-height: 1.45;
+}
+.audit-line::before {
+  content: "✓";
+  flex: 0 0 auto;
+  color: #b9ce92;
+  font-family: var(--sans);
+  font-size: 9px;
+  line-height: 1.3;
+}
+.audit-line.is-warn { color: #d8bc82; }
+.audit-line.is-warn::before { content: "!"; color: #e3bd6e; }
+.credit-line {
+  margin: 8px 0 0;
+  color: #7d6c5b;
+  font-family: var(--sans);
+  font-size: 6.1px;
+  line-height: 1.5;
+}
+.credit-line a { color: #a98d65; text-underline-offset: 2px; }
+.compare-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(232, 203, 148, .42);
+  border-radius: 2px;
+  color: #e7d2aa;
+  font-family: var(--sans);
+  font-size: 6.8px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  transition: background .18s ease, border-color .18s ease;
+}
+.btn:hover { background: rgba(233, 205, 151, .09); border-color: rgba(232, 203, 148, .72); }
+.btn:focus-visible { outline: 2px solid #f3dfa9; outline-offset: 1px; }
+.btn.primary {
+  border-color: rgba(240, 215, 160, .55);
+  background: linear-gradient(180deg, #e7cf9f, #b88d4b);
+  color: #23180e;
+  box-shadow: inset 0 1px 0 rgba(255, 250, 230, .55), 0 2px 4px rgba(0, 0, 0, .38);
+}
+.btn.primary:hover { background: linear-gradient(180deg, #f0d8a7, #c29651); }
+
+.filmstrip {
+  display: flex;
+  gap: 5px;
+  margin: 12px -12px 0;
+  padding: 1px 12px 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+.filmstrip::-webkit-scrollbar { display: none; }
+.film-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  scroll-snap-align: start;
+  border: 1px solid rgba(203, 164, 94, .2);
+  border-radius: 1px;
+  background: #0b0705;
+  opacity: .72;
+  transition: opacity .18s ease, border-color .18s ease, transform .18s ease;
+}
+.film-item[data-auto="true"]::after {
+  content: "AUTO";
+  position: absolute;
+  top: 2px; left: 2px;
+  padding: 0 2px;
+  border-radius: 1px;
+  background: #d8b976;
+  color: #1a120b;
+  font-family: var(--sans);
+  font-size: 3.8px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.45;
+}
+.film-item img { display: block; width: 100%; height: auto; border-radius: 1px; }
+.film-item:hover { opacity: 1; transform: translateY(-2px); }
+.film-item[aria-pressed="true"] {
+  border-color: #e2c17c;
+  opacity: 1;
+  box-shadow: 0 0 0 1px rgba(226, 193, 124, .32), 0 4px 8px rgba(0, 0, 0, .5);
+}
+.film-item:focus-visible { outline: 2px solid #f3dfa9; outline-offset: 1px; }
+
+/* ============================================================
+   5b. Automatic pass
+   ============================================================ */
+.auto-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+}
+.auto-blurb {
+  margin: 8px 0 0;
+  color: #a99680;
+  font-size: 10.2px;
+  line-height: 1.5;
+}
+.auto-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 13px;
+}
+.auto-card {
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background:
+    radial-gradient(100% 90% at 15% 0%, rgba(91, 62, 38, .2), transparent 60%),
+    linear-gradient(180deg, rgba(28, 20, 14, .97), rgba(12, 8, 6, .98));
+  box-shadow: inset 0 1px 0 rgba(255, 232, 182, .055);
+}
+.auto-card[data-status="review"] {
+  border-color: rgba(227, 189, 110, .4);
+}
+.auto-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.auto-card-head h3 {
+  margin: 3px 0 1px;
+  color: #efdcba;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.015em;
+}
+.auto-card-head .byline {
+  margin: 0;
+  color: #b19b7c;
+  font-size: 9px;
+  font-style: italic;
+}
+.auto-status {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border: 1px solid rgba(185, 206, 146, .42);
+  border-radius: 2px;
+  background: rgba(185, 206, 146, .07);
+  color: #c4d8a7;
+  font-family: var(--sans);
+  font-size: 5.7px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+}
+.auto-card[data-status="review"] .auto-status {
+  border-color: rgba(227, 189, 110, .55);
+  background: rgba(227, 189, 110, .08);
+  color: #e7c88b;
+}
+.auto-visual {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 10px;
+}
+.auto-visual .cover-map { width: min(44vw, 160px); }
+.auto-legend {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.auto-legend li {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: #99866f;
+  font-family: var(--sans);
+  font-size: 6.2px;
+  line-height: 1.42;
+}
+.auto-legend i {
+  flex: 0 0 auto;
+  width: 7px; height: 7px;
+  margin-top: 1px;
+  border: 1px solid #e8c67f;
+  background: rgba(255, 219, 148, .12);
+}
+.auto-legend li:nth-child(2) i {
+  border-style: dashed;
+  background: repeating-linear-gradient(135deg, rgba(0, 0, 0, .4) 0 2px, rgba(255, 255, 255, .08) 2px 4px);
+}
+.auto-legend b { color: #d5bf9b; font-weight: 600; }
+.auto-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 9px;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+}
+.auto-metrics div { min-width: 0; padding: 5px 6px; background: rgba(18, 13, 9, .96); }
+.auto-metrics dt {
+  color: #867462;
+  font-family: var(--sans);
+  font-size: 5.1px;
+  letter-spacing: .09em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+.auto-metrics dd {
+  margin: 2px 0 0;
+  color: #dfc9a4;
+  font-family: var(--sans);
+  font-size: 7.1px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.auto-metrics dd em { color: #9c8a75; font-style: normal; font-weight: 400; }
+.auto-curve {
+  margin-top: 9px;
+  padding: 6px 7px 4px;
+  border: 1px solid var(--line-soft);
+  background: rgba(0, 0, 0, .18);
+}
+.auto-curve svg { display: block; width: 100%; height: 42px; overflow: visible; }
+.auto-curve text {
+  fill: #7f6d5a;
+  font-family: var(--sans);
+  font-size: 4.4px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.auto-curve .curve-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+  color: #8c7964;
+  font-family: var(--sans);
+  font-size: 5.2px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.auto-curve .curve-label b { color: #dec49a; font-weight: 600; }
+.auto-reasons {
+  margin: 9px 0 0;
+  padding: 0 0 0 10px;
+  border-left: 1px solid rgba(227, 189, 110, .3);
+  color: #a08c75;
+  font-size: 7.8px;
+  line-height: 1.48;
+  list-style: none;
+}
+.auto-reasons li { margin: 0 0 2px; }
+.auto-reasons li::before { content: "·"; margin-right: 4px; color: var(--brass); }
+.auto-foot {
+  margin: 8px 0 0;
+  color: #7c6b5a;
+  font-family: var(--sans);
+  font-size: 5.8px;
+  line-height: 1.5;
+}
+.auto-foot code {
+  padding: 0 3px;
+  border: 1px solid rgba(203, 164, 94, .16);
+  color: #bda478;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 5.4px;
+}
+.auto-mode-note {
+  margin: 8px 0 0;
+  color: #8f7d69;
+  font-family: var(--sans);
+  font-size: 6.2px;
+  line-height: 1.4;
+}
+.auto-mode-note b { color: #d3b77f; font-weight: 600; }
+
+/* compact auto readout inside the compare card */
+.compare-auto {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line-soft);
+}
+.auto-mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.auto-mini-head > span:last-child {
+  color: #806e5c;
+  font-family: var(--sans);
+  font-size: 5.4px;
+  line-height: 1.35;
+  text-align: right;
+}
+.compare-auto .auto-metrics { margin-top: 0; }
+.compare-auto .auto-metrics div { padding: 4px 6px; }
+.compare-auto .auto-metrics dt { font-size: 4.9px; }
+.compare-auto .auto-metrics dd { font-size: 6.6px; }
+.compare-auto .auto-curve { margin-top: 7px; padding: 5px 6px 3px; }
+.compare-auto .auto-curve svg { height: 36px; }
+.compare-auto .auto-reasons {
+  margin-top: 7px;
+  font-size: 7.1px;
+  line-height: 1.44;
+}
+.auto-select {
+  margin-top: 8px;
+  width: 100%;
+}
+.auto-blurb code {
+  padding: 0 3px;
+  border: 1px solid rgba(203, 164, 94, .16);
+  color: #c1a982;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 7px;
+}
+
+/* ============================================================
+   6. Notes
+   ============================================================ */
+.notes {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+}
+.notes h2 {
+  margin: 4px 0 8px;
+  color: #ecdbbe;
+  font-family: var(--display);
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -.015em;
+}
+.notes h2 em { color: var(--brass); font-weight: 400; }
+.note-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  margin: 11px 0 0;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+}
+.note {
+  padding: 9px 10px;
+  background: rgba(18, 13, 9, .92);
+}
+.note b {
+  display: block;
+  color: #dfc9a4;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.note b span { color: var(--brass); font-family: var(--sans); font-size: 7px; font-weight: 700; letter-spacing: .1em; }
+.note p {
+  margin: 4px 0 0;
+  color: #9e8b75;
+  font-size: 8.7px;
+  line-height: 1.48;
+}
+.questions {
+  margin-top: 14px;
+  padding: 10px 11px;
+  border-left: 2px solid rgba(203, 164, 94, .5);
+  background: rgba(203, 164, 94, .045);
+  color: #ab9883;
+  font-size: 8.8px;
+  line-height: 1.52;
+}
+.questions strong { color: #ddc8a3; font-weight: 600; }
+.questions ul { margin: 5px 0 0; padding-left: 12px; }
+.questions li { margin: 2px 0; }
+.sources {
+  margin-top: 13px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 10px;
+}
+.sources summary {
+  color: #b9a17d;
+  font-family: var(--sans);
+  font-size: 6.8px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.sources ul {
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sources li {
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(203, 164, 94, .07);
+  color: #8b7967;
+  font-family: var(--sans);
+  font-size: 6.3px;
+  line-height: 1.5;
+}
+.sources li b { color: #c3ad8b; font-weight: 600; }
+.sources li a { color: #a88c64; }
+.foot {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  color: #7c6b5a;
+  font-size: 7.8px;
+  line-height: 1.55;
+}
+.foot strong { color: #a99780; font-weight: 600; }
+.foot code {
+  padding: 1px 4px;
+  border: 1px solid rgba(203, 164, 94, .15);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .028);
+  color: #c1a982;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 6.8px;
+}
+
+/* ============================================================
+   7. Lift / detail sheet
+   ============================================================ */
+.sheet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 10px;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.sheet-layer.is-open { opacity: 1; }
+.sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 3, 2, .7);
+  backdrop-filter: blur(2px);
+}
+.sheet {
+  position: relative;
+  width: min(100%, 418px);
+  max-height: min(92vh, 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 13px;
+  transform: translateY(18px);
+  border: 1px solid rgba(227, 193, 126, .42);
+  border-radius: 6px 6px 3px 3px;
+  background:
+    radial-gradient(118% 74% at 16% 0%, rgba(113, 72, 38, .24), transparent 60%),
+    linear-gradient(180deg, rgba(33, 23, 16, .995), rgba(12, 8, 6, .995));
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 235, 190, .1);
+  transition: transform .26s var(--ease);
+  scrollbar-width: thin;
+}
+.sheet-layer.is-open .sheet { transform: none; }
+.sheet-close {
+  position: absolute;
+  top: 7px; right: 7px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  color: #c9b18a;
+  font-size: 18px;
+  line-height: 1;
+}
+.sheet-close:hover { background: rgba(233, 205, 151, .1); color: #f5e6c8; }
+.sheet-close:focus-visible { outline: 2px solid #f3dfa9; outline-offset: 1px; }
+.sheet-head { padding: 2px 34px 0 2px; }
+.sheet-head h2 {
+  margin: 3px 0 2px;
+  color: #f0dfbf;
+  font-family: var(--display);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.018em;
+}
+.sheet-head .byline {
+  margin: 0;
+  color: #b8a17f;
+  font-size: 10px;
+  font-style: italic;
+}
+.sheet-visual {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 12px;
+}
+.sheet-cover {
+  flex: 0 0 auto;
+  width: min(43vw, 162px);
+}
+.sheet-spine {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.sheet-spine .spine { cursor: default; }
+.sheet-spine .spine:hover { transform: none; }
+.sheet-body {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+.sheet-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.sheet-tag {
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 240, 214, .18);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .03);
+  font-family: var(--sans);
+  font-size: 6.2px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.sheet-auto {
+  margin: 8px 0 0;
+  padding: 6px 7px;
+  border-left: 1px solid rgba(227, 189, 110, .38);
+  background: rgba(227, 189, 110, .045);
+  color: #aa9579;
+  font-family: var(--sans);
+  font-size: 6.2px;
+  line-height: 1.45;
+}
+.sheet-auto b { color: #e0c184; font-weight: 700; letter-spacing: .08em; }
+.sheet-body .blurb {
+  margin: 0;
+  color: #c2af94;
+  font-size: 9.8px;
+  line-height: 1.5;
+}
+.sheet-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 9px 0 0;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+}
+.sheet-meta div { min-width: 0; padding: 6px 7px; background: rgba(18, 13, 9, .96); }
+.sheet-meta dt {
+  color: #867462;
+  font-family: var(--sans);
+  font-size: 5.3px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.sheet-meta dd {
+  margin: 2px 0 0;
+  color: #dcc7a2;
+  font-family: var(--sans);
+  font-size: 7.2px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.sheet-credit {
+  margin: 9px 0 0;
+  color: #806e5c;
+  font-family: var(--sans);
+  font-size: 6.1px;
+  line-height: 1.5;
+}
+.sheet-credit a { color: #aa8e66; }
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+}
+.sheet-note {
+  color: #84725f;
+  font-size: 7.2px;
+  line-height: 1.35;
+}
+
+/* ============================================================
+   8. Small screens / motion
+   ============================================================ */
+@media (max-width: 380px) {
+  h1 { font-size: 33px; }
+  .spec b { font-size: 16px; }
+  .compare-copy h3 { font-size: 22px; }
+}
+@media (max-width: 360px) {
+  .filmstrip { margin-right: -9px; margin-left: -9px; padding-right: 9px; padding-left: 9px; }
+}
+@media (max-width: 340px) {
+  .stage { padding-right: 8px; padding-left: 8px; }
+  .modebar { gap: 6px; padding: 6px; }
+  .mode-label { display: none; }
+  .compare-card { padding: 9px; }
+  .compare-visual { gap: 11px; }
+  .cover-map { width: min(50vw, 180px); }
+  .filmstrip { margin-right: -8px; margin-left: -8px; padding-right: 8px; padding-left: 8px; }
+  .sheet { padding: 11px; }
+  .sheet-cover { width: min(41vw, 142px); }
+  .spine-title { letter-spacing: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .001ms !important;
+    animation-duration: .001ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#shelves">Skip to shelves</a>
+
+<div class="stage">
+  <header class="masthead">
+    <div class="topline">
+      <span class="wordmark">Pocket Library</span>
+      <span class="edition">Shelf study <b>02</b> · Variant B</span>
+    </div>
+    <span class="proto-stamp">Throwaway prototype · v2</span>
+    <p class="kicker">Cover art on the spine, rebuilt</p>
+    <h1>Bound in its <em>own cover</em></h1>
+    <p class="lede">Eighteen hand-framed classics, plus two new arrivals laid out entirely from their cover pixels. Same full-height wrap, readable title rail, and a shelf band that masks the cover’s own printed title.</p>
+    <div class="spec-row" aria-label="Prototype facts">
+      <div class="spec"><b>20</b><span>covers · 18 public-domain</span></div>
+      <div class="spec"><b>1303–1400</b><span>px source long edge</span></div>
+      <div class="spec"><b>≈<small>1/3</small></b><span>of the cover width on the spine</span></div>
+    </div>
+  </header>
+
+  <div class="modebar" role="group" aria-label="Rendering mode">
+    <span class="mode-label">Render<b>Mode</b></span>
+    <div class="segment" role="group" aria-label="High-resolution or old-style rendering">
+      <button class="seg-btn" id="mode-high" type="button" data-mode="high" aria-pressed="true">High-res</button>
+      <button class="seg-btn" id="mode-old" type="button" data-mode="old" aria-pressed="false">Old-style</button>
+    </div>
+  </div>
+  <p class="mode-note" id="mode-note"><b>High-res:</b> 480/800&nbsp;px responsive art, a per-cover focus point, a title rail and the masking shelf band. <b>Old-style</b> brings back v1’s 420&nbsp;px centre crop and 1.45× zoom for a same-size comparison.</p>
+
+  <main class="shelves" id="shelves" aria-label="Three shelves of six classic books, plus a new-arrivals shelf"></main>
+
+  <section class="auto-section" id="auto" aria-labelledby="auto-title">
+    <header class="section-head">
+      <div>
+        <p class="eyebrow">New arrivals · automatic</p>
+        <h2 id="auto-title">Two covers, <em>no hand-set crop</em></h2>
+      </div>
+    </header>
+    <p class="auto-blurb">The two new spines below were laid out from their cover pixels by <code>auto-layout.cjs</code>: a column-saliency pass picks the crop window, a text-band pass places the foot band and a top cap, and a luminance pass picks the rail ink or the vellum fallback. Nothing about these two is hand-keyed.</p>
+    <div class="auto-cards" id="auto-cards"></div>
+    <p class="auto-mode-note" id="auto-mode-note"><b>High-res decisions.</b> The cards above show the automatic high-res result; the shelf and compare strip follow the current render mode.</p>
+  </section>
+
+  <section class="compare" id="compare" aria-labelledby="compare-title">
+    <header class="section-head">
+      <div>
+        <p class="eyebrow">The crop, exposed</p>
+        <h2 id="compare-title">Actual cover <em>→</em> spine</h2>
+      </div>
+    </header>
+    <p class="compare-blurb" id="compare-blurb">The gold window is the part of the real front cover the spine is showing. The hatched foot is the shelf band that covers the cover’s printed title. Pick any book from the strip to inspect its crop.</p>
+    <div id="compare-card"></div>
+    <div class="filmstrip" id="filmstrip" role="group" aria-label="Choose a book to inspect"></div>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-title">
+    <p class="eyebrow">Design notes</p>
+    <h2 id="notes-title">What changed, <em>and why</em></h2>
+    <div class="note-grid">
+      <article class="note">
+        <b><span>01</span> A wider crop, from a sharper source</b>
+        <p>At a 50&nbsp;×&nbsp;230&nbsp;px spine, full-height art shows 31–34% of the 1400&nbsp;px cover width. At 320&nbsp;px it is 27–30% because the spines narrow, still roughly double v1’s 30&nbsp;px, 1.45× centre crop. The old 420&nbsp;px files are still here for the mode toggle; the new shelf uses 480/800&nbsp;px image-set responses.</p>
+      </article>
+      <article class="note">
+        <b><span>02</span> The printed cover title is masked, not duplicated</b>
+        <p>Standard Ebooks covers carry their own title plate in the bottom fifth. A 22%-height shelf band now covers it on every spine, replacing the cover’s type with our author and label marks. This is the main reason the new crop reads as a designed spine instead of two titles fighting.</p>
+      </article>
+      <article class="note">
+        <b><span>03</span> Type gets a floor, not a hope</b>
+        <p>The title sits in a smoked-glass rail at ≥90% ink. Against pure white that still leaves ≥5.6:1 for cream; real covers do better. <em>The Hound of the Baskervilles</em> is too light for cream, so it switches to a warm vellum rail with dark ink (≥14:1). The automatic pass makes the same call for <em>Rock Paper Scissors</em>. Old-style keeps the failures visible as amber dots.</p>
+      </article>
+      <article class="note">
+        <b><span>04</span> A per-cover focus point, declared in the data</b>
+        <p>The 18 classics carry a hand-declared <code>x</code> focus — a face, a house, a clock, a ship’s rigging — and the CSS position is solved from that focus and the spine aspect. No two books share a mechanical centre crop. The compare strip draws the resulting window on the actual cover.</p>
+      </article>
+      <article class="note">
+        <b><span>05</span> The last two are derived, not drawn</b>
+        <p><code>auto-layout.cjs</code> reads a 260&nbsp;px working copy of each new cover: a column-saliency pass chooses the focus window, a text-band pass chooses the foot band and a top marketing cap, and a luminance pass chooses cream-on-ink or dark-on-vellum. It also emits the focus-score curve and the reasons behind each pass or review. No crop value for the two new arrivals is hand-set.</p>
+      </article>
+    </div>
+    <div class="questions">
+      <strong>Still open:</strong>
+      <ul>
+        <li>Does the title rail hide too much of the art at 40&nbsp;px on the narrowest phones?</li>
+        <li>Should the band carry the author, the genre chips, or both at 6&nbsp;px?</li>
+        <li>Where does the automatic pass still need a human? <em>Rock Paper Scissors</em> is one clear answer: it picks the left snow/church edge, but the printed title still crosses the crop.</li>
+        <li>Does the three-shelf wall of six plus a two-book new-arrivals case read as a library, or does the density loss hurt the shelf metaphor?</li>
+      </ul>
+    </div>
+    <details class="sources">
+      <summary>Cover sources &amp; licences (20)</summary>
+      <ul id="sources-list"></ul>
+    </details>
+  </section>
+
+  <footer class="foot">
+    <strong>Prototype scope.</strong> Throwaway design study, not production code. Nothing outside <code>.scratch/spine-cover-art-prototype/v2/</code> was modified; no tests, manifests or specs were touched; nothing was committed. Cover images are local copies: 18 public-domain Standard Ebooks covers plus two edition covers sourced through the Apple Books/iTunes Search API for this study. Source art, ISBNs and attribution are listed above and in <code>sources.json</code>.
+  </footer>
+</div>
+
+<div class="sheet-layer" id="sheet-layer" hidden>
+  <div class="sheet-scrim" data-close-sheet></div>
+  <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
+    <button class="sheet-close" id="sheet-close" type="button" aria-label="Close detail">×</button>
+    <div id="sheet-content"></div>
+  </section>
+</div>
+
+<div class="visually-hidden" id="live" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   DATA
+   All covers: https://standardebooks.org (public domain).
+   focus = horizontal centre of the spine crop, 0..1.
+   accent = sampled average colour of the chosen strip.
+   tone = "light" switches the title rail to the vellum fallback.
+   ============================================================ */
+const AUTO_LAYOUT = {
+  "whisper-man": {
+    "slug": "whisper-man",
+    "title": "The Whisper Man",
+    "author": "Alex North",
+    "isbn": "9781405936019",
+    "edition": "Penguin Books UK, 2019",
+    "source": "Apple Books/iTunes Search API (GB)",
+    "coverPage": "https://books.apple.com/gb/book/the-whisper-man/id1404088650",
+    "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Publication221/v4/dd/15/e4/dd15e43d-c935-de16-65f7-9b20558774bf/9781405936019.jpg/2000x2000bb.jpg",
+    "credit": "Cover design: Penguin Books; cover image as published by Apple Books",
+    "coverFile": "covers/source/whisper-man.jpg",
+    "sourcePixels": "1303 × 2000",
+    "aspect": 0.6515,
+    "spine": {
+      "w": 52,
+      "h": 236
+    },
+    "cropPercent": 33.8,
+    "focus": 0.5,
+    "cropLeft": 0.331,
+    "cropRight": 0.669,
+    "bandFraction": 0.22,
+    "bandTop": 0.78,
+    "bandHeightPx": 52,
+    "topCapFraction": 0.14,
+    "topCapPx": 33,
+    "topCapCovered": 2,
+    "topCapNote": "covers 2 top marketing lines without cutting one",
+    "railWidthPx": 23,
+    "railShiftPx": 1,
+    "tone": "dark",
+    "ink": "#f4e7cb",
+    "paper": "#0b0806",
+    "accent": "#71615a",
+    "meanLuma": 0.033,
+    "p05Luma": 0.001,
+    "p95Luma": 0.155,
+    "cropStd": 0.284,
+    "bareCreamContrast": 4.19,
+    "bareDarkContrast": 1.19,
+    "railContrast": 13.89,
+    "textCollision": 0,
+    "marketingCollision": 0.2,
+    "titleCoverage": 1,
+    "cutPenalty": 0,
+    "status": "pass",
+    "statusLabel": "AUTO · PASS",
+    "reasons": [
+      "band covers the foot title block; the remaining visible copy is marketing only",
+      "marketing copy remains visible above the band (not the book title)"
+    ],
+    "textBands": [
+      {
+        "top": 0.035,
+        "bottom": 0.055,
+        "density": 0.388
+      },
+      {
+        "top": 0.113,
+        "bottom": 0.133,
+        "density": 0.499
+      },
+      {
+        "top": 0.233,
+        "bottom": 0.325,
+        "density": 0.179
+      },
+      {
+        "top": 0.86,
+        "bottom": 0.905,
+        "density": 0.368
+      },
+      {
+        "top": 0.94,
+        "bottom": 0.953,
+        "density": 0.294
+      }
+    ],
+    "curve": [
+      {
+        "x": 0.18,
+        "score": 0.704,
+        "text": 0
+      },
+      {
+        "x": 0.2,
+        "score": 0.738,
+        "text": 0
+      },
+      {
+        "x": 0.22,
+        "score": 0.764,
+        "text": 0
+      },
+      {
+        "x": 0.24,
+        "score": 0.693,
+        "text": 0
+      },
+      {
+        "x": 0.26,
+        "score": 0.615,
+        "text": 0
+      },
+      {
+        "x": 0.28,
+        "score": 0.56,
+        "text": 0
+      },
+      {
+        "x": 0.3,
+        "score": 0.487,
+        "text": 0
+      },
+      {
+        "x": 0.32,
+        "score": 0.402,
+        "text": 0
+      },
+      {
+        "x": 0.34,
+        "score": 0.347,
+        "text": 0
+      },
+      {
+        "x": 0.36,
+        "score": 0.413,
+        "text": 0
+      },
+      {
+        "x": 0.38,
+        "score": 0.457,
+        "text": 0
+      },
+      {
+        "x": 0.4,
+        "score": 0.636,
+        "text": 0
+      },
+      {
+        "x": 0.42,
+        "score": 0.753,
+        "text": 0
+      },
+      {
+        "x": 0.44,
+        "score": 0.904,
+        "text": 0
+      },
+      {
+        "x": 0.46,
+        "score": 0.943,
+        "text": 0
+      },
+      {
+        "x": 0.48,
+        "score": 0.979,
+        "text": 0
+      },
+      {
+        "x": 0.5,
+        "score": 1,
+        "text": 0
+      },
+      {
+        "x": 0.52,
+        "score": 0.969,
+        "text": 0
+      },
+      {
+        "x": 0.54,
+        "score": 0.894,
+        "text": 0
+      },
+      {
+        "x": 0.56,
+        "score": 0.735,
+        "text": 0
+      },
+      {
+        "x": 0.58,
+        "score": 0.622,
+        "text": 0
+      },
+      {
+        "x": 0.6,
+        "score": 0.536,
+        "text": 0
+      },
+      {
+        "x": 0.62,
+        "score": 0.405,
+        "text": 0
+      },
+      {
+        "x": 0.64,
+        "score": 0.282,
+        "text": 0
+      },
+      {
+        "x": 0.66,
+        "score": 0.212,
+        "text": 0
+      },
+      {
+        "x": 0.68,
+        "score": 0.201,
+        "text": 0
+      },
+      {
+        "x": 0.7,
+        "score": 0.186,
+        "text": 0
+      },
+      {
+        "x": 0.72,
+        "score": 0.221,
+        "text": 0
+      },
+      {
+        "x": 0.74,
+        "score": 0.173,
+        "text": 0
+      },
+      {
+        "x": 0.76,
+        "score": 0.134,
+        "text": 0
+      },
+      {
+        "x": 0.78,
+        "score": 0.115,
+        "text": 0
+      },
+      {
+        "x": 0.8,
+        "score": 0.047,
+        "text": 0
+      },
+      {
+        "x": 0.82,
+        "score": 0,
+        "text": 0
+      }
+    ],
+    "diagnostics": {
+      "workingPixels": "260 × 400",
+      "edgeThreshold": 0.24,
+      "candidates": 65,
+      "detail": 0.0946,
+      "edgeMean": 0.0946,
+      "colorMean": 0.716
+    }
+  },
+  "rock-paper-scissors": {
+    "slug": "rock-paper-scissors",
+    "title": "Rock Paper Scissors",
+    "author": "Alice Feeney",
+    "isbn": "9781250266118",
+    "edition": "Flatiron Books US, 2021",
+    "source": "Apple Books/iTunes Search API (US)",
+    "coverPage": "https://books.apple.com/us/book/rock-paper-scissors/id1550616355",
+    "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/b7/dd/3c/b7dd3ca0-ca75-afd1-66a4-1da048aa42ff/9781250266118.jpg/2000x2000bb.jpg",
+    "credit": "Cover design: Flatiron Books; cover image as published by Apple Books",
+    "coverFile": "covers/source/rock-paper-scissors.jpg",
+    "sourcePixels": "1303 × 2000",
+    "aspect": 0.6515,
+    "spine": {
+      "w": 52,
+      "h": 236
+    },
+    "cropPercent": 33.8,
+    "focus": 0.18,
+    "cropLeft": 0.011,
+    "cropRight": 0.349,
+    "bandFraction": 0.22,
+    "bandTop": 0.78,
+    "bandHeightPx": 52,
+    "topCapFraction": 0.09,
+    "topCapPx": 21,
+    "topCapCovered": 1,
+    "topCapNote": "covers 1 top marketing line without cutting one",
+    "railWidthPx": 26,
+    "railShiftPx": -0.5,
+    "tone": "light",
+    "ink": "#24180f",
+    "paper": "#f7eedb",
+    "accent": "#e1d6d5",
+    "meanLuma": 0.62,
+    "p05Luma": 0.15,
+    "p95Luma": 0.863,
+    "cropStd": 0.678,
+    "bareCreamContrast": 1.07,
+    "bareDarkContrast": 3.3,
+    "railContrast": 14.66,
+    "textCollision": 0.082,
+    "marketingCollision": 0.137,
+    "titleCoverage": 0.415,
+    "cutPenalty": 1,
+    "status": "review",
+    "statusLabel": "AUTO · REVIEW",
+    "reasons": [
+      "the cover title still crosses the visible crop above the band",
+      "the band covers less than two thirds of the detected title block",
+      "the band edge cuts through a detected title line",
+      "marketing copy remains visible above the band (not the book title)"
+    ],
+    "textBands": [
+      {
+        "top": 0.003,
+        "bottom": 0.083,
+        "density": 0.258
+      },
+      {
+        "top": 0.098,
+        "bottom": 0.223,
+        "density": 0.145
+      },
+      {
+        "top": 0.24,
+        "bottom": 0.347,
+        "density": 0.201
+      },
+      {
+        "top": 0.4,
+        "bottom": 0.455,
+        "density": 0.208
+      },
+      {
+        "top": 0.482,
+        "bottom": 0.925,
+        "density": 0.241
+      },
+      {
+        "top": 0.943,
+        "bottom": 0.963,
+        "density": 0.171
+      }
+    ],
+    "curve": [
+      {
+        "x": 0.18,
+        "score": 1,
+        "text": 0.082
+      },
+      {
+        "x": 0.2,
+        "score": 0.831,
+        "text": 0.099
+      },
+      {
+        "x": 0.22,
+        "score": 0.742,
+        "text": 0.111
+      },
+      {
+        "x": 0.24,
+        "score": 0.662,
+        "text": 0.121
+      },
+      {
+        "x": 0.26,
+        "score": 0.54,
+        "text": 0.135
+      },
+      {
+        "x": 0.28,
+        "score": 0.442,
+        "text": 0.146
+      },
+      {
+        "x": 0.3,
+        "score": 0.353,
+        "text": 0.158
+      },
+      {
+        "x": 0.32,
+        "score": 0.309,
+        "text": 0.166
+      },
+      {
+        "x": 0.34,
+        "score": 0.329,
+        "text": 0.165
+      },
+      {
+        "x": 0.36,
+        "score": 0.346,
+        "text": 0.166
+      },
+      {
+        "x": 0.38,
+        "score": 0.35,
+        "text": 0.167
+      },
+      {
+        "x": 0.4,
+        "score": 0.369,
+        "text": 0.165
+      },
+      {
+        "x": 0.42,
+        "score": 0.3,
+        "text": 0.174
+      },
+      {
+        "x": 0.44,
+        "score": 0.288,
+        "text": 0.176
+      },
+      {
+        "x": 0.46,
+        "score": 0.295,
+        "text": 0.175
+      },
+      {
+        "x": 0.48,
+        "score": 0.275,
+        "text": 0.177
+      },
+      {
+        "x": 0.5,
+        "score": 0.293,
+        "text": 0.177
+      },
+      {
+        "x": 0.52,
+        "score": 0.258,
+        "text": 0.177
+      },
+      {
+        "x": 0.54,
+        "score": 0.285,
+        "text": 0.172
+      },
+      {
+        "x": 0.56,
+        "score": 0.267,
+        "text": 0.171
+      },
+      {
+        "x": 0.58,
+        "score": 0.237,
+        "text": 0.171
+      },
+      {
+        "x": 0.6,
+        "score": 0.324,
+        "text": 0.16
+      },
+      {
+        "x": 0.62,
+        "score": 0.332,
+        "text": 0.158
+      },
+      {
+        "x": 0.64,
+        "score": 0.294,
+        "text": 0.159
+      },
+      {
+        "x": 0.66,
+        "score": 0.279,
+        "text": 0.158
+      },
+      {
+        "x": 0.68,
+        "score": 0.248,
+        "text": 0.159
+      },
+      {
+        "x": 0.7,
+        "score": 0.316,
+        "text": 0.151
+      },
+      {
+        "x": 0.72,
+        "score": 0.377,
+        "text": 0.143
+      },
+      {
+        "x": 0.74,
+        "score": 0.178,
+        "text": 0.161
+      },
+      {
+        "x": 0.76,
+        "score": 0.262,
+        "text": 0.149
+      },
+      {
+        "x": 0.78,
+        "score": 0.111,
+        "text": 0.161
+      },
+      {
+        "x": 0.8,
+        "score": 0,
+        "text": 0.17
+      },
+      {
+        "x": 0.82,
+        "score": 0.033,
+        "text": 0.162
+      }
+    ],
+    "diagnostics": {
+      "workingPixels": "260 × 400",
+      "edgeThreshold": 1.062,
+      "candidates": 65,
+      "detail": 0.4482,
+      "edgeMean": 0.4482,
+      "colorMean": 0.096
+    }
+  }
+};
+
+const BOOKS = [
+  { id: 1, slug: "moby-dick", title: "Moby-Dick", author: "Herman Melville", year: 1851, status: "reading", labels: [{ name: "Sea", short: "Sea", colour: "#2f4a44" }], blurb: "A whaling voyage into obsession.", format: "EPUB", size: "2.1 MB", shelf: "I", w: 52, h: 236, lean: 0,
+    focus: .45, accent: "#796f3d", tone: "dark", oldRisk: false,
+    credit: "The Flying Dutchman, Albert Pinkham Ryder (1887)", page: "https://standardebooks.org/ebooks/herman-melville/moby-dick" },
+  { id: 2, slug: "jane-eyre", title: "Jane Eyre", author: "Charlotte Brontë", year: 1847, status: "finished", labels: [{ name: "Gothic", short: "Goth", colour: "#6b1f2a" }], blurb: "A governess, a locked attic, a stubborn heart.", format: "EPUB", size: "1.3 MB", shelf: "I", w: 47, h: 216, lean: 0,
+    focus: .50, accent: "#4b4b48", tone: "dark", oldRisk: false,
+    credit: "Portrait of a Young Girl, Vilhelm Hammershøi (1903–04)", page: "https://standardebooks.org/ebooks/charlotte-bronte/jane-eyre" },
+  { id: 3, slug: "pride-and-prejudice", title: "Pride and Prejudice", author: "Jane Austen", year: 1813, status: "unread", labels: [{ name: "Romance", short: "Rom", colour: "#7a3a45" }], blurb: "Manners, money and a very slow apology.", format: "EPUB", size: "1.1 MB", shelf: "I", w: 51, h: 210, lean: 0,
+    focus: .45, accent: "#7b6845", tone: "dark", oldRisk: false,
+    credit: "A Wet Sunday Morning, Edmund Blair Leighton (1896)", page: "https://standardebooks.org/ebooks/jane-austen/pride-and-prejudice" },
+  { id: 4, slug: "frankenstein", title: "Frankenstein", author: "Mary Shelley", year: 1818, status: "reading", labels: [{ name: "Gothic", short: "Goth", colour: "#6b1f2a" }, { name: "Science", short: "Sci", colour: "#2f3b52" }], blurb: "Ambition gives its creature a body.", format: "EPUB", size: "0.9 MB", shelf: "I", w: 50, h: 230, lean: 0,
+    focus: .52, accent: "#813d2b", tone: "dark", oldRisk: false,
+    credit: "Portrait of Adam, Giuseppe Arcimboldo (1578)", page: "https://standardebooks.org/ebooks/mary-shelley/frankenstein" },
+  { id: 5, slug: "dracula", title: "Dracula", author: "Bram Stoker", year: 1897, status: "unread", labels: [{ name: "Gothic", short: "Goth", colour: "#6b1f2a" }], blurb: "An ancient appetite arrives in England.", format: "EPUB", size: "1.6 MB", shelf: "I", w: 48, h: 222, lean: 0,
+    focus: .55, accent: "#43413e", tone: "dark", oldRisk: false,
+    credit: "Italian Landscape of Ruins in the Moonlight, Joseph Magnus Stäck (1850)", page: "https://standardebooks.org/ebooks/bram-stoker/dracula" },
+  { id: 6, slug: "great-expectations", title: "Great Expectations", author: "Charles Dickens", year: 1861, status: "finished", labels: [{ name: "Classics", short: "Clas", colour: "#5b4326" }], blurb: "A fortune with invisible strings.", format: "EPUB", size: "1.8 MB", shelf: "I", w: 53, h: 242, lean: 0,
+    focus: .60, accent: "#302c20", tone: "dark", oldRisk: false,
+    credit: "Self-Portrait, Joseph Paelinck (1812)", page: "https://standardebooks.org/ebooks/charles-dickens/great-expectations" },
+
+  { id: 7, slug: "bleak-house", title: "Bleak House", author: "Charles Dickens", year: 1853, status: "unread", labels: [{ name: "Classics", short: "Clas", colour: "#5b4326" }], blurb: "Fog, Chancery and a case that never ends.", format: "EPUB", size: "2.3 MB", shelf: "II", w: 52, h: 234, lean: 0,
+    focus: .50, accent: "#514336", tone: "dark", oldRisk: false,
+    credit: "The Writing Master, Thomas Eakins (1882)", page: "https://standardebooks.org/ebooks/charles-dickens/bleak-house" },
+  { id: 8, slug: "middlemarch", title: "Middlemarch", author: "George Eliot", year: 1871, status: "reading", labels: [{ name: "Classics", short: "Clas", colour: "#5b4326" }], blurb: "A whole town caught in its own ambitions.", format: "EPUB", size: "2.0 MB", shelf: "II", w: 53, h: 244, lean: 0,
+    focus: .56, accent: "#605844", tone: "dark", oldRisk: false,
+    credit: "The Grove, Hampstead, John Constable (1821–22)", page: "https://standardebooks.org/ebooks/george-eliot/middlemarch" },
+  { id: 9, slug: "moonstone", title: "The Moonstone", author: "Wilkie Collins", year: 1868, status: "finished", labels: [{ name: "Crime", short: "Crim", colour: "#2c4256" }], blurb: "A stolen diamond and a household of suspects.", format: "EPUB", size: "1.4 MB", shelf: "II", w: 49, h: 224, lean: 0,
+    focus: .50, accent: "#855431", tone: "dark", oldRisk: false,
+    credit: "Study for “Portrait of an Indian”, Anne-Louis Girodet Roussy-Trioson (1807)", page: "https://standardebooks.org/ebooks/wilkie-collins/the-moonstone" },
+  { id: 10, slug: "time-machine", title: "The Time Machine", author: "H. G. Wells", year: 1895, status: "unread", labels: [{ name: "Science", short: "Sci", colour: "#2f3b52" }], blurb: "The future is not a holiday.", format: "EPUB", size: "0.6 MB", shelf: "II", w: 46, h: 204, lean: 0,
+    focus: .55, accent: "#6a6255", tone: "dark", oldRisk: false,
+    credit: "The Black Marble Clock, Paul Cézanne (c. 1870)", page: "https://standardebooks.org/ebooks/h-g-wells/the-time-machine" },
+  { id: 11, slug: "treasure-island", title: "Treasure Island", author: "Robert Louis Stevenson", year: 1883, status: "reading", labels: [{ name: "Adventure", short: "Adv", colour: "#6b3a24" }], blurb: "A map, a mutiny, a one-legged cook.", format: "EPUB", size: "1.2 MB", shelf: "II", w: 51, h: 232, lean: 0,
+    focus: .55, accent: "#836e63", tone: "dark", oldRisk: false,
+    credit: "One More Step, Mr. Hands, N. C. Wyeth (1911)", page: "https://standardebooks.org/ebooks/robert-louis-stevenson/treasure-island" },
+  { id: 12, slug: "jekyll-and-hyde", title: "Dr Jekyll and Mr Hyde", author: "Robert Louis Stevenson", year: 1886, status: "finished", labels: [{ name: "Gothic", short: "Goth", colour: "#6b1f2a" }], blurb: "A respectable man with a second door.", format: "EPUB", size: "0.5 MB", shelf: "II", w: 48, h: 214, lean: 0,
+    focus: .45, accent: "#5b4b41", tone: "dark", oldRisk: false,
+    credit: "Double Portrait of Marées and Lenbach, Hans von Marées (1863)", page: "https://standardebooks.org/ebooks/robert-louis-stevenson/the-strange-case-of-dr-jekyll-and-mr-hyde" },
+
+  { id: 13, slug: "hound-of-the-baskervilles", title: "The Hound of the Baskervilles", author: "Arthur Conan Doyle", year: 1902, status: "unread", labels: [{ name: "Crime", short: "Crim", colour: "#2c4256" }], blurb: "A family curse with very large footprints.", format: "EPUB", size: "1.0 MB", shelf: "III", w: 49, h: 220, lean: 0,
+    focus: .55, accent: "#c3b5a8", tone: "light", oldRisk: true,
+    credit: "Riesengebirgslandschaft mit aufsteigendem Nebel, Caspar David Friedrich (1820)", page: "https://standardebooks.org/ebooks/arthur-conan-doyle/the-hound-of-the-baskervilles" },
+  { id: 14, slug: "dorian-gray", title: "The Picture of Dorian Gray", author: "Oscar Wilde", year: 1890, status: "reading", labels: [{ name: "Decadence", short: "Dec", colour: "#4a3255" }], blurb: "A portrait that keeps the receipts.", format: "EPUB", size: "1.1 MB", shelf: "III", w: 51, h: 228, lean: 0,
+    focus: .52, accent: "#5a4c3c", tone: "dark", oldRisk: false,
+    credit: "The Garden, John Collier (1899)", page: "https://standardebooks.org/ebooks/oscar-wilde/the-picture-of-dorian-gray" },
+  { id: 15, slug: "scarlet-letter", title: "The Scarlet Letter", author: "Nathaniel Hawthorne", year: 1850, status: "finished", labels: [{ name: "Classics", short: "Clas", colour: "#5b4326" }], blurb: "A letter worn in public, a guilt kept private.", format: "EPUB", size: "0.8 MB", shelf: "III", w: 48, h: 212, lean: 0,
+    focus: .55, accent: "#734f3a", tone: "dark", oldRisk: false,
+    credit: "The Scarlet Letter, Hugues Merle (1861)", page: "https://standardebooks.org/ebooks/nathaniel-hawthorne/the-scarlet-letter" },
+  { id: 16, slug: "turn-of-the-screw", title: "The Turn of the Screw", author: "Henry James", year: 1898, status: "unread", labels: [{ name: "Ghost", short: "Ghost", colour: "#3a3046" }], blurb: "Two children, two ghosts, one unreliable witness.", format: "EPUB", size: "0.7 MB", shelf: "III", w: 46, h: 206, lean: 0,
+    focus: .62, accent: "#71735e", tone: "dark", oldRisk: true,
+    credit: "A Wintry Moon, John Atkinson Grimshaw (1886)", page: "https://standardebooks.org/ebooks/henry-james/the-turn-of-the-screw" },
+  { id: 17, slug: "alice", title: "Alice in Wonderland", author: "Lewis Carroll", year: 1865, status: "reading", labels: [{ name: "Wonder", short: "Won", colour: "#6b4a26" }], blurb: "A rabbit hole with a logic problem.", format: "EPUB", size: "0.9 MB", shelf: "III", w: 50, h: 202, lean: 0,
+    focus: .26, accent: "#73583e", tone: "dark", oldRisk: false,
+    credit: "Amanita, Ivan Shishkin (1879)", page: "https://standardebooks.org/ebooks/lewis-carroll/alices-adventures-in-wonderland/john-tenniel" },
+  { id: 18, slug: "wuthering-heights", title: "Wuthering Heights", author: "Emily Brontë", year: 1847, status: "finished", labels: [{ name: "Romance", short: "Rom", colour: "#7a3a45" }], blurb: "Love as weather.", format: "EPUB", size: "1.2 MB", shelf: "III", w: 52, h: 226, lean: 1.2,
+    focus: .55, accent: "#816453", tone: "dark", oldRisk: false,
+    credit: "Edith Villiers, George Frederic Watts (1862)", page: "https://standardebooks.org/ebooks/emily-bronte/wuthering-heights" },
+
+  { id: 19, slug: "whisper-man", title: "The Whisper Man", author: "Alex North", year: 2019, status: "unread", labels: [{ name: "Thriller", short: "Thr", colour: "#6b1f2a" }], blurb: "A father, a son, and a door left half-open.", format: "EPUB", size: "2.0 MB", shelf: "IV", w: 52, h: 236, lean: 0,
+    focus: AUTO_LAYOUT["whisper-man"].focus, accent: AUTO_LAYOUT["whisper-man"].accent, tone: AUTO_LAYOUT["whisper-man"].tone, oldRisk: false,
+    auto: true, autoData: AUTO_LAYOUT["whisper-man"], srcW: 1303, srcH: 2000, aspect: 1303 / 2000,
+    isbn: "9781405936019", source: "Apple Books", credit: AUTO_LAYOUT["whisper-man"].credit,
+    page: AUTO_LAYOUT["whisper-man"].coverPage },
+  { id: 20, slug: "rock-paper-scissors", title: "Rock Paper Scissors", author: "Alice Feeney", year: 2021, status: "unread", labels: [{ name: "Mystery", short: "Mys", colour: "#2c4256" }], blurb: "A marriage, a weekend away, and a lie at the centre.", format: "EPUB", size: "1.8 MB", shelf: "IV", w: 52, h: 236, lean: 0,
+    focus: AUTO_LAYOUT["rock-paper-scissors"].focus, accent: AUTO_LAYOUT["rock-paper-scissors"].accent, tone: AUTO_LAYOUT["rock-paper-scissors"].tone, oldRisk: true,
+    auto: true, autoData: AUTO_LAYOUT["rock-paper-scissors"], srcW: 1303, srcH: 2000, aspect: 1303 / 2000,
+    isbn: "9781250266118", source: "Apple Books", credit: AUTO_LAYOUT["rock-paper-scissors"].credit,
+    page: AUTO_LAYOUT["rock-paper-scissors"].coverPage }
+];
+
+const STATUS_LABELS = { unread: "Unread", reading: "Reading", finished: "Finished" };
+const SHELVES = ["I", "II", "III", "IV"];
+const SHELF_META = {
+  I: { label: "Shelf I" },
+  II: { label: "Shelf II" },
+  III: { label: "Shelf III" },
+  IV: { label: "New arrivals", auto: true }
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function escapeHTML(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function surname(author) {
+  const parts = author.split(" ");
+  return parts[parts.length - 1];
+}
+function focusPos(book) {
+  // Convert a focus point in cover coordinates to a CSS background-position
+  // percentage of the horizontal overflow. The source aspect is per-book:
+  // Standard Ebooks is 2:3; the new arrivals are 1303:2000.
+  const width = book.w * shelfScale();
+  const aspect = book.aspect || (2 / 3);
+  const imageWidth = book.h * aspect;
+  if (imageWidth <= width) return 50;
+  return clamp(((book.focus * imageWidth) - width / 2) / (imageWidth - width), 0, 1) * 100;
+}
+function cropPct(book, mode) {
+  const width = book.w * shelfScale();
+  const aspect = book.aspect || (2 / 3);
+  const base = (width / book.h) / aspect;
+  return (mode === "old" ? base / 1.45 : base) * 100;
+}
+function shelfScale() {
+  return clamp((window.innerWidth - 34) / 332, .76, 1);
+}
+function syncShelfScale() {
+  document.documentElement.style.setProperty("--sw", shelfScale().toFixed(4));
+}
+function refreshSpinePositions() {
+  document.querySelectorAll(".spine").forEach((node) => {
+    const book = BOOKS.find((item) => item.id === Number(node.dataset.bookId));
+    if (book) node.style.setProperty("--pos", focusPos(book).toFixed(3) + "%");
+  });
+}
+function titleSize(title) {
+  const n = title.length;
+  if (n > 26) return 10.3;
+  if (n > 21) return 10.9;
+  if (n > 18) return 11.5;
+  if (n > 14) return 12.1;
+  if (n > 10) return 12.8;
+  return 13.5;
+}
+function titleColumns(title) {
+  // Literata at these sizes fits roughly 22–23 characters in the available
+  // title height before it needs a second type column.
+  return title.length > 22 ? 2 : 1;
+}
+function railWidth(book) {
+  const columns = titleColumns(book.title);
+  const fs = titleSize(book.title);
+  return Math.round(columns * fs * 1.09 + (columns === 1 ? 7 : 9));
+}
+function shade(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * (1 - amount));
+  const g = Math.round(((n >> 8) & 255) * (1 - amount));
+  const b = Math.round((n & 255) * (1 - amount));
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+function lighten(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) + (255 - ((n >> 16) & 255)) * amount);
+  const g = Math.round(((n >> 8) & 255) + (255 - ((n >> 8) & 255)) * amount);
+  const b = Math.round((n & 255) + (255 - (n & 255)) * amount);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+function statusMark(book) {
+  if (book.status === "reading") return '<span class="status-ribbon" aria-hidden="true"></span>';
+  if (book.status === "finished") return '<span class="finish-mark" aria-hidden="true">✦</span>';
+  return "";
+}
+function bandsMark(book) {
+  if (!book.labels.length) return "";
+  const label = book.labels[0];
+  const chip = '<span class="chip" style="--lc:' + label.colour + '" title="' + escapeHTML(label.name) + '">' +
+      escapeHTML(label.short) +
+      '<span class="visually-hidden"> ' + escapeHTML(label.name) + '</span>' +
+    '</span>';
+  return '<span class="band-labels">' + chip + '</span>';
+}
+function ariaFor(book) {
+  const labels = book.labels.map((label) => label.name).join(", ");
+  const autoNote = book.auto ? " New arrival. Automatically laid out; " + book.autoData.status + "." : "";
+  return book.title + " by " + book.author + ", " + STATUS_LABELS[book.status] + (labels ? ", labels: " + labels : "") + "." + autoNote + " Open crop detail.";
+}
+function spineStyle(book) {
+  const pos = focusPos(book).toFixed(3);
+  const auto = book.autoData;
+  const bandHeight = auto ? auto.bandFraction : 0.22;
+  const topCap = auto ? auto.topCapPx : 0;
+  return [
+    "--w:" + book.w + "px",
+    "--h:" + book.h + "px",
+    "--lean:" + book.lean + "deg",
+    "--pos:" + pos + "%",
+    "--fs:" + titleSize(book.title) + "px",
+    "--railw:" + (auto ? auto.railWidthPx : railWidth(book)) + "px",
+    "--railshift:" + (auto ? auto.railShiftPx : 0) + "px",
+    "--bandh:" + Math.round(book.h * bandHeight) + "px",
+    "--toph:" + topCap + "px",
+    "--af:" + (surname(book.author).length >= 9 ? 5 : surname(book.author).length >= 8 ? 5.4 : 6.1) + "px",
+    "--accent:" + (auto ? auto.accent : lighten(book.accent, 0.38)),
+    "--hi-fallback:url('covers/shelf/" + book.slug + "-800.jpg')",
+    "--hi:image-set(url('covers/shelf/" + book.slug + "-480.jpg') 1x, url('covers/shelf/" + book.slug + "-800.jpg') 2x)",
+    "--old:url('covers/old/" + book.slug + ".jpg')"
+  ].join(";");
+}
+function spineHTML(book, options) {
+  const opts = options || {};
+  const auto = book.autoData;
+  const attrs = 'class="spine" type="button" data-book-id="' + book.id + '" data-tone="' + book.tone + '" data-risk="' + (book.oldRisk ? "1" : "0") + '"' +
+    (book.auto ? ' data-auto="true" data-auto-status="' + auto.status + '"' : "") +
+    ' aria-label="' + escapeHTML(ariaFor(book)) + '" style="' + spineStyle(book) + '"' +
+    (opts.tabindex === false ? ' tabindex="-1"' : "");
+  return '<button ' + attrs + '>' +
+    '<span class="spine-art" aria-hidden="true"></span>' +
+    '<span class="old-guard" aria-hidden="true"></span>' +
+    '<span class="spine-shade" aria-hidden="true"></span>' +
+    '<span class="title-rail" aria-hidden="true"></span>' +
+    '<span class="title-wrap"><span class="spine-title">' + escapeHTML(book.title) + '</span></span>' +
+    '<span class="spine-band" aria-hidden="true">' +
+      '<span class="band-author">' + escapeHTML(surname(book.author)) + '</span>' +
+      bandsMark(book) +
+    '</span>' +
+    statusMark(book) +
+    '<span class="risk-dot" title="Centre-strip contrast below 4.5:1 in old-style rendering" aria-hidden="true"></span>' +
+    (book.auto ? '<span class="auto-cap" aria-hidden="true"><span class="auto-cap-label">AUTO</span><span class="auto-cap-sub">NEW ARRIVAL</span><i></i></span>' : "") +
+    '<span class="spine-rule top" aria-hidden="true"></span>' +
+    '<span class="spine-rule bottom" aria-hidden="true"></span>' +
+    '<span class="spine-edge l" aria-hidden="true"></span>' +
+    '<span class="spine-edge r" aria-hidden="true"></span>' +
+  '</button>';
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  mode: "high",
+  selectedId: 4,
+  sheetOpen: false,
+  lastFocus: null
+};
+
+/* ============================================================
+   RENDER: shelves
+   ============================================================ */
+function caseHTML(mark, books) {
+  const meta = SHELF_META[mark] || { label: "Shelf " + mark };
+  const count = books.length + (books.length === 1 ? " volume" : " volumes");
+  const auto = Boolean(meta.auto);
+  return '<section class="case' + (auto ? " case-auto" : "") + '" aria-label="' + escapeHTML(meta.label) + ', ' + books.length + ' books">' +
+    '<div class="case-crown" aria-hidden="true"><span class="screw l"></span><span class="screw r"></span></div>' +
+    '<div class="case-cavity">' +
+      '<div class="cavity-lamp" aria-hidden="true"></div>' +
+      '<span class="case-post l" aria-hidden="true"></span>' +
+      '<span class="case-post r" aria-hidden="true"></span>' +
+      '<ul class="books">' + books.map((book) => '<li>' + spineHTML(book) + '</li>').join("") + '</ul>' +
+    '</div>' +
+    '<div class="case-lip" aria-hidden="true"></div>' +
+    '<div class="case-board"><span class="case-plate">' + escapeHTML(meta.label) + '</span><span class="case-count">' + (auto ? books.length + " auto" : count) + '</span></div>' +
+    '<div class="case-plinth" aria-hidden="true"></div>' +
+    (auto ? '<p class="shelf-caption"><b>AUTO LAYOUT</b> Both covers were cropped, banded and colour-checked from their own pixels. One passes; one is flagged for review.</p>' : '') +
+  '</section>';
+}
+function renderShelves() {
+  const html = SHELVES.map((mark) => caseHTML(mark, BOOKS.filter((book) => book.shelf === mark))).join("");
+  document.getElementById("shelves").innerHTML = html;
+  document.querySelectorAll("#shelves .spine").forEach((node) => {
+    node.addEventListener("click", () => openSheet(Number(node.dataset.bookId)));
+  });
+  syncSelectedSpines();
+}
+
+/* ============================================================
+   RENDER: compare strip
+   ============================================================ */
+function selectedBook() {
+  return BOOKS.find((book) => book.id === state.selectedId) || BOOKS[3];
+}
+function cropWindowHTML(book, mode) {
+  const pct = cropPct(book, mode);
+  const isOld = mode === "old";
+  // Old-style keeps the mechanical centre crop and 1.45× zoom. The zoom also
+  // removes the bottom ~31% of the cover, which is why v1 did not repeat the
+  // cover title. Show that smaller window instead of pretending it is full-height.
+  const focus = isOld ? .5 : book.focus;
+  const height = isOld ? 100 / 1.45 : 100;
+  const top = isOld ? 46 - height / 2 : 0;
+  const left = clamp(focus * 100 - pct / 2, 0, 100 - pct);
+  const topMask = (!isOld && book.auto)
+    ? '<span class="top-mask" style="height:' + (book.autoData.topCapFraction * 100).toFixed(2) + '%"><span>auto cap</span></span>'
+    : '';
+  return '<span class="crop-window" style="left:' + left.toFixed(2) + '%;width:' + pct.toFixed(2) +
+    '%;top:' + top.toFixed(2) + '%;height:' + height.toFixed(2) + '%" aria-hidden="true">' +
+    topMask +
+    (isOld ? '' : '<span class="mask"><span>masked title plate</span></span>') +
+  '</span>';
+}
+function sourceDims(book) {
+  return {
+    w: book.srcW || 1400,
+    h: book.srcH || 2100,
+    oldW: 420,
+    oldH: Math.round(420 / (book.aspect || (2 / 3)))
+  };
+}
+function autoCurveSVG(auto) {
+  if (!auto || !auto.curve || !auto.curve.length) return "";
+  const chosen = auto.curve.reduce((best, point) =>
+    Math.abs(point.x - auto.focus) < Math.abs(best.x - auto.focus) ? point : best
+  , auto.curve[0]);
+  const points = auto.curve.map((point) =>
+    (point.x * 100).toFixed(1) + "," + (31 - point.score * 24).toFixed(1)
+  ).join(" ");
+  const cx = (chosen.x * 100).toFixed(1);
+  const cy = (31 - chosen.score * 24).toFixed(1);
+  return '<svg viewBox="0 0 100 36" preserveAspectRatio="none" role="img" aria-label="Focus score across the cover; chosen ' + Math.round(auto.focus * 100) + ' percent">' +
+    '<line x1="0" y1="31" x2="100" y2="31" stroke="rgba(203,164,94,.18)" stroke-width=".4"/>' +
+    '<line x1="0" y1="7" x2="100" y2="7" stroke="rgba(203,164,94,.1)" stroke-width=".3" stroke-dasharray="1 1"/>' +
+    '<polyline points="' + points + '" fill="none" stroke="#b9975c" stroke-width=".9" vector-effect="non-scaling-stroke"/>' +
+    '<line x1="' + cx + '" y1="4" x2="' + cx + '" y2="33" stroke="#e8c67f" stroke-width=".7" stroke-dasharray="1.2 1.2" vector-effect="non-scaling-stroke"/>' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="1.4" fill="#f2d79f" stroke="#2a1c0f" stroke-width=".5" vector-effect="non-scaling-stroke"/>' +
+    '<text x="1" y="35.2">left edge</text>' +
+    '<text x="99" y="35.2" text-anchor="end">right edge</text>' +
+    '<text x="' + cx + '" y="3.2" text-anchor="middle">chosen</text>' +
+  '</svg>';
+}
+function autoMetricsHTML(book, compact) {
+  const auto = book.autoData;
+  if (!auto) return "";
+  const livePct = cropPct(book, "high");
+  const contrastLabel = auto.tone === "light"
+    ? "ink on vellum · " + auto.railContrast.toFixed(1) + ":1"
+    : "cream on ink · " + auto.railContrast.toFixed(1) + ":1";
+  const cells = [
+    ["Focus", Math.round(auto.focus * 100) + "% <em>across</em>"],
+    ["Crop", livePct.toFixed(1) + "% <em>wide</em>"],
+    ["Band", Math.round(auto.bandFraction * 100) + "% <em>top " + Math.round(auto.bandTop * 100) + "%</em>"],
+    ["Top cap", auto.topCapPx + " px <em>" + Math.round(auto.topCapFraction * 100) + "%</em>"],
+    ["Rail", auto.railWidthPx + " px <em>" + (auto.railShiftPx >= 0 ? "+" : "") + auto.railShiftPx + " px shift</em>"],
+    ["Contrast", contrastLabel],
+    ["Title covered", Math.round(auto.titleCoverage * 100) + "%"],
+    ["Title collision", Math.round(auto.textCollision * 100) + "%"]
+  ];
+  return '<dl class="auto-metrics' + (compact ? " compact" : "") + '">' + cells.map(([label, value]) =>
+    '<div><dt>' + label + '</dt><dd>' + value + '</dd></div>'
+  ).join("") + '</dl>';
+}
+function autoReasonsHTML(book) {
+  const auto = book.autoData;
+  if (!auto) return "";
+  return '<ul class="auto-reasons">' + auto.reasons.map((reason) =>
+    '<li>' + escapeHTML(reason.charAt(0).toUpperCase() + reason.slice(1)) + '.</li>'
+  ).join("") + '</ul>';
+}
+function autoReadoutHTML(book) {
+  const auto = book.autoData;
+  if (!auto) return "";
+  return '<div class="compare-auto">' +
+    '<div class="auto-mini-head">' +
+      '<span class="auto-status">' + (auto.status === "pass" ? "AUTO · PASS" : "AUTO · REVIEW") + '</span>' +
+      '<span>' + (state.mode === "high" ? "derived from cover pixels → crop / band / rail" : "high-res decision only · shelf is old-style") + '</span>' +
+    '</div>' +
+    autoMetricsHTML(book, true) +
+    '<div class="auto-curve"><div class="curve-label"><span>Focus score across the cover</span><b>chosen ' + Math.round(auto.focus * 100) + '%</b></div>' + autoCurveSVG(auto) + '</div>' +
+    autoReasonsHTML(book) +
+  '</div>';
+}
+function compareCardHTML() {
+  const book = selectedBook();
+  const mode = state.mode;
+  const pct = cropPct(book, mode);
+  const dims = sourceDims(book);
+  const sourceWidth = mode === "old" ? dims.oldW : dims.w;
+  const sourceHeight = mode === "old" ? dims.oldH : dims.h;
+  const shelfWidth = Math.round(book.w * shelfScale());
+  const source = mode === "old" ? "covers/old/" + book.slug + ".jpg" : "covers/source/" + book.slug + ".jpg";
+  const sourceLabel = book.auto ? "Apple Books" : "Standard Ebooks";
+  const licence = book.auto ? "edition cover" : "public domain";
+  const audit = mode === "old"
+    ? (book.oldRisk
+        ? '<p class="audit-line is-warn"><span><b>Old-style fails here.</b> This cover’s centre strip sits below 4.5:1 behind cream. The amber dot on the spine marks it.</span></p>'
+        : '<p class="audit-line"><span>Old-style guard keeps this title above 4.5:1, but the crop is only ' + pct.toFixed(1) + '% of the cover width and the source is 420&nbsp;px.</span></p>')
+    : (book.auto
+        ? (book.autoData.status === "review"
+            ? '<p class="audit-line is-warn"><span><b>Automation flags this cover.</b> The band covers ' + Math.round(book.autoData.titleCoverage * 100) + '% of the detected title block and ' + Math.round(book.autoData.textCollision * 100) + '% of the visible title pixels still cross the crop. Contrast itself passes at ' + book.autoData.railContrast.toFixed(1) + ':1.</span></p>'
+            : '<p class="audit-line"><span><b>Automation passes.</b> The band covers the foot title block; the ' + book.autoData.topCapPx + '&nbsp;px top cap removes the marketing lines. Measured rail contrast ' + book.autoData.railContrast.toFixed(1) + ':1.</span></p>')
+        : (book.tone === "light"
+            ? '<p class="audit-line"><span><b>Vellum fallback.</b> The art is too light for cream, so this spine switches to dark ink on a warm vellum rail — a guaranteed ≥14:1 title contrast.</span></p>'
+            : '<p class="audit-line"><span><b>Title rail passes.</b> Cream on the 90%-ink rail is ≥5.6:1 even over pure white; this cover measures far better. The band masks the printed cover title.</span></p>'));
+  return '<div class="compare-card">' +
+    '<div class="compare-visual">' +
+      '<figure class="cover-map">' +
+        '<img src="' + source + '" alt="Front cover of ' + escapeHTML(book.title) + '" width="' + sourceWidth + '" height="' + sourceHeight + '" loading="lazy" decoding="async">' +
+        cropWindowHTML(book, mode) +
+        '<figcaption>Actual cover · ' + sourceWidth + '×' + sourceHeight + ' px</figcaption>' +
+      '</figure>' +
+      '<div class="compare-spine-col">' +
+        spineHTML(book, { tabindex: false }) +
+        '<span class="preview-caption">Shelf size<br>' + shelfWidth + ' × ' + book.h + ' px</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="compare-copy">' +
+      '<p class="eyebrow">' + (book.auto ? "AUTO · NEW ARRIVAL" : "Selected") + ' · ' + String(book.id).padStart(2, "0") + ' · Shelf ' + book.shelf + '</p>' +
+      '<h3>' + escapeHTML(book.title) + '</h3>' +
+      '<p class="byline">' + escapeHTML(book.author) + ' · ' + book.year + '</p>' +
+      '<dl class="stats">' +
+        '<div><dt>Crop window</dt><dd>' + pct.toFixed(1) + '% <em>of cover width</em></dd></div>' +
+        '<div><dt>Source pixels</dt><dd>' + sourceWidth + ' × ' + sourceHeight + '</dd></div>' +
+        '<div><dt>Focus point</dt><dd>' + (mode === "old" ? "50% <em>mechanical</em>" : Math.round(book.focus * 100) + '% <em>across</em>') + '</dd></div>' +
+        '<div><dt>Title treatment</dt><dd>' + (mode === "old" ? "v1 guard" : (book.tone === "light" ? "dark on vellum" : "cream on ink")) + '</dd></div>' +
+      '</dl>' +
+      (book.auto ? autoReadoutHTML(book) : "") +
+      audit +
+      '<p class="credit-line">Cover: <b>' + escapeHTML(book.credit) + '</b> · <a href="' + book.page + '" target="_blank" rel="noopener">' + sourceLabel + '</a>' +
+        (book.isbn ? ' · ISBN ' + book.isbn : "") + ' · ' + licence + '.</p>' +
+      '<div class="compare-actions">' +
+        '<button class="btn primary" type="button" id="compare-detail">Open crop detail</button>' +
+        '<button class="btn" type="button" id="compare-next">Next book</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+function renderCompare() {
+  document.getElementById("compare-blurb").innerHTML = state.mode === "high"
+    ? "The gold window is the part of the real front cover the spine is showing. The hatched foot is the shelf band that covers the cover’s printed title. Pick any book from the strip to inspect its crop."
+    : "The gold window is v1’s mechanical centre crop: a 1.45× zoom on a 420&nbsp;px source, shown at the same shelf width. The zoom excludes the printed title plate; the flat guard carries the type. Two covers still fail AA. Pick any book to compare.";
+  document.getElementById("compare-card").innerHTML = compareCardHTML();
+  document.getElementById("compare-detail").addEventListener("click", () => openSheet(state.selectedId));
+  document.getElementById("compare-next").addEventListener("click", () => {
+    const index = BOOKS.findIndex((book) => book.id === state.selectedId);
+    selectBook(BOOKS[(index + 1) % BOOKS.length].id, false);
+  });
+  document.querySelectorAll("#compare-card .spine").forEach((node) => {
+    node.addEventListener("click", () => openSheet(Number(node.dataset.bookId)));
+  });
+}
+function renderFilmstrip() {
+  document.getElementById("filmstrip").innerHTML = BOOKS.map((book) => {
+    const thumbH = Math.round(120 / (book.aspect || (2 / 3)));
+    return '<button class="film-item" type="button" data-book-id="' + book.id + '"' +
+      (book.auto ? ' data-auto="true"' : "") +
+      ' aria-pressed="' + (book.id === state.selectedId) + '" aria-label="Inspect ' + escapeHTML(book.title) + (book.auto ? " (auto)" : "") + '">' +
+      '<img src="covers/thumbs/' + book.slug + '.jpg" alt="" width="120" height="' + thumbH + '" loading="lazy" decoding="async">' +
+    '</button>';
+  }).join("");
+  document.querySelectorAll(".film-item").forEach((node) => {
+    node.addEventListener("click", () => selectBook(Number(node.dataset.bookId), true));
+  });
+}
+function syncSelectedSpines() {
+  document.querySelectorAll("#shelves .spine, #compare-card .spine, .film-item").forEach((node) => {
+    const id = Number(node.dataset.bookId);
+    if (node.classList.contains("film-item")) {
+      node.setAttribute("aria-pressed", String(id === state.selectedId));
+    }
+  });
+}
+function selectBook(id, announce) {
+  state.selectedId = id;
+  renderCompare();
+  syncSelectedSpines();
+  if (announce) {
+    const book = selectedBook();
+    announceText("Showing crop for " + book.title + ". " + cropPct(book, state.mode).toFixed(1) + " percent of the cover width.");
+    document.getElementById("compare").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+/* ============================================================
+   RENDER: automatic pass
+   ============================================================ */
+function autoCardHTML(book) {
+  const auto = book.autoData;
+  const dims = sourceDims(book);
+  const livePct = cropPct(book, "high");
+  return '<article class="auto-card" data-status="' + auto.status + '">' +
+    '<header class="auto-card-head">' +
+      '<div><p class="eyebrow">AUTO · NEW ARRIVAL · SHELF IV</p>' +
+        '<h3>' + escapeHTML(book.title) + '</h3>' +
+        '<p class="byline">' + escapeHTML(book.author) + ' · ' + book.year + ' · ISBN ' + book.isbn + '</p>' +
+      '</div>' +
+      '<span class="auto-status">' + (auto.status === "pass" ? "AUTO · PASS" : "AUTO · REVIEW") + '</span>' +
+    '</header>' +
+    '<div class="auto-visual">' +
+      '<figure class="cover-map">' +
+        '<img src="covers/source/' + book.slug + '.jpg" alt="Front cover of ' + escapeHTML(book.title) + '" width="' + dims.w + '" height="' + dims.h + '" loading="lazy" decoding="async">' +
+        cropWindowHTML(book, "high") +
+        '<figcaption>Actual cover · ' + dims.w + '×' + dims.h + ' px</figcaption>' +
+      '</figure>' +
+      '<ul class="auto-legend">' +
+        '<li><i></i><span><b>Gold window</b> — the ' + livePct.toFixed(1) + '% slice chosen from ' + auto.diagnostics.candidates + ' focus candidates.</span></li>' +
+        '<li><i></i><span><b>Hatched head</b> — the ' + auto.topCapPx + '&nbsp;px auto cap. ' + escapeHTML(auto.topCapNote) + '.</span></li>' +
+        '<li><i></i><span><b>Hatched foot</b> — the ' + Math.round(auto.bandFraction * 100) + '% shelf band; covers ' + Math.round(auto.titleCoverage * 100) + '% of the detected title block.</span></li>' +
+      '</ul>' +
+    '</div>' +
+    autoMetricsHTML(book, false) +
+    '<div class="auto-curve"><div class="curve-label"><span>Column focus score</span><b>chosen ' + Math.round(auto.focus * 100) + '%</b></div>' + autoCurveSVG(auto) + '</div>' +
+    autoReasonsHTML(book) +
+    '<p class="auto-foot">Credit: <b>' + escapeHTML(auto.credit) + '</b>. Source: <a href="' + auto.coverPage + '" target="_blank" rel="noopener">' + escapeHTML(auto.source) + '</a>. Extracted at 2000&nbsp;px; local file ' + dims.w + '×' + dims.h + '.</p>' +
+    '<button class="btn auto-select" type="button" data-auto-select="' + book.id + '">Compare this crop</button>' +
+  '</article>';
+}
+function renderAutoSection() {
+  const autoBooks = BOOKS.filter((book) => book.auto);
+  document.getElementById("auto-cards").innerHTML = autoBooks.map(autoCardHTML).join("");
+  document.querySelectorAll("[data-auto-select]").forEach((node) => {
+    node.addEventListener("click", () => selectBook(Number(node.dataset.autoSelect), true));
+  });
+}
+function updateAutoModeNote() {
+  const node = document.getElementById("auto-mode-note");
+  if (!node) return;
+  node.innerHTML = state.mode === "high"
+    ? "<b>High-res decisions.</b> These cards keep the high-res result; the shelf and compare strip follow the current render mode."
+    : "<b>Old-style is a comparison only.</b> The cards above keep the automatic high-res decisions; the shelf now shows v1’s 420&nbsp;px pipeline.";
+}
+
+/* ============================================================
+   RENDER: sources
+   ============================================================ */
+function renderSources() {
+  document.getElementById("sources-list").innerHTML = BOOKS.map((book) =>
+    '<li><b>' + escapeHTML(book.title) + '</b> — ' + escapeHTML(book.credit) + '. ' +
+      '<a href="' + book.page + '" target="_blank" rel="noopener">' + (book.auto ? "Apple Books" : "Standard Ebooks") + '</a>' +
+      (book.isbn ? ' · ISBN ' + book.isbn : "") + '.</li>'
+  ).join("");
+}
+
+/* ============================================================
+   MODE
+   ============================================================ */
+function setMode(mode, announce) {
+  state.mode = mode;
+  document.documentElement.dataset.mode = mode;
+  document.getElementById("mode-high").setAttribute("aria-pressed", String(mode === "high"));
+  document.getElementById("mode-old").setAttribute("aria-pressed", String(mode === "old"));
+  document.getElementById("mode-note").innerHTML = mode === "high"
+    ? '<b>High-res:</b> 480/800&nbsp;px responsive art, a per-cover focus point, a title rail and the masking shelf band. <b>Old-style</b> brings back v1’s 420&nbsp;px centre crop and 1.45× zoom for a same-size comparison.'
+    : '<b>Old-style:</b> v1’s 420&nbsp;px centre crop at 1.45×, with the flat dark guard. It is shown at the same 50-ish&nbsp;px spine width, so the comparison is about the image and crop, not the layout. Amber dots mark the covers that fail AA.';
+  updateAutoModeNote();
+  renderCompare();
+  if (announce) announceText(mode === "high" ? "High-resolution rendering on." : "Old-style rendering on.");
+}
+
+/* ============================================================
+   DETAIL SHEET
+   ============================================================ */
+function sheetHTML(book) {
+  const mode = state.mode;
+  const pct = cropPct(book, mode);
+  const source = mode === "old" ? "covers/old/" + book.slug + ".jpg" : "covers/source/" + book.slug + ".jpg";
+  const dims = sourceDims(book);
+  const sourceWidth = mode === "old" ? dims.oldW : dims.w;
+  const sourceHeight = mode === "old" ? dims.oldH : dims.h;
+  const labels = book.labels.map((label) => '<span class="sheet-tag" style="border-color:' + label.colour + ';color:#f2ddba">' + escapeHTML(label.name) + '</span>').join("");
+  const autoLine = book.auto
+    ? '<p class="sheet-auto"><b>' + (book.autoData.status === "pass" ? "AUTO · PASS" : "AUTO · REVIEW") + '</b> Focus ' + Math.round(book.autoData.focus * 100) + '% · band ' + Math.round(book.autoData.bandFraction * 100) + '% · cap ' + book.autoData.topCapPx + '&nbsp;px · rail ' + book.autoData.railContrast.toFixed(1) + ':1. The automatic decision is high-res only.</p>'
+    : "";
+  return '<div class="sheet-head">' +
+      '<p class="eyebrow">Lifted spine · ' + String(book.id).padStart(2, "0") + ' · Shelf ' + book.shelf + '</p>' +
+      '<h2 id="sheet-title">' + escapeHTML(book.title) + '</h2>' +
+      '<p class="byline">' + escapeHTML(book.author) + ' · ' + book.year + '</p>' +
+    '</div>' +
+    '<div class="sheet-visual">' +
+      '<figure class="cover-map sheet-cover">' +
+        '<img src="' + source + '" alt="Front cover of ' + escapeHTML(book.title) + '" width="' + sourceWidth + '" height="' + sourceHeight + '">' +
+        cropWindowHTML(book, mode) +
+        '<figcaption>' + (mode === "old" ? dims.oldW + " px source" : dims.w + " px source") + '</figcaption>' +
+      '</figure>' +
+      '<div class="sheet-spine">' +
+        spineHTML(book, { tabindex: false }) +
+        '<span class="preview-caption">Shelf size<br>' + Math.round(book.w * shelfScale()) + ' × ' + book.h + ' px</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="sheet-body">' +
+      '<p class="blurb">' + escapeHTML(book.blurb) + '</p>' +
+      '<dl class="sheet-meta">' +
+        '<div><dt>Format</dt><dd>' + book.format + '</dd></div>' +
+        '<div><dt>Status</dt><dd>' + STATUS_LABELS[book.status] + '</dd></div>' +
+        '<div><dt>Crop</dt><dd>' + pct.toFixed(1) + '% of width</dd></div>' +
+      '</dl>' +
+      '<div class="sheet-tags">' + labels + '</div>' +
+      autoLine +
+      '<p class="sheet-credit">Cover: <b>' + escapeHTML(book.credit) + '</b> · <a href="' + book.page + '" target="_blank" rel="noopener">' + (book.auto ? "Apple Books" : "Standard Ebooks") + '</a>' +
+        (book.isbn ? ' · ISBN ' + book.isbn : "") + ' · ' + (book.auto ? "edition cover" : "public domain") + '. ' +
+        (mode === "old" ? "Shown in old-style mode: 420 px centre crop and flat guard." : (book.tone === "light" ? "Shown with the vellum title fallback." : "Shown with the smoked-glass title rail.")) +
+      '</p>' +
+      '<div class="sheet-actions">' +
+        '<button class="btn primary" type="button" id="sheet-read">Read sample</button>' +
+        '<button class="btn" type="button" id="sheet-close-2">Back to shelf</button>' +
+        '<span class="sheet-note">Prototype only</span>' +
+      '</div>' +
+    '</div>';
+}
+function openSheet(id) {
+  const book = BOOKS.find((item) => item.id === id) || BOOKS[0];
+  state.selectedId = id;
+  state.lastFocus = document.activeElement;
+  document.getElementById("sheet-content").innerHTML = sheetHTML(book);
+  const layer = document.getElementById("sheet-layer");
+  layer.hidden = false;
+  requestAnimationFrame(() => {
+    layer.classList.add("is-open");
+    document.getElementById("sheet").focus();
+  });
+  document.body.style.overflow = "hidden";
+  const spine = document.querySelector('#shelves .spine[data-book-id="' + id + '"]');
+  if (spine) spine.classList.add("is-lifted");
+  state.sheetOpen = true;
+  document.getElementById("sheet-close-2").addEventListener("click", closeSheet, { once: true });
+  document.getElementById("sheet-read").addEventListener("click", () => {
+    announceText("Read sample is a placeholder in this prototype.");
+  });
+  renderCompare();
+  syncSelectedSpines();
+  announceText("Opened crop detail for " + book.title + ".");
+}
+function closeSheet() {
+  if (!state.sheetOpen) return;
+  const layer = document.getElementById("sheet-layer");
+  layer.classList.remove("is-open");
+  document.body.style.overflow = "";
+  document.querySelectorAll("#shelves .spine.is-lifted").forEach((node) => node.classList.remove("is-lifted"));
+  state.sheetOpen = false;
+  window.setTimeout(() => {
+    layer.hidden = true;
+    if (state.lastFocus && typeof state.lastFocus.focus === "function") state.lastFocus.focus();
+  }, 200);
+}
+function trapFocus(event) {
+  if (!state.sheetOpen || event.key !== "Tab") return;
+  const sheet = document.getElementById("sheet");
+  const focusable = sheet.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+function announceText(text) {
+  const live = document.getElementById("live");
+  live.textContent = "";
+  window.setTimeout(() => { live.textContent = text; }, 30);
+}
+
+/* ============================================================
+   WIRE UP
+   ============================================================ */
+syncShelfScale();
+renderShelves();
+renderFilmstrip();
+renderAutoSection();
+updateAutoModeNote();
+renderSources();
+renderCompare();
+setMode("high", false);
+
+document.getElementById("mode-high").addEventListener("click", () => setMode("high", true));
+document.getElementById("mode-old").addEventListener("click", () => setMode("old", true));
+document.getElementById("sheet-close").addEventListener("click", closeSheet);
+document.querySelector("[data-close-sheet]").addEventListener("click", closeSheet);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && state.sheetOpen) closeSheet();
+  trapFocus(event);
+});
+window.addEventListener("resize", () => {
+  // The crop window, focus position and shelf-size caption are viewport-dependent.
+  syncShelfScale();
+  refreshSpinePositions();
+  renderAutoSection();
+  updateAutoModeNote();
+  if (!state.sheetOpen) renderCompare();
+});
+
+// The automatic pass is a real file, not just a pasted decision: when the
+// prototype is served over HTTP, re-read it so `node auto-layout.cjs` updates
+// the page. The embedded AUTO_LAYOUT above is the file:// fallback.
+(async () => {
+  try {
+    const response = await fetch("auto-layout.json", { cache: "no-store" });
+    if (!response.ok) return;
+    const json = await response.json();
+    if (!json || !json.inputs) return;
+    for (const [slug, data] of Object.entries(json.inputs)) {
+      const book = BOOKS.find((item) => item.slug === slug);
+      if (!book) continue;
+      book.autoData = data;
+      book.focus = data.focus;
+      book.accent = data.accent;
+      book.tone = data.tone;
+      book.oldRisk = slug === "rock-paper-scissors";
+    }
+    renderShelves();
+    renderFilmstrip();
+    renderAutoSection();
+    renderCompare();
+  } catch (error) {
+    // Static/file:// view keeps the embedded decisions.
+  }
+})();
+</script>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

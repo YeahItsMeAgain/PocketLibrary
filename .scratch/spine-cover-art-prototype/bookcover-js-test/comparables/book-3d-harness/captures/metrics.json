@@ -1,0 +1,57 @@
+[
+  {
+    "cover": "whisper-man",
+    "sheets": 1,
+    "slug": "whisper-man-1sheet",
+    "canvas": {
+      "w": 1000,
+      "h": 760
+    },
+    "errors": [],
+    "ok": true
+  },
+  {
+    "cover": "whisper-man",
+    "sheets": 12,
+    "slug": "whisper-man-12sheets",
+    "canvas": {
+      "w": 1000,
+      "h": 760
+    },
+    "errors": [],
+    "ok": true
+  },
+  {
+    "cover": "whisper-man",
+    "sheets": 40,
+    "slug": "whisper-man-40sheets",
+    "canvas": {
+      "w": 1000,
+      "h": 760
+    },
+    "errors": [],
+    "ok": true
+  },
+  {
+    "cover": "rock-paper-scissors",
+    "sheets": 12,
+    "slug": "rock-paper-scissors-12sheets",
+    "canvas": {
+      "w": 1000,
+      "h": 760
+    },
+    "errors": [],
+    "ok": true
+  },
+  {
+    "cover": "moby-dick",
+    "sheets": 12,
+    "slug": "moby-dick-12sheets",
+    "canvas": {
+      "w": 1000,
+      "h": 760
+    },
+    "errors": [],
+    "ok": true
+  }
+]

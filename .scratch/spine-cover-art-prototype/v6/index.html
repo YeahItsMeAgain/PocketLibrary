@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en" data-dir="hybrid" data-light="gallery" data-material="on" data-rail="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>The spine at forty-eight pixels — PocketLibrary v6</title>
+<meta name="description" content="Three buildable book-spine directions for PocketLibrary, measured at 40–55 pixels.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#shelves">Skip to the shelves</a>
+<div class="page-noise" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="masthead__top">
+    <span class="wordmark"><span class="wordmark__mark" aria-hidden="true"></span>Pocket Library</span>
+    <span class="edition">Shelf study <b>06</b> <span aria-hidden="true">·</span> the spine</span>
+  </div>
+
+  <div class="masthead__title">
+    <p class="kicker">A design system for the smallest cover</p>
+    <h1>The spine at <em>forty-eight</em> pixels.</h1>
+    <p class="lede">A shelf spine is 2D, narrower than a thumbnail, and read in a glance. This study treats it as a designed object: one idea, one type voice, one material edge. Three directions, the same 21 books, measured type that never clips.</p>
+  </div>
+
+  <dl class="facts">
+    <div><dt>Directions</dt><dd>3</dd></div>
+    <div><dt>Spines</dt><dd>21</dd></div>
+    <div><dt>Width band</dt><dd>40–55 <small>px</small></dd></div>
+    <div><dt>Type</dt><dd>measured <small>canvas</small></dd></div>
+  </dl>
+</header>
+
+<main>
+  <section class="console" aria-labelledby="console-title">
+    <h2 class="sr-only" id="console-title">Design controls</h2>
+
+    <div class="console__row console__row--directions">
+      <span class="console__label">Direction<b>choose one</b></span>
+      <div class="directions" role="group" aria-label="Spine design direction">
+        <button class="dir" type="button" data-dir-btn="editorial" aria-pressed="false">
+          <span class="dir__mini dir__mini--editorial" aria-hidden="true"><i></i></span>
+          <span class="dir__text"><b>Editorial</b><small>art + rail</small></span>
+        </button>
+        <button class="dir" type="button" data-dir-btn="cloth" aria-pressed="false">
+          <span class="dir__mini dir__mini--cloth" aria-hidden="true"><i></i></span>
+          <span class="dir__text"><b>Clothbound</b><small>cloth + foil</small></span>
+        </button>
+        <button class="dir" type="button" data-dir-btn="hybrid" aria-pressed="true">
+          <span class="dir__mini dir__mini--hybrid" aria-hidden="true"><i></i></span>
+          <span class="dir__text"><b>Hybrid</b><small>art + paper</small></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="console__row console__row--secondary">
+      <div class="control">
+        <span class="control__label">Title rail</span>
+        <div class="seg" role="group" aria-label="Title rail">
+          <button class="seg__btn" type="button" id="rail-on" aria-pressed="true">On</button>
+          <button class="seg__btn" type="button" id="rail-off" aria-pressed="false">Off</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <span class="control__label">Lighting</span>
+        <div class="seg" role="group" aria-label="Lighting">
+          <button class="seg__btn" type="button" data-light-btn="gallery" aria-pressed="true">Gallery</button>
+          <button class="seg__btn" type="button" data-light-btn="lamp" aria-pressed="false">Lamp</button>
+          <button class="seg__btn" type="button" data-light-btn="dusk" aria-pressed="false">Dusk</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <span class="control__label">Material</span>
+        <button class="switch" type="button" id="material-toggle" aria-pressed="true">
+          <span class="switch__track" aria-hidden="true"><i></i></span>
+          <span class="switch__text" id="material-text">Cues on</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="console__row console__row--filter">
+      <span class="console__label">Provenance<b>not decoration</b></span>
+      <div class="seg seg--filters" role="group" aria-label="Filter by provenance">
+        <button class="seg__btn" type="button" data-filter-btn="all" aria-pressed="true">All <span data-count="all">21</span></button>
+        <button class="seg__btn" type="button" data-filter-btn="original" aria-pressed="false">Original <span data-count="original">18</span></button>
+        <button class="seg__btn" type="button" data-filter-btn="reconstructed" aria-pressed="false">Recon <span data-count="reconstructed">2</span></button>
+        <button class="seg__btn" type="button" data-filter-btn="fallback" aria-pressed="false">Fallback <span data-count="fallback">1</span></button>
+      </div>
+    </div>
+
+    <p class="fitline" id="fitline" aria-live="polite"><span class="fitline__dot" aria-hidden="true"></span><span id="fitline-text">Measuring type…</span></p>
+  </section>
+
+  <section class="shelf-zone" id="shelves" aria-label="The shelf, rendered in the selected direction">
+    <noscript><p class="empty">The shelf needs JavaScript for measured type and shelf packing.</p></noscript>
+  </section>
+
+  <section class="detail" id="detail" aria-live="polite" aria-label="Selected spine detail"></section>
+
+  <section class="system" aria-labelledby="system-title">
+    <div class="system__intro">
+      <p class="kicker">The system</p>
+      <h2 id="system-title">What survives <em>at this size</em></h2>
+      <p>At 40–55 px the eye gets six or seven pixels of type, a colour field, and one or two millimetres of material. Everything else is noise. The system is built from four repeatable decisions.</p>
+    </div>
+    <div class="system__grid">
+      <article>
+        <span class="system__no" aria-hidden="true">01</span>
+        <h3>Art treatment</h3>
+        <p>Full bleed for editorial, a half-bound window for hybrid, pure cloth for clothbound. Art is a vertical slice, never a squashed thumbnail.</p>
+        <div class="swatches swatches--art" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </article>
+      <article>
+        <span class="system__no" aria-hidden="true">02</span>
+        <h3>One type voice</h3>
+        <p>Sans caps for the editorial rail, high-contrast Garamond on cloth, a sturdier Garamond on paper. Author, ornament and rules follow the same voice.</p>
+        <div class="type-sample" aria-hidden="true"><span>Aa</span><b>EDITORIAL</b><i>Cloth</i></div>
+      </article>
+      <article>
+        <span class="system__no" aria-hidden="true">03</span>
+        <h3>Material, not texture soup</h3>
+        <p>One grain, one edge shadow, one headband. Foil only on cloth. The material toggle proves which cues are doing the work.</p>
+        <div class="material-sample" aria-hidden="true"><i></i><i></i><i></i></div>
+      </article>
+      <article>
+        <span class="system__no" aria-hidden="true">04</span>
+        <h3>Provenance, one mark</h3>
+        <p>A 3 px lozenge at the tail. Filled for original art, split for reconstructed, hollow for fallback. Full meaning lives in the detail card, not on the shelf.</p>
+        <div class="prov-sample" aria-hidden="true"><span class="mark mark--original"></span><span class="mark mark--reconstructed"></span><span class="mark mark--fallback"></span></div>
+      </article>
+    </div>
+
+    <div class="verdict">
+      <div class="verdict__lead">
+        <p class="kicker">Recommendation</p>
+        <h2>Ship <em>Hybrid</em> as the default.</h2>
+      </div>
+      <div class="verdict__body">
+        <p>Hybrid is the only direction that keeps a real art window, a high-contrast paper label and a <b>7.7 px minimum title</b> at the same time. It left the most margin of the three (91% of the label) and every ink/field pair is above 4.5:1.</p>
+        <div class="verdict__modes">
+          <span><b>Default</b> Hybrid · art + paper</span>
+          <span><b>Art-first</b> Editorial · full bleed + rail</span>
+          <span><b>Classics</b> Clothbound · colour + foil</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div>
+    <span class="wordmark wordmark--small"><span class="wordmark__mark" aria-hidden="true"></span>Pocket Library</span>
+    <p>Throwaway design study · v6 · no production code changed</p>
+  </div>
+  <p class="footer__note">Art from public-domain paintings and reviewed reconstructions. Provenance in the detail card. Geometry: v4 wrap. Reference: bookcover-js audit.</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

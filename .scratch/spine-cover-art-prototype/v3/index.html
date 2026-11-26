@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="en" data-rail="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>PocketLibrary — The artwork, unprinted (prototype v3)</title>
+<!--
+  THROWAWAY PROTOTYPE v3 — not production code.
+  The spine uses only the cover artwork, with the cover's printed text removed.
+  • 18 public-domain classics: 15 original paintings from Wikimedia Commons,
+    3 cropped above the Standard Ebooks title plate. No OCR/inpainting needed.
+  • 2 modern trade covers: RapidOCR + LaMa big-lama on CPU, with the mask and
+    the failures shown. The US Rock Paper Scissors cover is the honest failure:
+    70% of its pixels are typography/marketing.
+  • No foot band or top cap masks printed text. The only optional overlay is the
+    app's own title rail, toggled with "With title rail".
+  Everything lives under .scratch/spine-cover-art-prototype/v3/.
+-->
+<style>
+@font-face {
+  font-family: "EB Garamond";
+  src: url("EBGaramond-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Literata";
+  src: url("Literata-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+*, *::before, *::after { box-sizing: border-box; }
+:root {
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  --display: "EB Garamond", "Iowan Old Style", Palatino, Georgia, serif;
+  --reading: "Literata", "Iowan Old Style", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bg: #0b0806;
+  --cream: #f4e7cb;
+  --ink: #1d140c;
+  --brass: #cba45e;
+  --muted: #a8967f;
+  --muted-2: #7f6e5c;
+  --line: rgba(203, 164, 94, .22);
+  --line-soft: rgba(203, 164, 94, .12);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --sw: 1;
+}
+html, body { margin: 0; padding: 0; }
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  background: var(--bg);
+}
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--cream);
+  font-family: var(--reading);
+  background:
+    radial-gradient(90% 30% at 50% -6%, rgba(126, 76, 36, .22), transparent 66%),
+    radial-gradient(80% 34% at 50% 100%, rgba(38, 22, 10, .42), transparent 72%),
+    linear-gradient(180deg, #0b0806, #0a0705 55%, #080604);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--noise);
+  background-size: 160px 160px;
+  opacity: .045;
+  mix-blend-mode: overlay;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+::selection { background: rgba(203, 164, 94, .32); }
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: absolute;
+  top: -64px; left: 12px;
+  z-index: 120;
+  padding: 10px 14px;
+  background: var(--cream);
+  color: var(--ink);
+  font: 12px/1 var(--sans);
+  text-decoration: none;
+  border-radius: 2px;
+}
+.skip-link:focus { top: 12px; }
+
+.stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 448px;
+  margin: 0 auto;
+  padding: 18px 12px 120px;
+}
+@media (max-width: 360px) { .stage { padding-right: 9px; padding-left: 9px; } }
+@media (min-width: 520px) {
+  body { padding: 26px 0 34px; }
+  .stage {
+    border-left: 1px solid rgba(203, 164, 94, .13);
+    border-right: 1px solid rgba(203, 164, 94, .13);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .014), transparent 26%);
+    box-shadow: 0 0 110px rgba(0, 0, 0, .55);
+  }
+}
+
+/* ---------- masthead ---------- */
+.masthead { padding: 2px 2px 0; }
+.topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ead7b2;
+  font-family: var(--sans);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+.wordmark::before {
+  content: "";
+  width: 7px; height: 7px;
+  border: 1px solid var(--brass);
+  transform: rotate(45deg);
+  box-shadow: inset 0 0 0 1px rgba(203, 164, 94, .18);
+}
+.edition {
+  color: var(--muted-2);
+  font-family: var(--sans);
+  font-size: 6.5px;
+  letter-spacing: .18em;
+  text-align: right;
+  text-transform: uppercase;
+}
+.edition b { color: var(--brass); font-weight: 700; }
+.proto-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 15px;
+  padding: 3px 7px;
+  border: 1px dashed rgba(203, 164, 94, .46);
+  border-radius: 2px;
+  color: #d9bc82;
+  font-family: var(--sans);
+  font-size: 6.3px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.proto-stamp::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--brass);
+  box-shadow: 0 0 8px rgba(203, 164, 94, .8);
+}
+.kicker {
+  margin: 15px 0 0;
+  color: #a58e70;
+  font-family: var(--sans);
+  font-size: 7px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 5px 0 0;
+  color: #f6e9cf;
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.022em;
+  text-wrap: balance;
+}
+h1 em { color: var(--brass); font-weight: 400; }
+.lede {
+  margin: 11px 0 0;
+  max-width: 36ch;
+  color: #b9a58b;
+  font-size: 11.6px;
+  line-height: 1.58;
+}
+.lede b { color: #e7d2ac; font-weight: 600; }
+.spec-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin-top: 16px;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+}
+.spec { padding: 7px 8px; background: rgba(18, 13, 9, .93); }
+.spec b {
+  display: block;
+  color: #e5c98f;
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
+}
+.spec b small { font-size: 10px; }
+.spec span {
+  display: block;
+  margin-top: 2px;
+  color: #8d7a64;
+  font-family: var(--sans);
+  font-size: 5.4px;
+  letter-spacing: .08em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+/* ---------- toggle ---------- */
+.modebar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 16px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(31, 22, 15, .94), rgba(14, 10, 7, .96));
+}
+.mode-label {
+  display: flex;
+  flex-direction: column;
+  padding-left: 3px;
+  color: #8e7a62;
+  font-family: var(--sans);
+  font-size: 5.3px;
+  letter-spacing: .13em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+.mode-label b { color: #d4b783; font-weight: 700; }
+.segment {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid rgba(203, 164, 94, .17);
+  border-radius: 2px;
+  background: rgba(6, 4, 3, .55);
+}
+.seg-btn {
+  flex: 1;
+  min-height: 28px;
+  padding: 0 6px;
+  border-radius: 1px;
+  color: #a9957d;
+  font-family: var(--sans);
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: background .18s ease, color .18s ease;
+}
+.seg-btn[aria-pressed="true"] {
+  background: linear-gradient(180deg, #e8d1a3, #b78d4d);
+  color: #24180d;
+  box-shadow: inset 0 1px 0 rgba(255, 250, 230, .55), 0 1px 3px rgba(0, 0, 0, .35);
+}
+.seg-btn:focus-visible { outline: 2px solid #f3dfa9; outline-offset: 1px; }
+.mode-note {
+  margin: 7px 2px 0;
+  color: #8e7b66;
+  font-family: var(--sans);
+  font-size: 6.6px;
+  line-height: 1.5;
+}
+.mode-note b { color: #cdb184; }
+
+/* ---------- shelves ---------- */
+.shelves { margin-top: 18px; }
+.case { margin: 0 0 16px; }
+.case-crown {
+  position: relative;
+  height: 23px;
+  margin: 0 5px;
+  border-radius: 2px 2px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 222, 166, .18), transparent 34%),
+    linear-gradient(180deg, #4b2f1a 0%, #2c1a0e 58%, #190e07 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 194, .22), inset 0 -1px 0 rgba(0, 0, 0, .55);
+}
+.case-crown::after {
+  content: "";
+  position: absolute;
+  right: 8px; bottom: 4px; left: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(239, 203, 139, .3), transparent);
+}
+.case-cavity {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  background:
+    radial-gradient(115% 74% at 50% -14%, rgba(212, 160, 92, .18), transparent 60%),
+    repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(203, 164, 94, .045) calc(25% - 1px) 25%),
+    repeating-linear-gradient(0deg, transparent 0 calc(50% - 1px), rgba(203, 164, 94, .028) calc(50% - 1px) 50%),
+    linear-gradient(180deg, #1b1410 0%, #100b08 60%, #080604 100%);
+  box-shadow:
+    inset 0 30px 42px rgba(0, 0, 0, .9),
+    inset 0 0 0 1px rgba(203, 164, 94, .15),
+    inset 20px 0 30px -22px #000,
+    inset -20px 0 30px -22px #000;
+}
+.case-cavity::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 222, 166, .028) 0 1px, transparent 1px 4px, rgba(0, 0, 0, .1) 4px 5px, transparent 5px 19px),
+    var(--noise);
+  background-size: auto, 92px 92px;
+  opacity: .42;
+}
+.cavity-lamp {
+  position: absolute;
+  top: -36px; left: 50%;
+  z-index: 0;
+  width: 92%; height: 190px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 16%, rgba(235, 193, 127, .2), rgba(120, 76, 34, .04) 46%, transparent 72%);
+}
+.case-post {
+  position: absolute;
+  top: 25px; bottom: 21px;
+  z-index: 6;
+  width: 8px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .75), rgba(255, 222, 166, .16) 30%, rgba(0, 0, 0, .35) 62%, rgba(255, 222, 166, .06) 78%, rgba(0, 0, 0, .8)),
+    linear-gradient(180deg, #452b18, #24140b 70%, #160c06);
+  box-shadow: inset 0 1px 0 rgba(255, 233, 190, .18);
+}
+.case-post.l { left: 0; border-radius: 1px 0 0 1px; }
+.case-post.r { right: 0; border-radius: 0 1px 1px 0; }
+.books {
+  position: absolute;
+  right: 9px; bottom: 0; left: 9px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: end;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.books--two { grid-template-columns: repeat(2, 52px); justify-content: center; gap: 9px; }
+.books > li { min-width: 0; display: block; }
+.case-lip {
+  position: relative;
+  height: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 174, .3), transparent 30%),
+    linear-gradient(180deg, #52331d 0%, #321d11 52%, #1d1009 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 235, 190, .24);
+}
+.case-board {
+  position: relative;
+  height: 21px;
+  background:
+    linear-gradient(180deg, rgba(255, 222, 166, .18), transparent 28%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .16) 0 1px, transparent 1px 8px),
+    linear-gradient(180deg, #4b301c 0%, #2d1b10 50%, #170d07 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 194, .2), 0 15px 24px rgba(0, 0, 0, .7), 0 3px 0 #080503;
+}
+.case-board::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(239, 203, 139, .48) 15%, rgba(239, 203, 139, .16) 50%, rgba(239, 203, 139, .44) 85%, transparent);
+}
+.case-plate, .case-count {
+  position: absolute;
+  top: 4px;
+  z-index: 4;
+  padding: 1px 6px;
+  border: 1px solid rgba(203, 164, 94, .45);
+  background: linear-gradient(180deg, #1d140e, #0f0a07);
+  box-shadow: inset 0 1px 0 rgba(233, 203, 150, .16), 0 1px 2px rgba(0, 0, 0, .55);
+  color: #ddc497;
+  font-family: var(--sans);
+  font-size: 5.8px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.case-plate { left: 11px; }
+.case-count { right: 11px; border-color: rgba(203, 164, 94, .24); color: #9e886a; letter-spacing: .12em; }
+.case-auto .case-plate { border-color: rgba(227, 189, 110, .68); color: #f2d9a4; letter-spacing: .14em; }
+.case-auto .case-count { border-color: rgba(227, 189, 110, .38); color: #d3b074; }
+.case-plinth {
+  height: 8px;
+  margin: 0 5px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(180deg, #1b1009, #0a0604 70%, #050302);
+  box-shadow: inset 0 1px 0 rgba(239, 203, 139, .1), 0 7px 14px rgba(0, 0, 0, .55);
+}
+.shelf-caption {
+  margin: 9px 2px 0;
+  padding: 0 0 0 9px;
+  border-left: 1px solid rgba(203, 164, 94, .36);
+  color: #94816c;
+  font-family: var(--sans);
+  font-size: 6.8px;
+  line-height: 1.5;
+}
+.shelf-caption b { color: #d6b77d; font-weight: 700; letter-spacing: .08em; }
+
+/* ---------- spine ---------- */
+.spine {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 236px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 2px 2px 1px 1px;
+  background: #100b08;
+  color: var(--cream);
+  font: inherit;
+  text-align: initial;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 190, .18),
+    inset 0 -1px 0 rgba(0, 0, 0, .7),
+    0 7px 10px -3px rgba(0, 0, 0, .6);
+  transition: transform .24s var(--ease), box-shadow .2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.spine:hover { z-index: 9; }
+@media (hover: hover) { .spine:hover { transform: translateY(-5px); } }
+.spine:focus-visible { z-index: 10; outline: 2px solid #f3dfa9; outline-offset: -2px; }
+.spine-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  background-image: var(--art);
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+  background-position: var(--pos, 50%) 50%;
+  transform: translateZ(0);
+}
+.spine-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .05) 9%, transparent 24%, transparent 76%, rgba(0, 0, 0, .08) 91%, rgba(0, 0, 0, .54) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, .22) 0%, transparent 12%, transparent 74%, rgba(0, 0, 0, .3) 100%);
+}
+.spine-edge {
+  position: absolute;
+  top: 0; bottom: 0;
+  z-index: 8;
+  width: 2px;
+  pointer-events: none;
+}
+.spine-edge.l { left: 0; background: linear-gradient(90deg, rgba(255, 240, 210, .24), rgba(255, 240, 210, .03) 55%, transparent); }
+.spine-edge.r { right: 0; background: linear-gradient(270deg, rgba(0, 0, 0, .6), rgba(0, 0, 0, .16) 54%, transparent); }
+.spine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .22);
+}
+.title-rail {
+  position: absolute;
+  top: 12px;
+  bottom: 8px;
+  left: var(--railx, 74%);
+  z-index: 3;
+  width: var(--railw, 40%);
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(11, 8, 6, 0) 0%,
+    rgba(11, 8, 6, .74) 18%,
+    rgba(11, 8, 6, .79) 50%,
+    rgba(11, 8, 6, .74) 82%,
+    rgba(11, 8, 6, 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+  backdrop-filter: blur(1.5px) saturate(.88);
+}
+.spine[data-tone="light"] .title-rail {
+  background: linear-gradient(90deg,
+    rgba(247, 238, 219, 0) 0%,
+    rgba(247, 238, 219, .82) 18%,
+    rgba(247, 238, 219, .88) 50%,
+    rgba(247, 238, 219, .82) 82%,
+    rgba(247, 238, 219, 0) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 250, 235, .24);
+}
+.title-wrap {
+  position: absolute;
+  top: 14px;
+  bottom: 10px;
+  left: var(--railx, 74%);
+  z-index: 4;
+  display: flex;
+  width: calc(var(--railw, 40%) - 3px);
+  transform: translateX(-50%);
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.spine-title {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  color: #f6ead2;
+  font-family: var(--reading);
+  font-size: var(--fs, 9px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .003em;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .95), 0 0 5px rgba(0, 0, 0, .72);
+  text-wrap: balance;
+  white-space: normal;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.spine[data-tone="light"] .spine-title {
+  color: #24180f;
+  text-shadow: 0 1px 0 rgba(255, 250, 235, .62);
+}
+html[data-rail="off"] .spine:not(.spine--rail-demo) .title-rail,
+html[data-rail="off"] .spine:not(.spine--rail-demo) .title-wrap { display: none; }
+
+/* ---------- sections ---------- */
+section { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+.section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.eyebrow {
+  margin: 0;
+  color: #a38a69;
+  font-family: var(--sans);
+  font-size: 6.3px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.section-head h2 {
+  margin: 4px 0 0;
+  color: #f0dfbf;
+  font-family: var(--display);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -.018em;
+}
+.section-head h2 em { color: var(--brass); font-weight: 400; }
+.blurb { margin: 8px 0 0; color: #a99680; font-size: 10.2px; line-height: 1.55; }
+.blurb b { color: #e1cba6; font-weight: 600; }
+.inline-link { color: #d6b77d; text-underline-offset: 2px; }
+
+/* ---------- compare ---------- */
+.compare-card {
+  margin-top: 13px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background:
+    radial-gradient(110% 92% at 12% 0%, rgba(101, 64, 33, .2), transparent 62%),
+    linear-gradient(180deg, rgba(29, 21, 15, .97), rgba(12, 8, 6, .98));
+  box-shadow: inset 0 1px 0 rgba(255, 232, 182, .06), 0 10px 30px rgba(0, 0, 0, .3);
+}
+.compare-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.compare-title h3 { margin: 0; color: #f0dfbf; font-family: var(--display); font-size: 23px; font-weight: 400; line-height: 1; letter-spacing: -.015em; }
+.compare-title .byline { margin: 2px 0 0; color: #b8a17f; font-size: 9.5px; font-style: italic; }
+.status {
+  flex: 0 0 auto;
+  padding: 2px 5px;
+  border: 1px solid rgba(227, 189, 110, .5);
+  border-radius: 1px;
+  color: #e7c98c;
+  font-family: var(--sans);
+  font-size: 5.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.status[data-status="pass"] { color: #c6d9a1; border-color: rgba(198, 217, 161, .5); }
+.status[data-status="source"] { color: #b7c9a1; border-color: rgba(183, 201, 161, .35); }
+.steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 9px;
+  align-items: start;
+  margin-top: 11px;
+}
+.step { margin: 0; min-width: 0; }
+.step-img {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(203, 164, 94, .24);
+  border-radius: 1px;
+  background: #0b0705;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, .4);
+}
+.step-img img { display: block; width: 100%; height: auto; }
+.step-img--mask img { filter: none; }
+.step--spine { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.step--spine .spine { width: 54px; height: 246px; cursor: default; }
+.step--spine .spine:hover { transform: none; }
+.step figcaption {
+  margin-top: 4px;
+  color: #8f7c66;
+  font-family: var(--sans);
+  font-size: 5.2px;
+  letter-spacing: .08em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+.step figcaption b { display: block; color: #d9c19a; font-size: 5.6px; font-weight: 700; }
+.step .plate-mask {
+  position: absolute;
+  right: 0; bottom: 0; left: 0;
+  height: 25.6%;
+  border-top: 1px dashed rgba(247, 223, 169, .9);
+  background: repeating-linear-gradient(135deg, rgba(0, 0, 0, .5) 0 3px, rgba(255, 255, 255, .06) 3px 6px), rgba(10, 7, 4, .32);
+}
+.step .plate-mask span {
+  position: absolute;
+  right: 3px; bottom: 3px;
+  color: #f4dfb5;
+  font-family: var(--sans);
+  font-size: 4.1px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.crop-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  border: 1.5px solid #e8c67f;
+  background: rgba(255, 219, 148, .05);
+  box-shadow: 0 0 0 999px rgba(3, 2, 1, .42), inset 0 0 0 1px rgba(0, 0, 0, .24);
+  pointer-events: none;
+}
+.crop-window::before, .crop-window::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 7px; height: 1px;
+  transform: translateX(-50%);
+  background: #f7dfa9;
+}
+.crop-window::before { top: -1px; }
+.crop-window::after { bottom: -1px; }
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-top: 10px;
+  border: 1px solid var(--line-soft);
+  background: var(--line-soft);
+}
+.metrics div { min-width: 0; padding: 6px 7px; background: rgba(19, 14, 10, .94); }
+.metrics dt {
+  color: #867462;
+  font-family: var(--sans);
+  font-size: 5.3px;
+  letter-spacing: .1em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+.metrics dd { margin: 2px 0 0; color: #e0cba6; font-family: var(--sans); font-size: 7.4px; font-weight: 600; line-height: 1.3; }
+.metrics dd em { color: #9c8a75; font-style: normal; font-weight: 400; }
+.audit {
+  margin: 9px 0 0;
+  color: #b4a18a;
+  font-size: 8.4px;
+  line-height: 1.5;
+}
+.audit::before { content: "✓"; margin-right: 5px; color: #b9ce92; font-family: var(--sans); }
+.audit.warn { color: #d8bc82; }
+.audit.warn::before { content: "!"; color: #e3bd6e; }
+.compare-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(232, 203, 148, .42);
+  border-radius: 2px;
+  color: #e7d2aa;
+  font-family: var(--sans);
+  font-size: 6.8px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.btn:hover { background: rgba(233, 205, 151, .09); border-color: rgba(232, 203, 148, .72); }
+.btn:focus-visible { outline: 2px solid #f3dfa9; outline-offset: 1px; }
+.filmstrip {
+  display: flex;
+  gap: 5px;
+  margin: 12px -12px 0;
+  padding: 1px 12px 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+.filmstrip::-webkit-scrollbar { display: none; }
+.film-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  scroll-snap-align: start;
+  border: 1px solid rgba(203, 164, 94, .2);
+  border-radius: 1px;
+  background: #0b0705;
+  opacity: .7;
+  transition: opacity .18s ease, border-color .18s ease, transform .18s ease;
+}
+.film-item[data-modern="true"]::after {
+  content: "OCR";
+  position: absolute;
+  top: 2px; left: 2px;
+  padding: 0 2px;
+  border-radius: 1px;
+  background: #d8b976;
+  color: #1a120b;
+  font-family: var(--sans);
+  font-size: 3.8px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.45;
+}
+.film-item img { display: block; width: 100%; height: auto; border-radius: 1px; }
+.film-item:hover { opacity: 1; transform: translateY(-2px); }
+.film-item[aria-pressed="true"] { border-color: #e2c17c; opacity: 1; box-shadow: 0 0 0 1px rgba(226, 193, 124, .32); }
+.film-item:focus-visible { outline: 2px solid #f3dfa9; outline-offset: 1px; }
+
+/* ---------- research ---------- */
+.research-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+.research-card {
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  background: rgba(18, 13, 9, .9);
+}
+.research-card b { display: block; color: #e4cda4; font-family: var(--sans); font-size: 7px; letter-spacing: .08em; text-transform: uppercase; }
+.research-card p { margin: 4px 0 0; color: #a99680; font-size: 9.2px; line-height: 1.5; }
+.research-card a { color: #c9a96d; text-underline-offset: 2px; }
+.recommend {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(227, 189, 110, .35);
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(90, 62, 32, .22), rgba(22, 15, 10, .9));
+}
+.recommend b { color: #f0d39a; font-family: var(--sans); font-size: 7px; letter-spacing: .12em; text-transform: uppercase; }
+.recommend ol { margin: 6px 0 0; padding-left: 15px; color: #c4b096; font-size: 9.4px; line-height: 1.5; }
+.recommend li { margin: 4px 0; }
+.recommend strong { color: #efd9b2; font-weight: 600; }
+
+/* ---------- notes ---------- */
+.note-grid { display: grid; grid-template-columns: 1fr; gap: 9px; margin-top: 12px; }
+.note {
+  padding: 10px 11px;
+  border-left: 1px solid rgba(203, 164, 94, .28);
+  background: linear-gradient(90deg, rgba(203, 164, 94, .045), transparent 70%);
+}
+.note b { display: block; color: #e1c9a2; font-family: var(--sans); font-size: 7.1px; letter-spacing: .07em; text-transform: uppercase; }
+.note b span { margin-right: 6px; color: var(--brass); }
+.note p { margin: 4px 0 0; color: #a99680; font-size: 9.4px; line-height: 1.55; }
+.note em { color: #d7bd94; }
+.questions { margin-top: 12px; color: #a99680; font-size: 9.2px; line-height: 1.5; }
+.questions strong { color: #d9c19a; font-family: var(--sans); font-size: 6.8px; letter-spacing: .08em; text-transform: uppercase; }
+.questions ul { margin: 5px 0 0; padding-left: 15px; }
+.questions li { margin: 3px 0; }
+.sources { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
+.sources summary { color: #b79f7c; font-family: var(--sans); font-size: 7px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.sources ul { margin: 8px 0 0; padding: 0; list-style: none; }
+.sources li { padding: 5px 0; border-top: 1px solid rgba(203, 164, 94, .08); color: #8f7c66; font-family: var(--sans); font-size: 6.2px; line-height: 1.45; }
+.sources li b { color: #cdb184; font-weight: 600; }
+.sources a { color: #a98d65; text-underline-offset: 2px; }
+.foot { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--line-soft); color: #756554; font-size: 8.1px; line-height: 1.55; }
+.foot strong { color: #b49b78; }
+
+/* ---------- sheet ---------- */
+.sheet-layer { position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end; justify-content: center; padding: 12px; }
+.sheet-scrim { position: absolute; inset: 0; background: rgba(3, 2, 1, .76); backdrop-filter: blur(3px); }
+.sheet {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 424px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 13px;
+  border: 1px solid rgba(203, 164, 94, .4);
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, #1b1310, #0d0907 70%);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, .8);
+}
+.sheet-close {
+  position: absolute;
+  top: 7px; right: 7px;
+  z-index: 4;
+  width: 30px; height: 30px;
+  border: 1px solid rgba(203, 164, 94, .3);
+  border-radius: 50%;
+  color: #e7d2aa;
+  font-size: 17px;
+  line-height: 1;
+}
+.sheet h3 { margin: 4px 30px 0 0; color: #f2e1c1; font-family: var(--display); font-size: 25px; font-weight: 400; line-height: 1; }
+.sheet .byline { margin: 3px 0 0; color: #b8a17f; font-size: 9.5px; font-style: italic; }
+.sheet-art { position: relative; width: min(100%, 30vh); margin: 11px auto 0; overflow: hidden; border: 1px solid rgba(203, 164, 94, .25); background: #0b0705; }
+.sheet-art img { display: block; width: 100%; height: auto; }
+.sheet-cap { margin: 5px 0 0; color: #8f7c66; font-family: var(--sans); font-size: 5.4px; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+.sheet-pair { display: flex; align-items: flex-end; justify-content: center; gap: 18px; margin-top: 12px; }
+.sheet-pair figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.sheet-pair .spine { width: 64px; height: 290px; cursor: default; }
+.sheet-pair .spine:hover { transform: none; }
+.sheet-pair figcaption { color: #8f7c66; font-family: var(--sans); font-size: 5.5px; letter-spacing: .08em; text-transform: uppercase; }
+.sheet-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 12px; border: 1px solid var(--line-soft); background: var(--line-soft); }
+.sheet-meta div { padding: 6px 7px; background: rgba(19, 14, 10, .94); min-width: 0; }
+.sheet-meta dt { color: #867462; font-family: var(--sans); font-size: 5.2px; letter-spacing: .1em; text-transform: uppercase; }
+.sheet-meta dd { margin: 2px 0 0; color: #e0cba6; font-family: var(--sans); font-size: 7px; line-height: 1.35; overflow-wrap: anywhere; }
+.sheet-note { margin: 9px 0 0; color: #b4a18a; font-size: 8.5px; line-height: 1.5; }
+.sheet-note.warn { color: #d8bc82; }
+.sheet-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 11px; }
+.sheet-steps figure { margin: 0; }
+.sheet-steps img { display: block; width: 100%; height: auto; border: 1px solid rgba(203, 164, 94, .22); }
+.sheet-steps figcaption { margin-top: 3px; color: #8f7c66; font-family: var(--sans); font-size: 5px; text-transform: uppercase; line-height: 1.3; }
+.sheet-src { margin-top: 10px; color: #7d6c5b; font-family: var(--sans); font-size: 6px; line-height: 1.5; overflow-wrap: anywhere; }
+.sheet-src a { color: #a98d65; }
+
+@media (max-width: 380px) {
+  h1 { font-size: 34px; }
+  .compare-title h3 { font-size: 21px; }
+  .step--spine .spine { width: 50px; height: 228px; }
+  .filmstrip { margin-right: -9px; margin-left: -9px; padding-right: 9px; padding-left: 9px; }
+}
+@media (max-width: 340px) {
+  .stage { padding-right: 8px; padding-left: 8px; }
+  .mode-label { display: none; }
+  .step--spine .spine { width: 46px; height: 210px; }
+  .step figcaption { font-size: 4.8px; }
+  .books--two { grid-template-columns: repeat(2, 46px); }
+  .filmstrip { margin-right: -8px; margin-left: -8px; padding-right: 8px; padding-left: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#shelves">Skip to shelves</a>
+<div class="stage">
+  <header class="masthead">
+    <div class="topline">
+      <span class="wordmark">Pocket Library</span>
+      <span class="edition">Shelf study <b>03</b> · The unprinted cover</span>
+    </div>
+    <span class="proto-stamp">Throwaway prototype · v3</span>
+    <p class="kicker">Only the artwork</p>
+    <h1>The cover, <em>unprinted</em></h1>
+    <p class="lede">Twenty spines made from the cover art alone. The printed title, author, quotes and badges are gone — either by using the <b>original public-domain painting</b>, or by masking the text and inpainting the cover. No text-masking bands; the only type left is the app’s own optional rail.</p>
+    <div class="spec-row" aria-label="Prototype facts">
+      <div class="spec"><b>20</b><span>spines · 18 public-domain</span></div>
+      <div class="spec"><b>2</b><span>OCR + LaMa removals</span></div>
+      <div class="spec"><b>≈<small>1/3</small></b><span>of the art on the spine</span></div>
+    </div>
+  </header>
+
+  <div class="modebar" role="group" aria-label="Title rail">
+    <span class="mode-label">Title rail<b>app UI text</b></span>
+    <div class="segment" role="group" aria-label="Art only or with the app title rail">
+      <button class="seg-btn" id="rail-off" type="button" aria-pressed="true">Art only</button>
+      <button class="seg-btn" id="rail-on" type="button" aria-pressed="false">With title rail</button>
+    </div>
+  </div>
+  <p class="mode-note" id="mode-note"><b>Art only:</b> no type at all on the spine. <b>With title rail:</b> the app’s smoked-glass / vellum rail is composited over the art — it is UI text, not printed cover text.</p>
+
+  <main class="shelves" id="shelves" aria-label="Four shelves: eighteen classics and two new arrivals"></main>
+
+  <section class="compare" id="compare" aria-labelledby="compare-title">
+    <header class="section-head">
+      <div>
+        <p class="eyebrow">The removal, exposed</p>
+        <h2 id="compare-title">Cover <em>→</em> art <em>→</em> spine</h2>
+      </div>
+    </header>
+    <p class="blurb" id="compare-blurb">Four steps: the published cover, the text mask or plate excluded, the extracted artwork, and the spine crop. Pick any book from the strip.</p>
+    <div id="compare-card"></div>
+    <div class="filmstrip" id="filmstrip" role="group" aria-label="Choose a book to inspect"></div>
+  </section>
+
+  <section class="research" id="research" aria-labelledby="research-title">
+    <header class="section-head">
+      <div>
+        <p class="eyebrow">Research · what already exists</p>
+        <h2 id="research-title">Nobody has <em>solved</em> this</h2>
+      </div>
+    </header>
+    <p class="blurb">We checked the main open-source removers and the places that might hold original artwork. The short version: <b>PD classics can be sourced clean; modern trade covers cannot, as a rule.</b> Full links and licence notes are in <a class="inline-link" href="RESEARCH.md">RESEARCH.md</a>.</p>
+    <div class="research-grid">
+      <article class="research-card">
+        <b>Removal · IOPaint + LaMa</b>
+        <p><a href="https://github.com/Sanster/IOPaint">IOPaint</a> (Apache-2.0, now archived) and <a href="https://github.com/advimman/lama">LaMa</a> (Apache-2.0) are the practical CPU stack. LaMa is resolution-robust to ~2k; <a href="https://github.com/fenglinglwb/MAT">MAT</a> is CC BY-NC and heavier; CTRNet/EraseNet/GaRNet are trained for scene text but their SCUT-EnsText data is non-commercial and the checkpoints are awkward.</p>
+      </article>
+      <article class="research-card">
+        <b>Detection · RapidOCR</b>
+        <p><a href="https://github.com/RapidAI/RapidOCR">RapidOCR</a> (Apache-2.0, ONNX, CPU) found 13 boxes on <i>The Whisper Man</i> and 17 on <i>Rock Paper Scissors</i> in ~5 s per 1303 × 2000 cover. It misses giant condensed display letters, so the mask still needs a human-drawn supplement.</p>
+      </article>
+      <article class="research-card">
+        <b>Textless art · the honest state</b>
+        <p><a href="https://bookcoverarchive.com/">The Book Cover Archive</a> (credited final covers), <a href="https://ineedabookcover.com/">I Need a Book Cover</a>, <a href="https://designarchives.aiga.org/">AIGA 50 Books | 50 Covers</a>, artist sites and cover reveals all show the <i>published</i> cover. We found no public prose-book archive that exposes flat/textless art; comic “textless covers” communities do, but that does not generalise.</p>
+      </article>
+      <article class="research-card">
+        <b>PD art · automatable</b>
+        <p><a href="https://commons.wikimedia.org/">Wikimedia Commons</a>, <a href="https://www.metmuseum.org/about-the-met/policies-and-documents/open-access">The Met Open Access</a>, <a href="https://www.artic.edu/open-access">Art Institute of Chicago</a>, <a href="https://www.rijksmuseum.nl/en/research/conduct-research/data">Rijksmuseum</a> and <a href="https://www.si.edu/openaccess">Smithsonian Open Access</a> have APIs and high-resolution files. This is the only source class that routinely works at scale.</p>
+      </article>
+    </div>
+    <div class="recommend">
+      <b>Recommendation</b>
+      <ol>
+        <li><strong>Classic / public domain:</strong> fetch the original painting or illustration; do not inpaint a typographic Standard Ebooks cover. This is what 15 of the 18 classics do here.</li>
+        <li><strong>Modern, with a genuine textless file:</strong> license it from the photographer/illustrator or publisher. Arcangel (the <i>Whisper Man</i> door/child photo, credited in a German edition to Hanka Steidle/Arcangel Images) and artist portfolios are licensable, not scrapeable; watermarked previews are not usable art.</li>
+        <li><strong>Modern, no textless source:</strong> OCR + mask + LaMa for modest type. Fix the spine crop to a clean region, or fall back to a typographic spine. Do not pretend a 70%-masked cover is clean art.</li>
+        <li><strong>Never</strong> silently keep printed cover type on an “art only” spine; if it remains, label it and design for it.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-title">
+    <header class="section-head">
+      <div>
+        <p class="eyebrow">Design notes</p>
+        <h2 id="notes-title">What changed <em>from v2</em></h2>
+      </div>
+    </header>
+    <div class="note-grid">
+      <article class="note">
+        <b><span>01</span> The art is now the source, not a masked cover</b>
+        <p>v2 put a 22% foot band over each printed title plate and a 9–14% cap over marketing copy. v3 removes those bands: there is no printed text left to hide. The spine is full-height art; the only optional overlay is the app’s title rail.</p>
+      </article>
+      <article class="note">
+        <b><span>02</span> Classics come from the painting, not the typographic cover</b>
+        <p>Fifteen classics use the original public-domain painting from Wikimedia Commons. Three (<i>Frankenstein</i>, <i>The Turn of the Screw</i>, <i>Alice</i>) use the art above the Standard Ebooks plate because the exact source file was not available at high resolution. That is a crop, not an inpaint, and is labelled in the compare strip.</p>
+      </article>
+      <article class="note">
+        <b><span>03</span> The modern covers show their scars</b>
+        <p><i>The Whisper Man</i> is the pass: 38.8% of pixels masked (title, quote, two stickers, top line), 105 s on CPU, no residual OCR. <i>Rock Paper Scissors</i> is the failure: 70.4% masked, and LaMa turns a snow-forest photograph into grey mush. The spine crop is honest about it.</p>
+      </article>
+      <article class="note">
+        <b><span>04</span> A rail is UI, and can be switched off</b>
+        <p>The rail is the app’s own title text, not the cover’s. It uses a smoked-glass channel on dark art and a warm vellum channel on light art, so title legibility does not depend on the cover. Toggle <em>Art only</em> to see the same shelves with zero type.</p>
+      </article>
+    </div>
+    <div class="questions">
+      <strong>Still open:</strong>
+      <ul>
+        <li>Should the ingest pipeline reject a cover whose text mask exceeds, say, 35% of the art? <i>Rock Paper Scissors</i> says yes.</li>
+        <li>Is a narrow 33% slice of a textless painting still “the cover”, or does it become an arbitrary art crop? The original-painting route changes the composition more than v2’s cover crop did.</li>
+        <li>Can a lightweight super-resolution or texture pass make large-mask LaMa usable on high-frequency photography, without a diffusion model on CPU?</li>
+        <li>Do we need a per-title “clean region” map so the spine can avoid the masked area entirely instead of showing the repair?</li>
+      </ul>
+    </div>
+    <details class="sources">
+      <summary>Art sources, editions &amp; licences (20)</summary>
+      <ul id="sources-list"></ul>
+    </details>
+  </section>
+
+  <footer class="foot">
+    <strong>Prototype scope.</strong> Throwaway design study, not production code. Everything is under <code>.scratch/spine-cover-art-prototype/v3/</code>; no production files, tests, manifests or specs were touched; nothing was committed. Modern edition covers are local copies used only as design references and are not public domain. PD art is credited per title above and in <code>sources.json</code>. <a class="inline-link" href="RESEARCH.md">Research notes</a>.
+  </footer>
+</div>
+
+<div class="sheet-layer" id="sheet-layer" hidden>
+  <div class="sheet-scrim" data-close-sheet></div>
+  <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
+    <button class="sheet-close" id="sheet-close" type="button" aria-label="Close detail">×</button>
+    <div id="sheet-content"></div>
+  </section>
+</div>
+<div class="visually-hidden" id="live" aria-live="polite"></div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  "use strict";
+  const DATA = window.V3_DATA;
+  const BOOKS = DATA.items;
+  const state = { selected: 0, rail: false };
+  let lastFocus = null;
+
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+  const esc = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function focusPos(book) {
+    // CSS background-position percentage of the horizontal overflow.
+    const box = $(".spine") ? $(".spine").getBoundingClientRect() : null;
+    const width = box ? box.width : 52;
+    const height = 236;
+    const aspect = book.method === "ocr+lama" ? 1303 / 2000 : 2 / 3;
+    const imageWidth = height * aspect;
+    if (imageWidth <= width) return 50;
+    return clamp(((book.focus[0] * imageWidth) - width / 2) / (imageWidth - width), 0, 1) * 100;
+  }
+  function posFor(book) {
+    // Geometry is independent of the rendered width: image width = h * aspect.
+    const width = 1;
+    const height = 236;
+    const aspect = book.method === "ocr+lama" ? 1303 / 2000 : 2 / 3;
+    const imageWidth = height * aspect;
+    const p = ((book.focus[0] * imageWidth) - (width * 52 / 2)) / (imageWidth - (width * 52));
+    // width-independent form: solve for the visible window centre at focus
+    const c = 52 / imageWidth;
+    return clamp(((book.focus[0] - c / 2) / (1 - c)) * 100, 0, 100);
+  }
+  function positionSpines() {
+    // The crop depends on the rendered width, so solve the CSS
+    // background-position after layout rather than assuming 52 px.
+    $$(".spine").forEach((node) => {
+      const book = BOOKS.find((b) => b.id === Number(node.dataset.bookId));
+      if (!book) return;
+      const r = node.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) return;
+      const aspect = book.method === "ocr+lama" ? 1303 / 2000 : 2 / 3;
+      const imageWidth = r.height * aspect;
+      const c = r.width / imageWidth;
+      const p = clamp(((book.focus[0] - c / 2) / (1 - c)) * 100, 0, 100);
+      node.style.setProperty("--pos", p.toFixed(2) + "%");
+    });
+  }
+  function railWidth(book) {
+    return book.tone === "light" ? 42 : 40;
+  }
+  function railX(book) {
+    return book.railSide === "left" ? 27 : 73;
+  }
+  function railFont(book) {
+    const n = book.title.length;
+    return clamp(224 / Math.max(n, 5), 6.9, 9.6);
+  }
+  function spineHTML(book, opts) {
+    opts = opts || {};
+    const rail = opts.rail !== undefined ? opts.rail : state.rail;
+    const demo = opts.demo === true;
+    const title = esc(book.title) + " by " + esc(book.author);
+    const style = [
+      "--art:url('" + book.art + "')",
+      "--pos:" + posFor(book).toFixed(2) + "%",
+      "--fs:" + railFont(book).toFixed(1) + "px",
+      "--railw:" + railWidth(book) + "%",
+      "--railx:" + railX(book) + "%"
+    ].join(";");
+    return '<button class="spine' + (demo ? ' spine--rail-demo' : '') + '" type="button" data-book-id="' + book.id + '" data-tone="' + book.tone + '" style="' + style + '" aria-label="' + title + (rail ? ", with title rail" : ", art only") + '">' +
+      '<span class="spine-art" aria-hidden="true"></span>' +
+      '<span class="spine-shade" aria-hidden="true"></span>' +
+      '<span class="spine-edge l" aria-hidden="true"></span><span class="spine-edge r" aria-hidden="true"></span>' +
+      (rail ? '<span class="title-rail" aria-hidden="true"></span><span class="title-wrap" aria-hidden="true"><span class="spine-title">' + esc(book.title) + '</span></span>' : '') +
+      '</button>';
+  }
+
+  function caseHTML(title, subtitle, books, opts) {
+    opts = opts || {};
+    const two = books.length === 2;
+    return '<section class="case' + (opts.auto ? ' case-auto' : '') + '">' +
+      '<div class="case-crown"><span class="case-plate">' + esc(title) + '</span><span class="case-count">' + books.length + ' · ' + esc(subtitle) + '</span></div>' +
+      '<div class="case-cavity"><span class="cavity-lamp" aria-hidden="true"></span><span class="case-post l" aria-hidden="true"></span><span class="case-post r" aria-hidden="true"></span>' +
+      '<ul class="books' + (two ? ' books--two' : '') + '">' + books.map((b) => '<li>' + spineHTML(b) + '</li>').join("") + '</ul></div>' +
+      '<div class="case-lip" aria-hidden="true"></div><div class="case-board" aria-hidden="true"></div><div class="case-plinth" aria-hidden="true"></div>' +
+      (opts.caption ? '<p class="shelf-caption">' + opts.caption + '</p>' : '') +
+      '</section>';
+  }
+
+  function renderShelves() {
+    const classics = BOOKS.filter((b) => b.method !== "ocr+lama");
+    const modern = BOOKS.filter((b) => b.method === "ocr+lama");
+    $("#shelves").innerHTML =
+      caseHTML("Shelf I", "paintings", classics.slice(0, 6), {}) +
+      caseHTML("Shelf II", "paintings", classics.slice(6, 12), {}) +
+      caseHTML("Shelf III", "paintings", classics.slice(12, 18), {}) +
+      caseHTML("New arrivals", "removed type", modern, {
+        auto: true,
+        caption: "<b>OCR + LaMa.</b> Left: the pass. Right: a 70%-masked cover, kept visible as the failure case."
+      });
+  }
+
+  function artWindow(book) {
+    const pct = 33.0;
+    const left = book.focus[0] * 100 - pct / 2;
+    return '<span class="crop-window" style="left:' + clamp(left, 0, 100 - pct).toFixed(2) + '%;width:' + pct + '%" aria-hidden="true"></span>';
+  }
+
+  function compareHTML(book) {
+    const modern = book.method === "ocr+lama";
+    const plate = !modern;
+    const step2 = modern
+      ? '<figure class="step"><div class="step-img step-img--mask"><img src="' + book.maskPreview + '" alt="Magenta text mask over the original cover"></div><figcaption><b>02 · text mask</b>' + Math.round(book.removal.maskFraction * 100) + '% of pixels</figcaption></figure>'
+      : '<figure class="step"><div class="step-img"><img src="' + book.original + '" alt="Published cover with the printed title plate hatched out"><span class="plate-mask"><span>printed plate excluded</span></span></div><figcaption><b>02 · text removed</b>' + (book.method === "original" ? "source painting" : "cropped above plate") + '</figcaption></figure>';
+    return '<div class="compare-card">' +
+      '<div class="compare-title"><div><h3>' + esc(book.title) + '</h3><p class="byline">' + esc(book.author) + ' · ' + esc(book.edition) + '</p></div>' +
+      '<span class="status" data-status="' + book.status + '">' + (book.status === "review" ? "REVIEW" : book.status === "pass" ? "PASS" : book.methodLabel) + '</span></div>' +
+      '<div class="steps">' +
+        '<figure class="step"><div class="step-img"><img src="' + book.original + '" alt="The published cover"></div><figcaption><b>01 · cover</b>' + (book.isbn ? "ISBN " + esc(book.isbn) : "public domain") + '</figcaption></figure>' +
+        step2 +
+        '<figure class="step"><div class="step-img"><img src="' + book.art + '" alt="Extracted text-free artwork">' + artWindow(book) + '</div><figcaption><b>03 · extracted art</b>' + esc(book.methodLabel) + '</figcaption></figure>' +
+        '<figure class="step step--spine"><div class="step-img">' + spineHTML(book, { rail: state.rail }) + '</div><figcaption><b>04 · spine</b>' + (state.rail ? "with rail" : "art only") + '</figcaption></figure>' +
+      '</div>' +
+      '<div class="metrics">' +
+        '<div><dt>Art source</dt><dd>' + esc(book.methodLabel) + '</dd></div>' +
+        '<div><dt>Art pixels</dt><dd>' + esc(book.artPixels) + '</dd></div>' +
+        '<div><dt>Spine crop</dt><dd>33% of art · focus ' + Math.round(book.focus[0] * 100) + '%</dd></div>' +
+        '<div><dt>Rail</dt><dd>' + (book.tone === "light" ? "vellum / dark ink" : "smoked / cream") + ' · art only available</dd></div>' +
+      '</div>' +
+      (modern
+        ? '<p class="audit' + (book.status === "review" ? " warn" : "") + '">' + (book.status === "review"
+            ? '<b>Review.</b> ' + Math.round(book.removal.maskFraction * 100) + '% masked; LaMa destroys the snow-forest texture. Residual OCR: ' + (book.removal.residual.length || "none") + '.'
+            : '<b>Pass.</b> ' + Math.round(book.removal.maskFraction * 100) + '% masked; residual OCR: ' + (book.removal.residual.length || "none") + '.') + '</p>'
+        : '<p class="audit">No OCR or inpainting. ' + (book.method === "original" ? "The original painting is text-free." : "The art above the printed plate is used as-is.") + '</p>') +
+      '<div class="compare-actions"><button class="btn" id="compare-detail" type="button">Open art detail</button><button class="btn" id="compare-rail" type="button">' + (state.rail ? "Hide title rail" : "Show title rail") + '</button></div>' +
+      '</div>';
+  }
+
+  function renderCompare() {
+    const book = BOOKS[state.selected];
+    $("#compare-card").innerHTML = compareHTML(book);
+    $("#compare-blurb").innerHTML = book.method === "ocr+lama"
+      ? 'The mask is the magenta wash; the art is the LaMa result. <b>' + esc(book.title) + '</b> is the ' + (book.status === "review" ? "honest failure." : "clean pass.") + ' Pick any spine from the strip.'
+      : 'For <b>' + esc(book.title) + '</b>, the printed plate is excluded and the original painting is used. The gold window on the art is the part the spine shows.';
+    $$(".film-item").forEach((n) => n.setAttribute("aria-pressed", String(Number(n.dataset.bookId) === book.id)));
+    $("#compare-detail").addEventListener("click", () => openSheet(book.id));
+    $("#compare-rail").addEventListener("click", () => setRail(!state.rail));
+    positionSpines();
+  }
+
+  function renderFilmstrip() {
+    $("#filmstrip").innerHTML = BOOKS.map((b) =>
+      '<button class="film-item" type="button" data-book-id="' + b.id + '" data-modern="' + (b.method === "ocr+lama") + '" aria-pressed="' + (b.id === BOOKS[state.selected].id) + '" aria-label="Inspect ' + esc(b.title) + '"><img src="' + b.crop + '" alt=""></button>'
+    ).join("");
+    $$(".film-item").forEach((n) => n.addEventListener("click", () => {
+      state.selected = BOOKS.findIndex((b) => b.id === Number(n.dataset.bookId));
+      renderCompare();
+      $("#compare").scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+  }
+
+  function setRail(on) {
+    state.rail = on;
+    document.documentElement.dataset.rail = on ? "on" : "off";
+    $("#rail-off").setAttribute("aria-pressed", String(!on));
+    $("#rail-on").setAttribute("aria-pressed", String(on));
+    $("#mode-note").innerHTML = on
+      ? '<b>With title rail:</b> the app’s smoked-glass / vellum rail is composited over the art — UI text, not printed cover text.'
+      : '<b>Art only:</b> no type at all on the spine. The rail can be switched on to see the app’s own title treatment.';
+    renderShelves();
+    bindSpines();
+    renderCompare();
+    positionSpines();
+    $("#live").textContent = on ? "Title rail on" : "Art only";
+  }
+
+  function bindSpines() {
+    $$("#shelves .spine").forEach((n) => n.addEventListener("click", () => openSheet(Number(n.dataset.bookId))));
+  }
+
+  function openSheet(id) {
+    const book = BOOKS.find((b) => b.id === id);
+    if (!book) return;
+    lastFocus = document.activeElement;
+    const modern = book.method === "ocr+lama";
+    const content = '<h3 id="sheet-title">' + esc(book.title) + '</h3><p class="byline">' + esc(book.author) + ' · ' + esc(book.edition) + (book.isbn ? ' · ISBN ' + esc(book.isbn) : '') + '</p>' +
+      '<div class="sheet-pair"><figure>' + spineHTML(book, { rail: false }) + '<figcaption>Art only</figcaption></figure><figure>' + spineHTML(book, { rail: true, demo: true }) + '<figcaption>With title rail</figcaption></figure></div>' +
+      '<div class="sheet-art"><img src="' + book.art + '" alt="Extracted text-free artwork">' + artWindow(book) + '</div>' +
+      '<p class="sheet-cap">Extracted art · the gold window is the spine crop</p>' +
+      '<div class="sheet-meta">' +
+        '<div><dt>Method</dt><dd>' + esc(book.methodLabel) + '</dd></div>' +
+        '<div><dt>Art pixels</dt><dd>' + esc(book.artPixels) + '</dd></div>' +
+        '<div><dt>Focus</dt><dd>' + Math.round(book.focus[0] * 100) + '% across · ' + Math.round(book.focus[1] * 100) + '% down</dd></div>' +
+        '<div><dt>Tone</dt><dd>' + (book.tone === "light" ? "light · vellum rail" : "dark · smoked rail") + '</dd></div>' +
+        (modern ? '<div><dt>Mask</dt><dd>' + Math.round(book.removal.maskFraction * 100) + '% of pixels</dd></div><div><dt>CPU time</dt><dd>' + book.removal.inpaintSeconds.toFixed(1) + ' s inpainting</dd></div>' : '') +
+      '</div>' +
+      '<p class="sheet-note' + (book.status === "review" ? " warn" : "") + '">' + (modern
+        ? (book.status === "review"
+          ? 'No public textless file found. <b>Honest failure.</b> OCR found ' + book.removal.ocrBoxes + ' boxes but split or missed the red display type (ALI/ICE, FE/EENE, RO); six hand-drawn title polygons were added. The final mask covers ' + Math.round(book.removal.maskFraction * 100) + '% of the cover. LaMa cannot rebuild the snow-forest texture at this mask size. The spine still uses the result, uncropped, so the damage is visible.'
+          : 'No public textless file found. <b>Clean pass.</b> OCR found ' + book.removal.ocrBoxes + ' boxes; manual polygons added the title block and the two marketing stickers. The mask covers ' + Math.round(book.removal.maskFraction * 100) + '% of the cover. Residual OCR after inpainting: ' + (book.removal.residual.length || "none") + '.')
+        : (book.method === "original"
+          ? '<b>Original artwork.</b> ' + esc(book.note) + '. No printed type exists in the source.'
+          : '<b>Cover crop.</b> ' + esc(book.note) + '. The Standard Ebooks title plate is cropped off; no inpainting.')) + '</p>' +
+      '<div class="sheet-src">' + (book.paintingUrl ? 'Artwork: <a href="' + book.paintingUrl + '">Wikimedia Commons</a>. ' : 'Artwork: ' + esc(book.artSource) + '. ') +
+        'Art licence: ' + esc(book.artLicense) + '. Edition: <a href="' + book.sourcePage + '">' + esc(book.source) + '</a>. ' + esc(book.license) + '.</div>';
+    $("#sheet-content").innerHTML = content;
+    $("#sheet").scrollTop = 0;
+    $("#sheet-layer").hidden = false;
+    document.body.style.overflow = "hidden";
+    $$("#sheet .spine").forEach((n) => n.addEventListener("click", () => {}));
+    positionSpines();
+    $("#sheet").focus();
+  }
+  function closeSheet() {
+    $("#sheet-layer").hidden = true;
+    document.body.style.overflow = "";
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  function renderSources() {
+    $("#sources-list").innerHTML = BOOKS.map((b) => '<li><b>' + esc(b.title) + '</b> — ' + esc(b.author) + ' · ' + esc(b.edition) + (b.isbn ? ' · ISBN ' + esc(b.isbn) : '') + ' · ' + esc(b.methodLabel) + ' · ' + esc(b.artLicense) + '. ' +
+      (b.paintingUrl ? '<a href="' + b.paintingUrl + '">source artwork</a> · ' : '') +
+      '<a href="' + b.sourcePage + '">edition</a>. ' + esc(b.license) + '.</li>').join("");
+  }
+
+  // events
+  $("#rail-off").addEventListener("click", () => setRail(false));
+  $("#rail-on").addEventListener("click", () => setRail(true));
+  $("#sheet-close").addEventListener("click", closeSheet);
+  $("[data-close-sheet]").addEventListener("click", closeSheet);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("#sheet-layer").hidden) closeSheet();
+  });
+
+  renderShelves();
+  bindSpines();
+  renderCompare();
+  renderFilmstrip();
+  renderSources();
+  setRail(false);
+  positionSpines();
+  window.addEventListener("resize", positionSpines);
+})();
+</script>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

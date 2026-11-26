@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>bookcover-js combined wrap inspection</title>
+<style>
+  body { margin: 0; font: 14px/1.5 system-ui, sans-serif; background: #f4f1ea; color: #222; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 20px; }
+  .wrap { background: #fff; padding: 12px; border: 1px solid #ccc; overflow-x: auto; }
+  img { display: block; width: 1000px; image-rendering: auto; background:
+    repeating-conic-gradient(#e8e8e8 0% 25%, #fff 0% 50%) 50% / 20px 20px; }
+  code { background: #eee; padding: 1px 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>bookcover-js combined export — why it is not a print wrap</h1>
+  <p><code>whisper-man-combined.svg</code>: 936 × 612 px at 72 dpi. Panels are at x=0 (396 wide), x=441 (54 wide), x=540 (396 wide).
+  The 45 px gaps are <code>shoulderGap + borderGap × 1.5</code>; the outer 0.25 in cloth margin is omitted from the SVG.
+  Spine inner width is 54 px (0.75 in) even though the requested spine is 72 px (1 in), and the two 45 px gaps make the
+  central spine zone 144 px (2 in). Artwork cannot be continuous across this file.</p>
+  <div class="wrap"><img src="whisper-man-combined.svg" alt="Combined bookcover-js wrap"></div>
+  <p>Compare the individual panels in <code>whisper-man-wrap.png</code>. The spine text is clipped (“Whisper” / “North”).</p>
+</main>
+</body>
+</html>

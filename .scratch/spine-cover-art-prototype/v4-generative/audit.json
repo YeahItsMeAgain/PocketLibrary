@@ -1,0 +1,381 @@
+{
+  "widths": {
+    "320": {
+      "scrollWidth": 320,
+      "bodyScrollWidth": 320,
+      "clientWidth": 320,
+      "overflowers": [],
+      "tableScrolls": [
+        {
+          "client": 298,
+          "scroll": 298,
+          "scrollable": false
+        }
+      ],
+      "images": [
+        {
+          "src": "assets/rock-paper-scissors-cover.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/rock-paper-scissors-mask-preview.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/rock-paper-scissors-lama.jpg",
+          "ok": true,
+          "w": 1304,
+          "h": 2000
+        },
+        {
+          "src": "generative/rps-a-art.jpg",
+          "ok": true,
+          "w": 816,
+          "h": 1224
+        },
+        {
+          "src": "assets/rock-paper-scissors-lama-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/rps-a-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/rps-c-promptonly.jpg",
+          "ok": true,
+          "w": 512,
+          "h": 768
+        },
+        {
+          "src": "assets/whisper-man-cover.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/whisper-man-mask-preview.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/whisper-man-lama.jpg",
+          "ok": true,
+          "w": 1304,
+          "h": 2000
+        },
+        {
+          "src": "generative/whisper-a-art.jpg",
+          "ok": true,
+          "w": 816,
+          "h": 1224
+        },
+        {
+          "src": "assets/whisper-man-lama-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/whisper-a-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/whisper-c-promptonly.jpg",
+          "ok": true,
+          "w": 512,
+          "h": 768
+        },
+        {
+          "src": "assets/moby-dick-cover.jpg",
+          "ok": true,
+          "w": 1400,
+          "h": 2100
+        },
+        {
+          "src": "assets/moby-dick-painting.jpg",
+          "ok": true,
+          "w": 1920,
+          "h": 1563
+        },
+        {
+          "src": "assets/moby-dick-original-art.jpg",
+          "ok": true,
+          "w": 1042,
+          "h": 1563
+        },
+        {
+          "src": "assets/moby-dick-original-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        }
+      ],
+      "figures": 16,
+      "cases": 3
+    },
+    "360": {
+      "scrollWidth": 360,
+      "bodyScrollWidth": 360,
+      "clientWidth": 360,
+      "overflowers": [],
+      "tableScrolls": [
+        {
+          "client": 338,
+          "scroll": 338,
+          "scrollable": false
+        }
+      ],
+      "images": [
+        {
+          "src": "assets/rock-paper-scissors-cover.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/rock-paper-scissors-mask-preview.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/rock-paper-scissors-lama.jpg",
+          "ok": true,
+          "w": 1304,
+          "h": 2000
+        },
+        {
+          "src": "generative/rps-a-art.jpg",
+          "ok": true,
+          "w": 816,
+          "h": 1224
+        },
+        {
+          "src": "assets/rock-paper-scissors-lama-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/rps-a-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/rps-c-promptonly.jpg",
+          "ok": true,
+          "w": 512,
+          "h": 768
+        },
+        {
+          "src": "assets/whisper-man-cover.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/whisper-man-mask-preview.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/whisper-man-lama.jpg",
+          "ok": true,
+          "w": 1304,
+          "h": 2000
+        },
+        {
+          "src": "generative/whisper-a-art.jpg",
+          "ok": true,
+          "w": 816,
+          "h": 1224
+        },
+        {
+          "src": "assets/whisper-man-lama-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/whisper-a-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/whisper-c-promptonly.jpg",
+          "ok": true,
+          "w": 512,
+          "h": 768
+        },
+        {
+          "src": "assets/moby-dick-cover.jpg",
+          "ok": true,
+          "w": 1400,
+          "h": 2100
+        },
+        {
+          "src": "assets/moby-dick-painting.jpg",
+          "ok": true,
+          "w": 1920,
+          "h": 1563
+        },
+        {
+          "src": "assets/moby-dick-original-art.jpg",
+          "ok": true,
+          "w": 1042,
+          "h": 1563
+        },
+        {
+          "src": "assets/moby-dick-original-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        }
+      ],
+      "figures": 16,
+      "cases": 3
+    },
+    "390": {
+      "scrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "clientWidth": 390,
+      "overflowers": [],
+      "tableScrolls": [
+        {
+          "client": 362,
+          "scroll": 362,
+          "scrollable": false
+        }
+      ],
+      "images": [
+        {
+          "src": "assets/rock-paper-scissors-cover.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/rock-paper-scissors-mask-preview.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/rock-paper-scissors-lama.jpg",
+          "ok": true,
+          "w": 1304,
+          "h": 2000
+        },
+        {
+          "src": "generative/rps-a-art.jpg",
+          "ok": true,
+          "w": 816,
+          "h": 1224
+        },
+        {
+          "src": "assets/rock-paper-scissors-lama-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/rps-a-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/rps-c-promptonly.jpg",
+          "ok": true,
+          "w": 512,
+          "h": 768
+        },
+        {
+          "src": "assets/whisper-man-cover.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/whisper-man-mask-preview.jpg",
+          "ok": true,
+          "w": 1303,
+          "h": 2000
+        },
+        {
+          "src": "assets/whisper-man-lama.jpg",
+          "ok": true,
+          "w": 1304,
+          "h": 2000
+        },
+        {
+          "src": "generative/whisper-a-art.jpg",
+          "ok": true,
+          "w": 816,
+          "h": 1224
+        },
+        {
+          "src": "assets/whisper-man-lama-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/whisper-a-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        },
+        {
+          "src": "generative/whisper-c-promptonly.jpg",
+          "ok": true,
+          "w": 512,
+          "h": 768
+        },
+        {
+          "src": "assets/moby-dick-cover.jpg",
+          "ok": true,
+          "w": 1400,
+          "h": 2100
+        },
+        {
+          "src": "assets/moby-dick-painting.jpg",
+          "ok": true,
+          "w": 1920,
+          "h": 1563
+        },
+        {
+          "src": "assets/moby-dick-original-art.jpg",
+          "ok": true,
+          "w": 1042,
+          "h": 1563
+        },
+        {
+          "src": "assets/moby-dick-original-spine.jpg",
+          "ok": true,
+          "w": 160,
+          "h": 727
+        }
+      ],
+      "figures": 16,
+      "cases": 3
+    }
+  },
+  "images": {},
+  "errors": []
+}

@@ -1,0 +1,61 @@
+{
+  "name": "book-3d",
+  "version": "1.0.0",
+  "description": "An interactive, realistic 3D book component with authentic physical page-turn physics for React & Three.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "demo": "vite",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "react",
+    "three",
+    "threejs",
+    "react-three-fiber",
+    "r3f",
+    "3d",
+    "book",
+    "3d-book",
+    "page-flip",
+    "flipbook",
+    "webgl"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "@react-three/drei": ">=9.0.0",
+    "@react-three/fiber": ">=8.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "three": ">=0.150.0"
+  },
+  "devDependencies": {
+    "@react-three/drei": "^9.120.4",
+    "@react-three/fiber": "^8.17.10",
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.170.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.170.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vite": "^8.3.8"
+  }
+}

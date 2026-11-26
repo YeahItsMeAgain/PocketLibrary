@@ -1,0 +1,170 @@
+[
+  {
+    "cover": "whisper-man",
+    "thickness": 50,
+    "rotate": 30,
+    "slug": "whisper-man-1in",
+    "info": {
+      "bookTransform": "matrix3d(0.866025, 0, 0.5, 0, 0, 1, 0, 0, -0.5, 0, 0.866025, 0, 0, 0, 0, 1)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 25, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 272, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -25, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg",
+          "w": 1303,
+          "h": 2000
+        }
+      ]
+    }
+  },
+  {
+    "cover": "whisper-man",
+    "thickness": 25,
+    "rotate": 30,
+    "slug": "whisper-man-05in",
+    "info": {
+      "bookTransform": "matrix3d(0.866025, 0, 0.5, 0, 0, 1, 0, 0, -0.5, 0, 0.866025, 0, 0, 0, 0, 1)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 12.5, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 284.5, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -12.5, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg",
+          "w": 1303,
+          "h": 2000
+        }
+      ]
+    }
+  },
+  {
+    "cover": "whisper-man",
+    "thickness": 75,
+    "rotate": 30,
+    "slug": "whisper-man-15in",
+    "info": {
+      "bookTransform": "matrix3d(0.866025, 0, 0.5, 0, 0, 1, 0, 0, -0.5, 0, 0.866025, 0, 0, 0, 0, 1)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 37.5, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 259.5, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -37.5, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg",
+          "w": 1303,
+          "h": 2000
+        }
+      ]
+    }
+  },
+  {
+    "cover": "whisper-man",
+    "thickness": 50,
+    "rotate": 0,
+    "slug": "whisper-man-1in-rotate0",
+    "info": {
+      "bookTransform": "matrix(1, 0, 0, 1, 0, 0)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 25, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 272, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -25, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg",
+          "w": 1303,
+          "h": 2000
+        }
+      ]
+    }
+  },
+  {
+    "cover": "rock-paper-scissors",
+    "thickness": 50,
+    "rotate": 30,
+    "slug": "rock-paper-scissors-1in",
+    "info": {
+      "bookTransform": "matrix3d(0.866025, 0, 0.5, 0, 0, 1, 0, 0, -0.5, 0, 0.866025, 0, 0, 0, 0, 1)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 25, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 272, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -25, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/rock-paper-scissors-cover.jpg",
+          "w": 1303,
+          "h": 2000
+        }
+      ]
+    }
+  },
+  {
+    "cover": "moby-dick",
+    "thickness": 50,
+    "rotate": 30,
+    "slug": "moby-dick-1in",
+    "info": {
+      "bookTransform": "matrix3d(0.866025, 0, 0.5, 0, 0, 1, 0, 0, -0.5, 0, 0.866025, 0, 0, 0, 0, 1)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 25, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 272, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -25, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/classic-covers/moby-dick.jpg",
+          "w": 1400,
+          "h": 2100
+        }
+      ]
+    }
+  },
+  {
+    "cover": "whisper-man",
+    "thickness": 50,
+    "rotate": 10,
+    "slug": "whisper-man-1in-rotate10",
+    "info": {
+      "bookTransform": "matrix3d(0.984808, 0, 0.173648, 0, 0, 1, 0, 0, -0.173648, 0, 0.984808, 0, 0, 0, 0, 1)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 25, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 272, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -25, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg",
+          "w": 1303,
+          "h": 2000
+        }
+      ]
+    }
+  },
+  {
+    "cover": "whisper-man",
+    "thickness": 50,
+    "rotate": -30,
+    "slug": "whisper-man-1in-rotate-30",
+    "info": {
+      "bookTransform": "matrix3d(0.866025, 0, -0.5, 0, 0, 1, 0, 0, 0.5, 0, 0.866025, 0, 0, 0, 0, 1)",
+      "frontZ": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 25, 1)",
+      "beforeTransform": "matrix3d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 272, 0, 0, 1)",
+      "afterTransform": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -25, 1)",
+      "spineElements": 0,
+      "text": "",
+      "assets": [
+        {
+          "src": "http://127.0.0.1:4173/spine-cover-art-prototype/v3/assets/whisper-man-cover.jpg",
+          "w": 1303,
+          "h": 2000
+        }
+      ]
+    }
+  }
+]

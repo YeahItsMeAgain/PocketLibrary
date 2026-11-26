@@ -1,0 +1,68 @@
+{
+  "rps-a-kontext": {
+    "file": "generative/rps-a-kontext.jpg",
+    "seconds": 0.88,
+    "items": []
+  },
+  "whisper-a-kontext": {
+    "file": "generative/whisper-a-kontext.jpg",
+    "seconds": 0.75,
+    "items": []
+  },
+  "rps-c-promptonly": {
+    "file": "generative/rps-c-promptonly.jpg",
+    "seconds": 0.78,
+    "items": [
+      {
+        "text": "pollinations.ai",
+        "conf": 0.923,
+        "box": [
+          [
+            370.0,
+            741.0
+          ],
+          [
+            507.0,
+            737.0
+          ],
+          [
+            508.0,
+            756.0
+          ],
+          [
+            371.0,
+            760.0
+          ]
+        ]
+      }
+    ]
+  },
+  "whisper-c-promptonly": {
+    "file": "generative/whisper-c-promptonly.jpg",
+    "seconds": 0.7,
+    "items": [
+      {
+        "text": "pollinations.ai",
+        "conf": 0.866,
+        "box": [
+          [
+            370.0,
+            741.0
+          ],
+          [
+            505.0,
+            738.0
+          ],
+          [
+            506.0,
+            757.0
+          ],
+          [
+            370.0,
+            760.0
+          ]
+        ]
+      }
+    ]
+  }
+}

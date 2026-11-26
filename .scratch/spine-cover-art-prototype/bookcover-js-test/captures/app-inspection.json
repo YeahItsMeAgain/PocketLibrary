@@ -1,0 +1,361 @@
+{
+  "title": "Book Cover JS",
+  "canvasCount": 0,
+  "webgl": true,
+  "sections": [
+    {
+      "selector": "#back-cover",
+      "width": 432,
+      "height": 648,
+      "svgCount": 23
+    },
+    {
+      "selector": "#spine-cover",
+      "width": 72,
+      "height": 648,
+      "svgCount": 9
+    },
+    {
+      "selector": "#front-cover",
+      "width": 432,
+      "height": 648,
+      "svgCount": 22
+    }
+  ],
+  "controls": [
+    {
+      "tag": "button",
+      "id": "saveCombinedSVG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveCombinedPNG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveBackSVG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveBackPNG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveSpineSVG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveSpinePNG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveFrontSVG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveFrontPNG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "textarea",
+      "id": "titleInput",
+      "type": "textarea",
+      "value": "The Whisper Man",
+      "label": "Title"
+    },
+    {
+      "tag": "textarea",
+      "id": "authorInput",
+      "type": "textarea",
+      "value": "Alex North",
+      "label": "Author"
+    },
+    {
+      "tag": "input",
+      "id": "coverFontSizeInput",
+      "type": "number",
+      "value": "26",
+      "label": "Cover Font Size"
+    },
+    {
+      "tag": "input",
+      "id": "spineFontSizeInput",
+      "type": "number",
+      "value": "18",
+      "label": "Spine Font Size"
+    },
+    {
+      "tag": "select",
+      "id": "spineTextStyleInput",
+      "type": "select-one",
+      "value": "1",
+      "label": "Spine Text Style"
+    },
+    {
+      "tag": "select",
+      "id": "spineArtStyleInput",
+      "type": "select-one",
+      "value": "4",
+      "label": "Spine Art Style"
+    },
+    {
+      "tag": "input",
+      "id": "fontInput",
+      "type": "file",
+      "value": "",
+      "label": "Upload a Font:"
+    },
+    {
+      "tag": "input",
+      "id": "endpaperCheckbox",
+      "type": "checkbox",
+      "value": "on",
+      "label": "Endpaper Mode: "
+    },
+    {
+      "tag": "input",
+      "id": "transparentCheckbox",
+      "type": "checkbox",
+      "value": "on",
+      "label": "Save Transparent: "
+    },
+    {
+      "tag": "input",
+      "id": "coverWidthInput",
+      "type": "number",
+      "value": "6",
+      "label": "Cover Width"
+    },
+    {
+      "tag": "input",
+      "id": "coverHeightInput",
+      "type": "number",
+      "value": "9",
+      "label": "Cover Height"
+    },
+    {
+      "tag": "input",
+      "id": "borderGapInput",
+      "type": "number",
+      "value": "0.25",
+      "label": "Border Gap"
+    },
+    {
+      "tag": "input",
+      "id": "borderThicknessInput",
+      "type": "number",
+      "value": "0.05",
+      "label": "Border Thickness"
+    },
+    {
+      "tag": "input",
+      "id": "spineWidthInput",
+      "type": "number",
+      "value": "1",
+      "label": "Spine Width"
+    },
+    {
+      "tag": "select",
+      "id": "lengthUnitInput",
+      "type": "select-one",
+      "value": "inches",
+      "label": "Length Unit"
+    },
+    {
+      "tag": "input",
+      "id": "mirrorCheckbox",
+      "type": "checkbox",
+      "value": "on",
+      "label": "Mirror Diagonals: "
+    },
+    {
+      "tag": "input",
+      "id": "flipCheckbox",
+      "type": "checkbox",
+      "value": "on",
+      "label": "Flip Diagonals: "
+    },
+    {
+      "tag": "input",
+      "id": "verticalLinesCheckbox",
+      "type": "checkbox",
+      "value": "on",
+      "label": "Lines"
+    },
+    {
+      "tag": "input",
+      "id": "elementColorInput",
+      "type": "color",
+      "value": "#27285f",
+      "label": "Element Color"
+    },
+    {
+      "tag": "input",
+      "id": "backgroundColorInput",
+      "type": "color",
+      "value": "#a6a6a6",
+      "label": "Background Color"
+    },
+    {
+      "tag": "input",
+      "id": "imageScale",
+      "type": "number",
+      "value": "1.25",
+      "label": "Image Size"
+    },
+    {
+      "tag": "input",
+      "id": "rotateInput",
+      "type": "number",
+      "value": "0",
+      "label": "Image Rotation"
+    },
+    {
+      "tag": "input",
+      "id": "numColumnsInput",
+      "type": "number",
+      "value": "5",
+      "label": "Number of Columns"
+    },
+    {
+      "tag": "input",
+      "id": "maxPerColumnInput",
+      "type": "number",
+      "value": "5",
+      "label": "Maximum Rows"
+    },
+    {
+      "tag": "input",
+      "id": "increasePerColumnInput",
+      "type": "number",
+      "value": "1",
+      "label": "Increase Per Column"
+    },
+    {
+      "tag": "input",
+      "id": "backCoverInitialCopiesInput",
+      "type": "number",
+      "value": "4",
+      "label": "Back Middle Rows"
+    },
+    {
+      "tag": "input",
+      "id": "frontCoverInitialCopiesInput",
+      "type": "number",
+      "value": "3",
+      "label": "Front Middle Rows"
+    },
+    {
+      "tag": "input",
+      "id": "yStretchInput",
+      "type": "range",
+      "value": "1",
+      "label": "Stretch Y"
+    },
+    {
+      "tag": "input",
+      "id": "xStretchInput",
+      "type": "range",
+      "value": "1",
+      "label": "Stretch X"
+    },
+    {
+      "tag": "input",
+      "id": "fileInput",
+      "type": "file",
+      "value": "",
+      "label": "Upload An SVG"
+    },
+    {
+      "tag": "button",
+      "id": "fileDelete",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    }
+  ],
+  "pageLikeControls": [
+    {
+      "tag": "input",
+      "id": "endpaperCheckbox",
+      "type": "checkbox",
+      "value": "on",
+      "label": "Endpaper Mode: "
+    },
+    {
+      "tag": "input",
+      "id": "borderThicknessInput",
+      "type": "number",
+      "value": "0.05",
+      "label": "Border Thickness"
+    }
+  ],
+  "spineControls": [
+    {
+      "tag": "button",
+      "id": "saveSpineSVG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "button",
+      "id": "saveSpinePNG",
+      "type": "submit",
+      "value": "",
+      "label": ""
+    },
+    {
+      "tag": "input",
+      "id": "spineFontSizeInput",
+      "type": "number",
+      "value": "18",
+      "label": "Spine Font Size"
+    },
+    {
+      "tag": "select",
+      "id": "spineTextStyleInput",
+      "type": "select-one",
+      "value": "1",
+      "label": "Spine Text Style"
+    },
+    {
+      "tag": "select",
+      "id": "spineArtStyleInput",
+      "type": "select-one",
+      "value": "4",
+      "label": "Spine Art Style"
+    },
+    {
+      "tag": "input",
+      "id": "spineWidthInput",
+      "type": "number",
+      "value": "1",
+      "label": "Spine Width"
+    }
+  ],
+  "mediaPrint": 0
+}
