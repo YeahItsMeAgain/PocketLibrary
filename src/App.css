@@ -3012,15 +3012,24 @@ html.reader-open body {
   position: fixed;
   z-index: 500;
   inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   color: var(--reader-ink);
   background: var(--reader-paper);
   transition: background 0.2s ease, color 0.2s ease;
 }
 
+/* The bars are laid out as bands above and below the reading surface, not
+   floated over it. Their height (safe-area padding included) is reserved even
+   while the chrome is hidden, so text is never covered and revealing the
+   controls cannot reflow the page. */
 .reader-stage {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .reader-book {
@@ -3061,7 +3070,7 @@ html.reader-open body {
 }
 
 .reader-bar {
-  position: absolute;
+  position: relative;
   z-index: 5;
   right: 0;
   left: 0;
@@ -3083,11 +3092,13 @@ html.reader-open body {
 }
 
 .reader-top {
+  grid-row: 1;
   top: 0;
   transform: translateY(-6px);
 }
 
 .reader-bottom {
+  grid-row: 3;
   bottom: 0;
   justify-content: space-around;
   min-height: 56px;
