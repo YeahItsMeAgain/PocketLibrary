@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-dir="hybrid" data-light="gallery" data-material="on" data-rail="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Popular covers at spine scale — PocketLibrary</title>
+<meta name="description" content="Four commercial covers, textless reconstruction, and an honest spine-scale verdict at 52 × 236 px.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#shelves">Skip to the shelves</a>
+<div class="page-noise" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="masthead__top">
+    <span class="wordmark"><span class="wordmark__mark" aria-hidden="true"></span>Pocket Library</span>
+    <span class="edition">Shelf study <span aria-hidden="true">·</span> <b>Popular books</b></span>
+  </div>
+
+  <div class="masthead__title">
+    <p class="kicker">Textless artwork, tested at the smallest cover</p>
+    <h1>Popular covers at <em>spine scale</em>.</h1>
+    <p class="lede">Four covers everyone knows, stripped of their type, then judged at <b>52 × 236 px</b>. Not full-cover fidelity: the only question is whether the art still says the book when it is two centimetres wide. Two survive, one survives only as a crop, one does not survive at all.</p>
+  </div>
+
+  <dl class="facts">
+    <div><dt>Covers</dt><dd>4</dd></div>
+    <div><dt>Spine</dt><dd>52 × 236 <small>px</small></dd></div>
+    <div><dt>Pass</dt><dd>3</dd></div>
+    <div><dt>Reject</dt><dd>1</dd></div>
+  </dl>
+</header>
+
+<main>
+  <section class="console" aria-labelledby="console-title">
+    <h2 class="sr-only" id="console-title">Controls</h2>
+
+    <div class="console__row console__row--directions">
+      <span class="console__label">Direction<b>choose one</b></span>
+      <div class="directions" role="group" aria-label="Spine design direction">
+        <button class="dir" type="button" data-dir-btn="editorial" aria-pressed="false">
+          <span class="dir__mini dir__mini--editorial" aria-hidden="true"><i></i></span>
+          <span class="dir__text"><b>Editorial</b><small>full bleed + rail</small></span>
+        </button>
+        <button class="dir" type="button" data-dir-btn="hybrid" aria-pressed="true">
+          <span class="dir__mini dir__mini--hybrid" aria-hidden="true"><i></i></span>
+          <span class="dir__text"><b>Hybrid</b><small>art + paper</small></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="console__row console__row--secondary">
+      <div class="control">
+        <span class="control__label">Title</span>
+        <div class="seg" role="group" aria-label="Title rail">
+          <button class="seg__btn" type="button" id="rail-on" aria-pressed="true">With title rail</button>
+          <button class="seg__btn" type="button" id="rail-off" aria-pressed="false">Art only</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <span class="control__label">Lighting</span>
+        <div class="seg" role="group" aria-label="Lighting">
+          <button class="seg__btn" type="button" data-light-btn="gallery" aria-pressed="true">Gallery</button>
+          <button class="seg__btn" type="button" data-light-btn="lamp" aria-pressed="false">Lamp</button>
+          <button class="seg__btn" type="button" data-light-btn="dusk" aria-pressed="false">Dusk</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <span class="control__label">Material</span>
+        <button class="switch" type="button" id="material-toggle" aria-pressed="true">
+          <span class="switch__track" aria-hidden="true"><i></i></span>
+          <span class="switch__text" id="material-text">Cues on</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="console__row console__row--filter">
+      <span class="console__label">Spine-scale acceptance<b>not a full-cover test</b></span>
+      <div class="seg seg--filters" role="group" aria-label="Filter by spine-scale verdict">
+        <button class="seg__btn" type="button" data-filter-btn="all" aria-pressed="true">All <span data-count="all">4</span></button>
+        <button class="seg__btn" type="button" data-filter-btn="pass" aria-pressed="false">Pass <span data-count="pass">3</span></button>
+        <button class="seg__btn" type="button" data-filter-btn="reject" aria-pressed="false">Rejected <span data-count="reject">1</span></button>
+      </div>
+    </div>
+
+    <p class="fitline" id="fitline" aria-live="polite"><span class="fitline__dot" aria-hidden="true"></span><span id="fitline-text">Measuring type…</span></p>
+  </section>
+
+  <section class="shelf-zone" id="shelves" aria-label="The shelf, rendered in the selected direction">
+    <noscript><p class="empty">The shelf needs JavaScript for measured type and shelf packing.</p></noscript>
+  </section>
+
+  <section class="stages" id="stages" aria-label="Original, mask, textless art and spine crop">
+    <div class="stages__head">
+      <div>
+        <p class="kicker">The pipeline</p>
+        <h2>Original → mask → art → <em>spine</em></h2>
+      </div>
+      <p class="stages__hint">The spine crop is the product. The full-cover art is evidence — including where it fails.</p>
+    </div>
+    <div class="cases" id="cases"></div>
+  </section>
+
+  <section class="detail" id="detail" aria-live="polite" aria-label="Selected spine detail"></section>
+
+  <section class="system" aria-labelledby="system-title">
+    <div class="system__intro">
+      <p class="kicker">The finding</p>
+      <h2 id="system-title">Commercial covers are <em>hit and miss</em> at 52 px</h2>
+      <p>Removing type is not the hard part. The hard part is what is left underneath. A cover whose identity lives in a single object survives. A cover whose identity is its typography has nothing to reconstruct.</p>
+    </div>
+
+    <div class="system__grid">
+      <article>
+        <span class="system__no" aria-hidden="true">01</span>
+        <h3>Flat black is easy</h3>
+        <p><i>The Hobbit</i> &nbsp;and <i>The Hunger Games</i> &nbsp;put type on flat black. A sampled dark-field fill removes it with no visible seam, and the red sun or gold pin does the recognition work.</p>
+        <div class="mini-strip" aria-hidden="true"><i class="mini-strip--sun"></i><i class="mini-strip--pin"></i></div>
+      </article>
+      <article>
+        <span class="system__no" aria-hidden="true">02</span>
+        <h3>Typography is not art</h3>
+        <p><i>The Lord of the Rings</i> &nbsp;one-volume cover is mostly title and signature on black. The textless result is clean, and almost empty. It is a reject at spine scale: no object, no silhouette, no read.</p>
+        <div class="mini-strip" aria-hidden="true"><i class="mini-strip--empty"></i></div>
+      </article>
+      <article>
+        <span class="system__no" aria-hidden="true">03</span>
+        <h3>Big type needs a strategy</h3>
+        <p><i>Harry Potter</i> &nbsp;has a full-width title over painted sky. Large-mask LaMa smears. TELEA plus a detail crop saves the spine, but the full cover still has a flat magenta title field. Crop honestly; do not pass it off as a full reconstruction.</p>
+        <div class="mini-strip" aria-hidden="true"><i class="mini-strip--magenta"></i></div>
+      </article>
+      <article>
+        <span class="system__no" aria-hidden="true">04</span>
+        <h3>No diffusion editor was reachable</h3>
+        <p>The built-in image tool returned an auth error. FLUX.1 Kontext and Qwen-Image-Edit Spaces hit the anonymous ZeroGPU quota. The prototype records that failure and uses the best local fallback: LaMa, TELEA and sampled clean fields.</p>
+        <div class="model-note" aria-hidden="true"><b>gpt-image</b> 401 · <b>FLUX</b> quota · <b>Qwen</b> quota · <b>LaMa</b> used</div>
+      </article>
+    </div>
+
+    <div class="verdict">
+      <div class="verdict__lead">
+        <p class="kicker">Recommendation</p>
+        <h2>Ship art only when the <em>object</em> survives.</h2>
+      </div>
+      <div class="verdict__body">
+        <p>Use <b>Hybrid</b> as the default for popular commercial covers: the paper label guarantees a readable title and the art window still carries the sun, pin or train. Use <b>Editorial</b> only when the art is strong enough to stand alone. For a cover like <i>The Lord of the Rings</i>, no titleless treatment is honest — fall back to type on cloth.</p>
+        <div class="verdict__modes">
+          <span><b>Pass</b> The Hobbit · The Hunger Games · Harry Potter (detail crop)</span>
+          <span><b>Reject</b> The Lord of the Rings · art-only</span>
+          <span><b>Default</b> Hybrid · with title rail</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div>
+    <span class="wordmark wordmark--small"><span class="wordmark__mark" aria-hidden="true"></span>Pocket Library</span>
+    <p>Throwaway design study · popular books · no production code changed</p>
+  </div>
+  <p class="footer__note">Covers are in-copyright edition scans, used only as throwaway references. Reconstruction is LaMa / TELEA / sampled fill, not a licensed generative edit. Provenance and the failed model routes are recorded per book.</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

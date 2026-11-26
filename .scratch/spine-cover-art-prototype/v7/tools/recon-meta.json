@@ -1,0 +1,663 @@
+{
+  "harry-potter": {
+    "source": "assets/source/harry-potter.jpg",
+    "sourcePixels": "420 x 621",
+    "maskPixels": 74086,
+    "maskFraction": 0.1879,
+    "ocrBoxes": 12,
+    "ocrSeconds": 2.82,
+    "inpaintSeconds": 16.99,
+    "engine": "TELEA glyph propagation (HP) / sampled dark-field fill (flat covers)",
+    "residualOcr": [
+      {
+        "text": "HOGWARTS",
+        "conf": 0.855
+      },
+      {
+        "text": "EXPRESS",
+        "conf": 0.805
+      }
+    ],
+    "avgOrig": [
+      167,
+      103,
+      106
+    ],
+    "avgArt": [
+      161,
+      92,
+      112
+    ],
+    "maskedMeanDelta": 14.25,
+    "structureCorr": -0.052,
+    "spineLumaStd": 37.73,
+    "spineNonDark": 0.975,
+    "manual": {
+      "cover-type": 3,
+      "marketing": 2
+    },
+    "textItems": [
+      {
+        "text": "HARRY",
+        "conf": 0.829,
+        "box": [
+          [
+            42.0,
+            21.0
+          ],
+          [
+            361.0,
+            21.0
+          ],
+          [
+            361.0,
+            72.0
+          ],
+          [
+            42.0,
+            72.0
+          ]
+        ]
+      },
+      {
+        "text": "POTTER",
+        "conf": 0.806,
+        "box": [
+          [
+            38.0,
+            85.0
+          ],
+          [
+            364.0,
+            85.0
+          ],
+          [
+            364.0,
+            135.0
+          ],
+          [
+            38.0,
+            135.0
+          ]
+        ]
+      },
+      {
+        "text": "ano tbe Pbilosopber's Stone",
+        "conf": 0.843,
+        "box": [
+          [
+            49.0,
+            145.0
+          ],
+          [
+            352.0,
+            145.0
+          ],
+          [
+            352.0,
+            168.0
+          ],
+          [
+            49.0,
+            168.0
+          ]
+        ]
+      },
+      {
+        "text": "J.K.ROWLING",
+        "conf": 0.846,
+        "box": [
+          [
+            123.0,
+            178.0
+          ],
+          [
+            283.0,
+            177.0
+          ],
+          [
+            283.0,
+            193.0
+          ],
+          [
+            123.0,
+            194.0
+          ]
+        ]
+      },
+      {
+        "text": "15",
+        "conf": 0.501,
+        "box": [
+          [
+            294.0,
+            248.0
+          ],
+          [
+            317.0,
+            248.0
+          ],
+          [
+            317.0,
+            264.0
+          ],
+          [
+            294.0,
+            264.0
+          ]
+        ]
+      },
+      {
+        "text": "YEARSOF",
+        "conf": 0.7,
+        "box": [
+          [
+            288.0,
+            265.0
+          ],
+          [
+            324.0,
+            265.0
+          ],
+          [
+            324.0,
+            273.0
+          ],
+          [
+            288.0,
+            273.0
+          ]
+        ]
+      },
+      {
+        "text": "HARRY",
+        "conf": 0.828,
+        "box": [
+          [
+            275.0,
+            276.0
+          ],
+          [
+            331.0,
+            275.0
+          ],
+          [
+            331.0,
+            289.0
+          ],
+          [
+            275.0,
+            290.0
+          ]
+        ]
+      },
+      {
+        "text": "POTTER",
+        "conf": 0.77,
+        "box": [
+          [
+            276.0,
+            293.0
+          ],
+          [
+            336.0,
+            293.0
+          ],
+          [
+            336.0,
+            307.0
+          ],
+          [
+            276.0,
+            307.0
+          ]
+        ]
+      },
+      {
+        "text": "MAGIC",
+        "conf": 0.776,
+        "box": [
+          [
+            288.0,
+            312.0
+          ],
+          [
+            320.0,
+            312.0
+          ],
+          [
+            320.0,
+            321.0
+          ],
+          [
+            288.0,
+            321.0
+          ]
+        ]
+      },
+      {
+        "text": "HOGWARTS",
+        "conf": 0.848,
+        "box": [
+          [
+            104.0,
+            370.0
+          ],
+          [
+            254.0,
+            354.0
+          ],
+          [
+            258.0,
+            387.0
+          ],
+          [
+            108.0,
+            403.0
+          ]
+        ]
+      },
+      {
+        "text": "EXPRESS",
+        "conf": 0.862,
+        "box": [
+          [
+            107.0,
+            407.0
+          ],
+          [
+            252.0,
+            389.0
+          ],
+          [
+            257.0,
+            428.0
+          ],
+          [
+            112.0,
+            445.0
+          ]
+        ]
+      },
+      {
+        "text": "TRIPLESMARTIESGOLDAWARDWINNER",
+        "conf": 0.942,
+        "box": [
+          [
+            42.0,
+            595.0
+          ],
+          [
+            363.0,
+            595.0
+          ],
+          [
+            363.0,
+            608.0
+          ],
+          [
+            42.0,
+            608.0
+          ]
+        ]
+      }
+    ]
+  },
+  "lord-of-the-rings": {
+    "source": "assets/source/lord-of-the-rings.jpg",
+    "sourcePixels": "326 x 500",
+    "maskPixels": 24635,
+    "maskFraction": 0.4316,
+    "ocrBoxes": 4,
+    "ocrSeconds": 1.0,
+    "inpaintSeconds": 0.0,
+    "engine": "TELEA glyph propagation (HP) / sampled dark-field fill (flat covers)",
+    "residualOcr": [],
+    "avgOrig": [
+      65,
+      46,
+      42
+    ],
+    "avgArt": [
+      55,
+      38,
+      35
+    ],
+    "maskedMeanDelta": 12.94,
+    "structureCorr": 0.073,
+    "spineLumaStd": 16.16,
+    "spineNonDark": 0.415,
+    "manual": {
+      "cover-type": 1,
+      "marketing": 0
+    },
+    "textItems": [
+      {
+        "text": "THE",
+        "conf": 0.605,
+        "box": [
+          [
+            119.0,
+            121.0
+          ],
+          [
+            212.0,
+            120.0
+          ],
+          [
+            212.0,
+            160.0
+          ],
+          [
+            120.0,
+            161.0
+          ]
+        ]
+      },
+      {
+        "text": "LORD",
+        "conf": 0.797,
+        "box": [
+          [
+            95.0,
+            170.0
+          ],
+          [
+            237.0,
+            170.0
+          ],
+          [
+            237.0,
+            208.0
+          ],
+          [
+            95.0,
+            208.0
+          ]
+        ]
+      },
+      {
+        "text": "OF THE",
+        "conf": 0.687,
+        "box": [
+          [
+            82.0,
+            280.0
+          ],
+          [
+            253.0,
+            280.0
+          ],
+          [
+            253.0,
+            317.0
+          ],
+          [
+            82.0,
+            317.0
+          ]
+        ]
+      },
+      {
+        "text": "RINGS",
+        "conf": 0.823,
+        "box": [
+          [
+            85.0,
+            327.0
+          ],
+          [
+            248.0,
+            327.0
+          ],
+          [
+            248.0,
+            367.0
+          ],
+          [
+            85.0,
+            367.0
+          ]
+        ]
+      }
+    ]
+  },
+  "the-hobbit": {
+    "source": "assets/source/the-hobbit.jpg",
+    "sourcePixels": "308 x 500",
+    "maskPixels": 6680,
+    "maskFraction": 0.3481,
+    "ocrBoxes": 3,
+    "ocrSeconds": 1.11,
+    "inpaintSeconds": 15.66,
+    "engine": "TELEA glyph propagation (HP) / sampled dark-field fill (flat covers)",
+    "residualOcr": [],
+    "avgOrig": [
+      29,
+      22,
+      23
+    ],
+    "avgArt": [
+      16,
+      9,
+      10
+    ],
+    "maskedMeanDelta": 10.63,
+    "structureCorr": 0.006,
+    "spineLumaStd": 23.25,
+    "spineNonDark": 0.209,
+    "manual": {
+      "cover-type": 2,
+      "marketing": 0
+    },
+    "textItems": [
+      {
+        "text": "THE",
+        "conf": 0.748,
+        "box": [
+          [
+            135.0,
+            63.0
+          ],
+          [
+            177.0,
+            63.0
+          ],
+          [
+            177.0,
+            83.0
+          ],
+          [
+            135.0,
+            83.0
+          ]
+        ]
+      },
+      {
+        "text": "HOBBIT",
+        "conf": 0.807,
+        "box": [
+          [
+            26.0,
+            90.0
+          ],
+          [
+            288.0,
+            90.0
+          ],
+          [
+            288.0,
+            151.0
+          ],
+          [
+            26.0,
+            151.0
+          ]
+        ]
+      },
+      {
+        "text": "J.R.R. TOLKIEN",
+        "conf": 0.875,
+        "box": [
+          [
+            43.0,
+            392.0
+          ],
+          [
+            266.0,
+            387.0
+          ],
+          [
+            266.0,
+            415.0
+          ],
+          [
+            43.0,
+            420.0
+          ]
+        ]
+      }
+    ]
+  },
+  "the-hunger-games": {
+    "source": "assets/source/the-hunger-games.jpg",
+    "sourcePixels": "330 x 500",
+    "maskPixels": 46501,
+    "maskFraction": 0.4354,
+    "ocrBoxes": 5,
+    "ocrSeconds": 1.29,
+    "inpaintSeconds": 14.39,
+    "engine": "TELEA glyph propagation (HP) / sampled dark-field fill (flat covers)",
+    "residualOcr": [],
+    "avgOrig": [
+      78,
+      68,
+      61
+    ],
+    "avgArt": [
+      51,
+      43,
+      37
+    ],
+    "maskedMeanDelta": 7.22,
+    "structureCorr": 0.004,
+    "spineLumaStd": 39.5,
+    "spineNonDark": 0.241,
+    "manual": {
+      "cover-type": 3,
+      "marketing": 0
+    },
+    "textItems": [
+      {
+        "text": "THE",
+        "conf": 0.688,
+        "box": [
+          [
+            31.0,
+            17.0
+          ],
+          [
+            104.0,
+            17.0
+          ],
+          [
+            104.0,
+            45.0
+          ],
+          [
+            31.0,
+            45.0
+          ]
+        ]
+      },
+      {
+        "text": "HUNGER",
+        "conf": 0.808,
+        "box": [
+          [
+            15.0,
+            49.0
+          ],
+          [
+            314.0,
+            49.0
+          ],
+          [
+            314.0,
+            92.0
+          ],
+          [
+            15.0,
+            92.0
+          ]
+        ]
+      },
+      {
+        "text": "GAMES",
+        "conf": 0.747,
+        "box": [
+          [
+            16.0,
+            98.0
+          ],
+          [
+            274.0,
+            100.0
+          ],
+          [
+            273.0,
+            144.0
+          ],
+          [
+            16.0,
+            142.0
+          ]
+        ]
+      },
+      {
+        "text": "SUZANNE",
+        "conf": 0.843,
+        "box": [
+          [
+            182.0,
+            365.0
+          ],
+          [
+            308.0,
+            365.0
+          ],
+          [
+            308.0,
+            397.0
+          ],
+          [
+            182.0,
+            397.0
+          ]
+        ]
+      },
+      {
+        "text": "COLLINS",
+        "conf": 0.866,
+        "box": [
+          [
+            182.0,
+            405.0
+          ],
+          [
+            309.0,
+            405.0
+          ],
+          [
+            309.0,
+            437.0
+          ],
+          [
+            182.0,
+            437.0
+          ]
+        ]
+      }
+    ]
+  }
+}

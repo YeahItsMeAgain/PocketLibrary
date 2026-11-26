@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary — Can a model invent the art back? (prototype v4)</title>
+<title>PocketLibrary — Can a model invent the art back?</title>
 <!--
-  THROWAWAY PROTOTYPE v4 — not production code.
+  THROWAWAY PROTOTYPE — generative-art study. Not production code.
   Tests generative text removal / textless-art reconstruction for two real
-  book covers (The Whisper Man, Rock Paper Scissors), against the v3
+  book covers (The Whisper Man, Rock Paper Scissors), against the textless-art
   OCR + LaMa baseline, plus a public-domain classic control.
   Everything lives under .scratch/spine-cover-art-prototype/v4-generative/.
 -->
@@ -424,15 +424,15 @@ footer p { margin-bottom: 5px; }
 
   <header class="hero">
     <div class="topline">
-      <span>PocketLibrary <span class="dot">·</span> spine art <span class="dot">·</span> prototype v4</span>
+      <span>PocketLibrary <span class="dot">·</span> spine art <span class="dot">·</span> generative art</span>
       <span>throwaway</span>
     </div>
     <p class="kicker">Generative text removal / textless reconstruct</p>
     <h1>Can a model invent <em>the art back?</em></h1>
     <p class="lede">
-      v3 reached the limit of OCR + LaMa: a 70% mask turned <i>Rock Paper Scissors</i>
+      The textless-art study reached the limit of OCR + LaMa: a 70% mask turned <i>Rock Paper Scissors</i>
       into a grey hole, and <i>The Whisper Man</i> was only a borderline pass.
-      v4 tests the other route — an instruction-driven image editor that
+      This study tests the other route — an instruction-driven image editor that
       reconstructs the artwork underneath the type.
     </p>
 
@@ -475,14 +475,14 @@ footer p { margin-bottom: 5px; }
     <p class="eyebrow">The test</p>
     <div class="section-head"><h2>Five stages, one spine window</h2></div>
     <p class="section-intro">
-      Every case is shown as the same chain v3 used, with a generative result
+      Every case is shown as the same chain the textless-art study used, with a generative result
       inserted before the spine crop. The crop is the production target:
       160 × 727 px, about 22% as wide as the art.
     </p>
     <ol class="pipeline">
       <li><b>Published cover</b>the real, printed cover at 1303 × 2000.</li>
-      <li><b>Text mask</b>v3's OCR + manual polygons; 38.8% and 70.4%.</li>
-      <li><b>LaMa v3</b>the local inpaint baseline, 105 s on CPU.</li>
+      <li><b>Text mask</b>OCR + manual polygons; 38.8% and 70.4%.</li>
+      <li><b>LaMa baseline</b>the local inpaint baseline, 105 s on CPU.</li>
       <li><b>Generative</b>instruction edit of the cover, no mask given.</li>
       <li><b>Spine crop</b>160 × 727; pass/fail is judged here.</li>
     </ol>
@@ -499,11 +499,11 @@ footer p { margin-bottom: 5px; }
     </div>
     <p class="case-lede">
       The hard case. Display type covers the middle half of an aerial snow
-      forest; v3 had to mask 70.4% of the cover and LaMa erased the forest with it.
+      forest; the textless-art study had to mask 70.4% of the cover and LaMa erased the forest with it.
     </p>
     <ul class="metrics">
       <li class="metric"><span>Mask</span><b>70.4%</b><i>1,833,543 px</i></li>
-      <li class="metric"><span>LaMa</span><b>105 s</b><i>CPU · v3</i></li>
+      <li class="metric"><span>LaMa</span><b>105 s</b><i>CPU baseline</i></li>
       <li class="metric"><span>Gen edit</span><b>28 steps</b><i>Kontext · 816²</i></li>
       <li class="metric"><span>Residual OCR</span><b>0</b><i>words</i></li>
     </ul>
@@ -519,7 +519,7 @@ footer p { margin-bottom: 5px; }
       </figure>
       <figure class="is-fail">
         <div class="frame"><span class="badge-corner bad">fail</span><img src="assets/rock-paper-scissors-lama.jpg" alt="LaMa result: the forest is replaced by a smooth grey void, with only the church and edge trees left."></div>
-        <figcaption><b>LaMa v3</b><span>forest gone</span></figcaption>
+        <figcaption><b>LaMa baseline</b><span>forest gone</span></figcaption>
       </figure>
       <figure class="is-pass">
         <div class="frame"><span class="badge-corner good">usable</span><img src="generative/rps-a-art.jpg" alt="Generative edit: a continuous snow-covered forest with the small church, no text."></div>
@@ -585,12 +585,12 @@ footer p { margin-bottom: 5px; }
     </div>
     <p class="case-lede">
       The borderline case. A dark doorway, a child, two black stickers, a
-      penguin colophon, and a gold title block across the bottom fifth. v3's
+      penguin colophon, and a gold title block across the bottom fifth. The textless-art study's
       LaMa pass was acceptable at spine scale; the generative edit is cleaner.
     </p>
     <ul class="metrics">
       <li class="metric"><span>Mask</span><b>38.8%</b><i>1,011,244 px</i></li>
-      <li class="metric"><span>LaMa</span><b>105 s</b><i>CPU · v3</i></li>
+      <li class="metric"><span>LaMa</span><b>105 s</b><i>CPU baseline</i></li>
       <li class="metric"><span>Gen edit</span><b>28 steps</b><i>Kontext · 816²</i></li>
       <li class="metric"><span>Residual OCR</span><b>0</b><i>words</i></li>
     </ul>
@@ -606,7 +606,7 @@ footer p { margin-bottom: 5px; }
       </figure>
       <figure class="is-pass">
         <div class="frame"><span class="badge-corner good">pass</span><img src="assets/whisper-man-lama.jpg" alt="LaMa result: the text and stickers are removed, leaving soft dark smudges over the wood and door."></div>
-        <figcaption><b>LaMa v3</b><span>pass, soft patches</span></figcaption>
+        <figcaption><b>LaMa baseline</b><span>pass, soft patches</span></figcaption>
       </figure>
       <figure class="is-pass">
         <div class="frame"><span class="badge-corner good">usable</span><img src="generative/whisper-a-art.jpg" alt="Generative edit: the same doorway and child, all text and badges gone, with plausible wood panelling and floor."></div>
@@ -870,7 +870,7 @@ footer p { margin-bottom: 5px; }
       A conditioned generative edit is a real step change over LaMa for large
       typography. It is the only route tested here that makes the
       <i>Rock Paper Scissors</i> spine usable, and it cleans up the
-      <i>Whisper Man</i> stickers better than the v3 inpaint. Treat it as an
+      <i>Whisper Man</i> stickers better than the textless-art inpaint. Treat it as an
       offline art-restoration step with a human check, not as a batch job.
     </p>
     <p>
@@ -890,7 +890,7 @@ footer p { margin-bottom: 5px; }
     <p class="small">
       <b>Modern covers.</b> <i>The Whisper Man</i> (Penguin UK, ISBN 9781405936019)
       and <i>Rock Paper Scissors</i> (Flatiron US, ISBN 9781250266118), both
-      1303 × 2000, from the Apple Books / iTunes Search API via the v3 prototype.
+      1303 × 2000, from the Apple Books / iTunes Search API via the textless-art study.
       They are in copyright and used only as design references in this throwaway
       prototype; the textless derivatives inherit the same rights. No production
       use is implied.
@@ -898,13 +898,13 @@ footer p { margin-bottom: 5px; }
     <p class="small">
       <b>Classic control.</b> <i>Moby-Dick</i> uses the Standard Ebooks cover
       (public domain) and Albert Pinkham Ryder's <i>The Flying Dutchman</i> (1887),
-      public domain, downloaded from Wikimedia Commons for v3. The 2:3 art crop
+      public domain, downloaded from Wikimedia Commons for the textless-art study. The 2:3 art crop
       and 160 × 727 spine crop are deterministic crops — no model.
     </p>
     <p class="small">
-      <b>Baseline.</b> v3 masks and LaMa results: RapidOCR + manual polygons +
+      <b>Baseline.</b> Textless-art masks and LaMa results: RapidOCR + manual polygons +
       LaMa big-lama on CPU. Mask fractions, OCR boxes and inpaint times come from
-      <span class="mono">v3/masks/*.json</span>.
+      <span class="mono">textless-art masks</span>.
     </p>
     <p class="small">
       <b>Fonts.</b> EB Garamond, SIL Open Font License; the OFL text is included
@@ -922,7 +922,7 @@ footer p { margin-bottom: 5px; }
   </section>
 
   <footer>
-    <p><b>PocketLibrary</b> · throwaway design prototype v4 · not production code, not committed. <a href="README.md">README</a> · <a href="audit.json">audit.json</a></p>
+    <p><b>PocketLibrary</b> · throwaway generative-art study · not production code, not committed. <a href="README.md">README</a> · <a href="audit.json">audit.json</a></p>
     <p>Everything lives under <span class="mono">.scratch/spine-cover-art-prototype/v4-generative/</span>. No production files, tests, manifests or existing prototypes were modified. No commit or release.</p>
     <p>Pass/fail is judged at 160 × 727 spine scale. This is front-cover artwork on a spine, not a scan of the printed spine.</p>
   </footer>

@@ -1,0 +1,1278 @@
+{
+  "url": "http://127.0.0.1:4173/spine-cover-art-prototype/v7/",
+  "captured": "2026-11-26T13:43:37.387Z",
+  "widths": {
+    "320": {
+      "state": {
+        "direction": "hybrid",
+        "rail": true,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "selected": 1,
+        "actual": false
+      },
+      "audit": {
+        "direction": "hybrid",
+        "rail": true,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "visible": 4,
+        "shelves": 1,
+        "pass": 3,
+        "reject": 1,
+        "metrics": [
+          {
+            "id": 1,
+            "slug": "harry-potter",
+            "title": "Harry Potter and the Philosopher's Stone",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 7.75,
+            "authorSize": 5.3,
+            "fitLength": 0.9637082565325815,
+            "fitThickness": 0.35321715817694377,
+            "limiting": 0.9637082565325815,
+            "limitedBy": "length",
+            "contrast": 11.085730743161685,
+            "titleText": "Harry Potter and the Philosopher's Stone",
+            "stacked": false,
+            "lines": [
+              "Harry Potter and the Philosopher's Stone"
+            ],
+            "visible": true
+          },
+          {
+            "id": 2,
+            "slug": "lord-of-the-rings",
+            "title": "The Lord of the Rings",
+            "route": "reject",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.6439570289970886,
+            "fitThickness": 0.432975871313673,
+            "limiting": 0.6439570289970886,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.951185565180715,
+            "titleText": "The Lord of the Rings",
+            "stacked": false,
+            "lines": [
+              "The Lord of the Rings"
+            ],
+            "visible": true
+          },
+          {
+            "id": 3,
+            "slug": "the-hobbit",
+            "title": "The Hobbit",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.33732654209893614,
+            "fitThickness": 0.31836461126005366,
+            "limiting": 0.33732654209893614,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.875279942542809,
+            "titleText": "The Hobbit",
+            "stacked": false,
+            "lines": [
+              "The Hobbit"
+            ],
+            "visible": true
+          },
+          {
+            "id": 4,
+            "slug": "the-hunger-games",
+            "title": "The Hunger Games",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.6062503300168214,
+            "fitThickness": 0.432975871313673,
+            "limiting": 0.6062503300168214,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.97514353134264,
+            "titleText": "The Hunger Games",
+            "stacked": false,
+            "lines": [
+              "The Hunger Games"
+            ],
+            "visible": true
+          }
+        ],
+        "tightest": 0.9637082565325815,
+        "smallestFont": 7.75,
+        "lowContrast": 0
+      },
+      "clips": [],
+      "overflowX": 0,
+      "uiOverflow": [],
+      "imgs": [
+        {
+          "src": "assets/source/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            75,
+            110
+          ]
+        },
+        {
+          "src": "assets/mask/harry-potter-preview.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            75,
+            110
+          ]
+        },
+        {
+          "src": "assets/art/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            75,
+            110
+          ]
+        },
+        {
+          "src": "assets/spine/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            75,
+            115
+          ]
+        },
+        {
+          "src": "assets/mask/lord-of-the-rings-preview.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            75,
+            115
+          ]
+        },
+        {
+          "src": "assets/art/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            75,
+            115
+          ]
+        },
+        {
+          "src": "assets/spine/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            75,
+            121
+          ]
+        },
+        {
+          "src": "assets/mask/the-hobbit-preview.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            75,
+            121
+          ]
+        },
+        {
+          "src": "assets/art/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            75,
+            121
+          ]
+        },
+        {
+          "src": "assets/spine/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            75,
+            113
+          ]
+        },
+        {
+          "src": "assets/mask/the-hunger-games-preview.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            75,
+            113
+          ]
+        },
+        {
+          "src": "assets/art/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            75,
+            113
+          ]
+        },
+        {
+          "src": "assets/spine/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        }
+      ],
+      "fonts": "loaded",
+      "cards": 4
+    },
+    "360": {
+      "state": {
+        "direction": "hybrid",
+        "rail": true,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "selected": 1,
+        "actual": false
+      },
+      "audit": {
+        "direction": "hybrid",
+        "rail": true,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "visible": 4,
+        "shelves": 1,
+        "pass": 3,
+        "reject": 1,
+        "metrics": [
+          {
+            "id": 1,
+            "slug": "harry-potter",
+            "title": "Harry Potter and the Philosopher's Stone",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 7.75,
+            "authorSize": 5.3,
+            "fitLength": 0.9637082565325815,
+            "fitThickness": 0.35321715817694377,
+            "limiting": 0.9637082565325815,
+            "limitedBy": "length",
+            "contrast": 11.085730743161685,
+            "titleText": "Harry Potter and the Philosopher's Stone",
+            "stacked": false,
+            "lines": [
+              "Harry Potter and the Philosopher's Stone"
+            ],
+            "visible": true
+          },
+          {
+            "id": 2,
+            "slug": "lord-of-the-rings",
+            "title": "The Lord of the Rings",
+            "route": "reject",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.6439570289970886,
+            "fitThickness": 0.432975871313673,
+            "limiting": 0.6439570289970886,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.951185565180715,
+            "titleText": "The Lord of the Rings",
+            "stacked": false,
+            "lines": [
+              "The Lord of the Rings"
+            ],
+            "visible": true
+          },
+          {
+            "id": 3,
+            "slug": "the-hobbit",
+            "title": "The Hobbit",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.33732654209893614,
+            "fitThickness": 0.31836461126005366,
+            "limiting": 0.33732654209893614,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.875279942542809,
+            "titleText": "The Hobbit",
+            "stacked": false,
+            "lines": [
+              "The Hobbit"
+            ],
+            "visible": true
+          },
+          {
+            "id": 4,
+            "slug": "the-hunger-games",
+            "title": "The Hunger Games",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.6062503300168214,
+            "fitThickness": 0.432975871313673,
+            "limiting": 0.6062503300168214,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.97514353134264,
+            "titleText": "The Hunger Games",
+            "stacked": false,
+            "lines": [
+              "The Hunger Games"
+            ],
+            "visible": true
+          }
+        ],
+        "tightest": 0.9637082565325815,
+        "smallestFont": 7.75,
+        "lowContrast": 0
+      },
+      "clips": [],
+      "overflowX": 0,
+      "uiOverflow": [],
+      "imgs": [
+        {
+          "src": "assets/source/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            88,
+            130
+          ]
+        },
+        {
+          "src": "assets/mask/harry-potter-preview.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            88,
+            130
+          ]
+        },
+        {
+          "src": "assets/art/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            88,
+            130
+          ]
+        },
+        {
+          "src": "assets/spine/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            88,
+            135
+          ]
+        },
+        {
+          "src": "assets/mask/lord-of-the-rings-preview.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            88,
+            135
+          ]
+        },
+        {
+          "src": "assets/art/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            88,
+            135
+          ]
+        },
+        {
+          "src": "assets/spine/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            88,
+            143
+          ]
+        },
+        {
+          "src": "assets/mask/the-hobbit-preview.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            88,
+            143
+          ]
+        },
+        {
+          "src": "assets/art/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            88,
+            143
+          ]
+        },
+        {
+          "src": "assets/spine/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            88,
+            133
+          ]
+        },
+        {
+          "src": "assets/mask/the-hunger-games-preview.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            88,
+            133
+          ]
+        },
+        {
+          "src": "assets/art/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            88,
+            133
+          ]
+        },
+        {
+          "src": "assets/spine/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        }
+      ],
+      "fonts": "loaded",
+      "cards": 4
+    },
+    "390": {
+      "state": {
+        "direction": "hybrid",
+        "rail": true,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "selected": 1,
+        "actual": false
+      },
+      "audit": {
+        "direction": "hybrid",
+        "rail": true,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "visible": 4,
+        "shelves": 1,
+        "pass": 3,
+        "reject": 1,
+        "metrics": [
+          {
+            "id": 1,
+            "slug": "harry-potter",
+            "title": "Harry Potter and the Philosopher's Stone",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 7.75,
+            "authorSize": 5.3,
+            "fitLength": 0.9637082565325815,
+            "fitThickness": 0.35321715817694377,
+            "limiting": 0.9637082565325815,
+            "limitedBy": "length",
+            "contrast": 11.085730743161685,
+            "titleText": "Harry Potter and the Philosopher's Stone",
+            "stacked": false,
+            "lines": [
+              "Harry Potter and the Philosopher's Stone"
+            ],
+            "visible": true
+          },
+          {
+            "id": 2,
+            "slug": "lord-of-the-rings",
+            "title": "The Lord of the Rings",
+            "route": "reject",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.6439570289970886,
+            "fitThickness": 0.432975871313673,
+            "limiting": 0.6439570289970886,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.951185565180715,
+            "titleText": "The Lord of the Rings",
+            "stacked": false,
+            "lines": [
+              "The Lord of the Rings"
+            ],
+            "visible": true
+          },
+          {
+            "id": 3,
+            "slug": "the-hobbit",
+            "title": "The Hobbit",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.33732654209893614,
+            "fitThickness": 0.31836461126005366,
+            "limiting": 0.33732654209893614,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.875279942542809,
+            "titleText": "The Hobbit",
+            "stacked": false,
+            "lines": [
+              "The Hobbit"
+            ],
+            "visible": true
+          },
+          {
+            "id": 4,
+            "slug": "the-hunger-games",
+            "title": "The Hunger Games",
+            "route": "pass",
+            "direction": "hybrid",
+            "widthPx": 52,
+            "heightPx": 236,
+            "fontSize": 9.5,
+            "authorSize": 5.3,
+            "fitLength": 0.6062503300168214,
+            "fitThickness": 0.432975871313673,
+            "limiting": 0.6062503300168214,
+            "limitedBy": "aesthetic cap",
+            "contrast": 10.97514353134264,
+            "titleText": "The Hunger Games",
+            "stacked": false,
+            "lines": [
+              "The Hunger Games"
+            ],
+            "visible": true
+          }
+        ],
+        "tightest": 0.9637082565325815,
+        "smallestFont": 7.75,
+        "lowContrast": 0
+      },
+      "clips": [],
+      "overflowX": 0,
+      "uiOverflow": [],
+      "imgs": [
+        {
+          "src": "assets/source/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            93,
+            137
+          ]
+        },
+        {
+          "src": "assets/mask/harry-potter-preview.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            93,
+            137
+          ]
+        },
+        {
+          "src": "assets/art/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            420,
+            621
+          ],
+          "displayed": [
+            93,
+            137
+          ]
+        },
+        {
+          "src": "assets/spine/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/harry-potter.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            93,
+            142
+          ]
+        },
+        {
+          "src": "assets/mask/lord-of-the-rings-preview.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            93,
+            142
+          ]
+        },
+        {
+          "src": "assets/art/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            326,
+            500
+          ],
+          "displayed": [
+            93,
+            142
+          ]
+        },
+        {
+          "src": "assets/spine/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/lord-of-the-rings.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            93,
+            150
+          ]
+        },
+        {
+          "src": "assets/mask/the-hobbit-preview.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            93,
+            150
+          ]
+        },
+        {
+          "src": "assets/art/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            308,
+            500
+          ],
+          "displayed": [
+            93,
+            150
+          ]
+        },
+        {
+          "src": "assets/spine/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/the-hobbit.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        },
+        {
+          "src": "assets/source/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            93,
+            140
+          ]
+        },
+        {
+          "src": "assets/mask/the-hunger-games-preview.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            93,
+            140
+          ]
+        },
+        {
+          "src": "assets/art/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            330,
+            500
+          ],
+          "displayed": [
+            93,
+            140
+          ]
+        },
+        {
+          "src": "assets/spine/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            52,
+            236
+          ],
+          "displayed": [
+            52,
+            236
+          ]
+        },
+        {
+          "src": "assets/retina/the-hunger-games.jpg",
+          "complete": true,
+          "natural": [
+            104,
+            472
+          ],
+          "displayed": [
+            104,
+            472
+          ]
+        }
+      ],
+      "fonts": "loaded",
+      "cards": 4
+    }
+  },
+  "passes": [
+    {
+      "width": 390,
+      "check": "load",
+      "direction": "hybrid",
+      "rail": true,
+      "light": "gallery",
+      "material": true,
+      "filter": "all",
+      "visible": 4,
+      "shelves": 1,
+      "pass": 3,
+      "reject": 1,
+      "metrics": [
+        {
+          "id": 1,
+          "slug": "harry-potter",
+          "title": "Harry Potter and the Philosopher's Stone",
+          "route": "pass",
+          "direction": "hybrid",
+          "widthPx": 52,
+          "heightPx": 236,
+          "fontSize": 7.75,
+          "authorSize": 5.3,
+          "fitLength": 0.9637082565325815,
+          "fitThickness": 0.35321715817694377,
+          "limiting": 0.9637082565325815,
+          "limitedBy": "length",
+          "contrast": 11.085730743161685,
+          "titleText": "Harry Potter and the Philosopher's Stone",
+          "stacked": false,
+          "lines": [
+            "Harry Potter and the Philosopher's Stone"
+          ],
+          "visible": true
+        },
+        {
+          "id": 2,
+          "slug": "lord-of-the-rings",
+          "title": "The Lord of the Rings",
+          "route": "reject",
+          "direction": "hybrid",
+          "widthPx": 52,
+          "heightPx": 236,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.6439570289970886,
+          "fitThickness": 0.432975871313673,
+          "limiting": 0.6439570289970886,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.951185565180715,
+          "titleText": "The Lord of the Rings",
+          "stacked": false,
+          "lines": [
+            "The Lord of the Rings"
+          ],
+          "visible": true
+        },
+        {
+          "id": 3,
+          "slug": "the-hobbit",
+          "title": "The Hobbit",
+          "route": "pass",
+          "direction": "hybrid",
+          "widthPx": 52,
+          "heightPx": 236,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.33732654209893614,
+          "fitThickness": 0.31836461126005366,
+          "limiting": 0.33732654209893614,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.875279942542809,
+          "titleText": "The Hobbit",
+          "stacked": false,
+          "lines": [
+            "The Hobbit"
+          ],
+          "visible": true
+        },
+        {
+          "id": 4,
+          "slug": "the-hunger-games",
+          "title": "The Hunger Games",
+          "route": "pass",
+          "direction": "hybrid",
+          "widthPx": 52,
+          "heightPx": 236,
+          "fontSize": 9.5,
+          "authorSize": 5.3,
+          "fitLength": 0.6062503300168214,
+          "fitThickness": 0.432975871313673,
+          "limiting": 0.6062503300168214,
+          "limitedBy": "aesthetic cap",
+          "contrast": 10.97514353134264,
+          "titleText": "The Hunger Games",
+          "stacked": false,
+          "lines": [
+            "The Hunger Games"
+          ],
+          "visible": true
+        }
+      ],
+      "tightest": 0.9637082565325815,
+      "smallestFont": 7.75,
+      "lowContrast": 0
+    },
+    {
+      "width": 390,
+      "check": "actual-size",
+      "state": {
+        "direction": "hybrid",
+        "rail": true,
+        "light": "gallery",
+        "material": true,
+        "filter": "all",
+        "selected": 1,
+        "actual": true
+      }
+    }
+  ],
+  "modes": [
+    {
+      "width": 320,
+      "dir": "hybrid",
+      "rail": true,
+      "filter": "all",
+      "overflowX": 0,
+      "clips": 0,
+      "shelves": 1,
+      "cards": 4,
+      "pass": 3,
+      "reject": 1
+    },
+    {
+      "width": 320,
+      "dir": "editorial",
+      "rail": true,
+      "filter": "all",
+      "overflowX": 0,
+      "clips": 0,
+      "shelves": 1,
+      "cards": 4,
+      "pass": 3,
+      "reject": 1
+    },
+    {
+      "width": 320,
+      "dir": "hybrid",
+      "rail": false,
+      "filter": "all",
+      "overflowX": 0,
+      "clips": 0,
+      "shelves": 1,
+      "cards": 4,
+      "pass": 3,
+      "reject": 1
+    },
+    {
+      "width": 320,
+      "dir": "hybrid",
+      "rail": true,
+      "filter": "reject",
+      "overflowX": 0,
+      "clips": 0,
+      "shelves": 1,
+      "cards": 1,
+      "pass": 0,
+      "reject": 1
+    },
+    {
+      "width": 320,
+      "dir": "editorial",
+      "rail": false,
+      "filter": "pass",
+      "overflowX": 0,
+      "clips": 0,
+      "shelves": 1,
+      "cards": 3,
+      "pass": 3,
+      "reject": 0
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": []
+}

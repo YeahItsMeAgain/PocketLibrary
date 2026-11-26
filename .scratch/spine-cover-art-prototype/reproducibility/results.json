@@ -1,0 +1,239 @@
+{
+  "generated": "2026-11-26T13:36:36.999Z",
+  "book": {
+    "title": "The Hound of the Baskervilles",
+    "author": "Arthur Conan Doyle",
+    "year": 1902,
+    "source": "Standard Ebooks",
+    "words": 59285,
+    "referencePages": 170
+  },
+  "studies": {
+    "full-bleed": {
+      "label": "Full-bleed",
+      "status": "automatic",
+      "note": "Cover crop, focus, shelf band and title rail were generated from the downloaded cover.",
+      "image": "results/full-bleed.png"
+    },
+    "textless-art": {
+      "label": "Textless art",
+      "status": "automatic",
+      "note": "The cover already uses a public-domain painting (Caspar David Friedrich, 1820), so the text-free artwork is used directly.",
+      "image": "results/textless-art.png"
+    },
+    "wrap-engine": {
+      "label": "Wrap engine",
+      "status": "automatic",
+      "note": "The 170-page reference extent produced a computed spine and a continuous back/spine/front wrap at 0.100 mm per leaf.",
+      "image": "results/wrap-engine.png",
+      "fullWrap": "results/wrap-engine-full.png",
+      "metrics": {
+        "ready": true,
+        "book": {
+          "id": "hound-of-the-baskervilles",
+          "title": "The Hound of the Baskervilles",
+          "author": "Arthur Conan Doyle"
+        },
+        "state": {
+          "bookId": "hound-of-the-baskervilles",
+          "pages": 170,
+          "stockId": "cream80",
+          "caliperMm": 0.1,
+          "trimId": "6x9",
+          "bleedIn": 0.125,
+          "mode": "cover",
+          "stripSource": "art",
+          "guides": true,
+          "rotateY": 30
+        },
+        "spine": {
+          "pages": 170,
+          "leaves": 85,
+          "caliperMm": 0.1,
+          "textBlockMm": 8.5,
+          "allowanceMm": 1.2,
+          "spineMm": 9.7,
+          "spineIn": 0.38188976377952755,
+          "clamped": false
+        },
+        "layout": {
+          "trimW": 6,
+          "trimH": 9,
+          "bleedIn": 0.125,
+          "spineIn": 0.38188976377952755,
+          "totalW": 12.631889763779528,
+          "totalH": 9.25,
+          "backFold": 6.125,
+          "spineX": 6.125,
+          "frontFold": 6.506889763779528
+        },
+        "print": {
+          "width": 3790,
+          "height": 2775,
+          "dpi": 300
+        },
+        "effectiveMode": "cover",
+        "mode": "cover",
+        "fit": {
+          "text": "The Hound of the Baskervilles",
+          "pt": 12.783506205788465,
+          "fontPx": 53.26460919078527,
+          "lengthPx": 644.1699829101562,
+          "acrossPx": 40,
+          "availableLengthPx": 1458,
+          "availableAcrossPx": 41.24409448818898,
+          "lengthRatio": 0.4418175465776106,
+          "acrossRatio": 0.9698358151966399,
+          "ratio": 0.9698358151966399,
+          "ok": true,
+          "cappedAtMax": false
+        },
+        "authorFit": {
+          "text": "ARTHUR CONAN DOYLE",
+          "pt": 6.131004366812227,
+          "fontPx": 25.545851528384276,
+          "lengthPx": 349.1788330078125,
+          "acrossPx": 19,
+          "availableLengthPx": 351,
+          "availableAcrossPx": 41.24409448818898,
+          "lengthRatio": 0.9948114900507479,
+          "acrossRatio": 0.460672012218404,
+          "ratio": 0.9948114900507479,
+          "ok": true,
+          "cappedAtMax": false
+        },
+        "coverFit": {
+          "text": "The Hound of the Baskervilles",
+          "pt": 12.783506205788465,
+          "fontPx": 53.26460919078527,
+          "lengthPx": 644.1699829101562,
+          "acrossPx": 40,
+          "availableLengthPx": 1458,
+          "availableAcrossPx": 41.24409448818898,
+          "lengthRatio": 0.4418175465776106,
+          "acrossRatio": 0.9698358151966399,
+          "ratio": 0.9698358151966399,
+          "ok": true,
+          "cappedAtMax": false
+        },
+        "coverAuthorFit": {
+          "text": "ARTHUR CONAN DOYLE",
+          "pt": 6.131004366812227,
+          "fontPx": 25.545851528384276,
+          "lengthPx": 349.1788330078125,
+          "acrossPx": 19,
+          "availableLengthPx": 351,
+          "availableAcrossPx": 41.24409448818898,
+          "lengthRatio": 0.9948114900507479,
+          "acrossRatio": 0.460672012218404,
+          "ratio": 0.9948114900507479,
+          "ok": true,
+          "cappedAtMax": false
+        },
+        "typeFit": {
+          "text": "THE HOUND OF THE BASKERVILLES",
+          "pt": 19.51705549263873,
+          "fontPx": 81.32106455266138,
+          "lengthPx": 1436.7490234375,
+          "acrossPx": 59,
+          "availableLengthPx": 1458,
+          "availableAcrossPx": 64.15748031496064,
+          "lengthRatio": 0.9854245702589163,
+          "acrossRatio": 0.9196121747668139,
+          "ratio": 0.9854245702589163,
+          "ok": true,
+          "cappedAtMax": false
+        },
+        "stress": {
+          "text": "The Hound of the Baskervilles",
+          "pt": 28.88320264135369,
+          "fontPx": 120.34667767230704,
+          "lengthPx": 1455.3504638671875,
+          "acrossPx": 88,
+          "availableLengthPx": 1458,
+          "availableAcrossPx": 108,
+          "lengthRatio": 0.998182759854038,
+          "acrossRatio": 0.8148148148148148,
+          "ratio": 0.998182759854038,
+          "ok": true,
+          "cappedAtMax": false
+        },
+        "stressAuthor": {
+          "text": "ARTHUR CONAN DOYLE",
+          "pt": 6.131004366812227,
+          "fontPx": 25.545851528384276,
+          "lengthPx": 349.1788330078125,
+          "acrossPx": 19,
+          "availableLengthPx": 351,
+          "availableAcrossPx": 108,
+          "lengthRatio": 0.9948114900507479,
+          "acrossRatio": 0.17592592592592593,
+          "ratio": 0.9948114900507479,
+          "ok": true,
+          "cappedAtMax": false
+        },
+        "decisions": [],
+        "edge": {
+          "hex": "#90857b",
+          "sd": 72.54725556524124,
+          "lum": 0.2401478829799187,
+          "contrastInk": 4.92375165046389,
+          "contrastCream": 3.029877622834914
+        },
+        "art": {
+          "hex": "#857b71",
+          "sd": 69.04459372513388,
+          "verdict": "source",
+          "removalPct": 0
+        },
+        "railContrast": 3.485054329953583,
+        "canvases": {
+          "display": {
+            "width": 760,
+            "height": 557
+          },
+          "preview": {
+            "width": 1400,
+            "height": 1025
+          },
+          "compare": {
+            "width": 42,
+            "height": 997
+          },
+          "zoom": {
+            "width": 42,
+            "height": 419
+          }
+        },
+        "fonts": {
+          "loaded": true,
+          "warning": ""
+        }
+      }
+    },
+    "design-system": {
+      "label": "Design system",
+      "status": "automatic",
+      "note": "Hybrid shelf spine generated from the shared cover. The study's own shelf record uses 336 pp for this title; the reference extent above is separate.",
+      "image": "results/design-system.png"
+    },
+    "reference": {
+      "label": "Reference",
+      "status": "manual export",
+      "note": "Spine-only SVG/PNG export at a manually chosen 1.00 in width. Title and author were entered by hand; the cover artwork is not used and there is no page-count model.",
+      "image": "results/reference-spine.png",
+      "exported": "results/reference-spine-export.png"
+    },
+    "generative-art": {
+      "label": "Generative art",
+      "status": "manual / generative only",
+      "note": "No image model runs in this suite. The study is a fixed two-cover experiment, so this book has no automatic generative result."
+    },
+    "popular-books": {
+      "label": "Popular books",
+      "status": "not applicable",
+      "note": "A curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it."
+    }
+  },
+  "errors": []
+}

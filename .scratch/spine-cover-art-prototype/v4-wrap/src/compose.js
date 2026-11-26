@@ -294,12 +294,12 @@ export function analyzeWrap({ book, state, layout, samples, measureCtx, pxPerIn 
   }
   if (state.mode === "cover" && book.artVerdict === "review") {
     decisions.push(
-      "v3 rates this textless reconstruction review / fail; the cover-derived strip is mostly inpainted."
+      "The textless-art study rates this reconstruction review / fail; the cover-derived strip is mostly inpainted."
     );
   }
   if (state.mode === "cover" && book.removalPct >= 30 && book.artVerdict !== "review") {
     decisions.push(
-      `Textless source is ${book.removalPct.toFixed(1)}% inpainted (v3: pass), not original pixels.`
+      `Textless source is ${book.removalPct.toFixed(1)}% inpainted (textless-art verdict: pass), not original pixels.`
     );
   }
   if (state.mode === "type") {

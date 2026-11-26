@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>v4 — continuous wrap compositor · PocketLibrary</title>
+    <title>Wrap engine — continuous wrap compositor · PocketLibrary</title>
     <meta
       name="description"
       content="Throwaway prototype: a continuous back + spine + front book wrap whose spine is computed from page count and paper caliper."
@@ -1189,7 +1189,7 @@
         <p class="eyebrow">
           <span class="dot"></span>
           <span>PocketLibrary · spine study</span>
-          <span class="tag">v4 · wrap compositor</span>
+          <span class="tag">Wrap engine · compositor</span>
         </p>
         <h1>A continuous wrap, sized by the <em>book</em>.</h1>
         <p class="lede">
@@ -1210,8 +1210,8 @@
         <div class="section-head">
           <h2 id="setup-h">01 · Book &amp; paper</h2>
           <p class="hint">
-            The same three samples throughout: two modern covers and one public-domain
-            classic. Switch books to change the recommended spine treatment.
+            Four samples: two modern covers and two public-domain classics, including the
+            shared reproducibility book. Switch books to change the recommended spine treatment.
           </p>
         </div>
         <div class="panel controls">
@@ -1265,7 +1265,7 @@
             <div class="field">
               <label for="sourceSelect">Strip source <span class="val">cover-derived only</span></label>
               <select id="sourceSelect">
-                <option value="art">v3 textless art</option>
+                <option value="art">Textless art</option>
                 <option value="cover">Published front cover</option>
               </select>
             </div>
@@ -1421,8 +1421,8 @@
         <div class="section-head">
           <h2 id="compare-h">05 · Side by side</h2>
           <p class="hint">
-            The same brief, three answers. bookcover-js clips; v3 has beautiful art but no
-            wrap; v4 composes the wrap but is honest about reconstructed pixels.
+            The same brief, three answers. bookcover-js clips; textless art is beautiful but has no
+            wrap; the wrap engine composes the wrap but is honest about reconstructed pixels.
           </p>
         </div>
         <div class="compare">
@@ -1449,10 +1449,10 @@
 
           <article class="compare-card">
             <div class="media">
-              <img id="v3Image" src="assets/whisper-man-spine.jpg" alt="v3 art-only spine crop" />
+              <img id="v3Image" src="assets/whisper-man-spine.jpg" alt="Textless art spine crop" />
             </div>
             <div class="body">
-              <span class="tag">v3 · art only</span>
+              <span class="tag">Textless art · art only</span>
               <h3>160 × 727 crop, no thickness</h3>
               <p id="v3Caption">
                 The right pixels, but a fixed crop on a shelf. There is no front cover, no
@@ -1466,16 +1466,16 @@
             <div class="media">
               <div class="v4-pair">
                 <div class="v4-full">
-                  <canvas id="compareV4" aria-label="v4 composed spine crop"></canvas>
+                  <canvas id="compareV4" aria-label="Wrap engine composed spine crop"></canvas>
                 </div>
                 <div class="v4-zoom">
-                  <canvas id="compareV4Zoom" aria-label="v4 title-zone detail, enlarged"></canvas>
+                  <canvas id="compareV4Zoom" aria-label="Wrap engine title-zone detail, enlarged"></canvas>
                   <span class="zoom-label">title zone · enlarged</span>
                 </div>
               </div>
             </div>
             <div class="body">
-              <span class="tag">v4 · this wrap</span>
+              <span class="tag">Wrap engine · this wrap</span>
               <h3 id="v4Title">Computed spine, measured type</h3>
               <p id="v4Caption">
                 The spine is cut from the wrap at the fold, and the title is fitted from
@@ -1486,9 +1486,9 @@
           </article>
         </div>
         <p class="compare-foot">
-          The v3 crop is shown at its native 160 × 727; the v4 spine is a crop of the
+          The textless-art crop is shown at its native 160 × 727; the wrap-engine spine is a crop of the
           generated wrap at the current page count. They are not the same physical width,
-          which is the point: v3 never claims a thickness.
+          which is the point: textless art never claims a thickness.
         </p>
       </section>
 

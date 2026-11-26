@@ -349,9 +349,9 @@ function updateStats(c) {
     analysis.effectiveMode === "cover"
       ? book.artVerdict === "source"
         ? "genuine textless painting · strip is original art"
-        : `${book.removalPct.toFixed(1)}% inpainted · v3 ${book.artVerdict}`
+        : `${book.removalPct.toFixed(1)}% inpainted · textless art ${book.artVerdict}`
       : book.artVerdict === "review"
-        ? `v3 review / fail · ${book.removalPct.toFixed(1)}% inpainted`
+        ? `Textless art review / fail · ${book.removalPct.toFixed(1)}% inpainted`
         : "no cover pixels on spine · edge colour only";
 }
 
@@ -376,7 +376,7 @@ function updateDecision(c) {
   if (analysis.effectiveMode === "cover") {
     list.push(
       `Strip source: ${
-        state.stripSource === "art" ? "v3 textless art" : "published front cover"
+        state.stripSource === "art" ? "textless art" : "published front cover"
       }, sampled from the fold-adjacent left ${(book.stripX * 100).toFixed(1)}% at the same vertical scale as the front.`
     );
     list.push(
@@ -466,7 +466,7 @@ function renderCompare(c) {
     book.artVerdict === "source"
       ? "A genuine text-free painting, cropped to a fixed 160 × 727 spine. Beautiful pixels, but no thickness and no wrap."
       : book.artVerdict === "review"
-        ? "The RPS crop is mostly reconstructed snow after 70.4% of the cover was masked. v3 exposes this as a failure instead of hiding it."
+        ? "The RPS crop is mostly reconstructed snow after 70.4% of the cover was masked. The textless-art study exposes this as a failure instead of hiding it."
         : "The Whisper Man crop survives the inpaint and reads as door/wood at shelf scale, but it is still a fixed crop with no thickness.";
   els.v3Metrics.textContent = `160 × 727 px · ${book.artNote} · no front/back, no spine arithmetic`;
 
@@ -494,7 +494,7 @@ function renderCompare(c) {
   els.v4Caption.textContent =
     mode === "cover"
       ? `Fold-adjacent strip from ${
-          state.stripSource === "art" ? "the v3 textless art" : "the published cover"
+          state.stripSource === "art" ? "the textless art" : "the published cover"
         }, with a readable rail and measured type. The wrap is ${c.layout.totalW.toFixed(
           2
         )} in wide.`
@@ -684,7 +684,7 @@ els.modeType.addEventListener("click", () => {
 els.sourceSelect.addEventListener("change", (e) => {
   state.stripSource = e.target.value;
   queueRefresh(
-    `Spine strip source: ${state.stripSource === "art" ? "v3 textless art" : "published front cover"}.`
+    `Spine strip source: ${state.stripSource === "art" ? "textless art" : "published front cover"}.`
   );
 });
 els.guidesToggle.addEventListener("change", (e) => {

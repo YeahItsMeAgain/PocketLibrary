@@ -7,13 +7,47 @@
 (() => {
   "use strict";
 
+  const REPRO = {
+    book: "The Hound of the Baskervilles",
+    href: "/spine-cover-art-prototype/reproducibility/",
+  };
+
   const studies = [
-    { path: "/spine-cover-art-prototype/v2/", title: "v2 · High-res full-bleed" },
-    { path: "/spine-cover-art-prototype/v3/", title: "v3 · Textless artwork" },
-    { path: "/spine-cover-art-prototype/v4-wrap/", title: "v4a · Wrap engine" },
-    { path: "/spine-cover-art-prototype/v4-generative/", title: "v4b · Generative removal" },
-    { path: "/spine-cover-art-prototype/v6/", title: "v6 · Design directions" },
-    { path: "/spine-cover-art-prototype/bookcover-js-deep/harness/", title: "Ref · bookcover-js" },
+    {
+      path: "/spine-cover-art-prototype/v2/",
+      title: "Full-bleed",
+      auto: "Automatic. The downloaded cover is cropped, focused and railed without hand placement.",
+    },
+    {
+      path: "/spine-cover-art-prototype/v3/",
+      title: "Textless art",
+      auto: "Automatic for this book. Its cover already uses a public-domain painting, so the artwork is used directly. Modern covers need OCR plus inpainting, or a reviewed generative edit.",
+    },
+    {
+      path: "/spine-cover-art-prototype/v4-wrap/",
+      title: "Wrap engine",
+      auto: "Automatic. The word-count estimate gives the page count, then the spine width and continuous wrap are computed from paper caliper.",
+    },
+    {
+      path: "/spine-cover-art-prototype/v4-generative/",
+      title: "Generative art",
+      auto: "Manual / generative only. No image model is available in this run, and the study is a fixed two-cover experiment, so this book has no automatic generative result.",
+    },
+    {
+      path: "/spine-cover-art-prototype/v6/",
+      title: "Design system",
+      auto: "Automatic. The Hybrid shelf spine is generated from the shared cover and the study's own shelf record.",
+    },
+    {
+      path: "/spine-cover-art-prototype/v7/",
+      title: "Popular books",
+      auto: "Not applicable: this is a curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.",
+    },
+    {
+      path: "/spine-cover-art-prototype/bookcover-js-deep/harness/",
+      title: "Reference",
+      auto: "Spine-only export. Title and author are entered by hand; the cover artwork is not used.",
+    },
   ];
 
   const normalize = (value) => value.replace(/index\.html$/, "").replace(/\/+$/, "") + "/";
@@ -129,8 +163,75 @@
       white-space: nowrap;
     }
     .study-dock__spacer {
-      height: calc(72px + env(safe-area-inset-bottom, 0px));
+      height: calc(94px + env(safe-area-inset-bottom, 0px));
       pointer-events: none;
+    }
+    .study-dock__landing {
+      position: fixed;
+      z-index: 39;
+      left: 50%;
+      bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+      max-width: calc(100vw - 24px);
+      padding: 4px 9px;
+      overflow: hidden;
+      transform: translateX(-50%);
+      border: 1px solid rgba(201, 168, 106, .26);
+      border-radius: 999px;
+      background: rgba(13, 7, 17, .9);
+      color: #b99a63;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 8px;
+      font-weight: 650;
+      letter-spacing: .14em;
+      line-height: 1.4;
+      text-align: center;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+    .study-dock__landing[hidden] { display: none; }
+    .repro-callout {
+      width: calc(100% - 24px);
+      max-width: 760px;
+      margin: 22px auto 8px;
+      padding: 13px 15px;
+      border: 1px solid rgba(150, 120, 70, .34);
+      border-radius: 10px;
+      background: rgba(150, 120, 70, .07);
+      color: inherit;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 12.5px;
+      line-height: 1.55;
+      text-align: left;
+    }
+    .repro-callout *,
+    .repro-callout *::before,
+    .repro-callout *::after { box-sizing: border-box; }
+    .repro-callout__eyebrow {
+      display: block;
+      margin: 0 0 5px;
+      color: #b08a4e;
+      font-size: 9px;
+      font-weight: 650;
+      letter-spacing: .16em;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+    .repro-callout p { margin: 0; }
+    .repro-callout b { font-weight: 650; }
+    .repro-callout a {
+      display: inline-block;
+      margin-top: 7px;
+      color: inherit;
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+    @media (max-width: 359px) {
+      .repro-callout { margin-top: 16px; padding: 11px 12px; font-size: 12px; }
     }
     @media (prefers-reduced-motion: reduce) {
       .study-dock__arrow { transition: none; }
@@ -180,33 +281,79 @@
   spacer.setAttribute("aria-hidden", "true");
   document.body.append(spacer);
 
+  const landingNote = document.createElement("div");
+  landingNote.className = "study-dock__landing";
+  landingNote.setAttribute("aria-hidden", "true");
+  document.body.append(landingNote);
+
+  const callout = document.createElement("aside");
+  callout.className = "repro-callout";
+  callout.setAttribute("aria-label", "Reproducibility");
+
+  function renderCallout() {
+    const study = studies[currentIndex];
+    const landing = study.optional && study.available === false;
+    callout.innerHTML =
+      `<span class="repro-callout__eyebrow">Reproducibility · shared random book</span>` +
+      `<p><b>${REPRO.book}</b> is the one randomly chosen downloadable book tested against every study. ` +
+      (landing ? `This study is still landing; the shared test will be added when it arrives.` : study.auto) +
+      `</p>` +
+      `<a href="${REPRO.href}">Open the shared reproducibility test →</a>`;
+  }
+
+  const firstHeader = document.querySelector("header");
+  if (firstHeader) firstHeader.insertAdjacentElement("afterend", callout);
+  else document.body.insertBefore(callout, nav);
+
+  function availableIndex(direction) {
+    let index = currentIndex + direction;
+    while (index >= 0 && index < studies.length) {
+      const study = studies[index];
+      if (!(study.optional && study.available === false)) return index;
+      index += direction;
+    }
+    return -1;
+  }
+
   function render() {
     const study = studies[currentIndex];
     const count = studies.length;
-    indexLabel.textContent = `Study ${String(currentIndex + 1).padStart(2, "0")} / ${String(count).padStart(2, "0")}`;
-    title.textContent = study.title;
+    indexLabel.textContent = `STUDY ${String(currentIndex + 1).padStart(2, "0")} / ${String(count).padStart(2, "0")}`;
+    title.textContent = study.optional && study.available === false ? `${study.title} · landing soon` : study.title;
 
-    previous.disabled = currentIndex === 0;
-    next.disabled = currentIndex === count - 1;
+    const previousIndex = availableIndex(-1);
+    const nextIndex = availableIndex(1);
+    previous.disabled = previousIndex < 0;
+    next.disabled = nextIndex < 0;
     previous.setAttribute(
       "aria-label",
-      currentIndex === 0 ? "Previous study" : `Previous study: ${studies[currentIndex - 1].title}`
+      previousIndex < 0 ? "Previous study" : `Previous study: ${studies[previousIndex].title}`
     );
     next.setAttribute(
       "aria-label",
-      currentIndex === count - 1 ? "Next study" : `Next study: ${studies[currentIndex + 1].title}`
+      nextIndex < 0 ? "Next study" : `Next study: ${studies[nextIndex].title}`
     );
+    const landingIndex = studies.findIndex((item) => item.optional && item.available === false);
+    if (landingIndex < 0) {
+      landingNote.hidden = true;
+    } else {
+      landingNote.hidden = false;
+      landingNote.textContent = `${String(landingIndex + 1).padStart(2, "0")} · ${studies[landingIndex].title} — landing soon`;
+    }
     nav.dataset.current = study.path;
+    renderCallout();
   }
 
   function step(direction) {
-    const index = currentIndex + direction;
-    if (index < 0 || index >= studies.length) return;
+    const index = availableIndex(direction);
+    if (index < 0) return;
     window.location.assign(studies[index].path);
   }
 
   previous.addEventListener("click", () => step(-1));
   next.addEventListener("click", () => step(1));
+
+
 
   function modalIsOpen() {
     return Array.from(document.querySelectorAll('[aria-modal="true"]')).some(

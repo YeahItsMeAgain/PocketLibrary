@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Reproducibility — one random book, every spine study</title>
+<meta name="description" content="The same randomly chosen downloadable book tested against every PocketLibrary spine prototype, with results, automatic/manual status and honest blockers.">
+<style>
+  @font-face {
+    font-family: "EB Garamond";
+    src: url("../v2/EBGaramond-Regular.woff2") format("woff2");
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Literata";
+    src: url("../v2/Literata-Regular.woff2") format("woff2");
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0b0709;
+    --cream: #f2e3c6;
+    --muted: #b7a68c;
+    --faint: #897b69;
+    --gold: #c9a86a;
+    --gold-bright: #f2dda0;
+    --line: rgba(201, 168, 106, .22);
+    --line-soft: rgba(201, 168, 106, .12);
+    --good: #a9d0a4;
+    --warn: #e0bd7a;
+    --bad: #d99b84;
+    --display: "EB Garamond", "Iowan Old Style", Palatino, Georgia, serif;
+    --reading: "Literata", "Iowan Old Style", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1000px 500px at 10% -10%, rgba(87, 54, 91, .28), transparent 62%),
+      radial-gradient(900px 480px at 96% 12%, rgba(112, 75, 34, .15), transparent 58%),
+      var(--bg);
+    color: var(--cream);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .wrap { width: min(100% - 40px, 1000px); margin: 0 auto; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0 18px; border-bottom: 1px solid var(--line-soft); }
+  .wordmark { display: flex; align-items: center; gap: 9px; font-family: var(--display); font-size: 17px; }
+  .wordmark i { width: 10px; height: 14px; border: 1px solid var(--gold); border-radius: 2px 4px 4px 2px; background: linear-gradient(90deg, rgba(201,168,106,.38), rgba(201,168,106,.05)); }
+  .back { color: var(--faint); font-size: 11px; letter-spacing: .08em; text-decoration: none; }
+  .back:hover { color: var(--gold-bright); }
+  .hero { padding: 50px 0 26px; max-width: 820px; }
+  .kicker { margin: 0 0 12px; color: var(--gold); font-size: 10px; font-weight: 650; letter-spacing: .2em; line-height: 1.3; text-transform: uppercase; }
+  h1 { margin: 0; font-family: var(--display); font-size: clamp(38px, 7.6vw, 68px); font-weight: 400; letter-spacing: -.025em; line-height: 1.02; }
+  h1 em { color: var(--gold-bright); font-style: italic; }
+  .lede { margin: 20px 0 0; max-width: 690px; color: var(--muted); font-family: var(--reading); font-size: clamp(16px, 2.3vw, 19px); line-height: 1.62; }
+  .lede b { color: var(--cream); font-weight: 500; }
+  .book-band {
+    display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; align-items: center;
+    margin: 24px 0 8px; padding: 24px;
+    border: 1px solid var(--line); border-radius: 14px;
+    background:
+      radial-gradient(520px 260px at 8% 0%, rgba(201,168,106,.1), transparent 60%),
+      linear-gradient(180deg, rgba(21,16,13,.92), rgba(13,9,7,.92));
+  }
+  .book-cover { width: 100%; padding: 7px; border-radius: 4px; background: linear-gradient(140deg, rgba(201,168,106,.5), rgba(201,168,106,.12)); box-shadow: 0 18px 38px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,235,190,.12); }
+  .book-cover img { display: block; width: 100%; height: auto; border-radius: 2px; }
+  .book-band h2 { margin: 0 0 4px; font-family: var(--display); font-size: clamp(28px, 4vw, 38px); font-weight: 400; line-height: 1.05; }
+  .book-band .byline { margin: 0 0 12px; color: var(--muted); font-family: var(--reading); font-size: 14px; font-style: italic; }
+  .book-band p { margin: 0 0 12px; color: var(--muted); font-family: var(--reading); font-size: 13.5px; line-height: 1.6; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips span { padding: 4px 8px; border: 1px solid var(--line-soft); border-radius: 999px; color: var(--faint); font-size: 10px; letter-spacing: .04em; }
+  .section { padding: 34px 0 6px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  h2 { margin: 0; font-family: var(--display); font-size: clamp(26px, 4vw, 36px); font-weight: 400; letter-spacing: -.01em; line-height: 1.1; }
+  .section-head p { margin: 0; color: var(--faint); font-size: 12px; }
+  .method { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 18px; align-items: start; }
+  .method > div { min-width: 0; }
+  .method p { margin: 0 0 10px; color: var(--muted); font-family: var(--reading); font-size: 13.5px; line-height: 1.6; }
+  .method p b { color: var(--cream); font-weight: 500; }
+  .method code { overflow-wrap: anywhere; }
+  .facts dd { overflow-wrap: anywhere; }
+  pre {
+    margin: 0; max-width: 100%; padding: 15px 16px; overflow-x: auto;
+    border: 1px solid var(--line-soft); border-radius: 10px;
+    background: rgba(0,0,0,.28); color: #d8c6a5;
+    font: 11.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre;
+    -webkit-overflow-scrolling: touch;
+  }
+  .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--line-soft); background: var(--line-soft); border-radius: 10px; overflow: hidden; }
+  .facts div { padding: 10px 12px; background: rgba(18,13,10,.94); }
+  .facts dt { color: var(--faint); font-size: 8.5px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; }
+  .facts dd { margin: 3px 0 0; color: var(--cream); font-family: var(--display); font-size: 19px; line-height: 1.15; }
+  .matrix { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12.5px; }
+  .matrix th, .matrix td { padding: 11px 10px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+  .matrix th { color: var(--faint); font-size: 9px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; }
+  .matrix td:first-child { color: var(--cream); font-family: var(--display); font-size: 16px; white-space: nowrap; }
+  .matrix td:last-child { color: var(--muted); font-family: var(--reading); line-height: 1.5; }
+  .status { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 9.5px; font-weight: 650; letter-spacing: .06em; line-height: 1.35; text-transform: uppercase; white-space: nowrap; }
+  .status--auto { background: rgba(101, 143, 96, .2); color: var(--good); }
+  .status--manual { background: rgba(170, 126, 54, .2); color: var(--warn); }
+  .status--na { background: rgba(160, 110, 90, .18); color: var(--bad); }
+  .results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .result {
+    border: 1px solid var(--line-soft); border-radius: 12px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0));
+  }
+  .result__body { padding: 14px 15px 15px; }
+  .result__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+  .result h3 { margin: 0; font-family: var(--display); font-size: 23px; font-weight: 400; line-height: 1.05; }
+  .result p { margin: 0; color: var(--muted); font-family: var(--reading); font-size: 12.5px; line-height: 1.55; }
+  .result p + p { margin-top: 7px; }
+  .result a { color: var(--gold-bright); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-decoration: none; }
+  .result a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .shot {
+    display: grid; place-items: center; min-height: 120px; padding: 12px;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,.025) 0 8px, transparent 8px 16px),
+      rgba(0,0,0,.22);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .shot img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: contain; }
+  .shot--tall img { width: auto; max-height: 380px; }
+  .shot--empty { min-height: 110px; color: var(--faint); font-size: 11px; letter-spacing: .1em; text-align: center; text-transform: uppercase; }
+  .metrics { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+  .metrics span { color: var(--faint); font-size: 9.5px; letter-spacing: .03em; }
+  .metrics span + span::before { content: "·"; margin-right: 5px; color: var(--line); }
+  .note { margin: 20px 0 0; padding: 14px 16px; border-left: 2px solid var(--gold); background: rgba(201,168,106,.055); color: var(--muted); font-family: var(--reading); font-size: 13px; line-height: 1.6; }
+  .note b { color: var(--cream); font-weight: 500; }
+  footer { margin-top: 44px; padding: 20px 0 34px; border-top: 1px solid var(--line-soft); color: var(--faint); font-size: 11px; line-height: 1.6; }
+  footer p { margin: 0; }
+  @media (max-width: 760px) {
+    .book-band { grid-template-columns: 1fr; gap: 18px; }
+    .book-cover { width: min(58%, 180px); justify-self: center; }
+    .method { grid-template-columns: minmax(0, 1fr); }
+    .results { grid-template-columns: 1fr; }
+    .matrix { font-size: 12px; }
+    .matrix thead { display: none; }
+    .matrix tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
+    .matrix td { padding: 0; border: 0; }
+    .matrix td:first-child { font-size: 17px; }
+    .matrix td:nth-child(2) { justify-self: end; }
+    .matrix td:last-child { grid-column: 1 / -1; margin-top: 4px; }
+  }
+  @media (max-width: 359px) {
+    .wrap { width: calc(100% - 24px); }
+    .topbar { padding-top: 16px; }
+    .hero { padding-top: 36px; }
+    .book-band { padding: 18px 16px; }
+    .facts { grid-template-columns: 1fr; }
+    .result__body { padding: 13px; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <span class="wordmark"><i aria-hidden="true"></i> Pocket Library</span>
+    <a class="back" href="../review/">← Back to the review</a>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="title">
+      <p class="kicker">Shared reproducibility test · one book, every study</p>
+      <h1 id="title">The same unseen book, <em>every time</em>.</h1>
+      <p class="lede">Each study was given the same randomly chosen downloadable book and asked what it could do with it. Some process it automatically. Some need a hand. One cannot run at all. The point is to make that difference visible instead of claiming a uniform pipeline.</p>
+    </section>
+
+    <section class="book-band" aria-labelledby="book-title">
+      <figure class="book-cover">
+        <img src="book/cover.jpg" alt="Front cover of The Hound of the Baskervilles, Standard Ebooks edition">
+      </figure>
+      <div>
+        <p class="kicker">The chosen book</p>
+        <h2 id="book-title">The Hound of the Baskervilles</h2>
+        <p class="byline">Arthur Conan Doyle · 1902</p>
+        <p>Drawn once from eighteen downloadable Standard Ebooks titles, using a documented seed and <code>shuf</code>. The real 1400 × 2100 cover is stored in <code>book/cover.jpg</code>; its metadata and selection command are recorded alongside it.</p>
+        <div class="chips">
+          <span>Standard Ebooks</span>
+          <span>59,285 words</span>
+          <span>170 pp reference</span>
+          <span>Public domain</span>
+          <span>Cover 1400 × 2100</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="method-title">
+      <div class="section-head">
+        <h2 id="method-title">How it was chosen</h2>
+        <p>Deterministic, before any study was run.</p>
+      </div>
+      <div class="method">
+        <div>
+          <p><b>Pool.</b> The eighteen public-domain titles already used by the suite, so every draw has a real, downloadable cover and no new source is introduced for the test.</p>
+          <p><b>Seed.</b> <code>pocketlibrary-spine-repro-2026-11-26</code>, expanded to a one-megabyte random stream with AES-256-CTR and passed to <code>shuf</code>. Re-running the command yields the same title.</p>
+          <p><b>Page count.</b> Standard Ebooks reports 59,285 words. At a documented 350 words per page that is 170 pages. This is a reference extent, not a claim about a particular print edition. The Design system study keeps its own 336 pp shelf record for the title.</p>
+        </div>
+        <div>
+          <pre>openssl enc -aes-256-ctr \
+  -pass pass:pocketlibrary-spine-repro-2026-11-26 \
+  -nosalt -pbkdf2 &lt; /dev/zero \
+  | head -c 1048576 &gt; /tmp/spine-seed-stream.bin
+
+shuf --random-source=/tmp/spine-seed-stream.bin \
+  -n 1 /tmp/spine-book-list.txt
+
+# → The Hound of the Baskervilles</pre>
+          <div class="facts" style="margin-top:12px">
+            <div><dt>Cover SHA-256</dt><dd style="font-size:12px;word-break:break-all">ee131704a727d89a7988ddc65e7bc35760786cd0164e055989126dd3e12ae0e1</dd></div>
+            <div><dt>Painting</dt><dd style="font-size:13px">Caspar David Friedrich, 1820</dd></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="matrix-title">
+      <div class="section-head">
+        <h2 id="matrix-title">Automatic, manual, or not applicable</h2>
+        <p>The same book is used in every row.</p>
+      </div>
+      <table class="matrix">
+        <thead>
+          <tr><th>Study</th><th>Status</th><th>What it does with this exact book</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Full-bleed</td><td><span class="status status--auto">Automatic</span></td><td>Crops the downloaded cover, finds a focus point, masks the printed title plate and builds the rail.</td></tr>
+          <tr><td>Textless art</td><td><span class="status status--auto">Automatic</span></td><td>The cover already uses a public-domain painting, so the text-free artwork is used directly. No OCR or inpainting was needed for this book.</td></tr>
+          <tr><td>Wrap engine</td><td><span class="status status--auto">Automatic</span></td><td>Uses the 170-page reference extent: 9.7 mm spine (0.382 in) and a 12.632 × 9.250 in wrap at 300 dpi.</td></tr>
+          <tr><td>Generative art</td><td><span class="status status--manual">Manual only</span></td><td>No image model is available in this run. The study is a fixed two-cover experiment, so this book has no automatic generative result.</td></tr>
+          <tr><td>Design system</td><td><span class="status status--auto">Automatic</span></td><td>Builds the Hybrid spine from the shared cover, using its own 336 pp / 18.0 mm shelf record.</td></tr>
+          <tr><td>Popular books</td><td><span class="status status--na">N/A</span></td><td>A curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.</td></tr>
+          <tr><td>Reference</td><td><span class="status status--manual">Manual export</span></td><td>Exports a spine-only SVG/PNG at a manually chosen 1.00 in width. Title and author are typed in; the cover is not used.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" aria-labelledby="results-title">
+      <div class="section-head">
+        <h2 id="results-title">Results</h2>
+        <p>Captured from the running prototypes.</p>
+      </div>
+
+      <div class="results">
+        <article class="result">
+          <div class="shot"><img src="results/full-bleed.png" alt="Full-bleed study showing the Hound cover crop and resulting spine with a vellum rail" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>Full-bleed</h3><span class="status status--auto">Automatic</span></div>
+            <p>The spine shows 33.4% of the cover width at a 55% focus point. Because the painting is light, the automatic luminance pass picks dark ink on a warm vellum rail.</p>
+            <div class="metrics"><span>1400 × 2100 source</span><span>49 × 220 px spine</span><span>Vellum fallback</span></div>
+            <p style="margin-top:9px"><a href="../v2/">Open the Full-bleed study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot"><img src="results/textless-art.png" alt="Textless art study showing cover, text removed, extracted art and spine crop" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>Textless art</h3><span class="status status--auto">Automatic</span></div>
+            <p>The genuine painting is used directly: cover, then the printed plate excluded, then the 33% spine crop. No OCR or inpainting was required for this title.</p>
+            <div class="metrics"><span>Original painting</span><span>996 × 1494 art</span><span>Focus 55%</span></div>
+            <p style="margin-top:9px"><a href="../v3/">Open the Textless art study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot"><img src="results/wrap-engine.png" alt="Wrap engine showing back cover, spine and front cover as one continuous wrap" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>Wrap engine</h3><span class="status status--auto">Automatic</span></div>
+            <p>170 pages at 0.100 mm per leaf produce a 9.7 mm spine. The title fits at 12.8 pt on the computed spine and 28.9 pt in the 1-inch stress test.</p>
+            <div class="metrics"><span>0.382 in spine</span><span>12.632 × 9.250 in wrap</span><span>300 dpi</span></div>
+            <p style="margin-top:9px"><a href="../v4-wrap/">Open the Wrap engine study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot"><img src="results/design-system.png" alt="Design system Hybrid spine and detail record for the Hound of the Baskervilles" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>Design system</h3><span class="status status--auto">Automatic</span></div>
+            <p>The Hybrid direction keeps a narrow art window beside a paper label. This title’s existing shelf record is 336 pp / 18.0 mm, giving a 46.6 px spine and an 8.9 px title.</p>
+            <div class="metrics"><span>Hybrid</span><span>11.3:1 contrast</span><span>91% type fit</span></div>
+            <p style="margin-top:9px"><a href="../v6/">Open the Design system study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot shot--tall"><img src="results/reference-spine.png" alt="Bookcover-js spine-only export with title and author" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>Reference</h3><span class="status status--manual">Manual export</span></div>
+            <p>Bookcover-js produces a standalone decorative spine. Width is a manual choice, not page-count arithmetic; the cover artwork is not used in this export.</p>
+            <div class="metrics"><span>1.00 in width</span><span>8 pt type</span><span>Spine-only PNG</span></div>
+            <p style="margin-top:9px"><a href="../bookcover-js-deep/harness/">Open the Reference study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot shot--empty">No automatic result</div>
+          <div class="result__body">
+            <div class="result__top"><h3>Generative art</h3><span class="status status--manual">Manual only</span></div>
+            <p>An honest blocker: the study reconstructs type with an image model, but no model is available in this run. Its result is a fixed two-cover experiment, not a repeatable pipeline for an arbitrary book.</p>
+            <div class="metrics"><span>Model not run</span><span>Fixed two-cover set</span><span>Review required</span></div>
+            <p style="margin-top:9px"><a href="../v4-generative/">Open the Generative art study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
+          <div class="shot shot--empty">N/A · curated shelf</div>
+          <div class="result__body">
+            <div class="result__top"><h3>Popular books</h3><span class="status status--na">N/A</span></div>
+            <p>This study curates four commercial covers and judges them at shelf size; it is not a per-cover pipeline, so there is no shared-book run to report.</p>
+            <div class="metrics"><span>Curated shelf</span><span>4 covers</span><span>52 × 236 px</span></div>
+            <p style="margin-top:9px"><a href="../v7/">Open the Popular books study →</a></p>
+          </div>
+        </article>
+      </div>
+
+      <p class="note"><b>Read the matrix, not the average.</b> Four studies process the shared book automatically, one needs a manual export, one is an explicit generative-only blocker, and one is a curated shelf. That spread is the result: the suite does not pretend every technique generalises to every book.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Throwaway design prototypes · not production code · no app tests, manifests or specs changed. The shared book is recorded in <code>book/metadata.json</code>; result captures are generated by <code>capture.cjs</code>. The same random book is used across the whole matrix.</p>
+  </footer>
+</div>
+
+</body>
+</html>

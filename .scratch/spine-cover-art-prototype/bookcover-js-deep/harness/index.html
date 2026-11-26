@@ -184,18 +184,18 @@ js/penguinstyle.js
 </section>
 
 <section>
-  <div class="section-head"><h2>6 · Compared with v4-wrap and v3</h2><p>Same displayed height, not the same native resolution.</p></div>
+  <div class="section-head"><h2>6 · Compared with the wrap engine and textless art</h2><p>Same displayed height, not the same native resolution.</p></div>
   <figure class="wide">
     <img src="out/comparisons/whisper-man-bookcover-vs-v4-vs-v3.png" alt="The Whisper Man comparison">
-    <figcaption><b>The Whisper Man</b> — bookcover-js SVG 54×612 · v4-wrap 1.000 in / 300 px wide (cover) · v3 160×727 fixed crop.</figcaption>
+    <figcaption><b>The Whisper Man</b> — bookcover-js SVG 54×612 · wrap engine 1.000 in / 300 px wide (cover) · textless art 160×727 fixed crop.</figcaption>
   </figure><figure class="wide">
     <img src="out/comparisons/rock-paper-scissors-bookcover-vs-v4-vs-v3.png" alt="Rock Paper Scissors comparison">
-    <figcaption><b>Rock Paper Scissors</b> — bookcover-js SVG 36×612 · v4-wrap 1.000 in / 300 px wide (type) · v3 160×727 fixed crop.</figcaption>
+    <figcaption><b>Rock Paper Scissors</b> — bookcover-js SVG 36×612 · wrap engine 1.000 in / 300 px wide (type) · textless art 160×727 fixed crop.</figcaption>
   </figure><figure class="wide">
     <img src="out/comparisons/moby-dick-bookcover-vs-v4-vs-v3.png" alt="Moby-Dick comparison">
-    <figcaption><b>Moby-Dick</b> — bookcover-js SVG 90×612 · v4-wrap 1.000 in / 300 px wide (cover) · v3 160×727 fixed crop.</figcaption>
+    <figcaption><b>Moby-Dick</b> — bookcover-js SVG 90×612 · wrap engine 1.000 in / 300 px wide (cover) · textless art 160×727 fixed crop.</figcaption>
   </figure>
-  <p class="note">v4-wrap solves the things bookcover-js does not: page-count → spine arithmetic (0.677 in for 320 pages), a continuous no-gap wrap, measured auto-fit (17.3 pt at the computed spine, 25.5 pt at the 1.00 in stress), and real cover pixels. v3 is the best-looking art but has a fixed 160×727 crop and no thickness model. bookcover-js is the only one of the three with a standalone <em>decorative</em> spine export; it is not a substitute for either.</p>
+  <p class="note">The wrap engine solves the things bookcover-js does not: page-count → spine arithmetic (0.677 in for 320 pages), a continuous no-gap wrap, measured auto-fit (17.3 pt at the computed spine, 25.5 pt at the 1.00 in stress), and real cover pixels. Textless art is the best-looking art but has a fixed 160×727 crop and no thickness model. bookcover-js is the only one of the three with a standalone <em>decorative</em> spine export; it is not a substitute for either.</p>
 </section>
 
 <section>
@@ -216,7 +216,7 @@ js/penguinstyle.js
         <li><b>PNG gutters</b> — call <code>saveSpine</code> with zero padding if the shelf expects an exact rectangle; keep the padded version only for cutting-plotters.</li>
         <li><b>Optional</b> — a background parameter so the SVG/PNG can carry the bookcloth colour, and a page-count/caliper input to replace manual spine width.</li>
       </ol>
-      <p style="margin-top:14px"><b>Bottom line:</b> bookcover-js is a usable <em>spine renderer</em>, not a cover pipeline. With the five patches above it can produce a good-looking 2D shelf spine; without them, use it only for typographic/ornament spines and keep v4-wrap for cover-derived wraps.</p>
+      <p style="margin-top:14px"><b>Bottom line:</b> bookcover-js is a usable <em>spine renderer</em>, not a cover pipeline. With the five patches above it can produce a good-looking 2D shelf spine; without them, use it only for typographic/ornament spines and keep the wrap engine for cover-derived wraps.</p>
     </div>
   </div>
 </section>
@@ -234,9 +234,9 @@ git clone --depth 1 https://github.com/acestronautical/bookcover-js.git vendor/b
 # serve the repo root; the existing static host is on :4173
 # (from the repo root, an equivalent is: python3 -m http.server 4173)
 
-node capture-deep.cjs     # exports, raster tests, fit sweep, v4/v3 compares
+node capture-deep.cjs     # exports, raster tests, fit sweep, wrap/textless compares
 node rebuild-contact.cjs  # readable per-book fit sheets + clip close-ups
-node fix-v4.cjs           # re-capture v4 at each book's 320-page width
+node fix-v4.cjs           # re-capture the wrap at each book's 320-page width
 node build-gallery.cjs    # this page</pre>
     </div>
     <div>

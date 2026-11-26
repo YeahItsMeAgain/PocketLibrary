@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary — The artwork, unprinted (prototype v3)</title>
+<title>PocketLibrary — The artwork, unprinted</title>
 <!--
-  THROWAWAY PROTOTYPE v3 — not production code.
+  THROWAWAY PROTOTYPE — textless-art study. Not production code.
   The spine uses only the cover artwork, with the cover's printed text removed.
   • 18 public-domain classics: 15 original paintings from Wikimedia Commons,
     3 cropped above the Standard Ebooks title plate. No OCR/inpainting needed.
@@ -913,9 +913,9 @@ section { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line-
   <header class="masthead">
     <div class="topline">
       <span class="wordmark">Pocket Library</span>
-      <span class="edition">Shelf study <b>03</b> · The unprinted cover</span>
+      <span class="edition">Shelf study · <b>Textless art</b></span>
     </div>
-    <span class="proto-stamp">Throwaway prototype · v3</span>
+    <span class="proto-stamp">Throwaway prototype · textless art</span>
     <p class="kicker">Only the artwork</p>
     <h1>The cover, <em>unprinted</em></h1>
     <p class="lede">Twenty spines made from the cover art alone. The printed title, author, quotes and badges are gone — either by using the <b>original public-domain painting</b>, or by masking the text and inpainting the cover. No text-masking bands; the only type left is the app’s own optional rail.</p>
@@ -990,13 +990,13 @@ section { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line-
     <header class="section-head">
       <div>
         <p class="eyebrow">Design notes</p>
-        <h2 id="notes-title">What changed <em>from v2</em></h2>
+        <h2 id="notes-title">What changed <em>from full-bleed</em></h2>
       </div>
     </header>
     <div class="note-grid">
       <article class="note">
         <b><span>01</span> The art is now the source, not a masked cover</b>
-        <p>v2 put a 22% foot band over each printed title plate and a 9–14% cap over marketing copy. v3 removes those bands: there is no printed text left to hide. The spine is full-height art; the only optional overlay is the app’s title rail.</p>
+        <p>The full-bleed study put a 22% foot band over each printed title plate and a 9–14% cap over marketing copy. This study removes those bands: there is no printed text left to hide. The spine is full-height art; the only optional overlay is the app’s title rail.</p>
       </article>
       <article class="note">
         <b><span>02</span> Classics come from the painting, not the typographic cover</b>
@@ -1015,7 +1015,7 @@ section { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line-
       <strong>Still open:</strong>
       <ul>
         <li>Should the ingest pipeline reject a cover whose text mask exceeds, say, 35% of the art? <i>Rock Paper Scissors</i> says yes.</li>
-        <li>Is a narrow 33% slice of a textless painting still “the cover”, or does it become an arbitrary art crop? The original-painting route changes the composition more than v2’s cover crop did.</li>
+        <li>Is a narrow 33% slice of a textless painting still “the cover”, or does it become an arbitrary art crop? The original-painting route changes the composition more than the full-bleed study’s cover crop did.</li>
         <li>Can a lightweight super-resolution or texture pass make large-mask LaMa usable on high-frequency photography, without a diffusion model on CPU?</li>
         <li>Do we need a per-title “clean region” map so the spine can avoid the masked area entirely instead of showing the repair?</li>
       </ul>

@@ -54,6 +54,31 @@ export const BOOKS = {
       "The invitation is anonymous. The church has no neighbours for miles. By the time the first bottle is empty, old grievances are on the table, and the weather has closed the road.",
     genre: "Fiction / Thriller",
   },
+  "hound-of-the-baskervilles": {
+    id: "hound-of-the-baskervilles",
+    title: "The Hound of the Baskervilles",
+    author: "Arthur Conan Doyle",
+    isbn: "9780000000000",
+    edition: "Standard Ebooks · public domain",
+    front: "assets/hound-of-the-baskervilles-cover.jpg",
+    art: "assets/hound-of-the-baskervilles-art.jpg",
+    v3Spine: "assets/hound-of-the-baskervilles-spine.jpg",
+    frontPixels: [1400, 2100],
+    artPixels: [996, 1494],
+    artNote: "Genuine textless painting · Caspar David Friedrich, 1820",
+    artVerdict: "source",
+    removalPct: 0,
+    railSide: "right",
+    stripX: 0.04,
+    recommendedMode: "cover",
+    recommendation:
+      "Cover-derived: the source is a genuine text-free public-domain painting, so the strip is original artwork rather than a reconstruction.",
+    blurb:
+      "A family curse, a fog-bound moor, and a detective who refuses the obvious answer. The hound is real; the question is who let it loose.",
+    blurb2:
+      "Sir Charles Baskerville is found dead beyond the yew alley, his face fixed in terror. Holmes sends Watson to Devon with one instruction: watch the moor, and do not believe the legend.",
+    genre: "Fiction / Classics",
+  },
   "moby-dick": {
     id: "moby-dick",
     title: "Moby-Dick",
@@ -85,6 +110,7 @@ export const BOOK_LIST = [
   BOOKS["whisper-man"],
   BOOKS["rock-paper-scissors"],
   BOOKS["moby-dick"],
+  BOOKS["hound-of-the-baskervilles"],
 ];
 
 export function getBook(id) {

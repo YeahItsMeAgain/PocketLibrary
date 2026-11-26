@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary — Bound in its own cover (prototype v2)</title>
+<title>PocketLibrary — Bound in its own cover</title>
 <!--
-  THROWAWAY PROTOTYPE v2 — not production code.
+  THROWAWAY PROTOTYPE — full-bleed study. Not production code.
   Variant B (full-bleed spine wrap), rebuilt for image quality and legibility.
 
   • 18 public-domain covers from Standard Ebooks, 1400 × 2100 sources.
@@ -17,7 +17,7 @@
   • The shelf band deliberately masks each cover's printed title plate.
   • A title rail gives a guaranteed contrast floor; the lightest covers use
     a warm vellum fallback instead of cream on light art.
-  • "Old-style" mode reproduces the v1 pipeline (420 px, 1.45× centre crop,
+  • "Old-style" mode reproduces the legacy pipeline (420 px, 1.45× centre crop,
     flat guard) for a same-size comparison.
   • Tap a spine for the lifted detail state and the crop map.
   Everything lives under .scratch/spine-cover-art-prototype/v2/.
@@ -1753,9 +1753,9 @@ html[data-mode="old"] .spine {
   <header class="masthead">
     <div class="topline">
       <span class="wordmark">Pocket Library</span>
-      <span class="edition">Shelf study <b>02</b> · Variant B</span>
+      <span class="edition">Shelf study · <b>Full-bleed</b></span>
     </div>
-    <span class="proto-stamp">Throwaway prototype · v2</span>
+    <span class="proto-stamp">Throwaway prototype · full-bleed</span>
     <p class="kicker">Cover art on the spine, rebuilt</p>
     <h1>Bound in its <em>own cover</em></h1>
     <p class="lede">Eighteen hand-framed classics, plus two new arrivals laid out entirely from their cover pixels. Same full-height wrap, readable title rail, and a shelf band that masks the cover’s own printed title.</p>
@@ -1773,7 +1773,7 @@ html[data-mode="old"] .spine {
       <button class="seg-btn" id="mode-old" type="button" data-mode="old" aria-pressed="false">Old-style</button>
     </div>
   </div>
-  <p class="mode-note" id="mode-note"><b>High-res:</b> 480/800&nbsp;px responsive art, a per-cover focus point, a title rail and the masking shelf band. <b>Old-style</b> brings back v1’s 420&nbsp;px centre crop and 1.45× zoom for a same-size comparison.</p>
+  <p class="mode-note" id="mode-note"><b>High-res:</b> 480/800&nbsp;px responsive art, a per-cover focus point, a title rail and the masking shelf band. <b>Old-style</b> brings back the legacy 420&nbsp;px centre crop and 1.45× zoom for a same-size comparison.</p>
 
   <main class="shelves" id="shelves" aria-label="Three shelves of six classic books, plus a new-arrivals shelf"></main>
 
@@ -1807,7 +1807,7 @@ html[data-mode="old"] .spine {
     <div class="note-grid">
       <article class="note">
         <b><span>01</span> A wider crop, from a sharper source</b>
-        <p>At a 50&nbsp;×&nbsp;230&nbsp;px spine, full-height art shows 31–34% of the 1400&nbsp;px cover width. At 320&nbsp;px it is 27–30% because the spines narrow, still roughly double v1’s 30&nbsp;px, 1.45× centre crop. The old 420&nbsp;px files are still here for the mode toggle; the new shelf uses 480/800&nbsp;px image-set responses.</p>
+        <p>At a 50&nbsp;×&nbsp;230&nbsp;px spine, full-height art shows 31–34% of the 1400&nbsp;px cover width. At 320&nbsp;px it is 27–30% because the spines narrow, still roughly double the legacy 30&nbsp;px, 1.45× centre crop. The old 420&nbsp;px files are still here for the mode toggle; the new shelf uses 480/800&nbsp;px image-set responses.</p>
       </article>
       <article class="note">
         <b><span>02</span> The printed cover title is masked, not duplicated</b>
@@ -2655,7 +2655,7 @@ function cropWindowHTML(book, mode) {
   const pct = cropPct(book, mode);
   const isOld = mode === "old";
   // Old-style keeps the mechanical centre crop and 1.45× zoom. The zoom also
-  // removes the bottom ~31% of the cover, which is why v1 did not repeat the
+  // removes the bottom ~31% of the cover, which is why the legacy mode did not repeat the
   // cover title. Show that smaller window instead of pretending it is full-height.
   const focus = isOld ? .5 : book.focus;
   const height = isOld ? 100 / 1.45 : 100;
@@ -2782,7 +2782,7 @@ function compareCardHTML() {
         '<div><dt>Crop window</dt><dd>' + pct.toFixed(1) + '% <em>of cover width</em></dd></div>' +
         '<div><dt>Source pixels</dt><dd>' + sourceWidth + ' × ' + sourceHeight + '</dd></div>' +
         '<div><dt>Focus point</dt><dd>' + (mode === "old" ? "50% <em>mechanical</em>" : Math.round(book.focus * 100) + '% <em>across</em>') + '</dd></div>' +
-        '<div><dt>Title treatment</dt><dd>' + (mode === "old" ? "v1 guard" : (book.tone === "light" ? "dark on vellum" : "cream on ink")) + '</dd></div>' +
+        '<div><dt>Title treatment</dt><dd>' + (mode === "old" ? "legacy guard" : (book.tone === "light" ? "dark on vellum" : "cream on ink")) + '</dd></div>' +
       '</dl>' +
       (book.auto ? autoReadoutHTML(book) : "") +
       audit +
@@ -2798,7 +2798,7 @@ function compareCardHTML() {
 function renderCompare() {
   document.getElementById("compare-blurb").innerHTML = state.mode === "high"
     ? "The gold window is the part of the real front cover the spine is showing. The hatched foot is the shelf band that covers the cover’s printed title. Pick any book from the strip to inspect its crop."
-    : "The gold window is v1’s mechanical centre crop: a 1.45× zoom on a 420&nbsp;px source, shown at the same shelf width. The zoom excludes the printed title plate; the flat guard carries the type. Two covers still fail AA. Pick any book to compare.";
+    : "The gold window is the legacy mechanical centre crop: a 1.45× zoom on a 420&nbsp;px source, shown at the same shelf width. The zoom excludes the printed title plate; the flat guard carries the type. Two covers still fail AA. Pick any book to compare.";
   document.getElementById("compare-card").innerHTML = compareCardHTML();
   document.getElementById("compare-detail").addEventListener("click", () => openSheet(state.selectedId));
   document.getElementById("compare-next").addEventListener("click", () => {
@@ -2887,7 +2887,7 @@ function updateAutoModeNote() {
   if (!node) return;
   node.innerHTML = state.mode === "high"
     ? "<b>High-res decisions.</b> These cards keep the high-res result; the shelf and compare strip follow the current render mode."
-    : "<b>Old-style is a comparison only.</b> The cards above keep the automatic high-res decisions; the shelf now shows v1’s 420&nbsp;px pipeline.";
+    : "<b>Old-style is a comparison only.</b> The cards above keep the automatic high-res decisions; the shelf now shows the legacy 420&nbsp;px pipeline.";
 }
 
 /* ============================================================
@@ -2910,8 +2910,8 @@ function setMode(mode, announce) {
   document.getElementById("mode-high").setAttribute("aria-pressed", String(mode === "high"));
   document.getElementById("mode-old").setAttribute("aria-pressed", String(mode === "old"));
   document.getElementById("mode-note").innerHTML = mode === "high"
-    ? '<b>High-res:</b> 480/800&nbsp;px responsive art, a per-cover focus point, a title rail and the masking shelf band. <b>Old-style</b> brings back v1’s 420&nbsp;px centre crop and 1.45× zoom for a same-size comparison.'
-    : '<b>Old-style:</b> v1’s 420&nbsp;px centre crop at 1.45×, with the flat dark guard. It is shown at the same 50-ish&nbsp;px spine width, so the comparison is about the image and crop, not the layout. Amber dots mark the covers that fail AA.';
+    ? '<b>High-res:</b> 480/800&nbsp;px responsive art, a per-cover focus point, a title rail and the masking shelf band. <b>Old-style</b> brings back the legacy 420&nbsp;px centre crop and 1.45× zoom for a same-size comparison.'
+    : '<b>Old-style:</b> the legacy 420&nbsp;px centre crop at 1.45×, with the flat dark guard. It is shown at the same 50-ish&nbsp;px spine width, so the comparison is about the image and crop, not the layout. Amber dots mark the covers that fail AA.';
   updateAutoModeNote();
   renderCompare();
   if (announce) announceText(mode === "high" ? "High-resolution rendering on." : "Old-style rendering on.");
