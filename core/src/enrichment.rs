@@ -562,7 +562,11 @@ impl MetadataProvider for OpenLibraryProvider {
                 format!("{}/services/img/{archive_id}", self.archive_base)
             } else {
                 Self::gate(&self.cover_gate, Duration::from_secs(3)).await;
-                format!("{}/b/{key}-L.jpg?default=false", self.covers_base)
+                // Cover keys are `id:123`, `isbn:...` or `olid:...`, while the
+                // covers API wants them as separate path segments:
+                // `/b/id/123-L.jpg`. A colon in the path now returns 404.
+                let path = key.replacen(':', "/", 1);
+                format!("{}/b/{path}-L.jpg?default=false", self.covers_base)
             };
             let response = self
                 .client
