@@ -1,0 +1,243 @@
+{
+  "slug": "lord-of-the-rings",
+  "book": {
+    "title": "The Lord of the Rings",
+    "author": "J.R.R. Tolkien",
+    "pages": 1216,
+    "cover": "../v7/assets/source/lord-of-the-rings.jpg"
+  },
+  "generated": "2026-11-26T17:52:36.877429+00:00",
+  "route": "inpaint",
+  "verdict": "pass",
+  "decision_reasons": [
+    "no residual OCR, controlled mask, adequate spine structure"
+  ],
+  "manual_intervention": 0,
+  "model": {
+    "text_detector": "PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU)",
+    "text_remover": "LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill",
+    "ocr_qa": "PP-OCRv3 recogniser",
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "generative_diffusion": "not used"
+  },
+  "runtime_s": {
+    "detection": 2.81,
+    "mask_total": 2.87,
+    "inpaint_flat": 0.01,
+    "inpaint_lama": 9.92,
+    "crop_search": 0.19,
+    "total": 16.0
+  },
+  "source": {
+    "width": 326,
+    "height": 500
+  },
+  "working": {
+    "width": 326,
+    "height": 500,
+    "scale": 1.0
+  },
+  "mask": {
+    "coverage_pct": 36.35,
+    "components": 6,
+    "detection_boxes": 7,
+    "flat_fill_pct": 0.3
+  },
+  "detected_text": [
+    {
+      "text": "THE",
+      "conf": 0.749,
+      "box": [
+        [
+          385.0,
+          389.0
+        ],
+        [
+          677.0,
+          389.0
+        ],
+        [
+          677.0,
+          505.0
+        ],
+        [
+          385.0,
+          505.0
+        ]
+      ]
+    },
+    {
+      "text": "LORD",
+      "conf": 0.717,
+      "box": [
+        [
+          297.0,
+          536.0
+        ],
+        [
+          765.0,
+          536.0
+        ],
+        [
+          765.0,
+          669.0
+        ],
+        [
+          297.0,
+          669.0
+        ]
+      ]
+    },
+    {
+      "text": "Jeet-la..",
+      "conf": 0.594,
+      "box": [
+        [
+          275.0,
+          702.0
+        ],
+        [
+          781.0,
+          651.0
+        ],
+        [
+          794.0,
+          783.0
+        ],
+        [
+          288.0,
+          834.0
+        ]
+      ]
+    },
+    {
+      "text": "OF THE",
+      "conf": 0.736,
+      "box": [
+        [
+          251.0,
+          887.0
+        ],
+        [
+          813.0,
+          883.0
+        ],
+        [
+          814.0,
+          1015.0
+        ],
+        [
+          252.0,
+          1019.0
+        ]
+      ]
+    },
+    {
+      "text": "RINGS",
+      "conf": 0.823,
+      "box": [
+        [
+          260.0,
+          1036.0
+        ],
+        [
+          809.0,
+          1036.0
+        ],
+        [
+          809.0,
+          1187.0
+        ],
+        [
+          260.0,
+          1187.0
+        ]
+      ]
+    }
+  ],
+  "crop_options": {
+    "text_free": null,
+    "text_free_ocr_checks": [],
+    "inpaint_visual": {
+      "box": [
+        0,
+        18,
+        61,
+        275
+      ],
+      "coverage": 0.0,
+      "luma_std": 22.02,
+      "edge_density": 0.119,
+      "non_dark": 0.478,
+      "salience": 13.77,
+      "score": 2.4348
+    }
+  },
+  "qa": {
+    "chosen": {
+      "mask_coverage_pct": 37.71,
+      "crop_mask_coverage_pct": 2.873,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 21.91,
+        "luma_p5": 30.0,
+        "luma_p95": 103.0,
+        "non_dark_pct": 48.1,
+        "edge_density": 0.1283,
+        "laplacian_var": 1035.2,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.393,
+      "seam": {
+        "seam_ratio": 0.72,
+        "inside_vs_ring_delta_e": 7.2,
+        "inside_ring_std_ratio": 0.44,
+        "boundary_px": 4142
+      },
+      "score": 2.4348
+    },
+    "text_free": null,
+    "inpaint": {
+      "mask_coverage_pct": 37.71,
+      "crop_mask_coverage_pct": 2.873,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 21.91,
+        "luma_p5": 30.0,
+        "luma_p95": 103.0,
+        "non_dark_pct": 48.1,
+        "edge_density": 0.1283,
+        "laplacian_var": 1035.2,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.393,
+      "seam": {
+        "seam_ratio": 0.72,
+        "inside_vs_ring_delta_e": 7.2,
+        "inside_ring_std_ratio": 0.44,
+        "boundary_px": 4142
+      },
+      "score": 2.4348
+    }
+  },
+  "final": {
+    "route": "inpaint",
+    "verdict": "pass",
+    "spine": "assets/lord-of-the-rings/spine.jpg",
+    "spine_2x": "assets/lord-of-the-rings/spine-2x.jpg",
+    "fallback_spine": "assets/lord-of-the-rings/fallback-spine.jpg",
+    "crop_box_work": [
+      0,
+      18,
+      61,
+      275
+    ],
+    "mask_coverage_in_crop_pct": 2.873
+  }
+}

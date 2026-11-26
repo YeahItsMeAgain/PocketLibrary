@@ -1,0 +1,247 @@
+{
+  "slug": "hound",
+  "book": {
+    "title": "The Hound of the Baskervilles",
+    "author": "Arthur Conan Doyle",
+    "pages": 170,
+    "cover": "../reproducibility/book/cover.jpg"
+  },
+  "generated": "2026-11-26T17:40:09.768650+00:00",
+  "route": "text-free crop",
+  "verdict": "pass",
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "manual_intervention": 0,
+  "model": {
+    "text_detector": "PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU)",
+    "text_remover": "LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill",
+    "ocr_qa": "PP-OCRv3 recogniser",
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "generative_diffusion": "not used"
+  },
+  "runtime_s": {
+    "detection": 3.46,
+    "mask_total": 3.59,
+    "inpaint_flat": 0.03,
+    "inpaint_lama": 0.0,
+    "crop_search": 0.57,
+    "total": 10.26
+  },
+  "source": {
+    "width": 1400,
+    "height": 2100
+  },
+  "working": {
+    "width": 480,
+    "height": 720,
+    "scale": 0.3429
+  },
+  "mask": {
+    "coverage_pct": 7.65,
+    "components": 4,
+    "detection_boxes": 3,
+    "flat_fill_pct": 8.3
+  },
+  "detected_text": [
+    {
+      "text": "THE HOUND OF",
+      "conf": 0.857,
+      "box": [
+        [
+          306.0,
+          1696.0
+        ],
+        [
+          1098.0,
+          1696.0
+        ],
+        [
+          1098.0,
+          1778.0
+        ],
+        [
+          306.0,
+          1778.0
+        ]
+      ]
+    },
+    {
+      "text": "THE BASKERVILLES",
+      "conf": 0.902,
+      "box": [
+        [
+          205.0,
+          1797.0
+        ],
+        [
+          1195.0,
+          1797.0
+        ],
+        [
+          1195.0,
+          1879.0
+        ],
+        [
+          205.0,
+          1879.0
+        ]
+      ]
+    },
+    {
+      "text": "ARTHUR CONAN DOYLE",
+      "conf": 0.88,
+      "box": [
+        [
+          369.0,
+          1933.0
+        ],
+        [
+          1034.0,
+          1933.0
+        ],
+        [
+          1034.0,
+          1981.0
+        ],
+        [
+          369.0,
+          1981.0
+        ]
+      ]
+    }
+  ],
+  "crop_options": {
+    "text_free": {
+      "box": [
+        0,
+        191,
+        93,
+        421
+      ],
+      "coverage": 0.0,
+      "luma_std": 56.27,
+      "edge_density": 0.0596,
+      "non_dark": 0.89,
+      "salience": 8.8,
+      "score": 2.9673,
+      "ocr": []
+    },
+    "text_free_ocr_checks": [
+      {
+        "box": [
+          0,
+          191,
+          93,
+          421
+        ],
+        "ocr": []
+      }
+    ],
+    "inpaint_visual": {
+      "box": [
+        0,
+        194,
+        87,
+        396
+      ],
+      "coverage": 0.0,
+      "luma_std": 51.54,
+      "edge_density": 0.0627,
+      "non_dark": 0.929,
+      "salience": 8.87,
+      "score": 2.9643
+    }
+  },
+  "qa": {
+    "chosen": {
+      "mask_coverage_pct": 8.25,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 56.29,
+        "luma_p5": 14.0,
+        "luma_p95": 194.0,
+        "non_dark_pct": 88.9,
+        "edge_density": 0.0863,
+        "laplacian_var": 641.3,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.75,
+      "seam": {
+        "seam_ratio": 1.25,
+        "inside_vs_ring_delta_e": 2.0,
+        "inside_ring_std_ratio": 0.22,
+        "boundary_px": 3738
+      },
+      "score": 2.9673
+    },
+    "text_free": {
+      "mask_coverage_pct": 8.25,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 56.29,
+        "luma_p5": 14.0,
+        "luma_p95": 194.0,
+        "non_dark_pct": 88.9,
+        "edge_density": 0.0863,
+        "laplacian_var": 641.3,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.75,
+      "seam": {
+        "seam_ratio": 1.25,
+        "inside_vs_ring_delta_e": 2.0,
+        "inside_ring_std_ratio": 0.22,
+        "boundary_px": 3738
+      },
+      "score": 2.9673
+    },
+    "inpaint": {
+      "mask_coverage_pct": 8.25,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 51.55,
+        "luma_p5": 16.0,
+        "luma_p95": 193.0,
+        "non_dark_pct": 92.8,
+        "edge_density": 0.0904,
+        "laplacian_var": 625.5,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.748,
+      "seam": {
+        "seam_ratio": 1.25,
+        "inside_vs_ring_delta_e": 2.0,
+        "inside_ring_std_ratio": 0.22,
+        "boundary_px": 3738
+      },
+      "score": 2.9643
+    }
+  },
+  "final": {
+    "route": "text-free crop",
+    "verdict": "pass",
+    "spine": "assets/hound/spine.jpg",
+    "spine_2x": "assets/hound/spine-2x.jpg",
+    "fallback_spine": "assets/hound/fallback-spine.jpg",
+    "crop_box_work": [
+      0,
+      191,
+      93,
+      421
+    ],
+    "mask_coverage_in_crop_pct": 0.0
+  }
+}

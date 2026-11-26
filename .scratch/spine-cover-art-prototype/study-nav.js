@@ -44,6 +44,11 @@
       auto: "Not applicable: this is a curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.",
     },
     {
+      path: "/spine-cover-art-prototype/v8-auto/",
+      title: "Automatic generative",
+      auto: "Automatic. DBNet finds the type, an automatic colour mask plus LaMa/flat-fill removes it, and spine-scale QA picks a text-free crop or falls back. No hand-drawn polygons and no API key.",
+    },
+    {
       path: "/spine-cover-art-prototype/bookcover-js-deep/harness/",
       title: "Reference",
       auto: "Spine-only export. Title and author are entered by hand; the cover artwork is not used.",

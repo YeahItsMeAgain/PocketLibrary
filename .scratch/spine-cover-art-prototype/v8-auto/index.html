@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Automatic generative — textless spine art without hand-drawn masks</title>
+<meta name="description" content="A fully automatic textless-art pipeline: DBNet text detection, automatic masks, LaMa/flat-fill removal, text-free crop search and spine-scale QA. No hand-drawn polygons, no API key.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<main class="wrap">
+  <header class="topbar">
+    <div class="wordmark"><i></i> PocketLibrary spine studies</div>
+    <span>Study 08 · automatic · throwaway prototype</span>
+  </header>
+
+  <section class="hero">
+    <p class="kicker">Automatic generative</p>
+    <h1>No hand-drawn mask.<br><em>No manual model call.</em></h1>
+    <p class="lede">A cover goes in, a textless spine comes out. <b>PP-OCRv3 DBNet</b> finds the type, an automatic colour-and-line mask covers it, <b>LaMa big-lama</b> plus a sampled flat fill reconstruct the art, and a spine-scale QA pass chooses between reconstruction, a <b>text-free crop</b>, and an honest fallback.</p>
+    <div class="hero-facts">
+      <div><span>Books tested</span><b>5</b></div>
+      <div><span>Pass / review / fallback</span><b>4 / 1 / 0</b></div>
+      <div><span>Manual mask points</span><b>0</b></div>
+      <div><span>API keys</span><b>0</b></div>
+      <div><span>Compute</span><b>CPU only</b></div>
+    </div>
+  </section>
+
+  <section class="section" id="shared-plate-section">
+    <div class="section-head"><h2>One book, four steps</h2><p>The shared random book, run end to end.</p></div>
+    <div class="repro-plate" id="repro-plate">
+      <figure><img src="assets/hound/source.jpg" alt="Original Hound cover"><figcaption>1 · Original</figcaption></figure>
+      <figure><img src="assets/hound/mask-work-preview.jpg" alt="Automatic mask"><figcaption>2 · Automatic mask</figcaption></figure>
+      <figure><img src="assets/hound/art.jpg" alt="Inpainted textless art"><figcaption>3 · Inpainted art</figcaption></figure>
+      <figure><img src="assets/hound/spine-2x.jpg" alt="Chosen spine at 2x"><figcaption>4 · Spine 2×</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>The automatic stack</h2><p>All local, all keyless.</p></div>
+    <div class="stack">
+      <div class="step"><span>01 · detect</span><h3>DBNet, not polygons</h3><p>PP-OCRv3 DBNet proposals at a 1600 px minimum side. Large display type, small marketing text and rotated side bands all arrive as boxes.</p></div>
+      <div class="step"><span>02 · mask</span><h3>Colour + line completion</h3><p>For each box, sample the dominant type colour inside its polygon. Grow colour-similar components in a small ROI, then fill missing glyphs from the line's own hue/value model.</p></div>
+      <div class="step"><span>03 · remove</span><h3>Flat fill, then LaMa</h3><p>Flat rings are filled with their median colour. Textured areas go through LaMa big-lama at 720 px on the CPU. No diffusion model, no external Space, no credential.</p></div>
+      <div class="step"><span>04 · decide</span><h3>Crop first, inpaint second</h3><p>A spine-aspect integral-image scan looks for a zero-text window. If one exists, use the real pixels. Otherwise use the reconstruction. QA measures residual OCR, seams, palette and structure at 52 × 236.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Pass / review / fallback</h2><p>Judged at spine size, not full-cover fidelity.</p></div>
+    <div class="table-wrap">
+      <table class="matrix">
+        <thead><tr><th>Book</th><th>Route</th><th>Mask</th><th>OCR</th><th>Luma σ</th><th>Edge</th><th>Runtime</th><th>Verdict</th></tr></thead>
+        <tbody><tr><td>The Hound of the Baskervilles</td><td>text-free crop</td><td>7.65%</td><td>0</td><td>56.29</td><td>0.0863</td><td>10.26 s</td><td><span class="badge verdict pass">pass</span></td></tr>
+<tr><td>Rock Paper Scissors</td><td>inpaint</td><td>40.05%</td><td>0</td><td>45.44</td><td>0.2084</td><td>29.42 s</td><td><span class="badge verdict review">review</span></td></tr>
+<tr><td>Harry Potter and the Philosopher&#x27;s Stone</td><td>text-free crop</td><td>37.4%</td><td>0</td><td>45.01</td><td>0.2388</td><td>28.38 s</td><td><span class="badge verdict pass">pass</span></td></tr>
+<tr><td>The Hunger Games</td><td>text-free crop</td><td>26.02%</td><td>0</td><td>54.35</td><td>0.116</td><td>23.93 s</td><td><span class="badge verdict pass">pass</span></td></tr>
+<tr><td>The Whisper Man</td><td>text-free crop</td><td>14.07%</td><td>0</td><td>40.87</td><td>0.2041</td><td>31.94 s</td><td><span class="badge verdict pass">pass</span></td></tr></tbody>
+      </table>
+    </div>
+    <p class="note"><b>Read the route.</b> A pass can come from real pixels: <i>Harry Potter</i> and <i>The Hunger Games</i> never need their title field reconstructed. <i>Rock Paper Scissors</i> has type across the full width, so it is inpainted; the text is gone, but the resulting snow strip is a review, not a pass. That is the honest boundary.</p>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>The runs</h2><p>Original → automatic mask → inpainted art → spine.</p></div>
+    <div class="cases">
+    <article class="case" id="case-hound" data-slug="hound">
+      <div class="case-head">
+        <div>
+          <p class="role">Random reproducibility book</p>
+          <h3>The Hound of the Baskervilles</h3>
+          <p class="byline">Arthur Conan Doyle · 170 pp</p>
+        </div>
+        <div class="badges">
+          <span class="badge verdict pass">pass</span>
+          <span class="badge route">text-free crop</span>
+        </div>
+      </div>
+
+      <div class="strip">
+        <figure><img src="assets/hound/source.jpg" alt="Original cover"><figcaption>1 · Original</figcaption></figure>
+        <figure><img src="assets/hound/mask-work-preview.jpg" alt="Automatic text mask"><figcaption>2 · Automatic mask</figcaption></figure>
+        <figure><img src="assets/hound/art.jpg" alt="Inpainted textless art"><figcaption>3 · Inpainted art</figcaption></figure>
+        <figure class="spine-fig"><img src="assets/hound/spine-2x.jpg" alt="Chosen 52 by 236 spine at 2x"><figcaption>4 · Spine 2×</figcaption></figure>
+      </div>
+
+      <div class="metrics">
+        <div class="metric "><span>Mask coverage</span><b>7.65%</b></div>
+        <div class="metric "><span>Residual OCR</span><b>0</b></div>
+        <div class="metric "><span>Spine luma σ</span><b>56.29</b></div>
+        <div class="metric "><span>Edge density</span><b>0.0863</b></div>
+        <div class="metric "><span>Palette corr.</span><b>0.75</b></div>
+        <div class="metric "><span>Seam ratio</span><b>1.25</b></div>
+        <div class="metric "><span>Runtime</span><b>10.26 s</b></div>
+        <div class="metric "><span>Manual steps</span><b>0</b></div>
+      </div>
+
+      <p class="reason"><b>Why pass:</b> zero mask coverage, no residual OCR, structure at spine scale</p>
+      <p class="small"><b>Detected text:</b> “THE HOUND OF”, “THE BASKERVILLES”, “ARTHUR CONAN DOYLE”</p>
+      <p class="small"><b>Model:</b> PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU) → LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill. Diffusion: not used.</p>
+      
+        <details class="baseline">
+          <summary>Compare with the manual / LaMa baseline</summary>
+          <div class="baseline-grid">
+            <figure><img src="assets/baseline/hound-art.jpg" alt="Manual baseline textless art"><figcaption>Manual / LaMa art</figcaption></figure>
+            <figure><img src="assets/baseline/hound-spine.jpg" alt="Manual baseline spine"><figcaption>Baseline spine (resized to 52 × 236)</figcaption></figure>
+            <div>
+              <p>Manual cover-plate exclusion; public-domain painting used directly.</p>
+              <p class="small">Manual intervention: <b>yes</b> · residual OCR: <b>0</b> · spine luma σ: <b>66.26</b> · edge density: <b>0.0275</b></p>
+            </div>
+          </div>
+        </details>
+    </article>
+
+    <article class="case" id="case-rps" data-slug="rps">
+      <div class="case-head">
+        <div>
+          <p class="role">Hard integrated display type</p>
+          <h3>Rock Paper Scissors</h3>
+          <p class="byline">Alice Feeney · 320 pp</p>
+        </div>
+        <div class="badges">
+          <span class="badge verdict review">review</span>
+          <span class="badge route">inpaint</span>
+        </div>
+      </div>
+
+      <div class="strip">
+        <figure><img src="assets/rps/source.jpg" alt="Original cover"><figcaption>1 · Original</figcaption></figure>
+        <figure><img src="assets/rps/mask-work-preview.jpg" alt="Automatic text mask"><figcaption>2 · Automatic mask</figcaption></figure>
+        <figure><img src="assets/rps/art.jpg" alt="Inpainted textless art"><figcaption>3 · Inpainted art</figcaption></figure>
+        <figure class="spine-fig"><img src="assets/rps/spine-2x.jpg" alt="Chosen 52 by 236 spine at 2x"><figcaption>4 · Spine 2×</figcaption></figure>
+      </div>
+
+      <div class="metrics">
+        <div class="metric "><span>Mask coverage</span><b>40.05%</b></div>
+        <div class="metric "><span>Residual OCR</span><b>0</b></div>
+        <div class="metric "><span>Spine luma σ</span><b>45.44</b></div>
+        <div class="metric "><span>Edge density</span><b>0.2084</b></div>
+        <div class="metric "><span>Palette corr.</span><b>0.875</b></div>
+        <div class="metric "><span>Seam ratio</span><b>0.76</b></div>
+        <div class="metric "><span>Runtime</span><b>29.42 s</b></div>
+        <div class="metric "><span>Manual steps</span><b>0</b></div>
+      </div>
+
+      <p class="reason"><b>Why review:</b> 40-55% of the cover was reconstructed</p>
+      <p class="small"><b>Detected text:</b> “NEW YORK TIMESBESTSELLER”, “ALICE”, “THE MILLIOn-COPY”, “FEENEY”, “&quot;Feeney lives up to her reputation”, “as the &#x27;queen of the twist:&#x27;”, “This page-turner will keep you guessing.&quot;”, “-REALSIMPLE” …</p>
+      <p class="small"><b>Model:</b> PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU) → LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill. Diffusion: not used.</p>
+      
+        <details class="baseline">
+          <summary>Compare with the manual / LaMa baseline</summary>
+          <div class="baseline-grid">
+            <figure><img src="assets/baseline/rps-art.jpg" alt="Manual baseline textless art"><figcaption>Manual / LaMa art</figcaption></figure>
+            <figure><img src="assets/baseline/rps-spine.jpg" alt="Manual baseline spine"><figcaption>Baseline spine (resized to 52 × 236)</figcaption></figure>
+            <div>
+              <p>Hand-drawn polygons + LaMa big-lama (v6).</p>
+              <p class="small">Manual intervention: <b>yes</b> · residual OCR: <b>0</b> · spine luma σ: <b>25.07</b> · edge density: <b>0.0753</b></p>
+            </div>
+          </div>
+        </details>
+    </article>
+
+    <article class="case" id="case-harry-potter" data-slug="harry-potter">
+      <div class="case-head">
+        <div>
+          <p class="role">Popular cover · text-free crop</p>
+          <h3>Harry Potter and the Philosopher&#x27;s Stone</h3>
+          <p class="byline">J.K. Rowling · 223 pp</p>
+        </div>
+        <div class="badges">
+          <span class="badge verdict pass">pass</span>
+          <span class="badge route">text-free crop</span>
+        </div>
+      </div>
+
+      <div class="strip">
+        <figure><img src="assets/harry-potter/source.jpg" alt="Original cover"><figcaption>1 · Original</figcaption></figure>
+        <figure><img src="assets/harry-potter/mask-work-preview.jpg" alt="Automatic text mask"><figcaption>2 · Automatic mask</figcaption></figure>
+        <figure><img src="assets/harry-potter/art.jpg" alt="Inpainted textless art"><figcaption>3 · Inpainted art</figcaption></figure>
+        <figure class="spine-fig"><img src="assets/harry-potter/spine-2x.jpg" alt="Chosen 52 by 236 spine at 2x"><figcaption>4 · Spine 2×</figcaption></figure>
+      </div>
+
+      <div class="metrics">
+        <div class="metric "><span>Mask coverage</span><b>37.4%</b></div>
+        <div class="metric "><span>Residual OCR</span><b>0</b></div>
+        <div class="metric "><span>Spine luma σ</span><b>45.01</b></div>
+        <div class="metric "><span>Edge density</span><b>0.2388</b></div>
+        <div class="metric "><span>Palette corr.</span><b>0.057</b></div>
+        <div class="metric "><span>Seam ratio</span><b>0.79</b></div>
+        <div class="metric "><span>Runtime</span><b>28.38 s</b></div>
+        <div class="metric "><span>Manual steps</span><b>0</b></div>
+      </div>
+
+      <p class="reason"><b>Why pass:</b> zero mask coverage, no residual OCR, structure at spine scale</p>
+      <p class="small"><b>Detected text:</b> “HARRY”, “POTTER”, “and tbe Pbilosopber&#x27;s Stone”, “J.K.ROWLING”, “15”, “YLA&amp;SOE”, “HARRY”, “POTTER” …</p>
+      <p class="small"><b>Model:</b> PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU) → LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill. Diffusion: not used.</p>
+      
+        <details class="baseline">
+          <summary>Compare with the manual / LaMa baseline</summary>
+          <div class="baseline-grid">
+            <figure><img src="assets/baseline/harry-potter-art.jpg" alt="Manual baseline textless art"><figcaption>Manual / LaMa art</figcaption></figure>
+            <figure><img src="assets/baseline/harry-potter-spine.jpg" alt="Manual baseline spine"><figcaption>Baseline spine (resized to 52 × 236)</figcaption></figure>
+            <div>
+              <p>Hand-defined regions + LaMa/TELEA/sampled fill (v7).</p>
+              <p class="small">Manual intervention: <b>yes</b> · residual OCR: <b>2</b> · spine luma σ: <b>37.73</b> · edge density: <b>0.1849</b></p>
+            </div>
+          </div>
+        </details>
+    </article>
+
+    <article class="case" id="case-hunger-games" data-slug="hunger-games">
+      <div class="case-head">
+        <div>
+          <p class="role">Popular cover · text-free crop</p>
+          <h3>The Hunger Games</h3>
+          <p class="byline">Suzanne Collins · 374 pp</p>
+        </div>
+        <div class="badges">
+          <span class="badge verdict pass">pass</span>
+          <span class="badge route">text-free crop</span>
+        </div>
+      </div>
+
+      <div class="strip">
+        <figure><img src="assets/hunger-games/source.jpg" alt="Original cover"><figcaption>1 · Original</figcaption></figure>
+        <figure><img src="assets/hunger-games/mask-work-preview.jpg" alt="Automatic text mask"><figcaption>2 · Automatic mask</figcaption></figure>
+        <figure><img src="assets/hunger-games/art.jpg" alt="Inpainted textless art"><figcaption>3 · Inpainted art</figcaption></figure>
+        <figure class="spine-fig"><img src="assets/hunger-games/spine-2x.jpg" alt="Chosen 52 by 236 spine at 2x"><figcaption>4 · Spine 2×</figcaption></figure>
+      </div>
+
+      <div class="metrics">
+        <div class="metric "><span>Mask coverage</span><b>26.02%</b></div>
+        <div class="metric "><span>Residual OCR</span><b>0</b></div>
+        <div class="metric "><span>Spine luma σ</span><b>54.35</b></div>
+        <div class="metric "><span>Edge density</span><b>0.116</b></div>
+        <div class="metric "><span>Palette corr.</span><b>0.971</b></div>
+        <div class="metric "><span>Seam ratio</span><b>1.17</b></div>
+        <div class="metric "><span>Runtime</span><b>23.93 s</b></div>
+        <div class="metric "><span>Manual steps</span><b>0</b></div>
+      </div>
+
+      <p class="reason"><b>Why pass:</b> zero mask coverage, no residual OCR, structure at spine scale</p>
+      <p class="small"><b>Detected text:</b> “THE”, “HUNGER”, “GAmES”, “NeulitThweBestdllingAuthot”, “SUZANNE”, “COLLINS”</p>
+      <p class="small"><b>Model:</b> PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU) → LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill. Diffusion: not used.</p>
+      
+        <details class="baseline">
+          <summary>Compare with the manual / LaMa baseline</summary>
+          <div class="baseline-grid">
+            <figure><img src="assets/baseline/hunger-games-art.jpg" alt="Manual baseline textless art"><figcaption>Manual / LaMa art</figcaption></figure>
+            <figure><img src="assets/baseline/hunger-games-spine.jpg" alt="Manual baseline spine"><figcaption>Baseline spine (resized to 52 × 236)</figcaption></figure>
+            <div>
+              <p>Hand-defined regions + LaMa/TELEA/sampled fill (v7).</p>
+              <p class="small">Manual intervention: <b>yes</b> · residual OCR: <b>0</b> · spine luma σ: <b>39.5</b> · edge density: <b>0.0944</b></p>
+            </div>
+          </div>
+        </details>
+    </article>
+
+    <article class="case" id="case-whisper-man" data-slug="whisper-man">
+      <div class="case-head">
+        <div>
+          <p class="role">Unseen holdout · no tuning</p>
+          <h3>The Whisper Man</h3>
+          <p class="byline">Alex North · 368 pp</p>
+        </div>
+        <div class="badges">
+          <span class="badge verdict pass">pass</span>
+          <span class="badge route">text-free crop</span>
+        </div>
+      </div>
+
+      <div class="strip">
+        <figure><img src="assets/whisper-man/source.jpg" alt="Original cover"><figcaption>1 · Original</figcaption></figure>
+        <figure><img src="assets/whisper-man/mask-work-preview.jpg" alt="Automatic text mask"><figcaption>2 · Automatic mask</figcaption></figure>
+        <figure><img src="assets/whisper-man/art.jpg" alt="Inpainted textless art"><figcaption>3 · Inpainted art</figcaption></figure>
+        <figure class="spine-fig"><img src="assets/whisper-man/spine-2x.jpg" alt="Chosen 52 by 236 spine at 2x"><figcaption>4 · Spine 2×</figcaption></figure>
+      </div>
+
+      <div class="metrics">
+        <div class="metric "><span>Mask coverage</span><b>14.07%</b></div>
+        <div class="metric "><span>Residual OCR</span><b>0</b></div>
+        <div class="metric "><span>Spine luma σ</span><b>40.87</b></div>
+        <div class="metric "><span>Edge density</span><b>0.2041</b></div>
+        <div class="metric "><span>Palette corr.</span><b>0.457</b></div>
+        <div class="metric "><span>Seam ratio</span><b>1.21</b></div>
+        <div class="metric "><span>Runtime</span><b>31.94 s</b></div>
+        <div class="metric "><span>Manual steps</span><b>0</b></div>
+      </div>
+
+      <p class="reason"><b>Why pass:</b> zero mask coverage, no residual OCR, structure at spine scale</p>
+      <p class="small"><b>Detected text:</b> “THE SUNDAYTIMES BESTSELLER”, “IF YOU LEAVE A DOOR HALF-OPEN,”, “SOON YOU&#x27;LL HEAR THE WHISPERS SPOKEN”, “The best”, “crime novel of”, “the decade&#x27;”, “Steve”, “Cavanagh” …</p>
+      <p class="small"><b>Model:</b> PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU) → LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill. Diffusion: not used.</p>
+      
+    </article></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>What the QA actually checks</h2><p>Numbers are in <code>audit.json</code> and each <code>assets/&lt;slug&gt;/qa.json</code>.</p></div>
+    <div class="qa-grid">
+      <div><h3>Residual OCR</h3><p>PP-OCRv3 runs on the full art, the native crop and a 4× spine upscale. Any readable hit above confidence 0.5 is a fallback for the spine.</p></div>
+      <div><h3>Mask coverage</h3><p>&gt;40% reconstructed is review; &gt;55% is fallback. Large masks are where LaMa invents the most.</p></div>
+      <div><h3>Seam + colour</h3><p>Boundary gradient ÷ local ring gradient. &gt;3× is review. Mean ΔE between the filled region and its ring catches colour drift.</p></div>
+      <div><h3>Spine structure</h3><p>Luma σ, edge density, non-dark percentage and palette correlation against the source. Palette is advisory; a detail crop (Harry Potter’s train) can legitimately differ. A clean but empty strip is a fallback.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Where it stops</h2><p>Honest boundaries, not tuning problems.</p></div>
+    <div class="qa-grid">
+      <div><h3>RPS · review</h3><p>Type covers the full width, so there is no text-free strip. The 40% reconstruction is OCR-free, but the resulting snow spine is generic. It matches the manual baseline's weakness.</p></div>
+      <div><h3>LOTR · design reject</h3><p>A stress run passes the structural QA because the ring script survives, but no object carries the book at 52 px. The pipeline cannot measure recognisability; do not treat a pass as a design sign-off.</p></div>
+      <div><h3>Full-cover art</h3><p>Harry Potter's title field and The Whisper Man's badge circles show obvious LaMa invention. The spine crop hides them; the full-cover file is not a clean cover.</p></div>
+      <div><h3>In-art lettering</h3><p>DBNet cannot tell cover type from the Hogwarts Express sign or the 9¾ platform sign. v8 removes both. A semantic classifier is future work.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Manual intervention</h2><p>Counted per run.</p></div>
+    <p class="big-zero">0</p>
+    <p class="lede small-lede">No polygons, no clicked points, no per-book model prompt, no API key. The input is a cover and optional title/author/page count. Every mask comes from detection plus automatic colour analysis.</p>
+    <pre><code>python tools/auto_pipeline.py \
+  --cover ../reproducibility/book/cover.jpg \
+  --slug hound \
+  --title "The Hound of the Baskervilles" \
+  --author "Arthur Conan Doyle" --pages 170 \
+  --out assets</code></pre>
+    <p class="small">Full commands, model weights and licences are in <a href="README.md">README.md</a>; the research trail is in <a href="RESEARCH.md">RESEARCH.md</a>.</p>
+  </section>
+
+  <footer>
+    <p>Throwaway design prototype · not production code · no app tests, manifests or specs changed. Covers are used only as design references. LaMa and PaddleOCR/DBNet are local, open-weight models; no API key is required.</p>
+  </footer>
+</main>
+<script src="data.js"></script>
+<script src="/spine-cover-art-prototype/study-nav.js"></script>
+</body>
+</html>

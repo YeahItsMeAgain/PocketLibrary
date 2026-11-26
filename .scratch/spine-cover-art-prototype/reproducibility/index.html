@@ -242,6 +242,7 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
           <tr><td>Generative art</td><td><span class="status status--manual">Manual only</span></td><td>No image model is available in this run. The study is a fixed two-cover experiment, so this book has no automatic generative result.</td></tr>
           <tr><td>Design system</td><td><span class="status status--auto">Automatic</span></td><td>Builds the Hybrid spine from the shared cover, using its own 336 pp / 18.0 mm shelf record.</td></tr>
           <tr><td>Popular books</td><td><span class="status status--na">N/A</span></td><td>A curated popular-books shelf, not a per-cover pipeline, so the shared book is not run through it.</td></tr>
+          <tr><td>Automatic generative</td><td><span class="status status--auto">Automatic</span></td><td>DBNet finds the title band, an automatic colour mask covers it, LaMa/flat fill removes it, and spine QA picks a real text-free crop above the band. Zero hand-drawn masks.</td></tr>
           <tr><td>Reference</td><td><span class="status status--manual">Manual export</span></td><td>Exports a spine-only SVG/PNG at a manually chosen 1.00 in width. Title and author are typed in; the cover is not used.</td></tr>
         </tbody>
       </table>
@@ -295,6 +296,16 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         </article>
 
         <article class="result">
+          <div class="shot"><img src="results/automatic-generative.png" alt="Automatic generative run for the Hound of the Baskervilles: original, automatic mask, inpainted art and spine" loading="lazy"></div>
+          <div class="result__body">
+            <div class="result__top"><h3>Automatic generative</h3><span class="status status--auto">Automatic</span></div>
+            <p>The title band is detected automatically, removed with a flat fill, and the spine chooses the real painting above the band. No mask is drawn and no model prompt is written.</p>
+            <div class="metrics"><span>0 manual steps</span><span>7.7% mask</span><span>Text-free crop</span><span>10.3 s CPU</span></div>
+            <p style="margin-top:9px"><a href="../v8-auto/">Open the Automatic generative study →</a></p>
+          </div>
+        </article>
+
+        <article class="result">
           <div class="shot shot--tall"><img src="results/reference-spine.png" alt="Bookcover-js spine-only export with title and author" loading="lazy"></div>
           <div class="result__body">
             <div class="result__top"><h3>Reference</h3><span class="status status--manual">Manual export</span></div>
@@ -325,7 +336,7 @@ shuf --random-source=/tmp/spine-seed-stream.bin \
         </article>
       </div>
 
-      <p class="note"><b>Read the matrix, not the average.</b> Four studies process the shared book automatically, one needs a manual export, one is an explicit generative-only blocker, and one is a curated shelf. That spread is the result: the suite does not pretend every technique generalises to every book.</p>
+      <p class="note"><b>Read the matrix, not the average.</b> Five studies process the shared book automatically, one needs a manual export, one is an explicit generative-only blocker, and one is a curated shelf. That spread is the result: the suite does not pretend every technique generalises to every book.</p>
     </section>
   </main>
 

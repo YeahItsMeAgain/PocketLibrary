@@ -132,6 +132,34 @@ async function settleImages(page) {
     image: "results/design-system.png",
   };
 
+  // ---- Automatic generative ---------------------------------------------
+  await page.goto(`${BASE}/v8-auto/`, { waitUntil: "networkidle" });
+  await page.waitForFunction(() => window.PocketV8 && window.PocketV8.ready);
+  await page.waitForTimeout(400);
+  await settleImages(page);
+  await page.locator("#repro-plate").screenshot({
+    path: path.join(OUT, "automatic-generative.png"),
+  });
+  const v8 = await page.evaluate(() => window.PocketV8.summary);
+  const v8Book = v8.books.find((book) => book.slug === "hound") || {};
+  results.studies["automatic-generative"] = {
+    label: "Automatic generative",
+    status: "automatic",
+    note: "Automatic DBNet mask plus flat fill / LaMa. The spine chooses a real text-free crop above the title band; no hand-drawn mask and no model prompt.",
+    image: "results/automatic-generative.png",
+    metrics: {
+      route: v8Book.route,
+      verdict: v8Book.verdict,
+      maskCoveragePct: v8Book.mask_coverage_pct,
+      residualOcrSpine: v8Book.spine_residual_ocr,
+      spineLumaStd: v8Book.spine_luma_std,
+      edgeDensity: v8Book.spine_edge_density,
+      runtimeSeconds: v8Book.runtime_s,
+      manualIntervention: 0,
+      model: "PP-OCRv3 DBNet + LaMa big-lama (CPU)",
+    },
+  };
+
   // ---- Reference / bookcover-js ----------------------------------------
   await page.goto(
     `${BASE}/bookcover-js-deep/harness/vendor/bookcover-js/index.html`,

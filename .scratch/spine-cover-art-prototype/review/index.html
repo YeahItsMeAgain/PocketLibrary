@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>PocketLibrary spine studies — external review</title>
-<meta name="description" content="An external review of seven book-spine design studies, plus one shared reproducibility test using the same randomly chosen book.">
+<meta name="description" content="An external review of eight book-spine design studies, plus one shared reproducibility test using the same randomly chosen book.">
 <style>
   @font-face {
     font-family: "EB Garamond";
@@ -175,7 +175,7 @@
 
   <main>
     <section class="hero" aria-labelledby="title">
-      <p class="kicker">Seven approaches · one smallest-cover problem</p>
+      <p class="kicker">Eight approaches · one smallest-cover problem</p>
       <h1 id="title">The spine is the <em>whole cover</em>, compressed.</h1>
       <p class="lede">A shelf spine is two centimetres of colour, one vertical line of type, and a memory of the front cover. These prototypes ask what belonging looks like at that size: what to keep, what to crop, and what to rebuild when the original art is buried under print.</p>
 
@@ -234,8 +234,15 @@
           <span class="study__go">Open Popular books →</span>
         </a>
 
-        <a class="study" href="../bookcover-js-deep/harness/">
+        <a class="study" href="../v8-auto/">
           <span class="study__no">Study 07</span>
+          <span class="study__name">Automatic generative</span>
+          <span class="study__sum">Automatic DBNet text detection, colour masks, LaMa/flat-fill removal and spine-scale QA. A text-free crop route skips inpainting when it can. No hand-drawn polygons.</span>
+          <span class="study__go">Open Automatic generative →</span>
+        </a>
+
+        <a class="study" href="../bookcover-js-deep/harness/">
+          <span class="study__no">Study 08</span>
           <span class="study__name">Reference</span>
           <span class="study__sum">A deep audit and hands-on test of bookcover-js: what its spine-only SVG/PNG export can and cannot do.</span>
           <span class="study__go">Open Reference →</span>
@@ -278,6 +285,7 @@
           <tr><td>Generative art</td><td>Manual only</td><td>No image model runs here; the study is a fixed two-cover experiment. Honest blocker, not a result.</td></tr>
           <tr><td>Design system</td><td>Automatic</td><td>Hybrid shelf spine from the shared cover, using the study’s own shelf page record.</td></tr>
           <tr><td>Popular books</td><td>N/A</td><td>A curated list, not a per-cover pipeline, so the shared book is not run through it.</td></tr>
+          <tr><td>Automatic generative</td><td>Automatic</td><td>Automatic DBNet mask, LaMa/flat-fill removal and spine-scale QA. The Hound finds a text-free crop above its title band; no manual mask is drawn.</td></tr>
           <tr><td>Reference</td><td>Manual export</td><td>Spine-only SVG/PNG; title and author are entered by hand and the cover is not used.</td></tr>
         </tbody>
       </table>

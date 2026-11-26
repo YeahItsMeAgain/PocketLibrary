@@ -1,0 +1,155 @@
+{
+  "qa": {
+    "chosen": {
+      "mask_coverage_pct": 27.44,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [
+        {
+          "text": "Thwoe Blest",
+          "conf": 0.56,
+          "box": [
+            [
+              694.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1150.0
+            ],
+            [
+              694.0,
+              1150.0
+            ]
+          ]
+        }
+      ],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 54.35,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "non_dark_pct": 43.6,
+        "edge_density": 0.116,
+        "laplacian_var": 2060.7,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.971,
+      "seam": {
+        "seam_ratio": 1.17,
+        "inside_vs_ring_delta_e": 9.9,
+        "inside_ring_std_ratio": 0.92,
+        "boundary_px": 4029
+      },
+      "score": 3.202
+    },
+    "text_free": {
+      "mask_coverage_pct": 27.44,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [
+        {
+          "text": "Thwoe Blest",
+          "conf": 0.56,
+          "box": [
+            [
+              694.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1150.0
+            ],
+            [
+              694.0,
+              1150.0
+            ]
+          ]
+        }
+      ],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 54.35,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "non_dark_pct": 43.6,
+        "edge_density": 0.116,
+        "laplacian_var": 2060.7,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.971,
+      "seam": {
+        "seam_ratio": 1.17,
+        "inside_vs_ring_delta_e": 9.9,
+        "inside_ring_std_ratio": 0.92,
+        "boundary_px": 4029
+      },
+      "score": 3.202
+    },
+    "inpaint": {
+      "mask_coverage_pct": 27.44,
+      "crop_mask_coverage_pct": 24.618,
+      "art_residual_ocr": [
+        {
+          "text": "Thwoe Blest",
+          "conf": 0.56,
+          "box": [
+            [
+              694.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1150.0
+            ],
+            [
+              694.0,
+              1150.0
+            ]
+          ]
+        }
+      ],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 47.58,
+        "luma_p5": 31.0,
+        "luma_p95": 169.0,
+        "non_dark_pct": 29.3,
+        "edge_density": 0.1098,
+        "laplacian_var": 3171.4,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.916,
+      "seam": {
+        "seam_ratio": 1.17,
+        "inside_vs_ring_delta_e": 9.9,
+        "inside_ring_std_ratio": 0.92,
+        "boundary_px": 4029
+      },
+      "score": 3.225
+    }
+  },
+  "decision": {
+    "route": "text-free crop",
+    "verdict": "pass",
+    "reasons": [
+      "zero mask coverage, no residual OCR, structure at spine scale"
+    ]
+  }
+}

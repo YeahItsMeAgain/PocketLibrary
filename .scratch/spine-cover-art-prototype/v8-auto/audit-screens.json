@@ -1,0 +1,708 @@
+{
+  "generated": "2026-11-26T17:58:50.804Z",
+  "widths": {
+    "320": {
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "images": [
+        {
+          "src": "assets/hound/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hound-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hound-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/rps-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/rps-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/harry-potter-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/harry-potter-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hunger-games-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hunger-games-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/spine-2x.jpg",
+          "ok": true
+        }
+      ],
+      "fonts": "loaded",
+      "cases": 5,
+      "passes": 8,
+      "reviews": 2,
+      "dock": true,
+      "v8": {
+        "generated": "2026-11-26T17:58:41.338714+00:00",
+        "studies": 5,
+        "pass": 4,
+        "review": 1,
+        "fallback": 0,
+        "manual_intervention": 0,
+        "books": [
+          {
+            "slug": "hound",
+            "title": "The Hound of the Baskervilles",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 7.65,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 56.29,
+            "spine_edge_density": 0.0863,
+            "palette_corr": 0.75,
+            "seam_ratio": 1.25,
+            "runtime_s": 10.26,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "rps",
+            "title": "Rock Paper Scissors",
+            "route": "inpaint",
+            "verdict": "review",
+            "mask_coverage_pct": 40.05,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 45.44,
+            "spine_edge_density": 0.2084,
+            "palette_corr": 0.875,
+            "seam_ratio": 0.76,
+            "runtime_s": 29.42,
+            "reasons": [
+              "40-55% of the cover was reconstructed"
+            ]
+          },
+          {
+            "slug": "harry-potter",
+            "title": "Harry Potter and the Philosopher's Stone",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 37.4,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 45.01,
+            "spine_edge_density": 0.2388,
+            "palette_corr": 0.057,
+            "seam_ratio": 0.79,
+            "runtime_s": 28.38,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "hunger-games",
+            "title": "The Hunger Games",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 26.02,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 54.35,
+            "spine_edge_density": 0.116,
+            "palette_corr": 0.971,
+            "seam_ratio": 1.17,
+            "runtime_s": 23.93,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "whisper-man",
+            "title": "The Whisper Man",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 14.07,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 40.87,
+            "spine_edge_density": 0.2041,
+            "palette_corr": 0.457,
+            "seam_ratio": 1.21,
+            "runtime_s": 31.94,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          }
+        ]
+      }
+    },
+    "360": {
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "images": [
+        {
+          "src": "assets/hound/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hound-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hound-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/rps-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/rps-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/harry-potter-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/harry-potter-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hunger-games-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hunger-games-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/spine-2x.jpg",
+          "ok": true
+        }
+      ],
+      "fonts": "loaded",
+      "cases": 5,
+      "passes": 8,
+      "reviews": 2,
+      "dock": true,
+      "v8": {
+        "generated": "2026-11-26T17:58:41.338714+00:00",
+        "studies": 5,
+        "pass": 4,
+        "review": 1,
+        "fallback": 0,
+        "manual_intervention": 0,
+        "books": [
+          {
+            "slug": "hound",
+            "title": "The Hound of the Baskervilles",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 7.65,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 56.29,
+            "spine_edge_density": 0.0863,
+            "palette_corr": 0.75,
+            "seam_ratio": 1.25,
+            "runtime_s": 10.26,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "rps",
+            "title": "Rock Paper Scissors",
+            "route": "inpaint",
+            "verdict": "review",
+            "mask_coverage_pct": 40.05,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 45.44,
+            "spine_edge_density": 0.2084,
+            "palette_corr": 0.875,
+            "seam_ratio": 0.76,
+            "runtime_s": 29.42,
+            "reasons": [
+              "40-55% of the cover was reconstructed"
+            ]
+          },
+          {
+            "slug": "harry-potter",
+            "title": "Harry Potter and the Philosopher's Stone",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 37.4,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 45.01,
+            "spine_edge_density": 0.2388,
+            "palette_corr": 0.057,
+            "seam_ratio": 0.79,
+            "runtime_s": 28.38,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "hunger-games",
+            "title": "The Hunger Games",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 26.02,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 54.35,
+            "spine_edge_density": 0.116,
+            "palette_corr": 0.971,
+            "seam_ratio": 1.17,
+            "runtime_s": 23.93,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "whisper-man",
+            "title": "The Whisper Man",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 14.07,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 40.87,
+            "spine_edge_density": 0.2041,
+            "palette_corr": 0.457,
+            "seam_ratio": 1.21,
+            "runtime_s": 31.94,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          }
+        ]
+      }
+    },
+    "390": {
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "images": [
+        {
+          "src": "assets/hound/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hound/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hound-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hound-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/rps/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/rps-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/rps-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/harry-potter/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/harry-potter-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/harry-potter-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/hunger-games/spine-2x.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hunger-games-art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/baseline/hunger-games-spine.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/source.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/mask-work-preview.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/art.jpg",
+          "ok": true
+        },
+        {
+          "src": "assets/whisper-man/spine-2x.jpg",
+          "ok": true
+        }
+      ],
+      "fonts": "loaded",
+      "cases": 5,
+      "passes": 8,
+      "reviews": 2,
+      "dock": true,
+      "v8": {
+        "generated": "2026-11-26T17:58:41.338714+00:00",
+        "studies": 5,
+        "pass": 4,
+        "review": 1,
+        "fallback": 0,
+        "manual_intervention": 0,
+        "books": [
+          {
+            "slug": "hound",
+            "title": "The Hound of the Baskervilles",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 7.65,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 56.29,
+            "spine_edge_density": 0.0863,
+            "palette_corr": 0.75,
+            "seam_ratio": 1.25,
+            "runtime_s": 10.26,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "rps",
+            "title": "Rock Paper Scissors",
+            "route": "inpaint",
+            "verdict": "review",
+            "mask_coverage_pct": 40.05,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 45.44,
+            "spine_edge_density": 0.2084,
+            "palette_corr": 0.875,
+            "seam_ratio": 0.76,
+            "runtime_s": 29.42,
+            "reasons": [
+              "40-55% of the cover was reconstructed"
+            ]
+          },
+          {
+            "slug": "harry-potter",
+            "title": "Harry Potter and the Philosopher's Stone",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 37.4,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 45.01,
+            "spine_edge_density": 0.2388,
+            "palette_corr": 0.057,
+            "seam_ratio": 0.79,
+            "runtime_s": 28.38,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "hunger-games",
+            "title": "The Hunger Games",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 26.02,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 54.35,
+            "spine_edge_density": 0.116,
+            "palette_corr": 0.971,
+            "seam_ratio": 1.17,
+            "runtime_s": 23.93,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          },
+          {
+            "slug": "whisper-man",
+            "title": "The Whisper Man",
+            "route": "text-free crop",
+            "verdict": "pass",
+            "mask_coverage_pct": 14.07,
+            "spine_residual_ocr": 0,
+            "crop_residual_ocr": 0,
+            "spine_luma_std": 40.87,
+            "spine_edge_density": 0.2041,
+            "palette_corr": 0.457,
+            "seam_ratio": 1.21,
+            "runtime_s": 31.94,
+            "reasons": [
+              "zero mask coverage, no residual OCR, structure at spine scale"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "errors": []
+}

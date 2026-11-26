@@ -1,0 +1,382 @@
+{
+  "slug": "hunger-games",
+  "book": {
+    "title": "The Hunger Games",
+    "author": "Suzanne Collins",
+    "pages": 374,
+    "cover": "../v7/assets/source/the-hunger-games.jpg"
+  },
+  "generated": "2026-11-26T17:41:39.676040+00:00",
+  "route": "text-free crop",
+  "verdict": "pass",
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "manual_intervention": 0,
+  "model": {
+    "text_detector": "PP-OCRv3 DBNet (rapidocr_onnxruntime, ONNX, CPU)",
+    "text_remover": "LaMa big-lama (simple-lama-inpainting, CPU) + sampled flat fill",
+    "ocr_qa": "PP-OCRv3 recogniser",
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "generative_diffusion": "not used"
+  },
+  "runtime_s": {
+    "detection": 3.27,
+    "mask_total": 3.34,
+    "inpaint_flat": 0.01,
+    "inpaint_lama": 13.1,
+    "crop_search": 0.56,
+    "total": 23.93
+  },
+  "source": {
+    "width": 330,
+    "height": 500
+  },
+  "working": {
+    "width": 330,
+    "height": 500,
+    "scale": 1.0
+  },
+  "mask": {
+    "coverage_pct": 26.02,
+    "components": 2,
+    "detection_boxes": 15,
+    "flat_fill_pct": 7.3
+  },
+  "detected_text": [
+    {
+      "text": "THE",
+      "conf": 0.574,
+      "box": [
+        [
+          103.0,
+          57.0
+        ],
+        [
+          328.0,
+          57.0
+        ],
+        [
+          328.0,
+          138.0
+        ],
+        [
+          103.0,
+          138.0
+        ]
+      ]
+    },
+    {
+      "text": "HUNGER",
+      "conf": 0.819,
+      "box": [
+        [
+          43.0,
+          153.0
+        ],
+        [
+          1009.0,
+          148.0
+        ],
+        [
+          1010.0,
+          299.0
+        ],
+        [
+          44.0,
+          304.0
+        ]
+      ]
+    },
+    {
+      "text": "GAmES",
+      "conf": 0.557,
+      "box": [
+        [
+          46.0,
+          309.0
+        ],
+        [
+          880.0,
+          314.0
+        ],
+        [
+          879.0,
+          462.0
+        ],
+        [
+          45.0,
+          457.0
+        ]
+      ]
+    },
+    {
+      "text": "NeulitThweBestdllingAuthot",
+      "conf": 0.58,
+      "box": [
+        [
+          580.0,
+          1118.0
+        ],
+        [
+          990.0,
+          1123.0
+        ],
+        [
+          990.0,
+          1153.0
+        ],
+        [
+          580.0,
+          1148.0
+        ]
+      ]
+    },
+    {
+      "text": "SUZANNE",
+      "conf": 0.837,
+      "box": [
+        [
+          575.0,
+          1163.0
+        ],
+        [
+          992.0,
+          1163.0
+        ],
+        [
+          992.0,
+          1272.0
+        ],
+        [
+          575.0,
+          1272.0
+        ]
+      ]
+    },
+    {
+      "text": "COLLINS",
+      "conf": 0.86,
+      "box": [
+        [
+          576.0,
+          1292.0
+        ],
+        [
+          995.0,
+          1292.0
+        ],
+        [
+          995.0,
+          1397.0
+        ],
+        [
+          576.0,
+          1397.0
+        ]
+      ]
+    }
+  ],
+  "crop_options": {
+    "text_free": {
+      "box": [
+        51,
+        156,
+        76,
+        344
+      ],
+      "coverage": 0.0,
+      "luma_std": 54.46,
+      "edge_density": 0.0882,
+      "non_dark": 0.435,
+      "salience": 28.01,
+      "score": 3.202,
+      "ocr": []
+    },
+    "text_free_ocr_checks": [
+      {
+        "box": [
+          51,
+          156,
+          76,
+          344
+        ],
+        "ocr": []
+      }
+    ],
+    "inpaint_visual": {
+      "box": [
+        53,
+        0,
+        110,
+        500
+      ],
+      "coverage": 0.0,
+      "luma_std": 47.67,
+      "edge_density": 0.0604,
+      "non_dark": 0.292,
+      "salience": 19.9,
+      "score": 3.225
+    }
+  },
+  "qa": {
+    "chosen": {
+      "mask_coverage_pct": 27.44,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [
+        {
+          "text": "Thwoe Blest",
+          "conf": 0.56,
+          "box": [
+            [
+              694.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1150.0
+            ],
+            [
+              694.0,
+              1150.0
+            ]
+          ]
+        }
+      ],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 54.35,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "non_dark_pct": 43.6,
+        "edge_density": 0.116,
+        "laplacian_var": 2060.7,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.971,
+      "seam": {
+        "seam_ratio": 1.17,
+        "inside_vs_ring_delta_e": 9.9,
+        "inside_ring_std_ratio": 0.92,
+        "boundary_px": 4029
+      },
+      "score": 3.202
+    },
+    "text_free": {
+      "mask_coverage_pct": 27.44,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [
+        {
+          "text": "Thwoe Blest",
+          "conf": 0.56,
+          "box": [
+            [
+              694.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1150.0
+            ],
+            [
+              694.0,
+              1150.0
+            ]
+          ]
+        }
+      ],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 54.35,
+        "luma_p5": 30.0,
+        "luma_p95": 184.0,
+        "non_dark_pct": 43.6,
+        "edge_density": 0.116,
+        "laplacian_var": 2060.7,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.971,
+      "seam": {
+        "seam_ratio": 1.17,
+        "inside_vs_ring_delta_e": 9.9,
+        "inside_ring_std_ratio": 0.92,
+        "boundary_px": 4029
+      },
+      "score": 3.202
+    },
+    "inpaint": {
+      "mask_coverage_pct": 27.44,
+      "crop_mask_coverage_pct": 24.618,
+      "art_residual_ocr": [
+        {
+          "text": "Thwoe Blest",
+          "conf": 0.56,
+          "box": [
+            [
+              694.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1120.0
+            ],
+            [
+              847.0,
+              1150.0
+            ],
+            [
+              694.0,
+              1150.0
+            ]
+          ]
+        }
+      ],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 47.58,
+        "luma_p5": 31.0,
+        "luma_p95": 169.0,
+        "non_dark_pct": 29.3,
+        "edge_density": 0.1098,
+        "laplacian_var": 3171.4,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.916,
+      "seam": {
+        "seam_ratio": 1.17,
+        "inside_vs_ring_delta_e": 9.9,
+        "inside_ring_std_ratio": 0.92,
+        "boundary_px": 4029
+      },
+      "score": 3.225
+    }
+  },
+  "final": {
+    "route": "text-free crop",
+    "verdict": "pass",
+    "spine": "assets/hunger-games/spine.jpg",
+    "spine_2x": "assets/hunger-games/spine-2x.jpg",
+    "fallback_spine": "assets/hunger-games/fallback-spine.jpg",
+    "crop_box_work": [
+      51,
+      156,
+      76,
+      344
+    ],
+    "mask_coverage_in_crop_pct": 0.0
+  }
+}

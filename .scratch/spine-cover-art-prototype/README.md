@@ -29,7 +29,13 @@ book. See `http://<host>:4173/spine-cover-art-prototype/reproducibility/`.
 6. **Popular books** — `v7/`  
    A curated popular-books shelf study; not a per-cover pipeline.
 
-7. **Reference** — `bookcover-js-deep/harness/`  
+7. **Automatic generative** — `v8-auto/`
+
+   DBNet text detection, automatic colour masks, LaMa/flat-fill removal, a
+   text-free crop route and spine-scale QA. No hand-drawn polygons, no API key.
+
+8. **Reference** — `bookcover-js-deep/harness/`
+
    Deep source audit and hands-on spine-only SVG/PNG test.
 
 Directory names are internal and deliberately unchanged; the names above are the

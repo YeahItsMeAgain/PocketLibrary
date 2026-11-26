@@ -1,0 +1,86 @@
+{
+  "qa": {
+    "chosen": {
+      "mask_coverage_pct": 38.65,
+      "crop_mask_coverage_pct": 0.069,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 45.01,
+        "luma_p5": 93.0,
+        "luma_p95": 228.0,
+        "non_dark_pct": 100.0,
+        "edge_density": 0.2388,
+        "laplacian_var": 4661.0,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.057,
+      "seam": {
+        "seam_ratio": 0.79,
+        "inside_vs_ring_delta_e": 54.4,
+        "inside_ring_std_ratio": 0.57,
+        "boundary_px": 6034
+      },
+      "score": 3.1991
+    },
+    "text_free": {
+      "mask_coverage_pct": 38.65,
+      "crop_mask_coverage_pct": 0.069,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 45.01,
+        "luma_p5": 93.0,
+        "luma_p95": 228.0,
+        "non_dark_pct": 100.0,
+        "edge_density": 0.2388,
+        "laplacian_var": 4661.0,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.057,
+      "seam": {
+        "seam_ratio": 0.79,
+        "inside_vs_ring_delta_e": 54.4,
+        "inside_ring_std_ratio": 0.57,
+        "boundary_px": 6034
+      },
+      "score": 3.1991
+    },
+    "inpaint": {
+      "mask_coverage_pct": 38.65,
+      "crop_mask_coverage_pct": 37.495,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 51.61,
+        "luma_p5": 82.0,
+        "luma_p95": 219.0,
+        "non_dark_pct": 97.9,
+        "edge_density": 0.1934,
+        "laplacian_var": 6000.4,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.056,
+      "seam": {
+        "seam_ratio": 0.79,
+        "inside_vs_ring_delta_e": 54.4,
+        "inside_ring_std_ratio": 0.57,
+        "boundary_px": 6034
+      },
+      "score": 3.3382
+    }
+  },
+  "decision": {
+    "route": "text-free crop",
+    "verdict": "pass",
+    "reasons": [
+      "zero mask coverage, no residual OCR, structure at spine scale"
+    ]
+  }
+}

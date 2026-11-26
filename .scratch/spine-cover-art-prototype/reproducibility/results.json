@@ -217,6 +217,23 @@
       "note": "Hybrid shelf spine generated from the shared cover. The study's own shelf record uses 336 pp for this title; the reference extent above is separate.",
       "image": "results/design-system.png"
     },
+    "automatic-generative": {
+      "label": "Automatic generative",
+      "status": "automatic",
+      "note": "Automatic DBNet mask plus flat fill / LaMa. The spine chooses a real text-free crop above the title band; no hand-drawn mask and no model prompt. Verdict: pass.",
+      "image": "results/automatic-generative.png",
+      "metrics": {
+        "route": "text-free crop",
+        "verdict": "pass",
+        "maskCoveragePct": 7.65,
+        "residualOcrSpine": 0,
+        "spineLumaStd": 56.29,
+        "edgeDensity": 0.0863,
+        "runtimeSeconds": 10.26,
+        "manualIntervention": 0,
+        "model": "PP-OCRv3 DBNet + LaMa big-lama (CPU)"
+      }
+    },
     "reference": {
       "label": "Reference",
       "status": "manual export",

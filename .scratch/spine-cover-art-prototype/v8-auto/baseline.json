@@ -1,0 +1,142 @@
+{
+  "generated": "baseline",
+  "books": {
+    "hound": {
+      "method": "Manual cover-plate exclusion; public-domain painting used directly.",
+      "manual_intervention": true,
+      "art_size": [
+        996,
+        1494
+      ],
+      "spine_size": [
+        160,
+        727
+      ],
+      "mask_coverage_pct": null,
+      "residual_ocr": [],
+      "residual_ocr_count": 0,
+      "spine": {
+        "luma_std": 66.26,
+        "luma_p5": 36.0,
+        "luma_p95": 216.4,
+        "non_dark_pct": 90.1,
+        "edge_density": 0.0275,
+        "laplacian_var": 604.0
+      }
+    },
+    "rps": {
+      "method": "Hand-drawn polygons + LaMa big-lama (v6).",
+      "manual_intervention": true,
+      "art_size": [
+        1304,
+        1956
+      ],
+      "spine_size": [
+        160,
+        727
+      ],
+      "mask_coverage_pct": null,
+      "residual_ocr": [],
+      "residual_ocr_count": 0,
+      "spine": {
+        "luma_std": 25.07,
+        "luma_p5": 157.0,
+        "luma_p95": 230.0,
+        "non_dark_pct": 100.0,
+        "edge_density": 0.0753,
+        "laplacian_var": 1749.0
+      }
+    },
+    "harry-potter": {
+      "method": "Hand-defined regions + LaMa/TELEA/sampled fill (v7).",
+      "manual_intervention": true,
+      "art_size": [
+        420,
+        621
+      ],
+      "spine_size": [
+        52,
+        236
+      ],
+      "mask_coverage_pct": 18.79,
+      "residual_ocr": [
+        {
+          "text": "HOGWARTS",
+          "conf": 0.799,
+          "box": [
+            [
+              261.0,
+              950.0
+            ],
+            [
+              658.0,
+              900.0
+            ],
+            [
+              670.0,
+              994.0
+            ],
+            [
+              273.0,
+              1044.0
+            ]
+          ]
+        },
+        {
+          "text": "EXPRESS",
+          "conf": 0.856,
+          "box": [
+            [
+              265.0,
+              1037.0
+            ],
+            [
+              660.0,
+              997.0
+            ],
+            [
+              671.0,
+              1109.0
+            ],
+            [
+              277.0,
+              1150.0
+            ]
+          ]
+        }
+      ],
+      "residual_ocr_count": 2,
+      "spine": {
+        "luma_std": 37.73,
+        "luma_p5": 79.0,
+        "luma_p95": 199.0,
+        "non_dark_pct": 97.5,
+        "edge_density": 0.1849,
+        "laplacian_var": 3415.9
+      }
+    },
+    "hunger-games": {
+      "method": "Hand-defined regions + LaMa/TELEA/sampled fill (v7).",
+      "manual_intervention": true,
+      "art_size": [
+        330,
+        500
+      ],
+      "spine_size": [
+        52,
+        236
+      ],
+      "mask_coverage_pct": 43.54,
+      "residual_ocr": [],
+      "residual_ocr_count": 0,
+      "spine": {
+        "luma_std": 39.5,
+        "luma_p5": 30.0,
+        "luma_p95": 153.0,
+        "non_dark_pct": 23.5,
+        "edge_density": 0.0944,
+        "laplacian_var": 2246.4
+      }
+    }
+  }
+}

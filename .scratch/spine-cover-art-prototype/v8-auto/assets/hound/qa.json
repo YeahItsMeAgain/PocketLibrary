@@ -1,0 +1,86 @@
+{
+  "qa": {
+    "chosen": {
+      "mask_coverage_pct": 8.25,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 56.29,
+        "luma_p5": 14.0,
+        "luma_p95": 194.0,
+        "non_dark_pct": 88.9,
+        "edge_density": 0.0863,
+        "laplacian_var": 641.3,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.75,
+      "seam": {
+        "seam_ratio": 1.25,
+        "inside_vs_ring_delta_e": 2.0,
+        "inside_ring_std_ratio": 0.22,
+        "boundary_px": 3738
+      },
+      "score": 2.9673
+    },
+    "text_free": {
+      "mask_coverage_pct": 8.25,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 56.29,
+        "luma_p5": 14.0,
+        "luma_p95": 194.0,
+        "non_dark_pct": 88.9,
+        "edge_density": 0.0863,
+        "laplacian_var": 641.3,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.75,
+      "seam": {
+        "seam_ratio": 1.25,
+        "inside_vs_ring_delta_e": 2.0,
+        "inside_ring_std_ratio": 0.22,
+        "boundary_px": 3738
+      },
+      "score": 2.9673
+    },
+    "inpaint": {
+      "mask_coverage_pct": 8.25,
+      "crop_mask_coverage_pct": 0.0,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 51.55,
+        "luma_p5": 16.0,
+        "luma_p95": 193.0,
+        "non_dark_pct": 92.8,
+        "edge_density": 0.0904,
+        "laplacian_var": 625.5,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.748,
+      "seam": {
+        "seam_ratio": 1.25,
+        "inside_vs_ring_delta_e": 2.0,
+        "inside_ring_std_ratio": 0.22,
+        "boundary_px": 3738
+      },
+      "score": 2.9643
+    }
+  },
+  "decision": {
+    "route": "text-free crop",
+    "verdict": "pass",
+    "reasons": [
+      "zero mask coverage, no residual OCR, structure at spine scale"
+    ]
+  }
+}

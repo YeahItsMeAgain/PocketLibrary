@@ -1,0 +1,62 @@
+{
+  "qa": {
+    "chosen": {
+      "mask_coverage_pct": 43.05,
+      "crop_mask_coverage_pct": 49.793,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 45.44,
+        "luma_p5": 90.0,
+        "luma_p95": 238.0,
+        "non_dark_pct": 100.0,
+        "edge_density": 0.2084,
+        "laplacian_var": 4657.2,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.875,
+      "seam": {
+        "seam_ratio": 0.76,
+        "inside_vs_ring_delta_e": 31.5,
+        "inside_ring_std_ratio": 1.59,
+        "boundary_px": 18825
+      },
+      "score": 3.2825
+    },
+    "text_free": null,
+    "inpaint": {
+      "mask_coverage_pct": 43.05,
+      "crop_mask_coverage_pct": 49.793,
+      "art_residual_ocr": [],
+      "crop_residual_ocr": [],
+      "spine_residual_ocr": [],
+      "spine": {
+        "luma_std": 45.44,
+        "luma_p5": 90.0,
+        "luma_p95": 238.0,
+        "non_dark_pct": 100.0,
+        "edge_density": 0.2084,
+        "laplacian_var": 4657.2,
+        "width_px": 52,
+        "height_px": 236
+      },
+      "palette_corr": 0.875,
+      "seam": {
+        "seam_ratio": 0.76,
+        "inside_vs_ring_delta_e": 31.5,
+        "inside_ring_std_ratio": 1.59,
+        "boundary_px": 18825
+      },
+      "score": 3.2825
+    }
+  },
+  "decision": {
+    "route": "inpaint",
+    "verdict": "review",
+    "reasons": [
+      "40-55% of the cover was reconstructed"
+    ]
+  }
+}
