@@ -20,8 +20,10 @@ use pocketlibrary_core::diagnostics::{
 };
 use pocketlibrary_core::{
     Annotation, AnnotationKind, Api, ApiError, AppInfo, BackupPreview, BackupReport, Book,
-    BookDetail, Bookmark, Download, DownloadRequest, DownloadSink, ImportMode, Label, LabelUsage,
-    LibraryStatus, ReadingState, ReadingStatus, ScanReport, SearchPage, SearchQuery, Shelf,
+    BookDetail, Bookmark, CoverChoices, CoverLookupOutcome, CoverOption, DeviceCoverPreview,
+    Download, DownloadRequest, DownloadSink, EnrichmentMode, EnrichmentOutcome, EnrichmentSettings,
+    ImportMode, Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus, ScanReport,
+    SearchPage, SearchQuery, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -43,6 +45,10 @@ const MAX_BOOK_BYTES: u64 = 100 * 1024 * 1024;
 /// is generous for covers but stops a mistakenly picked book or video from
 /// being loaded whole into memory.
 const MAX_BACKUP_BYTES: u64 = 64 * 1024 * 1024;
+
+/// A device cover image is decoded in Rust; refuse an unreasonably large pick
+/// before holding it in memory.
+const MAX_DEVICE_COVER_BYTES: u64 = 20 * 1024 * 1024;
 
 static DOWNLOAD_WORKER_RUNNING: AtomicBool = AtomicBool::new(false);
 
@@ -474,6 +480,77 @@ fn rescan(_app: &AppHandle) -> Result<ScanReport, ApiError> {
     Err(api_error(
         "library_unavailable",
         "Scanning a library folder needs the Android build.",
+    ))
+}
+
+/// Pick one image with the Android system picker and stage it in the cover
+/// cache. The WebView receives only an opaque token and a preview data URL.
+#[cfg(target_os = "android")]
+fn choose_device_cover_response(
+    app: &AppHandle,
+    book_id: i64,
+) -> Result<Option<DeviceCoverPreview>, ApiError> {
+    let fs = app.android_fs();
+    let picked = fs
+        .picker()
+        .pick_file(None, &["image/*"], false)
+        .map_err(|error| {
+            logged_error(
+                "cover_picker",
+                "The image picker could not be opened. Please try again.",
+                error,
+            )
+        })?;
+    let Some(uri) = picked else {
+        return Ok(None);
+    };
+    let file = fs.open_file_readable(&uri).map_err(|error| {
+        logged_error(
+            "cover_read",
+            "That image could not be read. Choose another one.",
+            error,
+        )
+    })?;
+    let mut bytes = Vec::new();
+    file.take(MAX_DEVICE_COVER_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| {
+            logged_error(
+                "cover_read",
+                "That image could not be read. Choose another one.",
+                error,
+            )
+        })?;
+    if bytes.len() as u64 > MAX_DEVICE_COVER_BYTES {
+        return Err(api_error(
+            "cover_too_large",
+            "That image is too large to use as a cover.",
+        ));
+    }
+    let api = app.state::<Api>();
+    let preview = api.prepare_device_cover(book_id, &bytes)?;
+    log_diag(
+        app,
+        Level::Info,
+        "cover.device",
+        &format!(
+            "book {book_id}: staged {}×{} device image{}",
+            preview.width,
+            preview.height,
+            if preview.warning.is_some() { " (needs warning)" } else { "" }
+        ),
+    );
+    Ok(Some(preview))
+}
+
+#[cfg(not(target_os = "android"))]
+fn choose_device_cover_response(
+    _app: &AppHandle,
+    _book_id: i64,
+) -> Result<Option<DeviceCoverPreview>, ApiError> {
+    Err(api_error(
+        "unsupported",
+        "Choosing a cover image needs the Android build.",
     ))
 }
 
@@ -1071,6 +1148,110 @@ fn app_info(api: tauri::State<'_, Api>) -> Result<AppInfo, ApiError> {
     api.app_info()
 }
 
+#[tauri::command]
+fn enrichment_settings(api: tauri::State<'_, Api>) -> Result<EnrichmentSettings, ApiError> {
+    api.enrichment_settings()
+}
+
+#[tauri::command]
+fn set_enrichment_mode(
+    api: tauri::State<'_, Api>,
+    mode: EnrichmentMode,
+) -> Result<EnrichmentSettings, ApiError> {
+    api.set_enrichment_mode(mode)
+}
+
+#[tauri::command]
+async fn lookup_enrichment(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    force: bool,
+) -> Result<EnrichmentOutcome, ApiError> {
+    api.lookup_enrichment(book_id, force).await
+}
+
+#[tauri::command]
+async fn accept_enrichment_candidate(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    key: String,
+) -> Result<EnrichmentOutcome, ApiError> {
+    api.accept_enrichment_candidate(book_id, &key).await
+}
+
+#[tauri::command]
+fn cancel_enrichment(api: tauri::State<'_, Api>, book_id: i64) -> Result<(), ApiError> {
+    api.cancel_enrichment(book_id)
+}
+
+#[tauri::command]
+fn edit_blurb(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    text: Option<String>,
+) -> Result<(), ApiError> {
+    api.edit_blurb(book_id, text.as_deref())
+}
+
+#[tauri::command]
+fn revert_enrichment(api: tauri::State<'_, Api>, book_id: i64) -> Result<(), ApiError> {
+    api.revert_enrichment(book_id)
+}
+
+#[tauri::command]
+fn cover_choices(api: tauri::State<'_, Api>, book_id: i64) -> Result<CoverChoices, ApiError> {
+    api.cover_choices(book_id)
+}
+
+#[tauri::command]
+async fn lookup_cover_candidates(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+) -> Result<CoverLookupOutcome, ApiError> {
+    api.lookup_cover_candidates(book_id).await
+}
+
+#[tauri::command]
+async fn apply_cover_choice(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    choice: CoverOption,
+    acknowledged: bool,
+) -> Result<(), ApiError> {
+    api.apply_cover_choice(book_id, choice, acknowledged).await
+}
+
+#[tauri::command]
+async fn choose_device_cover(
+    app: AppHandle,
+    book_id: i64,
+) -> Result<Option<DeviceCoverPreview>, ApiError> {
+    blocking(move || choose_device_cover_response(&app, book_id)).await
+}
+
+#[tauri::command]
+async fn apply_device_cover(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    token: String,
+    acknowledged: bool,
+) -> Result<(), ApiError> {
+    api.apply_device_cover(book_id, &token, acknowledged).await
+}
+
+#[tauri::command]
+fn reset_cover(api: tauri::State<'_, Api>, book_id: i64) -> Result<(), ApiError> {
+    api.reset_cover(book_id)
+}
+
+#[tauri::command]
+fn enrichment_targets(
+    api: tauri::State<'_, Api>,
+    limit: usize,
+) -> Result<Vec<Book>, ApiError> {
+    api.enrichment_targets(limit)
+}
+
 /// Search Libgen from the front desk. Network work runs on the async runtime;
 /// the provider keeps mirror health in memory between calls.
 #[tauri::command]
@@ -1362,6 +1543,20 @@ pub fn run() {
     builder
         .invoke_handler(tauri::generate_handler![
             app_info,
+            enrichment_settings,
+            set_enrichment_mode,
+            lookup_enrichment,
+            accept_enrichment_candidate,
+            cancel_enrichment,
+            edit_blurb,
+            revert_enrichment,
+            cover_choices,
+            lookup_cover_candidates,
+            apply_cover_choice,
+            choose_device_cover,
+            apply_device_cover,
+            reset_cover,
+            enrichment_targets,
             updates::updates_check,
             updates::updates_download,
             updates::updates_install,

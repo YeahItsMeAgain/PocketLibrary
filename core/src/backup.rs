@@ -114,9 +114,29 @@ struct ManifestBook {
     /// Zip entry name under `covers/`, absent when no cover was cached.
     cover_file: Option<String>,
     cover_source: Option<CoverSource>,
+    /// The file's own cover, when it differs from the active (manual/online) one.
+    #[serde(default)]
+    file_cover_file: Option<String>,
+    #[serde(default)]
+    file_cover_source: Option<CoverSource>,
+    /// Manual and online provenance rows. File-derived fields have no row.
+    #[serde(default)]
+    provenance: Vec<ManifestProvenance>,
     added_at: i64,
     shelf_ordinal: Option<i64>,
     slot_index: Option<i64>,
+    #[serde(skip)]
+    cover_path: Option<String>,
+    #[serde(skip)]
+    file_cover_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ManifestProvenance {
+    field: String,
+    source: String,
+    source_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -197,29 +217,34 @@ struct BackupHeader {
 
 /// Serialise the catalogue into a zip archive. Readable covers are included;
 /// unreadable or absent covers are silently skipped.
-pub fn export(conn: &Connection, cover_dir: &Path) -> Result<Vec<u8>> {
-    let manifest = build_manifest(conn)?;
+pub fn export(conn: &Connection, _cover_dir: &Path) -> Result<Vec<u8>> {
+    let mut manifest = build_manifest(conn)?;
     let mut covers = HashMap::new();
-    for book in &manifest.books {
-        let Some(cover_file) = &book.cover_file else {
-            continue;
-        };
-        let path = cover::cover_path(cover_dir, &book.content_hash);
-        if let Ok(bytes) = fs::read(&path)
+    for book in &mut manifest.books {
+        if let Some(path) = &book.cover_path
+            && let Ok(bytes) = fs::read(path)
             && !bytes.is_empty()
         {
-            covers.insert(cover_file.clone(), bytes);
-        }
-    }
-
-    let mut manifest = manifest;
-    // Drop references to covers that could not be read, so the archive cannot
-    // claim an entry it does not contain.
-    for book in &mut manifest.books {
-        if let Some(cover_file) = &book.cover_file
-            && !covers.contains_key(cover_file)
-        {
+            let entry = format!("{COVERS_DIR}/{}.jpg", book.content_hash);
+            book.cover_file = Some(entry.clone());
+            covers.insert(entry, bytes);
+        } else {
             book.cover_file = None;
+        }
+        let file_path = book.file_cover_path.clone();
+        if let Some(path) = file_path
+            && book.cover_file.is_some()
+            && let Ok(bytes) = fs::read(&path)
+            && !bytes.is_empty()
+            && !covers
+                .get(&format!("{COVERS_DIR}/{}.jpg", book.content_hash))
+                .is_some_and(|existing| existing == &bytes)
+        {
+            let entry = format!("{COVERS_DIR}/{}-file.jpg", book.content_hash);
+            book.file_cover_file = Some(entry.clone());
+            covers.insert(entry, bytes);
+        } else {
+            book.file_cover_file = None;
         }
     }
 
@@ -315,18 +340,23 @@ fn build_manifest(conn: &Connection) -> Result<BackupManifest> {
             "SELECT b.content_hash, b.format, b.title, b.authors, b.series,
                     b.language, b.description, b.publisher, b.published_date, b.identifier,
                     b.page_count, b.cover_path, b.cover_source, b.added_at, s.ordinal,
-                    b.slot_index
+                    b.slot_index, b.file_cover_path, b.file_cover_source
              FROM books b LEFT JOIN shelves s ON s.id = b.shelf_id
              ORDER BY b.shelf_id IS NULL, b.shelf_id, b.slot_index, b.id",
         )?;
         let rows = statement.query_map([], |row| {
             let authors_json: String = row.get(3)?;
             let content_hash: String = row.get(0)?;
-            let has_cover: Option<String> = row.get(11)?;
+            let cover_path: Option<String> = row.get(11)?;
+            let file_cover_path: Option<String> = row.get(16)?;
+            let cover_file = cover_path
+                .as_ref()
+                .map(|_| format!("{COVERS_DIR}/{content_hash}.jpg"));
+            let file_cover_file = file_cover_path
+                .as_ref()
+                .map(|_| format!("{COVERS_DIR}/{content_hash}-file.jpg"));
             Ok(ManifestBook {
-                cover_file: has_cover
-                    .as_ref()
-                    .map(|_| format!("{COVERS_DIR}/{content_hash}.jpg")),
+                cover_file,
                 content_hash,
                 format: row.get(1)?,
                 title: row.get(2)?,
@@ -339,14 +369,46 @@ fn build_manifest(conn: &Connection) -> Result<BackupManifest> {
                 identifier: row.get(9)?,
                 page_count: row.get(10)?,
                 cover_source: row.get(12)?,
+                file_cover_file,
+                file_cover_source: row.get(17)?,
+                provenance: Vec::new(),
                 added_at: row.get(13)?,
                 shelf_ordinal: row.get(14)?,
                 slot_index: row.get(15)?,
+                cover_path,
+                file_cover_path,
             })
         })?;
         for row in rows {
             books.push(row?);
         }
+    }
+
+    let mut provenance_by_hash: HashMap<String, Vec<ManifestProvenance>> = HashMap::new();
+    {
+        let mut statement = conn.prepare(
+            "SELECT b.content_hash, p.field, p.source, p.source_url
+             FROM field_provenance p JOIN books b ON b.id = p.book_id",
+        )?;
+        let rows = statement.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                ManifestProvenance {
+                    field: row.get(1)?,
+                    source: row.get(2)?,
+                    source_url: row.get(3)?,
+                },
+            ))
+        })?;
+        for row in rows {
+            let (hash, entry) = row?;
+            provenance_by_hash.entry(hash).or_default().push(entry);
+        }
+    }
+    for book in &mut books {
+        book.provenance = provenance_by_hash
+            .remove(&book.content_hash)
+            .unwrap_or_default();
     }
 
     let mut reading_states = Vec::new();
@@ -693,6 +755,7 @@ fn merge(
                     params![path, book.cover_source, id],
                 )?;
             }
+            install_provenance(tx, id, book)?;
             continue;
         }
 
@@ -705,14 +768,19 @@ fn merge(
             book.slot_index,
         )?;
         let cover_path = install_cover(cover_dir, &book.content_hash, book, covers);
+        let file_cover_path = install_file_cover(cover_dir, &book.content_hash, book, covers)
+            .or_else(|| cover_path.clone());
         insert_book(
             tx,
             book,
             Some(shelf_id),
             Some(slot_index),
             cover_path.as_deref(),
+            file_cover_path.as_deref(),
         )?;
-        book_ids.insert(book.content_hash.clone(), tx.last_insert_rowid());
+        let id = tx.last_insert_rowid();
+        install_provenance(tx, id, book)?;
+        book_ids.insert(book.content_hash.clone(), id);
     }
 
     for link in &manifest.book_labels {
@@ -857,8 +925,19 @@ fn replace(
             .and_then(|ordinal| shelf_ids.get(&ordinal))
             .copied();
         let cover_path = install_cover(cover_dir, &book.content_hash, book, covers);
-        insert_book(tx, book, shelf_id, book.slot_index, cover_path.as_deref())?;
-        book_ids.insert(book.content_hash.clone(), tx.last_insert_rowid());
+        let file_cover_path = install_file_cover(cover_dir, &book.content_hash, book, covers)
+            .or_else(|| cover_path.clone());
+        insert_book(
+            tx,
+            book,
+            shelf_id,
+            book.slot_index,
+            cover_path.as_deref(),
+            file_cover_path.as_deref(),
+        )?;
+        let id = tx.last_insert_rowid();
+        install_provenance(tx, id, book)?;
+        book_ids.insert(book.content_hash.clone(), id);
     }
 
     for link in &manifest.book_labels {
@@ -1041,6 +1120,7 @@ fn insert_book(
     shelf_id: Option<i64>,
     slot_index: Option<i64>,
     cover_path: Option<&str>,
+    file_cover_path: Option<&str>,
 ) -> Result<()> {
     let authors = serde_json::to_string(&book.authors).map_err(json_error)?;
     conn.execute(
@@ -1049,8 +1129,9 @@ fn insert_book(
         "INSERT INTO books (
              content_hash, quick_key, path, format, title, authors, series, language,
              description, publisher, published_date, identifier, page_count, cover_path,
-             cover_source, added_at, shelf_id, slot_index
-         ) VALUES (?1, NULL, '', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+             cover_source, added_at, shelf_id, slot_index,
+             file_cover_path, file_cover_source, file_description
+         ) VALUES (?1, NULL, '', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
         params![
             book.content_hash,
             book.format,
@@ -1067,9 +1148,44 @@ fn insert_book(
             book.cover_source,
             book.added_at,
             shelf_id,
-            slot_index
+            slot_index,
+            file_cover_path,
+            book.file_cover_source.or(book.cover_source),
+            book.description,
         ],
     )?;
+    Ok(())
+}
+
+fn install_file_cover(
+    cover_dir: &Path,
+    hash: &str,
+    book: &ManifestBook,
+    covers: &HashMap<String, Vec<u8>>,
+) -> Option<String> {
+    let bytes = covers.get(book.file_cover_file.as_deref()?)?;
+    if bytes.is_empty() {
+        return None;
+    }
+    let path = cover_dir.join(format!("{hash}-file.jpg"));
+    if !path.is_file() {
+        fs::create_dir_all(path.parent()?).ok()?;
+        fs::write(&path, bytes).ok()?;
+    }
+    Some(path.to_string_lossy().into_owned())
+}
+
+fn install_provenance(conn: &Connection, book_id: i64, book: &ManifestBook) -> Result<()> {
+    for entry in &book.provenance {
+        if entry.field != "description" && entry.field != "cover" {
+            continue;
+        }
+        conn.execute(
+            "INSERT OR IGNORE INTO field_provenance (book_id, field, source, source_url)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![book_id, entry.field, entry.source, entry.source_url],
+        )?;
+    }
     Ok(())
 }
 

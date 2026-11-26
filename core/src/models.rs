@@ -93,6 +93,12 @@ pub enum CoverSource {
     Rendered,
     /// A locally drawn stand-in when extraction failed.
     Generated,
+    /// A cover downloaded from a matched Open Library edition.
+    OpenLibrary,
+    /// A cover downloaded from an Internet Archive item linked by `ocaid`.
+    InternetArchive,
+    /// An image the reader chose from this device.
+    Device,
 }
 
 impl CoverSource {
@@ -101,7 +107,20 @@ impl CoverSource {
             Self::Embedded => "embedded",
             Self::Rendered => "rendered",
             Self::Generated => "generated",
+            Self::OpenLibrary => "open_library",
+            Self::InternetArchive => "internet_archive",
+            Self::Device => "device",
         }
+    }
+
+    /// Whether this cover came from outside the book file.
+    pub fn is_online(self) -> bool {
+        matches!(self, Self::OpenLibrary | Self::InternetArchive)
+    }
+
+    /// Whether the file itself supplied this cover.
+    pub fn is_file_derived(self) -> bool {
+        matches!(self, Self::Embedded | Self::Rendered)
     }
 }
 
@@ -117,11 +136,212 @@ impl FromSql for CoverSource {
             "embedded" => Ok(Self::Embedded),
             "rendered" => Ok(Self::Rendered),
             "generated" => Ok(Self::Generated),
+            "open_library" => Ok(Self::OpenLibrary),
+            "internet_archive" => Ok(Self::InternetArchive),
+            "device" => Ok(Self::Device),
             other => Err(FromSqlError::Other(
                 format!("unknown cover source: {other}").into(),
             )),
         }
     }
+}
+
+/// How eagerly PocketLibrary looks up online details.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum EnrichmentMode {
+    /// No automatic lookup. A per-book action still works when pressed.
+    Off,
+    /// The Flip offers a lookup action; nothing happens until it is pressed.
+    Ask,
+    /// Look up when the Flip opens if a blurb or cover is still missing.
+    Automatic,
+}
+
+impl EnrichmentMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::Ask => "ask",
+            Self::Automatic => "automatic",
+        }
+    }
+}
+
+impl ToSql for EnrichmentMode {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+impl FromSql for EnrichmentMode {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        match value.as_str()? {
+            "off" => Ok(Self::Off),
+            "ask" => Ok(Self::Ask),
+            "automatic" => Ok(Self::Automatic),
+            other => Err(FromSqlError::Other(
+                format!("unknown enrichment mode: {other}").into(),
+            )),
+        }
+    }
+}
+
+/// The persisted online-details setting.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnrichmentSettings {
+    pub mode: EnrichmentMode,
+    /// The only general-purpose source this build ships with.
+    pub source_label: String,
+    pub source_url: String,
+    /// The widest foreground batch this build will run.
+    pub batch_limit: usize,
+}
+
+/// Where an online field came from, for the attribution line.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnrichmentAttribution {
+    pub label: String,
+    pub url: String,
+    pub fields: Vec<String>,
+}
+
+/// One candidate offered for review or manual cover selection.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnrichmentCandidate {
+    /// Provider-relative key, safe to send back to accept this candidate.
+    pub key: String,
+    pub source: String,
+    pub title: String,
+    pub authors: Vec<String>,
+    pub year: Option<i64>,
+    pub publisher: Option<String>,
+    pub has_cover: bool,
+    /// A short-lived preview for the review sheet. Never a filesystem path.
+    pub cover_data_url: Option<String>,
+    pub source_url: String,
+}
+
+/// The result of one lookup. Every state the Flip must show is explicit.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "camelCase")]
+pub enum EnrichmentOutcome {
+    Applied {
+        source: String,
+        fields: Vec<String>,
+        attribution: Option<EnrichmentAttribution>,
+    },
+    NeedsReview {
+        candidates: Vec<EnrichmentCandidate>,
+        attribution: EnrichmentAttribution,
+    },
+    NoMatch {
+        source: String,
+        reason: String,
+    },
+    Unavailable {
+        source: String,
+        code: String,
+        message: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        retry_after_seconds: Option<u64>,
+    },
+    Cancelled,
+}
+
+/// Safe enrichment state attached to a book detail response.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BookEnrichmentState {
+    /// The file supplied a cover that must not be replaced automatically.
+    pub has_file_cover: bool,
+    pub file_cover_source: Option<CoverSource>,
+    pub cover_source: Option<CoverSource>,
+    /// True when the cover was chosen by the reader and is protected.
+    pub cover_manual: bool,
+    /// `manual` or an online source name for the blurb, when not file-derived.
+    pub description_source: Option<String>,
+    pub description_url: Option<String>,
+    pub cover_url: Option<String>,
+    /// True when the blurb or cover is still a gap.
+    pub has_gap: bool,
+    /// Attribution for the fields currently shown, when they came online.
+    pub attribution: Option<EnrichmentAttribution>,
+}
+
+/// One choice in the manual cover chooser.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoverOption {
+    /// Stable key: `original`, `generated`, `online:<key>`, `device:<token>`.
+    pub key: String,
+    /// `embedded`, `rendered`, `generated`, `open_library`, `internet_archive`, `device`.
+    pub source: String,
+    pub label: String,
+    pub detail: Option<String>,
+    pub preview_data_url: Option<String>,
+    pub is_current: bool,
+    pub is_original: bool,
+    /// Provider candidate this image belongs to, when online.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub candidate_key: Option<String>,
+    /// Provider-relative cover key, used only to fetch the chosen bytes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider_cover_key: Option<String>,
+    /// Public edition/item page for attribution and reset provenance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_url: Option<String>,
+    /// Present when the image needs an explicit acknowledgement.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warning: Option<String>,
+}
+
+/// Everything the cover chooser needs before it makes a network request.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoverChoices {
+    pub current: Option<CoverOption>,
+    /// The file's own cover, or the generated plate when the file has none.
+    pub original: CoverOption,
+    /// Cached edition candidates, if a previous lookup left them.
+    pub online: Vec<CoverOption>,
+    pub source_label: String,
+}
+
+/// The result of an explicit Open Library cover lookup in the chooser.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "camelCase")]
+pub enum CoverLookupOutcome {
+    Found {
+        candidates: Vec<CoverOption>,
+        attribution: EnrichmentAttribution,
+    },
+    Unavailable {
+        source: String,
+        code: String,
+        message: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        retry_after_seconds: Option<u64>,
+    },
+    NoMatch {
+        source: String,
+        reason: String,
+    },
+    Cancelled,
+}
+
+/// A device image waiting for the reader's explicit warning acknowledgement.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceCoverPreview {
+    pub token: String,
+    pub preview_data_url: String,
+    pub width: u32,
+    pub height: u32,
+    pub warning: Option<String>,
 }
 
 /// One book in the library.
@@ -154,6 +374,15 @@ pub struct Book {
     /// detail refresh; the UI has no use for it on the wire.
     #[serde(skip)]
     pub cover_source: Option<CoverSource>,
+    /// The cover the book file itself supplied, kept even when an online or
+    /// manual cover is active so revert can restore it.
+    #[serde(skip)]
+    pub file_cover_path: Option<String>,
+    #[serde(skip)]
+    pub file_cover_source: Option<CoverSource>,
+    /// The blurb the book file itself supplied.
+    #[serde(skip)]
+    pub file_description: Option<String>,
     pub added_at: i64,
     pub shelf_id: Option<i64>,
     pub slot_index: Option<i64>,
@@ -171,6 +400,8 @@ pub struct BookDetail {
     #[serde(flatten)]
     pub book: Book,
     pub cover_data_url: Option<String>,
+    /// Safe enrichment state: sources, gaps and protection, never paths.
+    pub enrichment: BookEnrichmentState,
 }
 
 /// Why one file did not become a book.

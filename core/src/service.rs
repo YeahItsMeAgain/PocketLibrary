@@ -24,7 +24,8 @@ use crate::{APP_NAME, SCHEMA_VERSION, cover, identity, metadata};
 const BOOK_COLUMNS: &str =
     "b.id, b.content_hash, b.quick_key, b.path, b.format, b.title, b.authors,
      b.series, b.language, b.description, b.publisher, b.published_date, b.identifier,
-     b.page_count, b.cover_path, b.cover_source, b.added_at, b.shelf_id, b.slot_index,
+     b.page_count, b.cover_path, b.cover_source, b.file_cover_path, b.file_cover_source,
+     b.file_description, b.added_at, b.shelf_id, b.slot_index,
      COALESCE(r.status, 'unread')";
 
 const BOOK_SOURCE: &str = "FROM books b LEFT JOIN reading_state r ON r.book_id = b.id";
@@ -147,8 +148,14 @@ impl Service {
         Ok(())
     }
 
-    fn connection(&self) -> Result<MutexGuard<'_, Connection>> {
+    pub(crate) fn connection(&self) -> Result<MutexGuard<'_, Connection>> {
         self.conn.lock().map_err(|_| Error::LockPoisoned)
+    }
+
+    /// The app-data cover cache. Covers are content-addressed, never written
+    /// into the library folder or a book file.
+    pub(crate) fn cover_dir(&self) -> &Path {
+        &self.cover_dir
     }
 
     /// Identity and schema information for the running app.
@@ -265,6 +272,10 @@ impl Service {
         Ok(BookDetail {
             book,
             cover_data_url,
+            enrichment: {
+                let conn = self.connection()?;
+                crate::enrichment::state_for(&conn, id)?
+            },
         })
     }
 
@@ -299,11 +310,37 @@ impl Service {
 
         if let Ok(conn) = self.connection() {
             let _ = conn.execute(
-                "UPDATE books SET cover_path = ?1, cover_source = ?2 WHERE id = ?3",
+                "UPDATE books SET cover_path = ?1, cover_source = ?2,
+                                  file_cover_path = ?1, file_cover_source = ?2
+                 WHERE id = ?3",
                 params![restored.0.to_string_lossy(), restored.1, book.id],
             );
         }
         Some(restored)
+    }
+
+    /// Books that still have a blurb or cover gap, for the capped foreground
+    /// "Fill missing details" queue. Manual covers are respected by the write
+    /// policy, not filtered from the queue.
+    pub fn enrichment_targets(&self, limit: usize) -> Result<Vec<Book>> {
+        let limit = limit.clamp(1, crate::enrichment::BATCH_LIMIT);
+        let conn = self.connection()?;
+        let mut statement = conn.prepare(&format!(
+            "SELECT {BOOK_COLUMNS}
+             {BOOK_SOURCE}
+             WHERE b.description IS NULL OR trim(b.description) = ''
+                OR b.cover_path IS NULL OR b.cover_source = 'generated'
+             ORDER BY b.added_at, b.id
+             LIMIT ?1"
+        ))?;
+        let mut books = statement
+            .query_map([limit as i64], book_from_row)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        let mut labels = all_book_labels(&conn)?;
+        for book in &mut books {
+            book.labels = labels.remove(&book.id).unwrap_or_default();
+        }
+        Ok(books)
     }
 
     /// Every shelf in ordinal order.
@@ -2007,8 +2044,9 @@ fn insert_book(conn: &Connection, book: NewBook<'_>) -> Result<()> {
         "INSERT INTO books (
              content_hash, quick_key, path, format, title, authors, series, language,
              description, publisher, published_date, identifier, page_count, cover_path,
-             cover_source, added_at, shelf_id, slot_index
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+             cover_source, added_at, shelf_id, slot_index,
+             file_cover_path, file_cover_source, file_description
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
         params![
             content_hash,
             quick_key,
@@ -2027,7 +2065,10 @@ fn insert_book(conn: &Connection, book: NewBook<'_>) -> Result<()> {
             cover_source,
             added_at,
             shelf_id,
-            slot_index
+            slot_index,
+            cover_path,
+            cover_source,
+            metadata.description,
         ],
     )?;
     Ok(())
@@ -2063,10 +2104,13 @@ fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
         page_count: row.get(13)?,
         cover_path: row.get(14)?,
         cover_source: row.get(15)?,
-        added_at: row.get(16)?,
-        shelf_id: row.get(17)?,
-        slot_index: row.get(18)?,
-        reading_status: row.get::<_, ReadingStatus>(19)?,
+        file_cover_path: row.get(16)?,
+        file_cover_source: row.get(17)?,
+        file_description: row.get(18)?,
+        added_at: row.get(19)?,
+        shelf_id: row.get(20)?,
+        slot_index: row.get(21)?,
+        reading_status: row.get::<_, ReadingStatus>(22)?,
         labels: Vec::new(),
     })
 }

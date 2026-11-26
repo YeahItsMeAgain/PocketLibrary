@@ -110,6 +110,24 @@ pub enum Error {
 
     #[error("the downloaded file could not be read as a book")]
     DownloadInvalidBook,
+
+    #[error("online details are unavailable: {message}")]
+    EnrichmentUnavailable { code: String, message: String },
+
+    #[error("that enrichment candidate is no longer available")]
+    EnrichmentCandidateExpired,
+
+    #[error("that cover can no longer be used")]
+    CoverTokenInvalid,
+
+    #[error("the cover could not be written")]
+    CoverWriteFailed,
+
+    #[error("the image could not be used: {message}")]
+    CoverRejected { message: String },
+
+    #[error("{message}")]
+    CoverNeedsAcknowledgement { message: String },
 }
 
 impl Error {
@@ -149,11 +167,27 @@ impl Error {
             Self::DownloadDuplicate { .. } => "duplicate",
             Self::DownloadNotFound { .. } => "download_not_found",
             Self::DownloadInvalidBook => "invalid_book",
+            Self::EnrichmentUnavailable { code, .. } => match code.as_str() {
+                "offline" => "offline",
+                "timeout" => "timeout",
+                "rate_limited" => "rate_limited",
+                "unauthorized" => "unauthorized",
+                "forbidden" => "forbidden",
+                "not_found" => "not_found",
+                "malformed" => "source_error",
+                "too_large" | "bad_content_type" => "bad_cover",
+                _ => "source_error",
+            },
+            Self::EnrichmentCandidateExpired => "candidate_expired",
+            Self::CoverTokenInvalid => "cover_token_invalid",
+            Self::CoverWriteFailed => "cover_write_failed",
+            Self::CoverRejected { .. } => "cover_rejected",
+            Self::CoverNeedsAcknowledgement { .. } => "cover_needs_acknowledgement",
         }
     }
 
     /// Stable user-facing text. Details (which may contain paths) stay in logs.
-    fn user_message(&self) -> &'static str {
+    fn user_message(&self) -> &str {
         match self {
             Self::Database(_) => "The library database could not be updated.",
             Self::Io(_) => "A file operation failed.",
@@ -206,6 +240,16 @@ impl Error {
             Self::DownloadDuplicate { .. } => "That book is already in your library.",
             Self::DownloadNotFound { .. } => "That download could not be found.",
             Self::DownloadInvalidBook => "The downloaded file could not be read as a book.",
+            Self::EnrichmentUnavailable { message, .. } => message,
+            Self::EnrichmentCandidateExpired => {
+                "That match is no longer available. Look the book up again."
+            }
+            Self::CoverTokenInvalid => "That cover choice has expired. Choose it again.",
+            Self::CoverWriteFailed => "The cover could not be saved. The old cover is unchanged.",
+            Self::CoverRejected { message } => message,
+            Self::CoverNeedsAcknowledgement { .. } => {
+                "Confirm that you want to use this low-resolution or landscape image."
+            }
         }
     }
 }

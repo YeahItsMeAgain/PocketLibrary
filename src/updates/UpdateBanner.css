@@ -1,0 +1,161 @@
+/* A brass notice slipped onto the wall, not a web notification bar. */
+
+.update-banner {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: min(420px, calc(100% - 24px));
+  margin: max(10px, env(safe-area-inset-top)) auto 0;
+  padding: 12px 12px 12px 15px;
+  border: 1px solid rgba(201, 168, 106, 0.42);
+  border-left: 3px solid rgba(226, 198, 143, 0.82);
+  background:
+    linear-gradient(115deg, rgba(201, 168, 106, 0.13), transparent 58%),
+    linear-gradient(180deg, rgba(46, 28, 55, 0.94), rgba(12, 7, 16, 0.97));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.38);
+  animation: update-banner-in 0.24s var(--ease-out) both;
+}
+
+.update-banner::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  bottom: 5px;
+  left: 5px;
+  border: 1px solid rgba(201, 168, 106, 0.12);
+  pointer-events: none;
+}
+
+.update-banner-copy {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.update-banner-kicker {
+  margin: 0;
+  color: #b99c6b;
+  font-family: var(--display);
+  font-size: 8px;
+  letter-spacing: 0.24em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.update-banner-version {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: #ecd6a6;
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+
+.update-banner-version span {
+  color: #e2c68f;
+  white-space: nowrap;
+}
+
+.update-banner-highlights {
+  display: grid;
+  gap: 3px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.update-banner-highlights li {
+  position: relative;
+  padding-left: 11px;
+  color: #cbb48a;
+  font-size: 10.5px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.update-banner-highlights li::before {
+  content: "❧";
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #a58a58;
+  font-size: 8px;
+  line-height: 1.6;
+}
+
+.update-banner-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.update-banner-see {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(201, 168, 106, 0.62);
+  color: #1b1019;
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #e2c68f, #b4915a);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 214, 0.55);
+}
+
+.update-banner-see:active {
+  transform: translateY(1px);
+}
+
+.update-banner-dismiss {
+  align-self: flex-end;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  color: #c3a97a;
+  font-size: 18px;
+  line-height: 1;
+  place-items: center;
+  background: transparent;
+}
+
+.update-banner-dismiss:active,
+.update-banner-dismiss:hover {
+  color: #f0dcaa;
+}
+
+@media (max-width: 339px) {
+  .update-banner {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .update-banner-actions {
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    justify-content: space-between;
+  }
+}
+
+@keyframes update-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

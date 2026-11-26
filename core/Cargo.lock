@@ -1804,7 +1804,7 @@ dependencies = [
 
 [[package]]
 name = "pocketlibrary_core"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "base64",
  "blake3",
@@ -1823,6 +1823,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
+ "unicode-normalization",
  "url",
  "wreq",
  "wreq-util",

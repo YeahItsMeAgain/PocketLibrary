@@ -9,6 +9,7 @@ mod backup;
 mod cover;
 pub mod diagnostics;
 mod download;
+mod enrichment;
 mod error;
 mod identity;
 mod metadata;
@@ -26,19 +27,26 @@ pub use backup::{
     BACKUP_EXTENSION, BACKUP_FORMAT_VERSION, BackupPreview, BackupReport, ImportMode,
 };
 pub use download::{DownloadManager, DownloadSink, proposed_filename, unique_filename};
+pub use enrichment::{
+    BATCH_LIMIT, EnrichmentService, LookupRequest, MetadataProvider, OpenLibraryProvider,
+    ProviderCandidate, ProviderError, ProviderErrorKind, ProviderResult, ProviderSupplement,
+    SOURCE_INTERNET_ARCHIVE, SOURCE_LABEL, SOURCE_OPEN_LIBRARY, SOURCE_URL, find_isbn,
+    normalise_isbn, normalise_title,
+};
 pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
 pub use models::{
-    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource,
-    Download, DownloadRequest, DownloadState, Label, LabelUsage, Landing, LibraryState,
-    LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport,
-    Shelf,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookEnrichmentState, BookFormat, Bookmark,
+    CoverChoices, CoverLookupOutcome, CoverOption, CoverSource, DeviceCoverPreview, Download,
+    DownloadRequest, DownloadState, EnrichmentAttribution, EnrichmentCandidate, EnrichmentMode,
+    EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, Landing, LibraryState, LibraryStatus,
+    Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
 };
 pub use service::DEFAULT_DOWNLOAD_NAMING;
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 
 /// The schema version this build knows how to create and read.
-pub const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 5;
 
 /// User-facing application name.
 pub const APP_NAME: &str = "PocketLibrary";

@@ -1,6 +1,6 @@
 [package]
 name = "pocketlibrary_core"
-version = "0.1.6"
+version = "0.1.7"
 description = "SQLite catalog and service layer for PocketLibrary"
 edition = "2024"
 
@@ -28,6 +28,7 @@ wreq = { version = "=0.16.5", default-features = false, features = ["tokio-rt", 
 wreq-util = { version = "=0.2.1", default-features = false, features = ["emulation"] }
 futures-util = "0.3"
 url = "2"
+unicode-normalization = "0.1"
 zip = { version = "9.8.2", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]

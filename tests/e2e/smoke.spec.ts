@@ -12,8 +12,8 @@ test("fresh install opens on folder onboarding", async ({ page }) => {
 
   const appInfo = page.getByTestId("app-info");
   await expect(appInfo).toContainText("PocketLibrary");
-  await expect(appInfo).toContainText("v0.1.6");
-  await expect(appInfo).toContainText("schema 3");
+  await expect(appInfo).toContainText("v0.1.7");
+  await expect(appInfo).toContainText("schema 5");
 });
 
 test("the brass drawer navigates between Library, Search and Settings", async ({

@@ -11,12 +11,16 @@ import {
   platform,
   type Book,
   type BookDetail,
+  type EnrichmentMode,
+  type EnrichmentOutcome,
   type Label,
   type LabelUsage,
   type ReadingState,
   type ReadingStatus,
 } from "../platform";
 import { useLayerExit } from "../navigation";
+import { CoverChooser } from "./CoverChooser";
+import { EnrichmentReview } from "./EnrichmentReview";
 import { STATUS_LABELS } from "./spine";
 
 interface DetailPanelProps {
@@ -32,6 +36,15 @@ interface DetailPanelProps {
   onLabelsChanged: () => void;
   onDeleted: (bookId: number) => void;
 }
+
+const COVER_SOURCE_LABELS: Record<string, string> = {
+  embedded: "the book file",
+  rendered: "the PDF",
+  generated: "the generated plate",
+  open_library: "Open Library",
+  internet_archive: "a linked Internet Archive scan",
+  device: "this device",
+};
 
 export function DetailPanel({
   bookId,
@@ -53,6 +66,20 @@ export function DetailPanel({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
+  const [mode, setMode] = useState<EnrichmentMode>("off");
+  const [enrichmentBusy, setEnrichmentBusy] = useState(false);
+  const [enrichmentNotice, setEnrichmentNotice] = useState<string | null>(null);
+  const [review, setReview] = useState<Extract<
+    EnrichmentOutcome,
+    { state: "needsReview" }
+  > | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
+  const [coverOpen, setCoverOpen] = useState(false);
+  const [blurbEditing, setBlurbEditing] = useState(false);
+  const [blurbDraft, setBlurbDraft] = useState("");
+  const [blurbBusy, setBlurbBusy] = useState(false);
+  const autoLookupDone = useRef<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const close = useLayerExit(true, onClose);
 
@@ -76,22 +103,35 @@ export function DetailPanel({
     setConfirmDelete(false);
     setDeleteBusy(false);
     setDeleteNotice(null);
+    setEnrichmentBusy(false);
+    setEnrichmentNotice(null);
+    setReview(null);
+    setReviewNotice(null);
+    setCoverOpen(false);
+    setBlurbEditing(false);
+    setBlurbDraft("");
+    autoLookupDone.current = null;
     Promise.all([
       platform.getBookDetail(bookId),
       platform.readingState(bookId),
       platform.listLabels(),
+      platform.enrichmentSettings(),
     ])
-      .then(([next, state, labels]) => {
+      .then(([next, state, labels, settings]) => {
         if (!alive) return;
         setDetail(next);
         setReading(state);
         setAvailableLabels(labels);
+        setMode(settings.mode);
       })
       .catch(() => {
         if (alive) setFailed(true);
       });
     return () => {
       alive = false;
+      // Leaving the Flip invalidates any in-flight lookup; a late result
+      // writes nothing and cannot appear on another volume.
+      void platform.cancelEnrichment(bookId).catch(() => {});
     };
   }, [bookId]);
 
@@ -193,6 +233,135 @@ export function DetailPanel({
       );
     }
   }, [detail, bookId, onBookChanged]);
+
+  const runLookup = useCallback(
+    async (force: boolean) => {
+      if (enrichmentBusy) return;
+      setEnrichmentBusy(true);
+      setEnrichmentNotice(null);
+      try {
+        const outcome = await platform.lookupEnrichment(bookId, force);
+        if (outcome.state === "applied") {
+          const next = await platform.getBookDetail(bookId);
+          setDetail(next);
+          setEnrichmentNotice(
+            `Added ${outcome.fields
+              .map((field) => (field === "description" ? "blurb" : "cover"))
+              .join(" and ")}.`,
+          );
+        } else if (outcome.state === "needsReview") {
+          setReview(outcome);
+          setReviewNotice(null);
+        } else if (outcome.state === "noMatch") {
+          setEnrichmentNotice(
+            outcome.reason === "nothing_missing" ||
+              outcome.reason === "nothing_changed"
+              ? "Nothing was missing; the file's details are unchanged."
+              : "No online match found for this edition.",
+          );
+        } else if (outcome.state === "unavailable") {
+          setEnrichmentNotice(outcome.message);
+        }
+      } catch (error) {
+        setEnrichmentNotice(
+          isApiError(error)
+            ? error.message
+            : "The online source could not answer just now. The book is unchanged.",
+        );
+      } finally {
+        setEnrichmentBusy(false);
+      }
+    },
+    [bookId, enrichmentBusy],
+  );
+
+  useEffect(() => {
+    if (
+      !detail ||
+      mode !== "automatic" ||
+      !detail.enrichment.hasGap ||
+      autoLookupDone.current === bookId
+    ) {
+      return;
+    }
+    autoLookupDone.current = bookId;
+    void runLookup(false);
+  }, [detail, mode, bookId, runLookup]);
+
+  const acceptCandidate = useCallback(
+    async (candidateKey: string) => {
+      setReviewBusy(true);
+      setReviewNotice(null);
+      try {
+        const outcome = await platform.acceptEnrichmentCandidate(
+          bookId,
+          candidateKey,
+        );
+        if (outcome.state === "applied") {
+          setDetail(await platform.getBookDetail(bookId));
+          setReview(null);
+          setEnrichmentNotice("The chosen edition was applied.");
+        } else if (outcome.state === "noMatch") {
+          setReviewNotice("Nothing was missing for that edition.");
+        } else if (outcome.state === "unavailable") {
+          setReviewNotice(outcome.message);
+        }
+      } catch (error) {
+        setReviewNotice(
+          isApiError(error)
+            ? error.message
+            : "That match could not be applied. Nothing changed.",
+        );
+      } finally {
+        setReviewBusy(false);
+      }
+    },
+    [bookId],
+  );
+
+  const saveBlurb = useCallback(
+    async (text: string | null) => {
+      setBlurbBusy(true);
+      setEnrichmentNotice(null);
+      try {
+        await platform.editBlurb(bookId, text);
+        setDetail(await platform.getBookDetail(bookId));
+        setBlurbEditing(false);
+      } catch (error) {
+        setEnrichmentNotice(
+          isApiError(error)
+            ? error.message
+            : "That blurb could not be saved. Please try again.",
+        );
+      } finally {
+        setBlurbBusy(false);
+      }
+    },
+    [bookId],
+  );
+
+  const revertDetails = useCallback(async () => {
+    setEnrichmentBusy(true);
+    setEnrichmentNotice(null);
+    try {
+      await platform.revertEnrichment(bookId);
+      setDetail(await platform.getBookDetail(bookId));
+      setEnrichmentNotice("Reverted to the file's own details.");
+    } catch (error) {
+      setEnrichmentNotice(
+        isApiError(error)
+          ? error.message
+          : "The file's details could not be restored just now.",
+      );
+    } finally {
+      setEnrichmentBusy(false);
+    }
+  }, [bookId]);
+
+  const handleCoverChanged = useCallback((next: BookDetail) => {
+    setDetail(next);
+    setEnrichmentNotice("Cover updated.");
+  }, []);
 
   const deleteBook = useCallback(async () => {
     if (!detail) return;
@@ -325,6 +494,64 @@ export function DetailPanel({
                       <button
                         type="button"
                         role="menuitem"
+                        className="detail-enrich-trigger"
+                        data-testid="detail-lookup"
+                        disabled={enrichmentBusy}
+                        onClick={() => {
+                          setStatusMenu(false);
+                          void runLookup(false);
+                        }}
+                      >
+                        {enrichmentBusy
+                          ? "Looking up…"
+                          : detail.enrichment.hasGap
+                            ? "Look up details"
+                            : "Refresh details"}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="detail-enrich-trigger"
+                        data-testid="detail-edit-blurb"
+                        onClick={() => {
+                          setStatusMenu(false);
+                          setBlurbDraft(detail.description ?? "");
+                          setBlurbEditing(true);
+                        }}
+                      >
+                        Edit blurb…
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="detail-enrich-trigger"
+                        data-testid="detail-change-cover"
+                        onClick={() => {
+                          setStatusMenu(false);
+                          setCoverOpen(true);
+                        }}
+                      >
+                        Change cover…
+                      </button>
+                      {detail.enrichment.attribution ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="detail-enrich-trigger"
+                          data-testid="detail-revert"
+                          disabled={enrichmentBusy}
+                          onClick={() => {
+                            setStatusMenu(false);
+                            void revertDetails();
+                          }}
+                        >
+                          Revert to file details
+                        </button>
+                      ) : null}
+                      <span className="detail-menu-rule" aria-hidden="true" />
+                      <button
+                        type="button"
+                        role="menuitem"
                         className="detail-delete-trigger"
                         data-testid="detail-delete"
                         onClick={() => {
@@ -449,6 +676,15 @@ export function DetailPanel({
                         )}
                       </span>
                     ) : null}
+                    <button
+                      type="button"
+                      className="v4-cover-hit"
+                      data-testid="detail-cover-button"
+                      aria-label={`Change cover for ${detail.title}`}
+                      onClick={() => setCoverOpen(true)}
+                    >
+                      <span className="v4-cover-hit-label">Change cover</span>
+                    </button>
                   </div>
                 </div>
 
@@ -462,9 +698,112 @@ export function DetailPanel({
                   <p className="detail-series">{detail.series}</p>
                 ) : null}
                 <div className="orn-rule" aria-hidden="true">❧</div>
-                <p className="blurb" data-testid="detail-blurb">
-                  {detail.description ?? "No blurb was printed with this edition."}
-                </p>
+                {blurbEditing ? (
+                  <form
+                    className="blurb-editor"
+                    data-testid="blurb-editor"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (!blurbBusy) void saveBlurb(blurbDraft);
+                    }}
+                  >
+                    <label htmlFor="blurb-text">Blurb for this edition</label>
+                    <textarea
+                      id="blurb-text"
+                      data-testid="blurb-text"
+                      value={blurbDraft}
+                      rows={6}
+                      maxLength={4000}
+                      onChange={(event) => setBlurbDraft(event.target.value)}
+                      disabled={blurbBusy}
+                    />
+                    <div className="blurb-editor-actions">
+                      <button
+                        type="submit"
+                        className="secondary-action"
+                        data-testid="blurb-save"
+                        disabled={blurbBusy}
+                      >
+                        {blurbBusy ? "Saving…" : "Save blurb"}
+                      </button>
+                      <button
+                        type="button"
+                        className="settings-back"
+                        data-testid="blurb-clear"
+                        disabled={blurbBusy}
+                        onClick={() => void saveBlurb(null)}
+                      >
+                        Clear blurb
+                      </button>
+                      <button
+                        type="button"
+                        className="settings-back"
+                        data-testid="blurb-cancel"
+                        disabled={blurbBusy}
+                        onClick={() => setBlurbEditing(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="blurb" data-testid="detail-blurb">
+                    {detail.description ??
+                      "No blurb was printed with this edition."}
+                  </p>
+                )}
+                {detail.enrichment.attribution ? (
+                  <p
+                    className="detail-attribution"
+                    data-testid="detail-attribution"
+                  >
+                    {detail.enrichment.attribution.label} supplied{" "}
+                    {detail.enrichment.attribution.fields
+                      .map((field) =>
+                        field === "description" ? "the blurb" : "the cover",
+                      )
+                      .join(" and ")}
+                    .{" "}
+                    <a
+                      href={detail.enrichment.attribution.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View the source record
+                    </a>
+                  </p>
+                ) : null}
+                {detail.enrichment.descriptionSource === "manual" ||
+                detail.enrichment.coverManual ? (
+                  <p
+                    className="detail-attribution"
+                    data-testid="detail-manual-provenance"
+                  >
+                    {detail.enrichment.descriptionSource === "manual"
+                      ? "Blurb edited by you."
+                      : null}
+                    {detail.enrichment.descriptionSource === "manual" &&
+                    detail.enrichment.coverManual
+                      ? " "
+                      : null}
+                    {detail.enrichment.coverManual
+                      ? `Cover chosen by you from ${
+                          COVER_SOURCE_LABELS[
+                            detail.enrichment.coverSource ?? ""
+                          ] ?? "this device"
+                        } and protected from refreshes.`
+                      : null}
+                  </p>
+                ) : null}
+                {enrichmentNotice ? (
+                  <p
+                    className="detail-note"
+                    role="status"
+                    data-testid="detail-enrichment-notice"
+                  >
+                    {enrichmentNotice}
+                  </p>
+                ) : null}
 
                 {detail.readingStatus === "reading" ? (
                   <div className="progress">
@@ -615,6 +954,27 @@ export function DetailPanel({
           <p className="hint">Tap outside or press Esc to close</p>
         </div>
       </section>
+      {coverOpen && detail ? (
+        <CoverChooser
+          bookId={bookId}
+          bookTitle={detail.title}
+          onClose={() => setCoverOpen(false)}
+          onChanged={handleCoverChanged}
+        />
+      ) : null}
+      {review ? (
+        <EnrichmentReview
+          candidates={review.candidates}
+          attribution={review.attribution}
+          busy={reviewBusy}
+          notice={reviewNotice}
+          onChoose={(candidate) => void acceptCandidate(candidate.key)}
+          onClose={() => {
+            setReview(null);
+            setReviewNotice(null);
+          }}
+        />
+      ) : null}
     </>
   );
 }

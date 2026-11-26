@@ -169,6 +169,90 @@ ALTER TABLE books ADD COLUMN cover_source TEXT
     CHECK (cover_source IS NULL OR cover_source IN ('embedded', 'rendered', 'generated'));
 "#;
 
+/// M5 adds online enrichment: file-derived originals that survive an online
+/// cover or blurb, a per-field provenance table, and a cache of lookup results.
+///
+/// `books.cover_source` gains online and device values, and SQLite cannot alter
+/// a CHECK constraint in place, so the table is rebuilt. Foreign keys are
+/// switched off by [`migrate`] around this batch; the dependent tables keep
+/// pointing at the new `books` table by name.
+const MIGRATE_V4_TO_V5: &str = r#"
+CREATE TABLE books_new (
+    id                  INTEGER PRIMARY KEY,
+    content_hash        TEXT NOT NULL UNIQUE,
+    quick_key           TEXT,
+    path                TEXT NOT NULL,
+    format              TEXT NOT NULL CHECK (format IN ('epub', 'pdf')),
+    title               TEXT NOT NULL,
+    authors             TEXT NOT NULL DEFAULT '[]',
+    series              TEXT,
+    language            TEXT,
+    description         TEXT,
+    publisher           TEXT,
+    published_date      TEXT,
+    identifier          TEXT,
+    page_count          INTEGER CHECK (page_count IS NULL OR page_count >= 0),
+    cover_path          TEXT,
+    cover_source        TEXT CHECK (cover_source IS NULL OR cover_source IN (
+                            'embedded', 'rendered', 'generated',
+                            'open_library', 'internet_archive', 'device')),
+    added_at            INTEGER NOT NULL,
+    shelf_id            INTEGER REFERENCES shelves(id) ON DELETE RESTRICT,
+    slot_index          INTEGER CHECK (slot_index IS NULL OR slot_index >= 0),
+    file_description    TEXT,
+    file_cover_path     TEXT,
+    file_cover_source   TEXT CHECK (file_cover_source IS NULL OR file_cover_source IN (
+                            'embedded', 'rendered', 'generated',
+                            'open_library', 'internet_archive', 'device')),
+    CHECK ((shelf_id IS NULL) = (slot_index IS NULL))
+);
+
+INSERT INTO books_new (
+    id, content_hash, quick_key, path, format, title, authors, series, language,
+    description, publisher, published_date, identifier, page_count, cover_path,
+    cover_source, added_at, shelf_id, slot_index,
+    file_description, file_cover_path, file_cover_source
+)
+SELECT
+    id, content_hash, quick_key, path, format, title, authors, series, language,
+    description, publisher, published_date, identifier, page_count, cover_path,
+    cover_source, added_at, shelf_id, slot_index,
+    description, cover_path, cover_source
+FROM books;
+
+DROP TABLE books;
+ALTER TABLE books_new RENAME TO books;
+
+CREATE INDEX idx_books_shelf_slot ON books (shelf_id, slot_index);
+CREATE UNIQUE INDEX idx_books_shelf_slot_unique
+    ON books (shelf_id, slot_index)
+    WHERE shelf_id IS NOT NULL;
+CREATE INDEX idx_books_quick_key ON books (quick_key) WHERE quick_key IS NOT NULL;
+CREATE INDEX idx_books_title ON books (title COLLATE NOCASE);
+
+CREATE TABLE book_enrichment (
+    book_id             INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    source              TEXT NOT NULL,
+    matched_key         TEXT,
+    confidence          TEXT NOT NULL,
+    status              TEXT NOT NULL CHECK (status IN ('ok', 'no_match', 'error')),
+    applied_fields      TEXT NOT NULL DEFAULT '[]',
+    attribution_label   TEXT,
+    attribution_url     TEXT,
+    cover_keys          TEXT NOT NULL DEFAULT '[]',
+    fetched_at          INTEGER NOT NULL,
+    PRIMARY KEY (book_id, source)
+);
+
+CREATE TABLE field_provenance (
+    book_id     INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    field       TEXT NOT NULL CHECK (field IN ('description', 'cover')),
+    source      TEXT NOT NULL,
+    source_url  TEXT,
+    PRIMARY KEY (book_id, field)
+);
+"#;
+
 /// Bring the database up to [`SCHEMA_VERSION`], or fail if it is newer.
 ///
 /// The migration runs in one transaction, so a failed fresh install leaves no
@@ -205,6 +289,14 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
         );
     }
 
+    // SQLite refuses to change foreign-key enforcement inside a transaction, so
+    // the books rebuild for v5 happens with enforcement off. Existing child
+    // rows are preserved and resolve the new table by name.
+    let rebuild_books = version < 5;
+    if rebuild_books {
+        conn.pragma_update(None, "foreign_keys", "OFF")?;
+    }
+
     let tx = conn.transaction()?;
     if version == 0 {
         tx.execute_batch(SCHEMA_V2)?;
@@ -217,7 +309,13 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
     if version < 4 {
         tx.execute_batch(MIGRATE_V3_TO_V4)?;
     }
+    if version < 5 {
+        tx.execute_batch(MIGRATE_V4_TO_V5)?;
+    }
     tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     tx.commit()?;
+    if rebuild_books {
+        conn.pragma_update(None, "foreign_keys", "ON")?;
+    }
     Ok(())
 }

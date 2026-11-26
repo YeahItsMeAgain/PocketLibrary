@@ -112,6 +112,121 @@ export interface Book {
 /** Mirrors `pocketlibrary_core::BookDetail`. */
 export interface BookDetail extends Book {
   coverDataUrl: string | null;
+  enrichment: BookEnrichmentState;
+}
+
+export type EnrichmentMode = "off" | "ask" | "automatic";
+
+export interface EnrichmentSettings {
+  mode: EnrichmentMode;
+  sourceLabel: string;
+  sourceUrl: string;
+  batchLimit: number;
+}
+
+export interface EnrichmentAttribution {
+  label: string;
+  url: string;
+  fields: string[];
+}
+
+export interface EnrichmentCandidate {
+  key: string;
+  source: string;
+  title: string;
+  authors: string[];
+  year: number | null;
+  publisher: string | null;
+  hasCover: boolean;
+  coverDataUrl: string | null;
+  sourceUrl: string;
+}
+
+export type EnrichmentOutcome =
+  | {
+      state: "applied";
+      source: string;
+      fields: string[];
+      attribution: EnrichmentAttribution | null;
+    }
+  | {
+      state: "needsReview";
+      candidates: EnrichmentCandidate[];
+      attribution: EnrichmentAttribution;
+    }
+  | { state: "noMatch"; source: string; reason: string }
+  | {
+      state: "unavailable";
+      source: string;
+      code: string;
+      message: string;
+      retryAfterSeconds?: number;
+    }
+  | { state: "cancelled" };
+
+export interface BookEnrichmentState {
+  hasFileCover: boolean;
+  fileCoverSource: CoverSource | null;
+  coverSource: CoverSource | null;
+  coverManual: boolean;
+  descriptionSource: string | null;
+  descriptionUrl: string | null;
+  coverUrl: string | null;
+  hasGap: boolean;
+  attribution: EnrichmentAttribution | null;
+}
+
+export type CoverSource =
+  | "embedded"
+  | "rendered"
+  | "generated"
+  | "open_library"
+  | "internet_archive"
+  | "device";
+
+export interface CoverOption {
+  key: string;
+  source: string;
+  label: string;
+  detail: string | null;
+  previewDataUrl: string | null;
+  isCurrent: boolean;
+  isOriginal: boolean;
+  candidateKey?: string;
+  providerCoverKey?: string;
+  sourceUrl?: string;
+  warning?: string;
+}
+
+export interface CoverChoices {
+  current: CoverOption | null;
+  original: CoverOption;
+  online: CoverOption[];
+  sourceLabel: string;
+}
+
+export type CoverLookupOutcome =
+  | {
+      state: "found";
+      candidates: CoverOption[];
+      attribution: EnrichmentAttribution;
+    }
+  | {
+      state: "unavailable";
+      source: string;
+      code: string;
+      message: string;
+      retryAfterSeconds?: number;
+    }
+  | { state: "noMatch"; source: string; reason: string }
+  | { state: "cancelled" };
+
+export interface DeviceCoverPreview {
+  token: string;
+  previewDataUrl: string;
+  width: number;
+  height: number;
+  warning: string | null;
 }
 
 /** A reusable coloured label. */
@@ -389,6 +504,31 @@ export interface Platform {
   listBooks(): Promise<Book[]>;
   listShelves(): Promise<Shelf[]>;
   getBookDetail(id: number): Promise<BookDetail>;
+  enrichmentSettings(): Promise<EnrichmentSettings>;
+  setEnrichmentMode(mode: EnrichmentMode): Promise<EnrichmentSettings>;
+  lookupEnrichment(bookId: number, force?: boolean): Promise<EnrichmentOutcome>;
+  acceptEnrichmentCandidate(
+    bookId: number,
+    key: string,
+  ): Promise<EnrichmentOutcome>;
+  cancelEnrichment(bookId: number): Promise<void>;
+  editBlurb(bookId: number, text: string | null): Promise<void>;
+  revertEnrichment(bookId: number): Promise<void>;
+  enrichmentTargets(limit: number): Promise<Book[]>;
+  coverChoices(bookId: number): Promise<CoverChoices>;
+  lookupCoverCandidates(bookId: number): Promise<CoverLookupOutcome>;
+  applyCoverChoice(
+    bookId: number,
+    choice: CoverOption,
+    acknowledged?: boolean,
+  ): Promise<void>;
+  chooseDeviceCover(bookId: number): Promise<DeviceCoverPreview | null>;
+  applyDeviceCover(
+    bookId: number,
+    token: string,
+    acknowledged?: boolean,
+  ): Promise<void>;
+  resetCover(bookId: number): Promise<void>;
   libraryStatus(): Promise<LibraryStatus>;
   chooseLibraryFolder(): Promise<LibraryStatus>;
   rescanLibrary(): Promise<ScanReport>;
@@ -561,6 +701,33 @@ export function createTauriPlatform(call: Invoke): Platform {
     listBooks: () => call<Book[]>("list_books"),
     listShelves: () => call<Shelf[]>("list_shelves"),
     getBookDetail: (id) => call<BookDetail>("get_book_detail", { id }),
+    enrichmentSettings: () =>
+      call<EnrichmentSettings>("enrichment_settings"),
+    setEnrichmentMode: (mode) =>
+      call<EnrichmentSettings>("set_enrichment_mode", { mode }),
+    lookupEnrichment: (bookId, force = false) =>
+      call<EnrichmentOutcome>("lookup_enrichment", { bookId, force }),
+    acceptEnrichmentCandidate: (bookId, key) =>
+      call<EnrichmentOutcome>("accept_enrichment_candidate", { bookId, key }),
+    cancelEnrichment: (bookId) =>
+      call<void>("cancel_enrichment", { bookId }),
+    editBlurb: (bookId, text) =>
+      call<void>("edit_blurb", { bookId, text }),
+    revertEnrichment: (bookId) =>
+      call<void>("revert_enrichment", { bookId }),
+    enrichmentTargets: (limit) =>
+      call<Book[]>("enrichment_targets", { limit }),
+    coverChoices: (bookId) =>
+      call<CoverChoices>("cover_choices", { bookId }),
+    lookupCoverCandidates: (bookId) =>
+      call<CoverLookupOutcome>("lookup_cover_candidates", { bookId }),
+    applyCoverChoice: (bookId, choice, acknowledged = false) =>
+      call<void>("apply_cover_choice", { bookId, choice, acknowledged }),
+    chooseDeviceCover: (bookId) =>
+      call<DeviceCoverPreview | null>("choose_device_cover", { bookId }),
+    applyDeviceCover: (bookId, token, acknowledged = false) =>
+      call<void>("apply_device_cover", { bookId, token, acknowledged }),
+    resetCover: (bookId) => call<void>("reset_cover", { bookId }),
     libraryStatus: () => call<LibraryStatus>("library_status"),
     chooseLibraryFolder: () =>
       call<LibraryStatus>("choose_library_folder"),
@@ -664,8 +831,8 @@ export function createTauriPlatform(call: Invoke): Platform {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.6",
-  schemaVersion: 3,
+  appVersion: "0.1.7",
+  schemaVersion: 5,
 };
 
 const MOCK_COVER =
@@ -675,6 +842,17 @@ const MOCK_COVER =
       '<rect width="300" height="450" fill="#1a0d1c"/>' +
       '<rect x="18" y="18" width="264" height="414" fill="none" stroke="#c9a86a" stroke-width="2"/>' +
       '<path d="M150 150 L190 225 L150 300 L110 225 Z" fill="none" stroke="#c9a86a" stroke-width="2"/>' +
+      "</svg>",
+  );
+
+const MOCK_ALT_COVER =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">' +
+      '<rect width="300" height="450" fill="#294735"/>' +
+      '<rect x="18" y="18" width="264" height="414" fill="none" stroke="#e7d4ac" stroke-width="2"/>' +
+      '<circle cx="150" cy="210" r="62" fill="none" stroke="#e7d4ac" stroke-width="2"/>' +
+      '<path d="M150 158 L166 202 L212 202 L175 229 L189 274 L150 247 L111 274 L125 229 L88 202 L134 202 Z" fill="#e7d4ac"/>' +
       "</svg>",
   );
 
@@ -739,6 +917,33 @@ export interface MockConfig {
   libraryDelayMs?: number;
   /** Update flow scenario; defaults to `upToDate`. */
   updates?: MockUpdateConfig;
+  /** Online-details and cover-chooser scenarios. */
+  enrichment?: MockEnrichmentConfig;
+}
+
+/**
+ * Drives the mock enrichment and cover chooser without a network.
+ *
+ * `lookup` is the outcome returned per book; `coverCandidates` is what
+ * **Find covers** returns; `fileCoverIds` marks books whose file supplied a
+ * real cover rather than the generated plate.
+ */
+export interface MockEnrichmentConfig {
+  mode?: EnrichmentMode;
+  sourceLabel?: string;
+  sourceUrl?: string;
+  batchLimit?: number;
+  fileCoverIds?: number[];
+  lookup?: Record<number, EnrichmentOutcome>;
+  appliedDescription?: string;
+  appliedCoverUrl?: string;
+  coverCandidates?: Record<number, CoverOption[]>;
+  /** Candidates already in the cache before **Find covers** is pressed. */
+  cachedCoverCandidates?: Record<number, CoverOption[]>;
+  coverLookup?: Record<number, CoverLookupOutcome>;
+  devicePreview?: Record<number, DeviceCoverPreview | null>;
+  lookupDelayMs?: number;
+  applyError?: ApiError;
 }
 
 /**
@@ -765,6 +970,8 @@ export interface MockUpdateConfig {
   stepMs?: number;
   /** How many download attempts fail before succeeding (default 1). */
   downloadFailures?: number;
+  /** Test observability: metadata checks this mock has served. */
+  checks?: number;
   checkError?: ApiError;
   downloadError?: ApiError;
 }
@@ -773,6 +980,7 @@ const MOCK_READING_KEY = "pocketlibrary.mock.reading";
 const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
 const MOCK_ANNOTATIONS_KEY = "pocketlibrary.mock.annotations";
 const MOCK_DOWNLOAD_NAMING_KEY = "pocketlibrary.mock.downloadNaming";
+const MOCK_ENRICHMENT_KEY = "pocketlibrary.mock.enrichmentMode";
 const MOCK_DIAGNOSTICS_KEY = "pocketlibrary.mock.diagnostics";
 const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
 const MOCK_SAMPLE_PDF = "/test-assets/sample.pdf";
@@ -1180,6 +1388,102 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       : 0;
   let updatePermissionPending = updateScenario === "installPermission";
   let updateDownloaded = false;
+  const enrichmentConfig = config.enrichment ?? {};
+  let enrichmentMode = readStored<EnrichmentMode>(
+    MOCK_ENRICHMENT_KEY,
+    enrichmentConfig.mode ?? "off",
+  );
+  const enrichmentSourceLabel =
+    enrichmentConfig.sourceLabel ?? "Open Library";
+  const enrichmentSourceUrl =
+    enrichmentConfig.sourceUrl ?? "https://openlibrary.org";
+  const enrichmentStates = new Map<number, BookEnrichmentState>();
+  const coverDataByBook = new Map<number, string>();
+  const originalCoverData = new Map<number, string>();
+  const fileDescriptions = new Map<number, string | null>();
+  const usedDeviceTokens = new Set<string>();
+  let nextDeviceToken = 1;
+
+  function ensureEnrichment(book: Book): BookEnrichmentState {
+    const existing = enrichmentStates.get(book.id);
+    if (existing) return existing;
+    const hasFile = (enrichmentConfig.fileCoverIds ?? []).includes(book.id);
+    const originalSource: CoverSource = hasFile ? "embedded" : "generated";
+    const state: BookEnrichmentState = {
+      hasFileCover: hasFile,
+      fileCoverSource: originalSource,
+      coverSource: originalSource,
+      coverManual: false,
+      descriptionSource: null,
+      descriptionUrl: null,
+      coverUrl: null,
+      hasGap: true,
+      attribution: null,
+    };
+    enrichmentStates.set(book.id, state);
+    coverDataByBook.set(book.id, MOCK_COVER);
+    originalCoverData.set(book.id, MOCK_COVER);
+    fileDescriptions.set(book.id, book.description);
+    return state;
+  }
+
+  function hasGap(book: Book, state: BookEnrichmentState): boolean {
+    const missingDescription = !book.description?.trim();
+    const missingCover = !state.coverSource || state.coverSource === "generated";
+    return missingDescription || missingCover;
+  }
+
+  function changeCover(
+    book: Book,
+    state: BookEnrichmentState,
+    source: CoverSource,
+    preview: string,
+    manual: boolean,
+    sourceUrl: string | null,
+  ) {
+    state.coverSource = source;
+    state.coverManual = manual;
+    state.coverUrl = sourceUrl;
+    coverDataByBook.set(book.id, preview);
+  }
+
+  function applyEnrichmentFields(
+    book: Book,
+    state: BookEnrichmentState,
+    fields: string[],
+    attribution: EnrichmentAttribution | null,
+  ) {
+    if (fields.includes("description") && state.descriptionSource !== "manual") {
+      book.description =
+        enrichmentConfig.appliedDescription ??
+        "A quiet revolution gathers behind the palace doors.";
+      state.descriptionSource = "open_library";
+      state.descriptionUrl = attribution?.url ?? enrichmentSourceUrl;
+    }
+    if (fields.includes("cover") && !state.coverManual) {
+      changeCover(
+        book,
+        state,
+        "open_library",
+        enrichmentConfig.appliedCoverUrl ?? MOCK_ALT_COVER,
+        false,
+        attribution?.url ?? enrichmentSourceUrl,
+      );
+    }
+    if (attribution) state.attribution = attribution;
+  }
+
+  function restoreOriginal(book: Book, state: BookEnrichmentState) {
+    state.descriptionSource = null;
+    state.descriptionUrl = null;
+    state.attribution = null;
+    book.description = fileDescriptions.get(book.id) ?? null;
+    const source = state.fileCoverSource ?? "generated";
+    state.coverSource = source;
+    state.coverManual = false;
+    state.coverUrl = null;
+    coverDataByBook.set(book.id, originalCoverData.get(book.id) ?? MOCK_COVER);
+  }
   const appendMockLog = (
     level: DiagnosticLevel,
     event: string,
@@ -1562,7 +1866,265 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     getBookDetail: async (id) => {
       const book = books.find((candidate) => candidate.id === id);
       if (!book) throw { code: "book_not_found", message: "That book could not be found." };
-      return { ...book, coverDataUrl: MOCK_COVER };
+      const state = ensureEnrichment(book);
+      return {
+        ...book,
+        coverDataUrl: coverDataByBook.get(id) ?? MOCK_COVER,
+        enrichment: { ...state, hasGap: hasGap(book, state) },
+      };
+    },
+    enrichmentSettings: async () => ({
+      mode: enrichmentMode,
+      sourceLabel: enrichmentSourceLabel,
+      sourceUrl: enrichmentSourceUrl,
+      batchLimit: enrichmentConfig.batchLimit ?? 20,
+    }),
+    setEnrichmentMode: async (mode) => {
+      enrichmentMode = mode;
+      writeStored(MOCK_ENRICHMENT_KEY, mode);
+      return {
+        mode,
+        sourceLabel: enrichmentSourceLabel,
+        sourceUrl: enrichmentSourceUrl,
+        batchLimit: enrichmentConfig.batchLimit ?? 20,
+      };
+    },
+    lookupEnrichment: async (bookId, force = false) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      if (enrichmentConfig.lookupDelayMs) {
+        await new Promise<void>((resolve) =>
+          window.setTimeout(resolve, enrichmentConfig.lookupDelayMs),
+        );
+      }
+      const outcome =
+        enrichmentConfig.lookup?.[bookId] ??
+        ({ state: "noMatch", source: "open_library", reason: "no_result" } as const);
+      if (outcome.state !== "applied") {
+        // A forced refresh may be asked again in the same test; the fixture is
+        // intentionally stable.
+        void force;
+        return outcome;
+      }
+      const state = ensureEnrichment(book);
+      const fields = outcome.fields.filter(
+        (field) =>
+          !(field === "description" && state.descriptionSource === "manual") &&
+          !(field === "cover" && state.coverManual),
+      );
+      if (fields.length === 0) {
+        return { state: "noMatch", source: "open_library", reason: "nothing_missing" } as const;
+      }
+      applyEnrichmentFields(
+        book,
+        state,
+        fields,
+        outcome.attribution,
+      );
+      return { ...outcome, fields };
+    },
+    acceptEnrichmentCandidate: async (bookId, key) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      const outcome = enrichmentConfig.lookup?.[bookId];
+      if (outcome?.state !== "needsReview") {
+        throw { code: "candidate_expired", message: "That match is no longer available." };
+      }
+      const candidate = outcome.candidates.find((entry) => entry.key === key);
+      if (!candidate) {
+        throw { code: "candidate_expired", message: "That match is no longer available." };
+      }
+      const state = ensureEnrichment(book);
+      const fields = [
+        ...(book.description ? [] : ["description"]),
+        ...(state.coverSource === "generated" ? ["cover"] : []),
+      ];
+      applyEnrichmentFields(
+        book,
+        state,
+        fields,
+        outcome.attribution,
+      );
+      return {
+        state: "applied",
+        source: "open_library",
+        fields,
+        attribution: outcome.attribution,
+      } as const;
+    },
+    cancelEnrichment: async () => {},
+    editBlurb: async (bookId, text) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      const state = ensureEnrichment(book);
+      const cleaned = text?.trim() ? text.trim() : null;
+      book.description = cleaned;
+      state.descriptionSource = cleaned ? "manual" : null;
+      state.descriptionUrl = null;
+      books = [...books];
+    },
+    revertEnrichment: async (bookId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      const state = ensureEnrichment(book);
+      if (state.descriptionSource !== "manual") {
+        restoreOriginal(book, state);
+      }
+      books = [...books];
+    },
+    enrichmentTargets: async (limit) =>
+      books
+        .filter((book) => hasGap(book, ensureEnrichment(book)))
+        .slice(0, limit),
+    coverChoices: async (bookId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      const state = ensureEnrichment(book);
+      const current = {
+        key: "current",
+        source: state.coverSource ?? "generated",
+        label: "Current cover",
+        detail: "The cover shown in the Flip now.",
+        previewDataUrl: coverDataByBook.get(bookId) ?? MOCK_COVER,
+        isCurrent: true,
+        isOriginal: false,
+      };
+      const originalSource = state.fileCoverSource ?? "generated";
+      const original = {
+        key: originalSource === "generated" ? "generated" : "original",
+        source: originalSource,
+        label:
+          originalSource === "generated"
+            ? "Generated jacket plate"
+            : "Cover from this book",
+        detail:
+          originalSource === "generated"
+            ? "The plain jacket used when no cover exists."
+            : `The cover ${originalSource} in this book.`,
+        previewDataUrl: originalCoverData.get(bookId) ?? MOCK_COVER,
+        isCurrent: !state.coverManual && state.coverSource === originalSource,
+        isOriginal: true,
+      };
+      return {
+        current,
+        original,
+        online: enrichmentConfig.cachedCoverCandidates?.[bookId] ?? [],
+        sourceLabel: enrichmentSourceLabel,
+      };
+    },
+    lookupCoverCandidates: async (bookId) => {
+      if (enrichmentConfig.lookupDelayMs) {
+        await new Promise<void>((resolve) =>
+          window.setTimeout(resolve, enrichmentConfig.lookupDelayMs),
+        );
+      }
+      const configured = enrichmentConfig.coverLookup?.[bookId];
+      if (configured) return configured;
+      const candidates = enrichmentConfig.coverCandidates?.[bookId] ?? [];
+      if (candidates.length === 0) {
+        return { state: "noMatch", source: "open_library", reason: "no_cover" } as const;
+      }
+      return {
+        state: "found",
+        candidates,
+        attribution: {
+          label: enrichmentSourceLabel,
+          url: enrichmentSourceUrl,
+          fields: ["cover"],
+        },
+      } as const;
+    },
+    applyCoverChoice: async (bookId, choice, acknowledged = false) => {
+      if (enrichmentConfig.applyError) throw enrichmentConfig.applyError;
+      if (choice.warning && !acknowledged) {
+        throw {
+          code: "cover_needs_acknowledgement",
+          message: choice.warning,
+        };
+      }
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      const state = ensureEnrichment(book);
+      const source = choice.source as CoverSource;
+      const manual = !["embedded", "rendered", "generated"].includes(source);
+      changeCover(
+        book,
+        state,
+        source,
+        choice.previewDataUrl ??
+          originalCoverData.get(bookId) ??
+          MOCK_COVER,
+        manual,
+        choice.sourceUrl ?? null,
+      );
+      if (manual && source !== "device") {
+        state.attribution = {
+          label: enrichmentSourceLabel,
+          url: choice.sourceUrl ?? enrichmentSourceUrl,
+          fields: ["cover"],
+        };
+      } else if (manual) {
+        state.attribution = null;
+      }
+      books = [...books];
+    },
+    chooseDeviceCover: async (bookId) => {
+      const configured = enrichmentConfig.devicePreview?.[bookId];
+      if (configured !== undefined) return configured;
+      return {
+        token: `device-${bookId}-${nextDeviceToken++}`,
+        previewDataUrl: MOCK_ALT_COVER,
+        width: 600,
+        height: 900,
+        warning: null,
+      };
+    },
+    applyDeviceCover: async (bookId, token, acknowledged = false) => {
+      if (enrichmentConfig.applyError) throw enrichmentConfig.applyError;
+      if (usedDeviceTokens.has(token)) {
+        throw {
+          code: "cover_token_invalid",
+          message: "That cover choice has expired. Choose it again.",
+        };
+      }
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      const preview = enrichmentConfig.devicePreview?.[bookId];
+      if (preview?.warning && !acknowledged) {
+        throw { code: "cover_needs_acknowledgement", message: preview.warning };
+      }
+      usedDeviceTokens.add(token);
+      const state = ensureEnrichment(book);
+      changeCover(
+        book,
+        state,
+        "device",
+        preview?.previewDataUrl ?? MOCK_ALT_COVER,
+        true,
+        null,
+      );
+      books = [...books];
+    },
+    resetCover: async (bookId) => {
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) throw { code: "book_not_found", message: "That book could not be found." };
+      const state = ensureEnrichment(book);
+      const source = state.fileCoverSource ?? "generated";
+      changeCover(
+        book,
+        state,
+        source,
+        originalCoverData.get(bookId) ?? MOCK_COVER,
+        false,
+        null,
+      );
+      if (
+        state.attribution?.fields.every((field) => field === "cover") ??
+        false
+      ) {
+        state.attribution = null;
+      }
+      books = [...books];
     },
     libraryStatus: async () => status(),
     chooseLibraryFolder: async () => {
@@ -1991,6 +2553,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       );
     },
     checkForUpdate: async () => {
+      updateConfig.checks = (updateConfig.checks ?? 0) + 1;
       if (updateScenario === "checkError") {
         throw (
           updateConfig.checkError ?? {

@@ -26,7 +26,7 @@ async function boot(page: Page, updates: MockUpdateConfig) {
 
 const AVAILABLE: MockUpdateConfig = {
   scenario: "available",
-  currentVersion: "0.1.6",
+  currentVersion: "0.1.7",
   latestVersion: "0.2.0",
   notes: "Fixes shelf placement.\nFaster imports.",
   pubDate: "2026-11-25T10:00:00Z",
@@ -37,10 +37,10 @@ const AVAILABLE: MockUpdateConfig = {
 test("settings reports an up-to-date app after the automatic check", async ({
   page,
 }) => {
-  await boot(page, { scenario: "upToDate", currentVersion: "0.1.6" });
+  await boot(page, { scenario: "upToDate", currentVersion: "0.1.7" });
 
   await expect(page.getByTestId("update-current-version")).toContainText(
-    "v0.1.6",
+    "v0.1.7",
   );
   await expect(page.getByTestId("update-status")).toContainText(
     "You're up to date",

@@ -32,13 +32,93 @@
   text-transform: uppercase;
 }
 
-.update-notes-body {
+.update-highlights {
+  display: grid;
+  gap: 5px;
   margin: 8px 0 0;
+  padding-left: 16px;
   color: #cbb48a;
   font-size: 11px;
   line-height: 1.55;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.update-highlights li::marker {
+  color: #a58a58;
+}
+
+.update-notes-details {
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(201, 168, 106, 0.18);
+}
+
+.update-notes-details summary {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  color: #c8ab77;
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.update-notes-details summary:focus-visible {
+  outline: 2px solid #f2dda0;
+  outline-offset: 2px;
+}
+
+.update-notes-details[open] summary {
+  color: #e6d2ab;
+}
+
+.update-notes-full {
+  padding-top: 4px;
+  color: #cbb48a;
+  font-size: 11px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.update-notes-full h4,
+.update-notes-full h5,
+.update-notes-full h6 {
+  margin: 12px 0 5px;
+  color: #d8c099;
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.update-notes-full h4 {
+  font-size: 13px;
+}
+
+.update-notes-full h5 {
+  font-size: 12px;
+}
+
+.update-notes-full h6 {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.update-notes-full p {
+  margin: 7px 0 0;
+}
+
+.update-notes-full ul {
+  display: grid;
+  gap: 5px;
+  margin: 7px 0 0;
+  padding-left: 16px;
+}
+
+.update-notes-full li::marker {
+  color: #a58a58;
 }
 
 .update-download {

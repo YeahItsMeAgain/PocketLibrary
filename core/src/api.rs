@@ -10,10 +10,13 @@ use std::sync::Arc;
 use crate::acquisition::{LibgenProvider, SearchPage, SearchQuery};
 use crate::backup::{BackupPreview, BackupReport, ImportMode};
 use crate::download::{DownloadManager, DownloadSink};
+use crate::enrichment::{EnrichmentService, MetadataProvider};
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
-    Annotation, AnnotationKind, AppInfo, Book, BookDetail, Bookmark, Download, DownloadRequest,
-    Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus, ScanReport, Shelf,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, Bookmark, CoverChoices,
+    CoverLookupOutcome, CoverOption, DeviceCoverPreview, Download, DownloadRequest,
+    EnrichmentMode, EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, LibraryStatus,
+    ReadingState, ReadingStatus, ScanReport, Shelf,
 };
 use crate::service::Service;
 use crate::source::FileSource;
@@ -23,23 +26,48 @@ pub struct Api {
     service: Arc<Service>,
     acquisition: LibgenProvider,
     downloads: DownloadManager,
+    enrichment: Arc<EnrichmentService>,
 }
 
 impl Api {
     /// Open (creating if needed) the catalog database at `path`.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref();
-        Self::build(path, LibgenProvider::new()?)
+        Self::build(path, LibgenProvider::new()?, None)
     }
 
     /// Open with an explicit search provider. Integration tests use this to
     /// point the five mirrors at a local fake HTTP server.
     pub fn open_with_search(path: impl AsRef<Path>, acquisition: LibgenProvider) -> Result<Self> {
         let path = path.as_ref();
-        Self::build(path, acquisition)
+        Self::build(path, acquisition, None)
     }
 
-    fn build(path: &Path, acquisition: LibgenProvider) -> Result<Self> {
+    /// Open with an explicit metadata provider. Tests inject deterministic
+    /// candidates and never touch the network.
+    pub fn open_with_enrichment(
+        path: impl AsRef<Path>,
+        provider: Arc<dyn MetadataProvider>,
+    ) -> Result<Self> {
+        let path = path.as_ref();
+        Self::build(path, LibgenProvider::new()?, Some(provider))
+    }
+
+    /// Open with both seams injected.
+    pub fn open_with_search_and_enrichment(
+        path: impl AsRef<Path>,
+        acquisition: LibgenProvider,
+        provider: Arc<dyn MetadataProvider>,
+    ) -> Result<Self> {
+        let path = path.as_ref();
+        Self::build(path, acquisition, Some(provider))
+    }
+
+    fn build(
+        path: &Path,
+        acquisition: LibgenProvider,
+        provider: Option<Arc<dyn MetadataProvider>>,
+    ) -> Result<Self> {
         let service = Arc::new(Service::open(path)?);
         let temp_dir = path
             .parent()
@@ -47,11 +75,150 @@ impl Api {
             .unwrap_or_else(|| Path::new("."))
             .join("downloads");
         let downloads = DownloadManager::new(Arc::clone(&service), temp_dir)?;
+        let enrichment = match provider {
+            Some(provider) => EnrichmentService::new(Arc::clone(&service), provider),
+            None => EnrichmentService::production(Arc::clone(&service))?,
+        };
         Ok(Self {
             service,
             acquisition,
             downloads,
+            enrichment: Arc::new(enrichment),
         })
+    }
+
+    /// The persisted online-details mode and source description.
+    pub fn enrichment_settings(&self) -> ApiResult<EnrichmentSettings> {
+        self.enrichment.settings().map_err(ApiError::from)
+    }
+
+    /// Persist Off, Ask or Automatic. There is no key and no provider choice.
+    pub fn set_enrichment_mode(&self, mode: EnrichmentMode) -> ApiResult<EnrichmentSettings> {
+        self.enrichment.set_mode(mode).map_err(ApiError::from)
+    }
+
+    /// Look up one book. `force` bypasses the cache and TTL.
+    pub async fn lookup_enrichment(
+        &self,
+        book_id: i64,
+        force: bool,
+    ) -> ApiResult<EnrichmentOutcome> {
+        self.enrichment
+            .lookup(book_id, force)
+            .await
+            .map_err(ApiError::from)
+    }
+
+    /// Accept one reviewed candidate, only for fields that are still gaps.
+    pub async fn accept_enrichment_candidate(
+        &self,
+        book_id: i64,
+        key: &str,
+    ) -> ApiResult<EnrichmentOutcome> {
+        self.enrichment
+            .accept_candidate(book_id, key)
+            .await
+            .map_err(ApiError::from)
+    }
+
+    /// Invalidate an in-flight lookup; its late result writes nothing.
+    pub fn cancel_enrichment(&self, book_id: i64) -> ApiResult<()> {
+        self.enrichment.cancel(book_id).map_err(ApiError::from)
+    }
+
+    /// Save a reader-edited blurb; `None` clears it and the manual marker.
+    pub fn edit_blurb(&self, book_id: i64, text: Option<&str>) -> ApiResult<()> {
+        self.enrichment
+            .edit_blurb(book_id, text)
+            .map_err(ApiError::from)
+    }
+
+    /// Remove online-derived blurb and cover, restoring the file's own values.
+    pub fn revert_enrichment(&self, book_id: i64) -> ApiResult<()> {
+        self.enrichment.revert(book_id).map_err(ApiError::from)
+    }
+
+    /// Local cover choices, the current cover and any cached online list.
+    pub fn cover_choices(&self, book_id: i64) -> ApiResult<CoverChoices> {
+        self.enrichment.cover_choices(book_id).map_err(ApiError::from)
+    }
+
+    /// Explicit "Find covers"; opening the chooser makes no request.
+    pub async fn lookup_cover_candidates(&self, book_id: i64) -> ApiResult<CoverLookupOutcome> {
+        self.enrichment
+            .lookup_cover_candidates(book_id)
+            .await
+            .map_err(ApiError::from)
+    }
+
+    /// Apply one chooser choice. This is the only path that may replace a real
+    /// embedded or rendered cover.
+    pub async fn apply_cover_choice(
+        &self,
+        book_id: i64,
+        choice: CoverOption,
+        acknowledged: bool,
+    ) -> ApiResult<()> {
+        self.enrichment
+            .apply_cover_choice(book_id, &choice, acknowledged)
+            .await
+            .map_err(ApiError::from)
+    }
+
+    /// Stage a device image and return an opaque token plus a preview.
+    pub fn prepare_device_cover(
+        &self,
+        book_id: i64,
+        bytes: &[u8],
+    ) -> ApiResult<DeviceCoverPreview> {
+        self.enrichment
+            .prepare_device_cover(book_id, bytes)
+            .map_err(ApiError::from)
+    }
+
+    /// Apply a previously staged device image. A stale token is rejected.
+    pub async fn apply_device_cover(
+        &self,
+        book_id: i64,
+        token: &str,
+        acknowledged: bool,
+    ) -> ApiResult<()> {
+        let choice = CoverOption {
+            key: format!("device:{token}"),
+            source: "device".to_owned(),
+            label: "Cover from this device".to_owned(),
+            detail: None,
+            preview_data_url: None,
+            is_current: false,
+            is_original: false,
+            candidate_key: None,
+            provider_cover_key: None,
+            source_url: None,
+            warning: None,
+        };
+        self.enrichment
+            .apply_cover_choice(book_id, &choice, acknowledged)
+            .await
+            .map_err(ApiError::from)
+    }
+
+    /// Restore the file cover, or the generated plate when there is none.
+    pub fn reset_cover(&self, book_id: i64) -> ApiResult<()> {
+        self.enrichment.reset_cover(book_id).map_err(ApiError::from)
+    }
+
+    /// The capped foreground queue for "Fill missing details".
+    pub fn enrichment_targets(&self, limit: usize) -> ApiResult<Vec<Book>> {
+        self.service
+            .enrichment_targets(limit)
+            .map_err(ApiError::from)
+    }
+
+    /// Safe enrichment state for one book.
+    pub fn enrichment_state(&self, book_id: i64) -> ApiResult<crate::models::BookEnrichmentState> {
+        self.enrichment
+            .state_for_book(book_id)
+            .map_err(ApiError::from)
     }
 
     /// Search Libgen through the production provider.

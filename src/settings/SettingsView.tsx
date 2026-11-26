@@ -23,13 +23,17 @@ import {
 } from "../reader/settings";
 import { BackupSection } from "./BackupSection";
 import { downloadNameExample } from "./naming";
+import { OnlineDetailsSection } from "./OnlineDetailsSection";
 import { UpdateSection } from "./UpdateSection";
+import type { UpdateCheckController } from "../updates/useUpdateCheck";
 
 interface SettingsViewProps {
   status: LibraryStatus;
   busy: boolean;
   notice: string | null;
   shelfCapacity: number | null;
+  update: UpdateCheckController;
+  updateFocusRequest: number;
   onRescan: () => void;
   onChoose: () => void;
   onSetCapacity: (capacity: number) => void;
@@ -42,6 +46,8 @@ export function SettingsView({
   busy,
   notice,
   shelfCapacity,
+  update,
+  updateFocusRequest,
   onRescan,
   onChoose,
   onSetCapacity,
@@ -419,9 +425,14 @@ export function SettingsView({
           ) : null}
         </section>
 
+        <OnlineDetailsSection />
+
         <BackupSection busy={busy} onLibraryChanged={onLibraryChanged} />
 
-        <UpdateSection />
+        <UpdateSection
+          update={update}
+          updateFocusRequest={updateFocusRequest}
+        />
 
         <section
           className="settings-section"
@@ -519,7 +530,12 @@ export function SettingsView({
           <p className="settings-note settings-credits">
             Typefaces: EB Garamond, Literata and Source Serif 4 under the SIL
             Open Font License. Reader engines: foliate-js and PDF.js
-            (Apache-2.0). Built with Tauri.
+            (Apache-2.0). Online details come from{" "}
+            <a href="https://openlibrary.org" target="_blank" rel="noreferrer">
+              Open Library
+            </a>
+            , with an Internet Archive scan read only when its edition links
+            one. Built with Tauri.
           </p>
         </section>
 

@@ -25,6 +25,8 @@ import { Onboarding, Reconnect } from "./shell/LibraryGate";
 import { LibraryWall } from "./library/LibraryWall";
 import { LibrarySkeleton } from "./library/LibrarySkeleton";
 import { disconnected, runScan, scanNotice } from "./library/scan";
+import { UpdateBanner } from "./updates/UpdateBanner";
+import { useUpdateCheck } from "./updates/useUpdateCheck";
 
 // Search and Settings are navigation destinations, not first-paint content.
 const SearchView = lazy(() =>
@@ -39,6 +41,7 @@ const SettingsView = lazy(() =>
 );
 
 const DRAWER_HINT_KEY = "pocketlibrary.drawerHintSeen";
+const UPDATE_DISMISSED_KEY = "pocketlibrary.updateDismissedVersion";
 
 type View = "library" | "search" | "settings";
 
@@ -81,6 +84,17 @@ export default function App() {
   const [drawerDragging, setDrawerDragging] = useState(false);
   const [drawerOpening, setDrawerOpening] = useState(false);
   const [showDrawerHint, setShowDrawerHint] = useState(false);
+  const [dismissedUpdateVersion, setDismissedUpdateVersion] = useState<
+    string | null
+  >(() => {
+    try {
+      return window.localStorage.getItem(UPDATE_DISMISSED_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [updateFocusRequest, setUpdateFocusRequest] = useState(0);
+  const update = useUpdateCheck(status !== null);
   const pullRef = useRef<HTMLButtonElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLButtonElement>(null);
@@ -268,6 +282,20 @@ export default function App() {
     setDrawerOffset(null);
     setDrawerDragging(false);
     setDrawerOpening(false);
+  }, []);
+
+  const seeUpdate = useCallback(() => {
+    navigate("settings");
+    setUpdateFocusRequest((count) => count + 1);
+  }, [navigate]);
+
+  const dismissUpdate = useCallback((version: string) => {
+    setDismissedUpdateVersion(version);
+    try {
+      window.localStorage.setItem(UPDATE_DISMISSED_KEY, version);
+    } catch {
+      // A private WebView may refuse storage; the session still dismisses it.
+    }
   }, []);
 
   const initialLoadStarted = useRef(false);
@@ -466,6 +494,8 @@ export default function App() {
           busy={busy}
           notice={notice}
           shelfCapacity={shelfCapacity}
+          update={update}
+          updateFocusRequest={updateFocusRequest}
           onRescan={rescan}
           onChoose={chooseFolder}
           onSetCapacity={saveCapacity}
@@ -517,9 +547,27 @@ export default function App() {
   }
 
   const libraryReady = view === "library" && status?.state === "ready";
+  const offeredVersion =
+    update.info?.available && !update.error
+      ? (update.info.latestVersion ?? "newer")
+      : null;
+  const updateBanner =
+    update.info &&
+    offeredVersion !== null &&
+    offeredVersion !== dismissedUpdateVersion
+      ? update.info
+      : null;
   return (
     <div className={`room v4-room${drawerOpen ? " is-drawer-open" : ""}`}>
       {!libraryReady ? <Masthead /> : null}
+      {updateBanner ? (
+        <UpdateBanner
+          info={updateBanner}
+          downloaded={update.downloaded}
+          onSeeUpdate={seeUpdate}
+          onDismiss={dismissUpdate}
+        />
+      ) : null}
       <AppInfoFooter hidden={view !== "settings"} />
 
       {diagnosticsHint ? (

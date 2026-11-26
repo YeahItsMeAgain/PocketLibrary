@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  isApiError,
-  platform,
-  type DownloadedUpdate,
-  type UpdateCheck,
-} from "../platform";
+import { isApiError, platform } from "../platform";
 import { noteFailure } from "../diagnostics";
+import type { UpdateCheckController } from "../updates/useUpdateCheck";
+import {
+  extractHighlights,
+  parseReleaseNotes,
+  type ReleaseNoteBlock,
+} from "../updates/updateNotes";
 import "./UpdateSection.css";
 
 interface DownloadProgress {
@@ -40,58 +41,80 @@ function errorMessage(error: unknown, fallback: string): string {
   return isApiError(error) ? error.message : fallback;
 }
 
-export function UpdateSection() {
-  const [checking, setChecking] = useState(false);
-  const [info, setInfo] = useState<UpdateCheck | null>(null);
-  const [checkError, setCheckError] = useState<string | null>(null);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+function ReleaseNoteBlocks({ blocks }: { blocks: ReleaseNoteBlock[] }) {
+  return (
+    <>
+      {blocks.map((block, index) => {
+        if (block.type === "heading") {
+          const Heading =
+            block.level <= 2 ? "h4" : block.level <= 4 ? "h5" : "h6";
+          return <Heading key={`heading-${index}`}>{block.text}</Heading>;
+        }
+        if (block.type === "list") {
+          return (
+            <ul key={`list-${index}`}>
+              {block.items.map((item, itemIndex) => (
+                <li key={`item-${index}-${itemIndex}`}>{item}</li>
+              ))}
+            </ul>
+          );
+        }
+        return <p key={`paragraph-${index}`}>{block.text}</p>;
+      })}
+    </>
+  );
+}
+
+interface UpdateSectionProps {
+  update: UpdateCheckController;
+  updateFocusRequest: number;
+}
+
+export function UpdateSection({
+  update,
+  updateFocusRequest,
+}: UpdateSectionProps) {
+  const {
+    info,
+    checking,
+    error: checkError,
+    lastChecked,
+    downloaded,
+  } = update;
+  const setDownloaded = update.setDownloaded;
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
-  const [downloaded, setDownloaded] = useState<DownloadedUpdate | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [installing, setInstalling] = useState(false);
   const [installStarted, setInstallStarted] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
   const [permissionNeeded, setPermissionNeeded] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const runCheck = useCallback(async (manual: boolean) => {
-    setChecking(true);
-    setCheckError(null);
-    try {
-      const next = await platform.checkForUpdate();
-      setInfo(next);
-      setLastChecked(new Date());
-      setInstallStarted(false);
-      setInstallError(null);
-      setPermissionNeeded(false);
-      if (!next.available) {
-        setDownloaded(null);
-        setDownloadError(null);
-        setProgress(null);
-      } else {
-        setDownloaded((current) =>
-          current && current.version === next.latestVersion ? current : null,
-        );
-        setDownloadError(null);
-        setProgress(null);
-      }
-    } catch (error) {
-      if (manual) noteFailure();
-      setCheckError(
-        errorMessage(
-          error,
-          "Couldn't check for updates. Check your connection and try again.",
-        ),
-      );
-    } finally {
-      setChecking(false);
-    }
-  }, []);
-
-  // One metadata-only check when the panel opens; nothing downloads.
+  // A check is shared with the banner. When its result changes, any per-check
+  // install state and download line are stale; the verified download itself is
+  // kept by app-shell state if it belongs to this version.
   useEffect(() => {
-    void runCheck(false);
-  }, [runCheck]);
+    setInstallStarted(false);
+    setInstallError(null);
+    setPermissionNeeded(false);
+    setDownloadError(null);
+    setProgress(null);
+  }, [info]);
+
+  useEffect(() => {
+    if (updateFocusRequest <= 0) return;
+    const heading = headingRef.current;
+    if (!heading) return;
+    heading.focus({ preventScroll: true });
+    const reduced = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    heading.scrollIntoView({
+      block: "start",
+      behavior: reduced ? "auto" : "smooth",
+    });
+  }, [updateFocusRequest]);
 
   const startDownload = useCallback(async () => {
     if (!info?.available || downloading) return;
@@ -131,7 +154,7 @@ export function UpdateSection() {
     } finally {
       setDownloading(false);
     }
-  }, [downloading, info]);
+  }, [downloading, info, setDownloaded]);
 
   const installNow = useCallback(async () => {
     if (installing) return;
@@ -180,16 +203,26 @@ export function UpdateSection() {
     statusText = "Not checked yet.";
   }
 
+  const hasNotes = Boolean(info?.notes?.trim());
+  const noteBlocks = hasNotes ? parseReleaseNotes(info?.notes) : [];
+  const noteHighlights = hasNotes ? extractHighlights(info?.notes) : [];
+
   return (
     <section
       className="settings-section update-section"
       aria-labelledby="settings-updates"
       data-testid="settings-updates"
     >
-      <h3 id="settings-updates">Updates</h3>
+      <h3
+        ref={headingRef}
+        id="settings-updates"
+        tabIndex={-1}
+      >
+        Updates
+      </h3>
       <p className="settings-note">
-        Checks the release manifest when this panel opens. Nothing downloads
-        until you ask, and Android always shows its own install prompt.
+        Checks the release manifest when the app opens. Nothing downloads until
+        you ask, and Android always shows its own install prompt.
       </p>
       <dl className="settings-list">
         <div className="setting-row">
@@ -253,10 +286,30 @@ export function UpdateSection() {
         </p>
       ) : null}
 
-      {info?.available && info.notes ? (
+      {info?.available && hasNotes ? (
         <div className="update-notes" data-testid="update-notes">
           <p className="update-notes-title">What's new</p>
-          <p className="update-notes-body">{info.notes}</p>
+          <ul className="update-highlights" data-testid="update-highlights">
+            {noteHighlights.map((highlight, index) => (
+              <li key={`${index}-${highlight}`}>{highlight}</li>
+            ))}
+          </ul>
+          {noteBlocks.length > 0 ? (
+            <details
+              className="update-notes-details"
+              data-testid="update-notes-details"
+            >
+              <summary data-testid="update-notes-toggle">
+                Full release notes
+              </summary>
+              <div
+                className="update-notes-full"
+                data-testid="update-notes-full"
+              >
+                <ReleaseNoteBlocks blocks={noteBlocks} />
+              </div>
+            </details>
+          ) : null}
         </div>
       ) : null}
 
@@ -344,7 +397,7 @@ export function UpdateSection() {
           className="secondary-action"
           data-testid="update-check"
           disabled={busy}
-          onClick={() => void runCheck(true)}
+          onClick={() => void update.runCheck(true)}
         >
           {checking ? "Checking…" : checkError ? "Try check again" : "Check for updates"}
         </button>

@@ -30,6 +30,24 @@ novels, used only as design-prototype references. The images are not shipped
 inside the Android app. Provenance is recorded here for transparency; if you
 reuse them elsewhere, verify the rights for your jurisdiction.
 
+## Online catalogue data
+
+- **Open Library** — the only general-purpose online source for optional
+  cover and blurb enrichment. No account or API key is used. Requests identify
+  the app with a descriptive User-Agent and are rate-limited and cached.
+  Catalogue data is provided by the Internet Archive, which states that it
+  asserts no new copyright or proprietary rights over the Open Library
+  database; individual cover images may still carry third-party rights. See
+  <https://openlibrary.org/developers/licensing>.
+- **Internet Archive** — read only as a supplement when a matched Open Library
+  edition links a specific `ocaid`. Item metadata and thumbnails remain subject
+  to each item's access and licence terms. See
+  <https://archive.org/developers/md-read.html>.
+
+PocketLibrary does not bulk-download or redistribute catalogue data. Cached
+covers and blurbs are personal-use copies with source attribution and a link to
+the matched record.
+
 ## Application dependencies
 
 React, Vite, Tauri, rusqlite, rbook, lopdf, hayro, wreq and the other crates and
