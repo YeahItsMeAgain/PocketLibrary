@@ -28,6 +28,8 @@ use pocketlibrary_core::{
 
 #[cfg(target_os = "android")]
 mod saf;
+mod spine_assets;
+mod spine_service;
 mod updates;
 
 #[cfg(target_os = "android")]
@@ -929,6 +931,44 @@ fn share_diagnostics_response(_app: &AppHandle) -> Result<Option<SharedDiagnosti
     Ok(None)
 }
 
+/// Generate (or reuse) one book's spine. Inference runs on a blocking thread.
+#[tauri::command]
+async fn spine_generate(
+    app: AppHandle,
+    book_id: i64,
+) -> Result<spine_service::SpineArtifact, ApiError> {
+    blocking(move || {
+        let service = app.state::<spine_service::SpineService>();
+        let api = app.state::<Api>();
+        service.generate(book_id, api.inner())
+    })
+    .await
+}
+
+/// Read a cached spine without running inference; `None` means no entry yet.
+#[tauri::command]
+async fn spine_artifact(
+    app: AppHandle,
+    book_id: i64,
+) -> Result<Option<spine_service::SpineArtifact>, ApiError> {
+    blocking(move || {
+        let service = app.state::<spine_service::SpineService>();
+        let api = app.state::<Api>();
+        service.artifact(book_id, api.inner())
+    })
+    .await
+}
+
+/// Whether the model bundle is available. Resolves the models once per app run.
+#[tauri::command]
+async fn spine_status(app: AppHandle) -> Result<spine_service::SpineStatus, ApiError> {
+    blocking(move || {
+        let service = app.state::<spine_service::SpineService>();
+        Ok(service.status())
+    })
+    .await
+}
+
 #[tauri::command]
 fn log_diagnostic(
     diag: tauri::State<'_, Arc<Diagnostics>>,
@@ -1523,6 +1563,7 @@ pub fn run() {
                 ),
             );
             app.manage(api);
+            app.manage(spine_service::SpineService::new(data_dir.clone()));
             let updates_state = updates::UpdatesState::from_config(app.config());
             app.manage(updates_state);
             app.manage(BackupExchange::default());
@@ -1605,7 +1646,10 @@ pub fn run() {
             clear_diagnostics,
             export_diagnostics,
             save_diagnostics,
-            share_diagnostics
+            share_diagnostics,
+            spine_generate,
+            spine_artifact,
+            spine_status
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

@@ -23,8 +23,10 @@ These seven decisions are fixed. Treat them as constraints, not options.
 
 1. **On-device Rust/ONNX pipeline plus wrap presentation.** Inference runs inside the app on the
    device. No hosted inference, no API key, no per-book upload.
-2. **Models are required runtime dependencies, not optional.** Bundle id `spine-v1`: det INT8
-   792,710 B, rec FP32 10,690,752 B, keys 26,250 B, MI-GAN 28,079,181 B — total 39,588,893 B.
+2. **Models are required runtime dependencies, not optional.** Bundle id `spine-v1`: det FP32
+   2,432,880 B, rec FP32 10,690,752 B, keys 26,250 B, MI-GAN 28,079,181 B — total 41,229,063 B.
+   The detector stays FP32 because it is the version the validated pipeline used; INT8 detection was
+   slower and weaker on display type.
    The feature does not work without them.
 3. **Production delivery is automatic download plus cache**, visible and cancellable. The test APK
    may bundle the same files as assets. Either way inference is fully on-device.
@@ -41,7 +43,7 @@ These seven decisions are fixed. Treat them as constraints, not options.
 
 Add a `SpineEngine` to the Tauri app with four parts:
 
-1. **Model delivery** — one required, versioned bundle of ~39.6 MB, downloaded automatically on
+1. **Model delivery** — one required, versioned bundle of ~41.2 MB, downloaded automatically on
    first run, resumed if interrupted, SHA-256 verified, installed atomically and cached.
 2. **Per-book pipeline** — the v8 Rust/ONNX chain (DBNet → mask → text-free crop / MI-GAN inpaint
    → QA) run in a background worker with progress and cancel.
@@ -56,11 +58,11 @@ spines until the bundle is installed.
 
 ## Model bundle
 
-Bundle id `spine-v1`. Total **39,588,893 bytes (39.59 MB)**.
+Bundle id `spine-v1`. Total **41,229,063 bytes (41.23 MB)**.
 
 | File | Bytes | SHA-256 | Role |
 |---|---:|---|---|
-| `det.onnx` | 792,710 | `7c68d75a957a850fb0d0f6f3ccfb0d731de894ee5805883115ebe268edd247c7` | DBNet text detection, INT8 dynamic |
+| `det.onnx` | 2,432,880 | `3439588c030faea393a54515f51e983d8e155b19a2e8aba7891934c1cf0de526` | DBNet text detection, FP32 (validated pipeline) |
 | `rec.onnx` | 10,690,752 | `897a3ededb38fee0dae2c1ccee38241f37df202c9509e3abca02e9217c5ee615` | OCR recognition, FP32 — residual-text QA |
 | `keys.txt` | 26,250 | `a1c84d9bdb9ab29043c58896224d32941783eb821629618416dcb08f12886492` | Recognition dictionary |
 | `migan_pipeline_v2.onnx` | 28,079,181 | `6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b` | MI-GAN inpainting for text-heavy covers |
@@ -120,7 +122,7 @@ A version bump garbage-collects `models/spine-v0` at next launch.
 ### First run
 
 1. Shelf paints immediately from the existing database. Nothing waits on models.
-2. A quiet row in Settings → Spine reads **"Spine engine — downloading 12% of 39.6 MB"**.
+2. A quiet row in Settings → Spine reads **"Spine engine — downloading 12% of 41.2 MB"**.
 3. On completion the row becomes **"Spine engine ready"**. No modal, no blocking screen.
 4. If the device is offline, the row says **"Spine engine needs a one-time download"** with a Retry
    action. Spines remain typographic until it succeeds.
@@ -233,7 +235,7 @@ Everything else is locked under "Chosen route (locked)".
 
 ## Acceptance criteria
 
-1. Fresh install, online: the 39.6 MB bundle downloads, verifies and enables art spines without any
+1. Fresh install, online: the 41.2 MB bundle downloads, verifies and enables art spines without any
    user action beyond leaving the app open; progress is visible and cancellable.
 2. Fresh install, offline: every book still gets a cloth spine; the Spine section explains the
    one-time download and offers Retry.

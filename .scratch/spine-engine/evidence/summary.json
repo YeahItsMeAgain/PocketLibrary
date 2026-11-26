@@ -1,0 +1,140 @@
+[
+  {
+    "slug": "the-great-gatsby",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "route": "crop",
+    "verdict": "pass",
+    "mask_pct": 20.6,
+    "timings": {
+      "detection": 1.79,
+      "mask_total": 1.84,
+      "inpaint_flat": 0.0,
+      "inpaint_migan": 0.0,
+      "crop_search": 0.27,
+      "qa": 0.46,
+      "total": 3.87
+    },
+    "crop_box_work": [
+      0,
+      84,
+      68,
+      310
+    ]
+  },
+  {
+    "slug": "dune",
+    "title": "Dune",
+    "author": "Frank Herbert",
+    "route": "crop",
+    "verdict": "pass",
+    "mask_pct": 6.93,
+    "timings": {
+      "detection": 2.6,
+      "mask_total": 2.62,
+      "inpaint_flat": 0.0,
+      "inpaint_migan": 0.0,
+      "crop_search": 0.25,
+      "qa": 0.45,
+      "total": 4.48
+    },
+    "crop_box_work": [
+      28,
+      0,
+      90,
+      409
+    ]
+  },
+  {
+    "slug": "pride-and-prejudice",
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "route": "crop",
+    "verdict": "pass",
+    "mask_pct": 7.22,
+    "timings": {
+      "detection": 2.13,
+      "mask_total": 2.16,
+      "inpaint_flat": 0.0,
+      "inpaint_migan": 0.0,
+      "crop_search": 0.32,
+      "qa": 0.52,
+      "total": 4.34
+    },
+    "crop_box_work": [
+      232,
+      38,
+      68,
+      310
+    ]
+  },
+  {
+    "slug": "rock-paper-scissors",
+    "title": "Rock Paper Scissors",
+    "author": "Alice Feeney",
+    "route": "inpaint",
+    "verdict": "review",
+    "mask_pct": 44.1,
+    "timings": {
+      "detection": 4.35,
+      "mask_total": 5.99,
+      "inpaint_flat": 0.33,
+      "inpaint_migan": 8.0,
+      "crop_search": 0.06,
+      "qa": 10.27,
+      "total": 19.65
+    },
+    "crop_box_work": [
+      298,
+      0,
+      159,
+      720
+    ]
+  },
+  {
+    "slug": "the-war-of-the-worlds",
+    "title": "The War of the Worlds",
+    "author": "H. G. Wells",
+    "route": "inpaint",
+    "verdict": "pass",
+    "mask_pct": 7.62,
+    "timings": {
+      "detection": 3.67,
+      "mask_total": 4.24,
+      "inpaint_flat": 0.04,
+      "inpaint_migan": 4.33,
+      "crop_search": 0.36,
+      "qa": 6.36,
+      "total": 12.45
+    },
+    "crop_box_work": [
+      321,
+      0,
+      159,
+      720
+    ]
+  },
+  {
+    "slug": "the-hobbit",
+    "title": "The Hobbit",
+    "author": "J.R.R. Tolkien",
+    "route": "inpaint",
+    "verdict": "pass",
+    "mask_pct": 12.44,
+    "timings": {
+      "detection": 1.48,
+      "mask_total": 1.51,
+      "inpaint_flat": 0.01,
+      "inpaint_migan": 3.36,
+      "crop_search": 0.01,
+      "qa": 4.82,
+      "total": 7.4
+    },
+    "crop_box_work": [
+      115,
+      15,
+      68,
+      310
+    ]
+  }
+]

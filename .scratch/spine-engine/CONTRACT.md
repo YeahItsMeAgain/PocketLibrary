@@ -84,16 +84,18 @@ generations of the same book. Results are cached on disk by
 The test APK bundles, under APK assets `spine/`:
 
 ```
-spine/det.onnx
-spine/rec.onnx
-spine/keys.txt
-spine/migan_pipeline_v2.onnx
-spine/libonnxruntime.so        (extracted from the onnxruntime-android AAR)
+assets/spine/det.onnx
+assets/spine/rec.onnx
+assets/spine/keys.txt
+assets/spine/migan_pipeline_v2.onnx
+jniLibs/arm64-v8a/libonnxruntime.so   (from the onnxruntime-android AAR)
 ```
 
-First use extracts them to the app data dir (same approach as `v8-android`),
-sets `ORT_DYLIB_PATH`, and then loads the sessions. Production replaces the
-bundled copy with the auto-downloader; the extractor and cache layout stay.
+Models are extracted to the app data dir on first use. ONNX Runtime is loaded
+from `ApplicationInfo.nativeLibraryDir` (the proven `v8-android` path); Android
+10+ W^X forbids loading it from writable app storage. `ORT_DYLIB_PATH` is set
+to the native path before the first session. Production replaces the bundled
+copy with the auto-downloader; the extractor and cache layout stay.
 
 ## Frontend
 

@@ -1,0 +1,155 @@
+{
+  "decision": {
+    "reasons": [
+      "no residual OCR, controlled mask, adequate spine structure"
+    ],
+    "route": "inpaint",
+    "verdict": "pass"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [
+        {
+          "box_": [
+            [
+              195.88352966308594,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              333.4939270019531
+            ],
+            [
+              195.88352966308594,
+              333.4939270019531
+            ]
+          ],
+          "conf": 0.5293876528739929,
+          "text": "RA"
+        }
+      ],
+      "crop_mask_coverage_pct": 6.152166366577148,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8378989100456238,
+      "score": 3.1795332431793213,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 0.48675087094306946,
+        "inside_vs_ring_delta_e": 7.923701763153076,
+        "seam_ratio": 0.6922576427459717
+      },
+      "spine": {
+        "edge_density": 0.18538135290145874,
+        "height_px": 236,
+        "laplacian_var": 571.5951538085938,
+        "luma_p5": 35.0,
+        "luma_p95": 228.0,
+        "luma_std": 63.744293212890625,
+        "non_dark_pct": 84.81095123291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": {
+      "art_residual_ocr": [
+        {
+          "box_": [
+            [
+              195.88352966308594,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              250.0060272216797
+            ],
+            [
+              325.0406494140625,
+              333.4939270019531
+            ],
+            [
+              195.88352966308594,
+              333.4939270019531
+            ]
+          ],
+          "conf": 0.5293876528739929,
+          "text": "RA"
+        }
+      ],
+      "crop_mask_coverage_pct": 6.152166366577148,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8378989100456238,
+      "score": 3.1795332431793213,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 0.48675087094306946,
+        "inside_vs_ring_delta_e": 7.923701763153076,
+        "seam_ratio": 0.6922576427459717
+      },
+      "spine": {
+        "edge_density": 0.18538135290145874,
+        "height_px": 236,
+        "laplacian_var": 571.5951538085938,
+        "luma_p5": 35.0,
+        "luma_p95": 228.0,
+        "luma_std": 63.744293212890625,
+        "non_dark_pct": 84.81095123291016,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8833342790603638,
+      "score": 3.1371448040008545,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 2.726991891860962,
+        "inside_vs_ring_delta_e": 64.039794921875,
+        "seam_ratio": 0.9867703914642334
+      },
+      "spine": {
+        "edge_density": 0.20037484169006348,
+        "height_px": 236,
+        "laplacian_var": 581.7490844726562,
+        "luma_p5": 39.0,
+        "luma_p95": 202.0,
+        "luma_std": 52.85822677612305,
+        "non_dark_pct": 93.8477783203125,
+        "width_px": 52
+      },
+      "spine_residual_ocr": [
+        {
+          "box_": [
+            [
+              0.0,
+              379.84149169921875
+            ],
+            [
+              163.1690673828125,
+              379.84149169921875
+            ],
+            [
+              163.1690673828125,
+              550.391845703125
+            ],
+            [
+              0.0,
+              550.391845703125
+            ]
+          ],
+          "conf": 0.6478734016418457,
+          "text": "RA"
+        }
+      ]
+    }
+  }
+}

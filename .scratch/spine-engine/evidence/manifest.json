@@ -1,0 +1,44 @@
+[
+  {
+    "slug": "the-great-gatsby",
+    "cover": ".scratch/spine-cover-art-prototype/app-renderers/covers/gatsby.jpg",
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "pages": 180
+  },
+  {
+    "slug": "dune",
+    "cover": ".scratch/spine-cover-art-prototype/app-renderers/covers/dune.jpg",
+    "title": "Dune",
+    "author": "Frank Herbert",
+    "pages": 617
+  },
+  {
+    "slug": "pride-and-prejudice",
+    "cover": ".scratch/spine-cover-art-prototype/app-renderers/covers/pride.jpg",
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "pages": 432
+  },
+  {
+    "slug": "rock-paper-scissors",
+    "cover": ".scratch/spine-cover-art-prototype/v6/assets/modern/rps-cover.jpg",
+    "title": "Rock Paper Scissors",
+    "author": "Alice Feeney",
+    "pages": 320
+  },
+  {
+    "slug": "the-war-of-the-worlds",
+    "cover": ".scratch/spine-cover-art-prototype/app-renderers/covers/war-of-the-worlds.jpg",
+    "title": "The War of the Worlds",
+    "author": "H. G. Wells",
+    "pages": 192
+  },
+  {
+    "slug": "the-hobbit",
+    "cover": ".scratch/spine-cover-art-prototype/v7/assets/source/the-hobbit.jpg",
+    "title": "The Hobbit",
+    "author": "J.R.R. Tolkien",
+    "pages": 310
+  }
+]

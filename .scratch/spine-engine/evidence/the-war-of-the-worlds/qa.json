@@ -1,0 +1,155 @@
+{
+  "decision": {
+    "reasons": [
+      "no residual OCR, controlled mask, adequate spine structure"
+    ],
+    "route": "inpaint",
+    "verdict": "pass"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [
+        {
+          "box_": [
+            [
+              197.9356689453125,
+              255.05943298339844
+            ],
+            [
+              380.7024230957031,
+              255.05943298339844
+            ],
+            [
+              380.7024230957031,
+              328.4405212402344
+            ],
+            [
+              197.9356689453125,
+              328.4405212402344
+            ]
+          ],
+          "conf": 0.6054531931877136,
+          "text": "RA"
+        }
+      ],
+      "crop_mask_coverage_pct": 6.152166366577148,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8643072843551636,
+      "score": 3.1883926391601562,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 0.7537094354629517,
+        "inside_vs_ring_delta_e": 12.636104583740234,
+        "seam_ratio": 0.6954665184020996
+      },
+      "spine": {
+        "edge_density": 0.19524119794368744,
+        "height_px": 236,
+        "laplacian_var": 584.8762817382812,
+        "luma_p5": 34.0,
+        "luma_p95": 228.0,
+        "luma_std": 63.74626922607422,
+        "non_dark_pct": 86.43252563476562,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": {
+      "art_residual_ocr": [
+        {
+          "box_": [
+            [
+              197.9356689453125,
+              255.05943298339844
+            ],
+            [
+              380.7024230957031,
+              255.05943298339844
+            ],
+            [
+              380.7024230957031,
+              328.4405212402344
+            ],
+            [
+              197.9356689453125,
+              328.4405212402344
+            ]
+          ],
+          "conf": 0.6054531931877136,
+          "text": "RA"
+        }
+      ],
+      "crop_mask_coverage_pct": 6.152166366577148,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8643072843551636,
+      "score": 3.1883926391601562,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 0.7537094354629517,
+        "inside_vs_ring_delta_e": 12.636104583740234,
+        "seam_ratio": 0.6954665184020996
+      },
+      "spine": {
+        "edge_density": 0.19524119794368744,
+        "height_px": 236,
+        "laplacian_var": 584.8762817382812,
+        "luma_p5": 34.0,
+        "luma_p95": 228.0,
+        "luma_std": 63.74626922607422,
+        "non_dark_pct": 86.43252563476562,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.015335083007812,
+      "palette_corr": 0.8833342790603638,
+      "score": 3.1371448040008545,
+      "seam": {
+        "boundary_px": 2522,
+        "inside_ring_std_ratio": 2.726991891860962,
+        "inside_vs_ring_delta_e": 64.039794921875,
+        "seam_ratio": 0.9867703914642334
+      },
+      "spine": {
+        "edge_density": 0.20037484169006348,
+        "height_px": 236,
+        "laplacian_var": 581.7490844726562,
+        "luma_p5": 39.0,
+        "luma_p95": 202.0,
+        "luma_std": 52.85822677612305,
+        "non_dark_pct": 93.8477783203125,
+        "width_px": 52
+      },
+      "spine_residual_ocr": [
+        {
+          "box_": [
+            [
+              0.0,
+              379.84149169921875
+            ],
+            [
+              163.1690673828125,
+              379.84149169921875
+            ],
+            [
+              163.1690673828125,
+              550.391845703125
+            ],
+            [
+              0.0,
+              550.391845703125
+            ]
+          ],
+          "conf": 0.6478734016418457,
+          "text": "RA"
+        }
+      ]
+    }
+  }
+}

@@ -13,5 +13,5 @@ asset bundle.
 - [ ] A fresh install downloads, verifies and enables art spines, with visible cancellable progress in Settings → Spine.
 - [ ] The rollout is staged with a documented rollback that leaves existing users' cached models and cloth spines intact.
 - [ ] Release notes state the download size, that inference is local, and that the app works offline once cached.
-- [ ] Store listing size disclosures and the storage requirement reflect the ~39.6 MB model bundle.
+- [ ] Store listing size disclosures and the storage requirement reflect the ~41.2 MB model bundle.
 

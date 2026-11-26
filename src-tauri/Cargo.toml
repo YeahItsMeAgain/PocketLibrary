@@ -27,6 +27,14 @@ futures-util = "0.3"
 url = "2"
 wreq = { version = "=0.16.5", default-features = false, features = ["tokio-rt", "webpki-roots", "stream"] }
 pocketlibrary_core = { path = "../core" }
+pocketlibrary-spine = { path = "../spine" }
+base64 = "0.22"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+sha2 = "0.10"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"
 
 [dev-dependencies]
 tempfile = "3"
