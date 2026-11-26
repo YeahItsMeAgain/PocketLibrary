@@ -45,5 +45,7 @@ tempfile = "3"
 codegen-units = 1
 lto = true
 opt-level = 3
-panic = "abort"
+# Keep unwinding so `catch_unwind` can turn a missing ndk-context (which
+# panics) into a normal error instead of aborting the whole process.
+panic = "unwind"
 strip = true

@@ -1374,13 +1374,12 @@ export function SpineStudio({
     setPrepared(null);
     setStyle("wrap");
     setStatus(null);
-    Promise.all([
-      platform.spineArtifact(bookId),
-      platform.spineStatus().catch(() => null),
-    ])
-      .then(([artifact, nextStatus]) => {
+    // Opening a book must do zero engine work: only read the cache. Model
+    // resolution (JNI asset extraction, ONNX Runtime) waits for Generate.
+    platform
+      .spineArtifact(bookId)
+      .then((artifact) => {
         if (!alive) return;
-        setStatus(nextStatus);
         if (artifact) {
           setState({ kind: "result", artifact });
           setStyle(artifact.verdict === "fallback" ? "cloth" : "wrap");
@@ -1452,7 +1451,14 @@ export function SpineStudio({
     setBusy(true);
     setState({ kind: "generating" });
     try {
-      const artifact = await platform.spineGenerate(bookId);
+      // Status/model resolution is allowed here (never on mount). Running it
+      // beside generation is safe because the backend resolves models
+      // single-flight; a status failure must not block generation.
+      const [artifact, nextStatus] = await Promise.all([
+        platform.spineGenerate(bookId),
+        platform.spineStatus().catch(() => null),
+      ]);
+      if (nextStatus) setStatus(nextStatus);
       setStyle(artifact.verdict === "fallback" ? "cloth" : "wrap");
       setState({ kind: "result", artifact });
     } catch (error) {

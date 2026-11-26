@@ -18,9 +18,12 @@
 //! Host/dev builds read the same files from `SPINE_MODELS_DIR` and
 //! `SPINE_MIGAN` instead, without copying or caching.
 
+use std::any::Any;
 use std::fs::{self, File};
-use std::io::Read;
+use std::io::{Read, Write as _};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use sha2::{Digest, Sha256};
 
@@ -75,6 +78,63 @@ const ORT_DYLIB: (&str, u64, &str) = (
     "52329b7c8e5fcd5c1aa88b01093215faaef362e3f3d0e374cb8b10d1e4704677",
 );
 
+/// Serialise model resolution so concurrent status/generate calls cannot
+/// extract or rename the same staging directory at the same time.
+static RESOLVE_LOCK: Mutex<()> = Mutex::new(());
+
+/// The dedicated spine log. It is also copied into the diagnostics export.
+pub fn log_path(app_data_dir: &Path) -> PathBuf {
+    app_data_dir.join("spine").join("spine.log")
+}
+
+/// Append one line to `<app_data>/spine/spine.log`. Logging must never fail the
+/// caller: every error is ignored.
+pub fn log(app_data_dir: &Path, message: &str) {
+    let path = log_path(app_data_dir);
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let line = message.replace('\r', "").replace('\n', "\\n");
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0);
+    if let Ok(mut file) = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
+        let _ = writeln!(file, "{millis} {line}");
+    }
+}
+
+fn panic_text(payload: &(dyn Any + Send)) -> String {
+    if let Some(text) = payload.downcast_ref::<&str>() {
+        (*text).to_owned()
+    } else if let Some(text) = payload.downcast_ref::<String>() {
+        text.clone()
+    } else {
+        "non-string panic payload".to_owned()
+    }
+}
+
+/// Chain a hook that writes the panic message and location to `spine.log`
+/// before the previous hook runs.
+pub fn install_panic_hook(app_data_dir: PathBuf) {
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let location = info
+            .location()
+            .map(|location| format!("{}:{}", location.file(), location.line()))
+            .unwrap_or_else(|| "unknown location".to_owned());
+        log(
+            &app_data_dir,
+            &format!("panic: {} at {location}", panic_text(info.payload())),
+        );
+        previous(info);
+    }));
+}
+
 /// Ensure the spine models and ONNX Runtime shared library are available.
 ///
 /// On Android, models are extracted from the APK into
@@ -83,17 +143,44 @@ const ORT_DYLIB: (&str, u64, &str) = (
 /// absent, the `assets/spine/libonnxruntime.so` fallback is extracted into
 /// `<app_data_dir>/spine/runtime/spine-ort-v1/`. Everywhere else the files are
 /// read from `SPINE_MODELS_DIR` / `SPINE_MIGAN` and returned as-is.
+///
+/// The whole resolution is single-flight and panic-guarded: a panic (for
+/// example `ndk_context::android_context()` when the context was never
+/// initialised) becomes a normal error instead of aborting the process.
 pub fn ensure_models(app_data_dir: &Path) -> Result<SpineModelPaths, String> {
-    #[cfg(target_os = "android")]
-    {
-        android_ensure_models(app_data_dir)
-    }
+    let _guard = match RESOLVE_LOCK.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
 
-    #[cfg(not(target_os = "android"))]
-    {
-        let _ = app_data_dir;
-        host_ensure_models()
+    log(app_data_dir, "ensure_models: start");
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        #[cfg(target_os = "android")]
+        {
+            android_ensure_models(app_data_dir)
+        }
+
+        #[cfg(not(target_os = "android"))]
+        {
+            let _ = app_data_dir;
+            host_ensure_models()
+        }
+    }))
+    .unwrap_or_else(|payload| {
+        Err(format!(
+            "spine model resolution panicked: {}",
+            panic_text(payload.as_ref())
+        ))
+    });
+
+    match &result {
+        Ok(paths) => log(
+            app_data_dir,
+            &format!("ensure_models: ready ({})", paths.ort_dylib.display()),
+        ),
+        Err(error) => log(app_data_dir, &format!("ensure_models: error: {error}")),
     }
+    result
 }
 
 /// Map the expected model names to paths inside a model directory.
@@ -252,7 +339,9 @@ fn extract_assets(
     let extract = (|| -> Result<(), String> {
         for (name, bytes, sha) in entries {
             let dest = staged.join(name);
-            copy_asset_to_file(name, &dest)?;
+            // Assets live under `assets/spine/`; the manifest keeps the bare
+            // file name so the cache directory stays flat.
+            copy_asset_to_file(&format!("spine/{name}"), &dest)?;
             verify_file(&dest, *bytes, sha)?;
         }
         fs::write(
@@ -277,20 +366,48 @@ fn android_ensure_models(app_data_dir: &Path) -> Result<SpineModelPaths, String>
     let cache_dir = models_root.join(MODEL_DIR_NAME);
     let mut paths = paths_in(&cache_dir);
 
-    if !cache_valid(&cache_dir, &SPINE_MODELS) {
+    if cache_valid(&cache_dir, &SPINE_MODELS) {
+        log(app_data_dir, "models: cache verified");
+    } else {
+        log(app_data_dir, "models: extracting bundle from APK assets");
         extract_assets(&SPINE_MODELS, &cache_dir, MODEL_DIR_NAME)?;
+        log(app_data_dir, "models: bundle installed");
     }
 
     // Android 10+ W^X: shared libraries must be loaded from the APK's native
     // library directory, not from app-private storage. jniLibs is the
     // supported location; the assets copy is only a legacy fallback.
-    let native_ort = native_library_dir()
-        .ok()
-        .map(|dir| dir.join(ORT_DYLIB.0))
-        .filter(|path| path.is_file());
+    let native_ort = match native_library_dir() {
+        Ok(dir) => {
+            let candidate = dir.join(ORT_DYLIB.0);
+            if candidate.is_file() {
+                log(app_data_dir, &format!("ort: using {}", candidate.display()));
+                Some(candidate)
+            } else {
+                log(
+                    app_data_dir,
+                    &format!(
+                        "ort: {} is absent; falling back to assets",
+                        candidate.display()
+                    ),
+                );
+                None
+            }
+        }
+        Err(error) => {
+            log(
+                app_data_dir,
+                &format!("ort: nativeLibraryDir unavailable: {error}"),
+            );
+            None
+        }
+    };
     let ort_dylib = match native_ort {
         Some(path) => path,
-        None => ensure_ort_from_assets(app_data_dir)?,
+        None => {
+            log(app_data_dir, "ort: extracting runtime from APK assets");
+            ensure_ort_from_assets(app_data_dir)?
+        }
     };
 
     set_ort_dylib(&ort_dylib);
@@ -329,7 +446,7 @@ fn native_library_dir() -> Result<PathBuf, String> {
     use jni::JavaVM;
     use jni::objects::{JObject, JString};
 
-    let ctx = ndk_context::android_context();
+    let ctx = android_context()?;
     let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }
         .map_err(|err| format!("JNI JavaVM::from_raw: {err}"))?;
     let mut env = vm
@@ -346,29 +463,59 @@ fn native_library_dir() -> Result<PathBuf, String> {
             &[],
         )
         .and_then(|value| value.l())
-        .map_err(|err| format!("Context.getApplicationInfo: {err}"))?;
+        .map_err(|err| jni_failure(&mut env, "Context.getApplicationInfo", err))?;
     let dir_obj = env
         .get_field(&app_info, "nativeLibraryDir", "Ljava/lang/String;")
         .and_then(|value| value.l())
-        .map_err(|err| format!("ApplicationInfo.nativeLibraryDir: {err}"))?;
+        .map_err(|err| jni_failure(&mut env, "ApplicationInfo.nativeLibraryDir", err))?;
     let dir = JString::from(dir_obj);
     let dir: String = env
         .get_string(&dir)
-        .map_err(|err| format!("read nativeLibraryDir: {err}"))?
+        .map_err(|err| jni_failure(&mut env, "read nativeLibraryDir", err))?
         .into();
     Ok(PathBuf::from(dir))
+}
+
+/// `ndk_context::android_context()` panics when the runtime never initialised
+/// it. Turn that panic into a normal error so the process survives.
+#[cfg(target_os = "android")]
+fn android_context() -> Result<ndk_context::AndroidContext, String> {
+    std::panic::catch_unwind(ndk_context::android_context).map_err(|payload| {
+        format!(
+            "Android context is not initialised: {}",
+            panic_text(payload.as_ref())
+        )
+    })
+}
+
+/// Clear a pending Java exception left by a failed JNI call, then format the
+/// error. Leaving the exception pending would make the next JNI call fail or
+/// abort the thread.
+#[cfg(target_os = "android")]
+fn jni_failure(
+    env: &mut jni::JNIEnv,
+    context: &str,
+    error: impl std::fmt::Display,
+) -> String {
+    let pending = env.exception_check().unwrap_or(false);
+    if pending {
+        let _ = env.exception_clear();
+    }
+    if pending {
+        format!("{context}: {error} (cleared pending JNI exception)")
+    } else {
+        format!("{context}: {error}")
+    }
 }
 
 /// Copy one APK asset to `dest` through the Android AssetManager. Returns an
 /// error instead of panicking so no unwind can cross the JNI boundary.
 #[cfg(target_os = "android")]
 fn copy_asset_to_file(asset_name: &str, dest: &Path) -> Result<(), String> {
-    use std::io::Write as _;
-
     use jni::JavaVM;
     use jni::objects::{JObject, JValue};
 
-    let ctx = ndk_context::android_context();
+    let ctx = android_context()?;
     let vm = unsafe { JavaVM::from_raw(ctx.vm().cast()) }
         .map_err(|err| format!("JNI JavaVM::from_raw: {err}"))?;
     let mut env = vm
@@ -385,11 +532,11 @@ fn copy_asset_to_file(asset_name: &str, dest: &Path) -> Result<(), String> {
             &[],
         )
         .and_then(|value| value.l())
-        .map_err(|err| format!("Context.getAssets: {err}"))?;
+        .map_err(|err| jni_failure(&mut env, "Context.getAssets", err))?;
 
     let java_name = env
         .new_string(asset_name)
-        .map_err(|err| format!("new_string({asset_name}): {err}"))?;
+        .map_err(|err| jni_failure(&mut env, "new_string", err))?;
     let stream = env
         .call_method(
             &assets,
@@ -398,12 +545,12 @@ fn copy_asset_to_file(asset_name: &str, dest: &Path) -> Result<(), String> {
             &[(&java_name).into()],
         )
         .and_then(|value| value.l())
-        .map_err(|err| format!("AssetManager.open({asset_name}): {err}"))?;
+        .map_err(|err| jni_failure(&mut env, &format!("AssetManager.open({asset_name})"), err))?;
 
     let chunk: i32 = 64 * 1024;
     let buffer = env
         .new_byte_array(chunk)
-        .map_err(|err| format!("new_byte_array: {err}"))?;
+        .map_err(|err| jni_failure(&mut env, "new_byte_array", err))?;
     let mut out = File::create(dest).map_err(|err| format!("create {}: {err}", dest.display()))?;
 
     let read_result = (|| -> Result<(), String> {
@@ -416,7 +563,9 @@ fn copy_asset_to_file(asset_name: &str, dest: &Path) -> Result<(), String> {
                     &[(&buffer).into(), JValue::Int(0), JValue::Int(chunk)],
                 )
                 .and_then(|value| value.i())
-                .map_err(|err| format!("InputStream.read({asset_name}): {err}"))?;
+                .map_err(|err| {
+                    jni_failure(&mut env, &format!("InputStream.read({asset_name})"), err)
+                })?;
             if read < 0 {
                 break;
             }
@@ -425,7 +574,13 @@ fn copy_asset_to_file(asset_name: &str, dest: &Path) -> Result<(), String> {
             }
             let mut signed = vec![0i8; read as usize];
             env.get_byte_array_region(&buffer, 0, &mut signed)
-                .map_err(|err| format!("get_byte_array_region({asset_name}): {err}"))?;
+                .map_err(|err| {
+                    jni_failure(
+                        &mut env,
+                        &format!("get_byte_array_region({asset_name})"),
+                        err,
+                    )
+                })?;
             let bytes: Vec<u8> = signed.into_iter().map(|byte| byte as u8).collect();
             out.write_all(&bytes)
                 .map_err(|err| format!("write {}: {err}", dest.display()))?;
@@ -433,7 +588,9 @@ fn copy_asset_to_file(asset_name: &str, dest: &Path) -> Result<(), String> {
         Ok(())
     })();
 
-    let _ = env.call_method(&stream, "close", "()V", &[]);
+    if let Err(error) = env.call_method(&stream, "close", "()V", &[]) {
+        let _ = jni_failure(&mut env, &format!("InputStream.close({asset_name})"), error);
+    }
     read_result?;
     out.flush()
         .map_err(|err| format!("flush {}: {err}", dest.display()))?;

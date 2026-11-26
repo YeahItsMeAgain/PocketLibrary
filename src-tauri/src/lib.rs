@@ -1542,6 +1542,7 @@ pub fn run() {
             let diagnostics = Arc::new(Diagnostics::new(data_dir.join("diagnostics.log")));
             diagnostics::install_global(Arc::clone(&diagnostics));
             diagnostics::install_panic_hook(Arc::clone(&diagnostics));
+            spine_assets::install_panic_hook(data_dir.clone());
             app.manage(Arc::clone(&diagnostics));
             let unexpected = diagnostics.start_session()?;
             let api = Api::open(data_dir.join("library.db"))?;

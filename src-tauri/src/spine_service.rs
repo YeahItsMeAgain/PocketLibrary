@@ -188,18 +188,24 @@ impl SpineService {
         if slot.is_none() {
             *slot = Some(spine_assets::ensure_models(&self.app_data_dir));
         }
-        match slot.as_ref().expect("models were just resolved") {
-            Ok(paths) => SpineStatus {
+        match slot.as_ref() {
+            Some(Ok(paths)) => SpineStatus {
                 models: READY_STATE,
                 bundle_id: BUNDLE_ID,
                 bytes: bundle_bytes(paths),
                 error: None,
             },
-            Err(error) => SpineStatus {
+            Some(Err(error)) => SpineStatus {
                 models: classify_model_error(error),
                 bundle_id: BUNDLE_ID,
                 bytes: 0,
                 error: Some(error.clone()),
+            },
+            None => SpineStatus {
+                models: "error",
+                bundle_id: BUNDLE_ID,
+                bytes: 0,
+                error: Some("The spine model state could not be resolved.".to_owned()),
             },
         }
     }
@@ -253,15 +259,19 @@ impl SpineService {
         if slot.is_none() {
             *slot = Some(spine_assets::ensure_models(&self.app_data_dir));
         }
-        match slot.as_ref().expect("models were just resolved") {
-            Ok(paths) => Ok(paths.clone()),
-            Err(error) => {
+        match slot.as_ref() {
+            Some(Ok(paths)) => Ok(paths.clone()),
+            Some(Err(error)) => {
                 eprintln!("pocketlibrary spine: models unavailable: {error}");
                 Err(api_error(
                     "spine_models_missing",
                     "The spine engine is not ready yet. Its models are missing.",
                 ))
             }
+            None => Err(api_error(
+                "spine_models_missing",
+                "The spine engine is not ready yet. Its models are missing.",
+            )),
         }
     }
 

@@ -240,6 +240,14 @@ impl Diagnostics {
         let summary = self.summary();
         let log = self.read_text();
         let failures = self.recent_failures(20).join("\n");
+        // The spine module keeps its own low-level log next to `spine/`.
+        // Include it so a JNI/extraction failure arrives with diagnostics even
+        // when the app-level log never saw it.
+        let spine_log = self
+            .path
+            .parent()
+            .map(|data_dir| data_dir.join("spine").join("spine.log"))
+            .and_then(|path| fs::read(path).ok());
         let exported = ExportSummary {
             environment,
             generated_at: format_timestamp(now),
@@ -257,6 +265,10 @@ impl Diagnostics {
         zip.start_file("recent-failures.txt", options)
             .map_err(zip_error)?;
         zip.write_all(failures.as_bytes())?;
+        if let Some(spine_log) = spine_log {
+            zip.start_file("spine.log", options).map_err(zip_error)?;
+            zip.write_all(&spine_log)?;
+        }
         let cursor = zip.finish().map_err(zip_error)?;
         Ok(cursor.into_inner())
     }
@@ -520,6 +532,12 @@ mod tests {
         let diagnostics = Diagnostics::new(dir.path().join("diagnostics.log"));
         diagnostics.append(Level::Error, "download", "Book One failed");
         diagnostics.append(Level::Info, "download", "Book Two completed");
+        fs::create_dir_all(dir.path().join("spine")).unwrap();
+        fs::write(
+            dir.path().join("spine").join("spine.log"),
+            "123 ensure_models: error: no JNI context\n",
+        )
+        .unwrap();
         let environment = DiagnosticsEnvironment {
             app_name: "PocketLibrary".to_owned(),
             app_version: "0.1.1".to_owned(),
@@ -555,6 +573,13 @@ mod tests {
         assert!(summary_text.contains("\"device\": \"Pixel 8\""));
         assert!(summary_text.contains("\"counts\""));
         assert!(summary_text.contains("\"errors\": 1"));
+        let mut spine_text = String::new();
+        archive
+            .by_name("spine.log")
+            .unwrap()
+            .read_to_string(&mut spine_text)
+            .unwrap();
+        assert!(spine_text.contains("ensure_models: error"));
     }
 
     #[test]

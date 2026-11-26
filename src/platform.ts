@@ -1649,6 +1649,13 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       window as unknown as { __POCKETLIBRARY_SPINE_GENERATE_CALLS__?: number }
     ).__POCKETLIBRARY_SPINE_GENERATE_CALLS__ = spineGenerateCalls;
   };
+  let spineStatusCalls = 0;
+  const noteSpineStatus = () => {
+    spineStatusCalls += 1;
+    (
+      window as unknown as { __POCKETLIBRARY_SPINE_STATUS_CALLS__?: number }
+    ).__POCKETLIBRARY_SPINE_STATUS_CALLS__ = spineStatusCalls;
+  };
 
   function ensureEnrichment(book: Book): BookEnrichmentState {
     const existing = enrichmentStates.get(book.id);
@@ -2919,13 +2926,16 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       const artifact = spineArtifacts.get(bookId);
       return artifact ? { ...artifact } : null;
     },
-    spineStatus: async () => ({
-      models: "ready",
-      bundleId: "spine-v1",
-      bytes: 41_229_063,
-      error: null,
-      ...spineConfig.status,
-    }),
+    spineStatus: async () => {
+      noteSpineStatus();
+      return {
+        models: "ready",
+        bundleId: "spine-v1",
+        bytes: 41_229_063,
+        error: null,
+        ...spineConfig.status,
+      };
+    },
   };
 
   return traced(base, (method, error) => {

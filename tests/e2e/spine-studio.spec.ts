@@ -63,6 +63,17 @@ function generateCalls(page: Page): Promise<number> {
   );
 }
 
+function statusCalls(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __POCKETLIBRARY_SPINE_STATUS_CALLS__?: number;
+        }
+      ).__POCKETLIBRARY_SPINE_STATUS_CALLS__ ?? 0,
+  );
+}
+
 async function expectNoHorizontalOverflow(page: Page) {
   const sizes = await page.evaluate(() => {
     const root = document.documentElement;
@@ -93,6 +104,21 @@ test("opening a book shows the Spine section with one obvious action", async ({
     "Generate spine",
   );
   await expect(page.getByTestId("spine-verdict")).toHaveCount(0);
+});
+
+test("opening a book does not resolve the engine or run status", async ({
+  page,
+}) => {
+  await boot(page);
+  await expect(page.getByTestId("spine-generate")).toBeVisible();
+  // Mount may read the artifact cache, but never status/models/JNI.
+  expect(await statusCalls(page)).toBe(0);
+  expect(await generateCalls(page)).toBe(0);
+
+  await page.getByTestId("spine-generate").click();
+  await expect(page.getByTestId("spine-verdict")).toBeVisible();
+  expect(await statusCalls(page)).toBeGreaterThan(0);
+  expect(await generateCalls(page)).toBe(1);
 });
 
 test("generate shows honest progress, then a result with six style canvases", async ({
