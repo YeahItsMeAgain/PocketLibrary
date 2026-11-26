@@ -84,6 +84,16 @@ android {
             )
         }
     }
+    packaging {
+        jniLibs {
+            // The spine engine dlopen()s libonnxruntime.so from
+            // ApplicationInfo.nativeLibraryDir. With the modern AGP default
+            // (useLegacyPackaging = false) native libs stay compressed inside
+            // the APK and are mapped directly, so that directory has no
+            // libonnxruntime.so. Force extraction on install instead.
+            useLegacyPackaging = true
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
