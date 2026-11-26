@@ -83,33 +83,68 @@ async function openBookMenu(page: Page) {
   await page.getByTestId("detail-actions").click();
 }
 
-test("online details are off by default and name only Open Library", async ({
-  page,
-}) => {
+test("settings has no online-details control", async ({ page }) => {
   await boot(page, [book(1, "The Dispossessed")]);
   await openSettings(page);
 
-  const section = page.getByTestId("settings-online");
-  await expect(section).toBeVisible();
-  await expect(section).toContainText("Open Library");
-  await expect(section).toContainText("title, author and ISBN");
-  await expect(section).toContainText("No account, key");
-  await expect(page.getByTestId("settings-online-mode-off")).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page.getByTestId("settings-online")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Online details" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /^(Off|Ask|Automatic)$/ }),
+  ).toHaveCount(0);
+  await expect(page.getByText("Lookup mode")).toHaveCount(0);
+});
 
-  await page.getByTestId("settings-online-mode-ask").click();
-  await expect(page.getByTestId("settings-online-mode-ask")).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(page.getByTestId("settings-online-mode-copy")).toContainText(
-    "Nothing leaves the device until you press it",
+test("launch forces automatic mode even when the mock starts at off", async ({
+  page,
+}) => {
+  await boot(page, [book(1, "The Dispossessed")], {
+    mode: "off",
+    lookup: {
+      1: {
+        state: "applied",
+        source: "open_library",
+        fields: ["description"],
+        attribution: { ...ATTRIBUTION, fields: ["description"] },
+      },
+    },
+    appliedDescription: "Forced automatic on launch.",
+  });
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const stored = window.localStorage.getItem(
+          "pocketlibrary.mock.enrichmentMode",
+        );
+        return stored === null ? null : (JSON.parse(stored) as string);
+      }),
+    )
+    .toBe("automatic");
+
+  await openDetail(page);
+  await expect(page.getByTestId("detail-blurb")).toContainText(
+    "Forced automatic on launch.",
   );
 });
 
-test("a per-book lookup fills a missing blurb and generated cover", async ({
+test("the shelf still paints if forcing automatic mode fails", async ({
+  page,
+}) => {
+  await boot(page, [book(1, "The Dispossessed")], {
+    setModeError: {
+      code: "enrichment_unavailable",
+      message: "The online-details setting could not be saved.",
+    },
+  });
+
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+  await expect(page.getByTestId("spine").first()).toBeVisible();
+});
+
+test("automatic lookup fills a missing blurb and generated cover", async ({
   page,
 }) => {
   const applied: EnrichmentOutcome = {
@@ -124,13 +159,6 @@ test("a per-book lookup fills a missing blurb and generated cover", async ({
     appliedCoverUrl: ALT_COVER,
   });
   await openDetail(page);
-  const before = await page.getByTestId("detail-cover").getAttribute("src");
-  await expect(page.getByTestId("detail-blurb")).toContainText(
-    "No blurb was printed",
-  );
-
-  await openBookMenu(page);
-  await page.getByTestId("detail-lookup").click();
 
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "A quiet revolution gathers",
@@ -145,9 +173,9 @@ test("a per-book lookup fills a missing blurb and generated cover", async ({
     "href",
     "https://openlibrary.org/books/OL1M",
   );
-  await expect(page.getByTestId("detail-cover")).not.toHaveAttribute(
+  await expect(page.getByTestId("detail-cover")).toHaveAttribute(
     "src",
-    before ?? "",
+    ALT_COVER,
   );
 });
 
@@ -178,7 +206,7 @@ test("a no-match leaves the generated plate and the honest blank blurb", async (
   await expect(page.getByTestId("detail-attribution")).toHaveCount(0);
 });
 
-test("review lists candidate editions and applies only the chosen one", async ({
+test("automatic review lists candidate editions and applies only the chosen one", async ({
   page,
 }) => {
   const review: EnrichmentOutcome = {
@@ -214,8 +242,6 @@ test("review lists candidate editions and applies only the chosen one", async ({
     appliedDescription: "The chosen edition's blurb.",
   });
   await openDetail(page);
-  await openBookMenu(page);
-  await page.getByTestId("detail-lookup").click();
 
   await expect(page.getByTestId("enrichment-review")).toBeVisible();
   await expect(page.getByTestId("enrichment-candidate")).toHaveCount(2);
@@ -339,40 +365,6 @@ test("automatic mode looks up a gap when the Flip opens", async ({ page }) => {
   );
 });
 
-test("the foreground queue is capped, reported, and can be filled", async ({
-  page,
-}) => {
-  const applied = (id: number): EnrichmentOutcome => ({
-    state: "applied",
-    source: "open_library",
-    fields: ["description", "cover"],
-    attribution: ATTRIBUTION,
-  });
-  await boot(
-    page,
-    [book(1, "A Gap"), book(2, "Another Gap")],
-    {
-      lookup: { 1: applied(1), 2: applied(2) },
-      appliedDescription: "Filled in a foreground batch.",
-    },
-  );
-  await openSettings(page);
-  await expect(page.getByTestId("settings-online-queue")).toContainText(
-    "2 books are missing",
-  );
-  await expect(page.getByTestId("settings-online-fill")).toContainText(
-    "Fill missing details… (2)",
-  );
-
-  await page.getByTestId("settings-online-fill").click();
-  await expect(page.getByTestId("settings-online-notice")).toContainText(
-    "Finished 2 books; 2 were filled",
-  );
-  await expect(page.getByTestId("settings-online-queue")).toContainText(
-    "No book is missing",
-  );
-});
-
 test("a blurb edited by the reader survives a refresh", async ({ page }) => {
   await boot(page, [book(1, "The Dispossessed")], {
     lookup: {
@@ -437,4 +429,98 @@ test("revert removes online details and restores the file's blank", async ({
     "No blurb was printed with this edition.",
   );
   await expect(page.getByTestId("detail-attribution")).toHaveCount(0);
+});
+
+test("a cover lookup with no results shows an honest empty state", async ({
+  page,
+}) => {
+  await boot(page, [book(1, "The Dispossessed")], {
+    coverLookup: {
+      1: { state: "noMatch", source: "open_library", reason: "no_cover" },
+    },
+  });
+  await openDetail(page);
+  await page.getByTestId("detail-cover-button").click();
+  await page.getByTestId("cover-find").click();
+
+  await expect(page.getByTestId("cover-notice")).toHaveText(
+    "No online cover matched this edition.",
+  );
+  // The spinner ends and the reader can try again.
+  await expect(page.getByTestId("cover-find")).toBeEnabled();
+  await expect(page.getByTestId("cover-find")).toHaveText("Find covers");
+});
+
+test("a failed cover lookup shows a retryable error instead of an empty state", async ({
+  page,
+}) => {
+  const message =
+    "Open Library could not be reached. Check your connection and try again.";
+  await boot(page, [book(1, "The Dispossessed")], {
+    coverLookup: {
+      1: {
+        state: "unavailable",
+        source: "open_library",
+        code: "offline",
+        message,
+      },
+    },
+  });
+  await openDetail(page);
+  await page.getByTestId("detail-cover-button").click();
+  await page.getByTestId("cover-find").click();
+
+  await expect(page.getByTestId("cover-notice")).toHaveText(message);
+  await expect(page.getByTestId("cover-notice")).not.toHaveText(
+    "No online cover matched this edition.",
+  );
+  await expect(page.getByTestId("cover-find")).toBeEnabled();
+});
+
+test("the cover chooser keeps online results inside a narrow screen", async ({
+  page,
+}) => {
+  const candidate: CoverOption = {
+    key: "online:open_library:id:123",
+    source: "open_library",
+    label: "The Dispossessed",
+    detail: "Ursula K. Le Guin · 1974 · Harper & Row",
+    previewDataUrl: ALT_COVER,
+    isCurrent: false,
+    isOriginal: false,
+    providerCoverKey: "id:123",
+    sourceUrl: "https://openlibrary.org/books/OL1M",
+  };
+  await boot(page, [book(1, "The Dispossessed")], {
+    fileCoverIds: [1],
+    coverCandidates: { 1: [candidate] },
+  });
+  await openDetail(page);
+
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.getByTestId("detail-cover-button").click();
+    await expect(page.getByTestId("cover-chooser")).toBeVisible();
+    await page.getByTestId("cover-find").click();
+    await expect(
+      page.getByTestId("cover-option-online-open-library-id-123"),
+    ).toBeVisible();
+
+    const overflow = await page.evaluate(() => {
+      const sheet = document.querySelector<HTMLElement>(
+        '[data-testid="cover-chooser"]',
+      );
+      return {
+        document: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+        sheet: sheet?.scrollWidth ?? 0,
+        sheetClient: sheet?.clientWidth ?? 0,
+      };
+    });
+    expect(overflow.document).toBeLessThanOrEqual(overflow.viewport);
+    expect(overflow.sheet).toBeLessThanOrEqual(overflow.sheetClient + 1);
+
+    await page.getByTestId("cover-cancel").click();
+    await expect(page.getByTestId("cover-chooser")).toHaveCount(0);
+  }
 });

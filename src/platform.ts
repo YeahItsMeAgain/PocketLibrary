@@ -115,6 +115,46 @@ export interface BookDetail extends Book {
   enrichment: BookEnrichmentState;
 }
 
+/* ------------------------------------------------------------- spine engine */
+
+/** Which route the on-device pipeline took from the cover to text-free art. */
+export type SpineRoute = "crop" | "inpaint" | "fallback";
+
+/** The quality gate's verdict for a generated spine. */
+export type SpineVerdict = "pass" | "review" | "fallback";
+
+/** `final.crop_box_work` in art-image pixels, as the engine reports it. */
+export interface SpineCropBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Mirrors the shell's `SpineArtifact` (camelCase on the wire). */
+export interface SpineArtifact {
+  bookId: number;
+  route: SpineRoute;
+  verdict: SpineVerdict;
+  maskPercent: number;
+  cropBox: SpineCropBox | null;
+  /** Text-free working art; `data:image/jpeg;base64,...`. */
+  artDataUrl: string;
+  /** 52 x 236 spine crop. */
+  spineDataUrl: string;
+  fallbackDataUrl: string;
+  runJson: unknown;
+  qaJson: unknown;
+}
+
+/** Mirrors the shell's `SpineStatus`. */
+export interface SpineStatus {
+  models: "ready" | "bundled" | "missing" | "error";
+  bundleId: string;
+  bytes: number;
+  error: string | null;
+}
+
 export type EnrichmentMode = "off" | "ask" | "automatic";
 
 export interface EnrichmentSettings {
@@ -593,6 +633,12 @@ export interface Platform {
   ): Promise<DownloadedUpdate>;
   /** Open the Android package installer for the verified download. */
   installUpdate(): Promise<UpdateInstallResult>;
+  /** Run the on-device spine pipeline for a book, reusing the cache. */
+  spineGenerate(bookId: number): Promise<SpineArtifact>;
+  /** Load an existing result without running the pipeline; `null` if none. */
+  spineArtifact(bookId: number): Promise<SpineArtifact | null>;
+  /** Whether the required model bundle is installed and usable. */
+  spineStatus(): Promise<SpineStatus>;
 }
 
 export type Invoke = typeof invoke;
@@ -819,6 +865,11 @@ export function createTauriPlatform(call: Invoke): Platform {
     },
     installUpdate: () =>
       call<UpdateInstallResult>("updates_install"),
+    spineGenerate: (bookId) =>
+      call<SpineArtifact>("spine_generate", { bookId }),
+    spineArtifact: (bookId) =>
+      call<SpineArtifact | null>("spine_artifact", { bookId }),
+    spineStatus: () => call<SpineStatus>("spine_status"),
   };
   return traced(base, (method, error) => {
     void call("log_diagnostic", {
@@ -855,6 +906,165 @@ const MOCK_ALT_COVER =
       '<path d="M150 158 L166 202 L212 202 L175 229 L189 274 L150 247 L111 274 L125 229 L88 202 L134 202 Z" fill="#e7d4ac"/>' +
       "</svg>",
   );
+
+const MOCK_SPINE_WIDTH = 52;
+const MOCK_SPINE_HEIGHT = 236;
+const MOCK_SPINE_CROP: SpineCropBox = {
+  x: 92,
+  y: 44,
+  width: 116,
+  height: 362,
+};
+
+function loadMockImage(src: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    if (typeof Image === "undefined") {
+      resolve(null);
+      return;
+    }
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
+function mockSpineCloth(book: Book): string {
+  if (typeof document === "undefined") return MOCK_COVER;
+  const palettes = ["#4a2a45", "#294735", "#26384f", "#6e2630", "#333336"];
+  const cloth = palettes[book.id % palettes.length];
+  const canvas = document.createElement("canvas");
+  canvas.width = MOCK_SPINE_WIDTH;
+  canvas.height = MOCK_SPINE_HEIGHT;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return MOCK_COVER;
+  ctx.fillStyle = cloth;
+  ctx.fillRect(0, 0, MOCK_SPINE_WIDTH, MOCK_SPINE_HEIGHT);
+  // Woven grain, then the brass head/tail rules.
+  for (let x = 0; x < MOCK_SPINE_WIDTH; x += 2) {
+    ctx.fillStyle = x % 4 === 0 ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.09)";
+    ctx.fillRect(x, 0, 0.5, MOCK_SPINE_HEIGHT);
+  }
+  ctx.fillStyle = "#e8d3a1";
+  ctx.globalAlpha = 0.72;
+  ctx.fillRect(8, 12, MOCK_SPINE_WIDTH - 16, 0.7);
+  ctx.fillRect(8, MOCK_SPINE_HEIGHT - 12, MOCK_SPINE_WIDTH - 16, 0.7);
+  ctx.globalAlpha = 1;
+  ctx.save();
+  ctx.translate(MOCK_SPINE_WIDTH / 2, MOCK_SPINE_HEIGHT / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = "#f2e6c9";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "600 11px Georgia, serif";
+  ctx.fillText((book.title || "Untitled").toUpperCase().slice(0, 30), 0, -4);
+  ctx.font = "400 7px Georgia, serif";
+  ctx.fillText((book.authors[0] ?? "").toUpperCase().slice(0, 24), 0, 6);
+  ctx.restore();
+  return canvas.toDataURL("image/jpeg", 0.9);
+}
+
+async function buildMockSpineArtifact(
+  book: Book,
+  config: MockSpineConfig,
+  coverDataUrl: string,
+): Promise<SpineArtifact> {
+  const verdict = config.verdict ?? "pass";
+  const route: SpineRoute =
+    config.route ?? (verdict === "fallback" ? "fallback" : "crop");
+  const maskPercent =
+    config.maskPercent ??
+    (verdict === "pass" ? 0 : verdict === "review" ? 44.1 : 62.5);
+  const crop = MOCK_SPINE_CROP;
+  const fallbackDataUrl = mockSpineCloth(book);
+  let artDataUrl = coverDataUrl;
+  let spineDataUrl = fallbackDataUrl;
+
+  const source = await loadMockImage(coverDataUrl);
+  if (source && typeof document !== "undefined") {
+    const art = document.createElement("canvas");
+    art.width = 300;
+    art.height = 450;
+    const artCtx = art.getContext("2d");
+    if (artCtx) {
+      artCtx.drawImage(source, 0, 0, art.width, art.height);
+      // A faint plate gradient makes the synthetic art visibly different from
+      // the cover while staying inside the same palette.
+      const glow = artCtx.createLinearGradient(0, 0, 0, art.height);
+      glow.addColorStop(0, "rgba(255,238,196,.08)");
+      glow.addColorStop(0.55, "rgba(0,0,0,0)");
+      glow.addColorStop(1, "rgba(0,0,0,.22)");
+      artCtx.fillStyle = glow;
+      artCtx.fillRect(0, 0, art.width, art.height);
+      artDataUrl = art.toDataURL("image/jpeg", 0.9);
+
+      const spine = document.createElement("canvas");
+      spine.width = MOCK_SPINE_WIDTH;
+      spine.height = MOCK_SPINE_HEIGHT;
+      const spineCtx = spine.getContext("2d");
+      if (spineCtx) {
+        // Cover-fit the reported crop box into the 52 x 236 strip.
+        const sourceAspect = crop.width / crop.height;
+        const targetAspect = MOCK_SPINE_WIDTH / MOCK_SPINE_HEIGHT;
+        let sw = crop.width;
+        let sh = crop.height;
+        let sx = crop.x;
+        let sy = crop.y;
+        if (sourceAspect > targetAspect) {
+          sw = crop.height * targetAspect;
+          sx = crop.x + (crop.width - sw) / 2;
+        } else {
+          sh = crop.width / targetAspect;
+          sy = crop.y + (crop.height - sh) / 2;
+        }
+        spineCtx.drawImage(
+          art,
+          sx,
+          sy,
+          sw,
+          sh,
+          0,
+          0,
+          MOCK_SPINE_WIDTH,
+          MOCK_SPINE_HEIGHT,
+        );
+        const edge = spineCtx.createLinearGradient(0, 0, MOCK_SPINE_WIDTH, 0);
+        edge.addColorStop(0, "rgba(0,0,0,.4)");
+        edge.addColorStop(0.1, "rgba(0,0,0,0)");
+        edge.addColorStop(0.9, "rgba(0,0,0,0)");
+        edge.addColorStop(1, "rgba(0,0,0,.4)");
+        spineCtx.fillStyle = edge;
+        spineCtx.fillRect(0, 0, MOCK_SPINE_WIDTH, MOCK_SPINE_HEIGHT);
+        spineDataUrl = spine.toDataURL("image/jpeg", 0.9);
+      }
+    }
+  }
+
+  return {
+    bookId: book.id,
+    route,
+    verdict,
+    maskPercent,
+    cropBox: crop,
+    artDataUrl,
+    spineDataUrl,
+    fallbackDataUrl,
+    runJson: {
+      final: {
+        crop_box_work: [crop.x, crop.y, crop.width, crop.height],
+      },
+      route,
+      verdict,
+    },
+    qaJson: {
+      verdict,
+      route,
+      mask_pct: maskPercent,
+      residual_text: verdict !== "pass",
+    },
+  };
+}
 
 export interface MockConfig {
   state?: LibraryState;
@@ -919,6 +1129,8 @@ export interface MockConfig {
   updates?: MockUpdateConfig;
   /** Online-details and cover-chooser scenarios. */
   enrichment?: MockEnrichmentConfig;
+  /** On-device spine engine scenario. */
+  spine?: MockSpineConfig;
 }
 
 /**
@@ -930,6 +1142,8 @@ export interface MockConfig {
  */
 export interface MockEnrichmentConfig {
   mode?: EnrichmentMode;
+  /** Make forcing/setting a mode fail, as a network or database fault would. */
+  setModeError?: ApiError;
   sourceLabel?: string;
   sourceUrl?: string;
   batchLimit?: number;
@@ -974,6 +1188,26 @@ export interface MockUpdateConfig {
   checks?: number;
   checkError?: ApiError;
   downloadError?: ApiError;
+}
+
+/**
+ * Drives the mock spine engine without a network or native pipeline.
+ *
+ * The browser mock fabricates a deterministic artifact from the same mock
+ * cover the rest of the UI uses: a JPEG working art, a realistic crop box and
+ * 52 x 236 spine/fallback strips. It never calls the real engine.
+ */
+export interface MockSpineConfig {
+  verdict?: SpineVerdict;
+  route?: SpineRoute;
+  maskPercent?: number;
+  /** Artifacts `spineArtifact` returns before anything is generated. */
+  artifacts?: Record<number, SpineArtifact>;
+  /** Milliseconds a mock generation takes, so the honest progress copy shows. */
+  generateDelayMs?: number;
+  /** Make generation fail with a typed command error. */
+  error?: ApiError;
+  status?: Partial<SpineStatus>;
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
@@ -1391,7 +1625,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
   const enrichmentConfig = config.enrichment ?? {};
   let enrichmentMode = readStored<EnrichmentMode>(
     MOCK_ENRICHMENT_KEY,
-    enrichmentConfig.mode ?? "off",
+    enrichmentConfig.mode ?? "automatic",
   );
   const enrichmentSourceLabel =
     enrichmentConfig.sourceLabel ?? "Open Library";
@@ -1403,6 +1637,18 @@ function createMockPlatform(config: MockConfig = {}): Platform {
   const fileDescriptions = new Map<number, string | null>();
   const usedDeviceTokens = new Set<string>();
   let nextDeviceToken = 1;
+  const spineConfig = config.spine ?? {};
+  const spineArtifacts = new Map<number, SpineArtifact>();
+  for (const [id, artifact] of Object.entries(spineConfig.artifacts ?? {})) {
+    spineArtifacts.set(Number(id), artifact);
+  }
+  let spineGenerateCalls = 0;
+  const noteSpineGenerate = () => {
+    spineGenerateCalls += 1;
+    (
+      window as unknown as { __POCKETLIBRARY_SPINE_GENERATE_CALLS__?: number }
+    ).__POCKETLIBRARY_SPINE_GENERATE_CALLS__ = spineGenerateCalls;
+  };
 
   function ensureEnrichment(book: Book): BookEnrichmentState {
     const existing = enrichmentStates.get(book.id);
@@ -1880,6 +2126,9 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       batchLimit: enrichmentConfig.batchLimit ?? 20,
     }),
     setEnrichmentMode: async (mode) => {
+      if (enrichmentConfig.setModeError) {
+        throw enrichmentConfig.setModeError;
+      }
       enrichmentMode = mode;
       writeStored(MOCK_ENRICHMENT_KEY, mode);
       return {
@@ -2640,6 +2889,43 @@ function createMockPlatform(config: MockConfig = {}): Platform {
       }
       return { started: true };
     },
+    spineGenerate: async (bookId) => {
+      noteSpineGenerate();
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (!book) {
+        throw {
+          code: "book_not_found",
+          message: "That book could not be found.",
+        };
+      }
+      if (spineConfig.error) throw spineConfig.error;
+      if (spineConfig.generateDelayMs) {
+        await new Promise<void>((resolve) =>
+          window.setTimeout(resolve, spineConfig.generateDelayMs),
+        );
+      }
+      const configured = spineConfig.artifacts?.[bookId];
+      const artifact =
+        configured ??
+        (await buildMockSpineArtifact(
+          book,
+          spineConfig,
+          coverDataByBook.get(bookId) ?? MOCK_COVER,
+        ));
+      spineArtifacts.set(bookId, artifact);
+      return artifact;
+    },
+    spineArtifact: async (bookId) => {
+      const artifact = spineArtifacts.get(bookId);
+      return artifact ? { ...artifact } : null;
+    },
+    spineStatus: async () => ({
+      models: "ready",
+      bundleId: "spine-v1",
+      bytes: 41_229_063,
+      error: null,
+      ...spineConfig.status,
+    }),
   };
 
   return traced(base, (method, error) => {

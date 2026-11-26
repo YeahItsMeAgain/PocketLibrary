@@ -2255,6 +2255,409 @@ html.is-book-dragging body {
 }
 
 
+/* --------------------------------------------------------- spine studio */
+
+.spine-studio {
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(201, 168, 106, 0.28);
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.spine-studio-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 4px 10px;
+}
+
+.spine-studio h3 {
+  margin: 0;
+  color: #dcc78f;
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.spine-engine {
+  color: #9e854c;
+  font-size: 6.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.spine-studio p {
+  margin: 8px 0 0;
+  color: #c4b094;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.spine-studio .spine-fine {
+  color: #9e854c;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.spine-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.spine-intro p {
+  margin: 0;
+}
+
+.spine-studio .spine-problem {
+  padding: 8px 10px;
+  border-left: 2px solid rgba(190, 130, 100, 0.6);
+  background: rgba(80, 40, 26, 0.24);
+  color: #d9b79f;
+}
+
+.spine-generate {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(201, 168, 106, 0.8);
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(220, 190, 130, 0.3),
+    rgba(201, 168, 106, 0.12)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.24),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+  color: #fff6dd;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.spine-generate:active {
+  transform: translateY(1px);
+}
+
+.spine-generate:disabled {
+  opacity: 0.45;
+}
+
+.spine-generating {
+  margin-top: 8px;
+}
+
+.spine-progress {
+  display: block;
+  height: 3px;
+  margin-top: 4px;
+  overflow: hidden;
+  background: rgba(201, 168, 106, 0.18);
+}
+
+.spine-progress i {
+  display: block;
+  width: 42%;
+  height: 100%;
+  background: linear-gradient(90deg, #8d6c27, #e2c273);
+  animation: spine-sweep 1.4s var(--ease-io) infinite;
+}
+
+@keyframes spine-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+  55% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.spine-studio .spine-generating-title {
+  color: #e4cfa6;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+}
+
+.spine-error {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(190, 110, 90, 0.45);
+  background: rgba(80, 26, 26, 0.28);
+}
+
+.spine-studio .spine-error-title {
+  margin: 0;
+  color: #e8b9a0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.spine-error .spine-generate {
+  margin-top: 10px;
+}
+
+.spine-result {
+  margin-top: 8px;
+}
+
+.spine-verdict-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.spine-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 7px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.spine-pill--pass {
+  border-color: rgba(150, 190, 120, 0.55);
+  background: rgba(60, 90, 40, 0.28);
+  color: #b8d2a2;
+}
+
+.spine-pill--review {
+  border-color: rgba(201, 168, 106, 0.65);
+  background: rgba(110, 80, 20, 0.3);
+  color: #ecd6a6;
+}
+
+.spine-pill--fallback {
+  border-color: rgba(180, 150, 140, 0.5);
+  background: rgba(70, 50, 60, 0.32);
+  color: #d3c0ba;
+}
+
+.spine-meta {
+  color: #b39a70;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.spine-studio .spine-note {
+  padding: 8px 10px;
+  border-left: 2px solid rgba(201, 168, 106, 0.6);
+  background: rgba(201, 168, 106, 0.08);
+  color: #d9cbb2;
+  font-size: 10px;
+}
+
+.spine-inline-action {
+  min-height: 34px;
+  margin-left: 4px;
+  padding: 0 12px;
+  border: 1px solid rgba(201, 168, 106, 0.7);
+  border-radius: 2px;
+  background: rgba(201, 168, 106, 0.16);
+  color: #f2ddad;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.spine-inline-action:active {
+  transform: translateY(1px);
+}
+
+.spine-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 168, 106, 0.35);
+  background:
+    radial-gradient(90% 70% at 50% 20%, rgba(104, 58, 116, 0.22), transparent 70%),
+    #0c0711;
+}
+
+.spine-preview canvas {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 300px;
+}
+
+.spine-preview.is-wrap canvas {
+  width: 100%;
+  max-height: none;
+  height: auto;
+}
+
+.spine-studio .spine-preview-caption {
+  margin-top: 6px;
+  color: #b39a70;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+}
+
+.spine-style-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.spine-style {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 7px 5px 6px;
+  border: 1px solid rgba(201, 168, 106, 0.24);
+  border-radius: 2px;
+  background: rgba(20, 12, 24, 0.7);
+}
+
+.spine-style[aria-pressed="true"] {
+  border-color: #e2c690;
+  background: rgba(201, 168, 106, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(201, 168, 106, 0.25);
+}
+
+.spine-style-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 132px;
+  overflow: hidden;
+}
+
+.spine-style-art canvas {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.spine-style-label {
+  color: #c9b491;
+  font-size: 7.5px;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.spine-style[aria-pressed="true"] .spine-style-label {
+  color: #f2ddad;
+}
+
+.spine-shelf {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 12px 10px 10px;
+  border-top: 1px solid rgba(201, 168, 106, 0.22);
+  border-bottom: 1px solid rgba(201, 168, 106, 0.22);
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.28));
+}
+
+.spine-shelf-art {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  width: 33px;
+}
+
+.spine-shelf-art canvas {
+  display: block;
+  width: 33px;
+  height: auto;
+  border-radius: 1px 2px 2px 1px;
+  box-shadow:
+    0 6px 12px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 240, 200, 0.1);
+}
+
+.spine-studio .spine-shelf-copy {
+  min-width: 0;
+  margin: 0;
+  color: #b39a70;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.spine-shelf-copy b {
+  display: block;
+  color: #dcc78f;
+  font-family: var(--display);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 340px) {
+  .spine-style-grid {
+    gap: 5px;
+  }
+
+  .spine-style {
+    padding: 6px 3px 5px;
+  }
+
+  .spine-style-art {
+    height: 112px;
+  }
+
+  .spine-style-label {
+    font-size: 6.8px;
+    letter-spacing: 0.06em;
+  }
+
+  .spine-shelf {
+    gap: 9px;
+    padding: 10px 8px 8px;
+  }
+
+  .spine-studio h3 {
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spine-progress i {
+    animation: none !important;
+    width: 100%;
+    transform: none;
+    opacity: 0.6;
+  }
+}
+
+
 /* generated cover (used when a book has no cover image) */
 .cover {
   position: relative;

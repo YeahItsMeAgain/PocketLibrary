@@ -21,6 +21,7 @@ import {
 import { useLayerExit } from "../navigation";
 import { CoverChooser } from "./CoverChooser";
 import { EnrichmentReview } from "./EnrichmentReview";
+import { SpineStudio } from "./SpineStudio";
 import { STATUS_LABELS } from "./spine";
 
 interface DetailPanelProps {
@@ -914,6 +915,14 @@ export function DetailPanel({
                     .filter(Boolean)
                     .join(" · ") || "Pocket Library edition"}
                 </p>
+
+                <SpineStudio
+                  bookId={bookId}
+                  title={detail.title}
+                  author={detail.authors.join(" · ")}
+                  pages={detail.pageCount}
+                  coverDataUrl={detail.coverDataUrl}
+                />
 
                 <button
                   type="button"
