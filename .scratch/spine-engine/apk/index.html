@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary 0.1.14 — spine engine test APK</title>
+<title>PocketLibrary 0.1.15 — spine engine test APK</title>
 <style>
   :root {
     --bg: #0b0709;
@@ -123,30 +123,30 @@
 <main>
   <div class="wordmark"><i aria-hidden="true"></i> PocketLibrary · spine engine test build</div>
 
-  <p class="kicker">Signed arm64 release · version 0.1.14 (1014)</p>
+  <p class="kicker">Signed arm64 release · version 0.1.15 (1015)</p>
   <h1>The spine engine,<br><em>on the phone.</em></h1>
-  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. It finds the cover text, removes it, and renders <b>Wrap, Full-bleed and Cloth</b> without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test. This release turns the rejected Rock Paper Scissors spine into art: a large but clean reconstruction is now a <b>review</b> (painted) instead of a <b>fallback</b> (cloth), while fallback stays reserved for readable leftover text or a structureless result. The “spines need attention” banner and shelf badge are gone, and Settings → Spine engine is a calm status card instead of a diagnostics wall.</p>
+  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. It finds the cover text, removes it, and renders <b>Wrap, Full-bleed and Cloth</b> without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test. This release makes the three spine styles real, readable and distinct: Wrap now puts the type on a smoked window over inset art, Full-bleed centres the type over edge-to-edge art, and Cloth finally shows a woven cloth board with foil type instead of borrowed art. Taps on the style picker work again (the undo toast was swallowing them), and the chosen style now survives close/reopen, undo and reload.</p>
 
   <div class="card">
     <div class="download">
       <div>
-        <h2>PocketLibrary 0.1.14 · spine arm64</h2>
-        <p>APK · 68,123,753 bytes (64.97 MiB) · release-signed · arm64-v8a only</p>
+        <h2>PocketLibrary 0.1.15 · spine arm64</h2>
+        <p>APK · 68,127,785 bytes (64.97 MiB) · release-signed · arm64-v8a only</p>
       </div>
-      <a class="button" href="pocketlibrary-0.1.14-spine-arm64.apk" download>Download APK</a>
+      <a class="button" href="pocketlibrary-0.1.15-spine-arm64.apk" download>Download APK</a>
     </div>
 
     <dl>
       <dt>File</dt>
-      <dd class="mono">pocketlibrary-0.1.14-spine-arm64.apk</dd>
+      <dd class="mono">pocketlibrary-0.1.15-spine-arm64.apk</dd>
       <dt>Size</dt>
-      <dd>68,123,753 bytes · 64.97 MiB</dd>
+      <dd>68,127,785 bytes · 64.97 MiB</dd>
       <dt>SHA-256</dt>
-      <dd><code class="hash">692db881b23e00f01ff86f421bd63520bc01bd12fcbbfac3e8aa7ee7d85d156f</code></dd>
+      <dd><code class="hash">a72203f844532464b6cd3b2d8ec6b22cbdf17988173251c7c5d29dc7affe7d45</code></dd>
       <dt>Package</dt>
       <dd class="mono">app.pocketlibrary</dd>
       <dt>Version</dt>
-      <dd>0.1.14 · versionCode 1014</dd>
+      <dd>0.1.15 · versionCode 1015</dd>
       <dt>SDK</dt>
       <dd>min 24 · target 36 · compile 36 (Android 16)</dd>
       <dt>ABI</dt>
@@ -162,40 +162,40 @@
   </div>
 
   <h2 class="section">Install</h2>
-  <p class="section-lede">Sideload it over 0.1.13, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
+  <p class="section-lede">Sideload it over 0.1.14, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
   <ol>
     <li>Download the APK on the phone (or copy it over).</li>
     <li>Open the file. If Android blocks it, allow <b>Install unknown apps</b> for the browser or file manager you used.</li>
-    <li>If 0.1.13 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 6</b>.</li>
+    <li>If 0.1.14 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 6</b>.</li>
     <li>A <b>debug build or a build signed with another key must be uninstalled first</b>; Android will refuse the update otherwise.</li>
     <li>Open PocketLibrary. Spines start preparing automatically; on an existing library the backfill runs once at low priority, so the wall stays usable.</li>
   </ol>
 
-  <h2 class="section">What changed in 0.1.14</h2>
+  <h2 class="section">What changed in 0.1.15</h2>
   <div class="grid">
     <div class="note">
-      <h3>The rejected spine now reaches the wall</h3>
+      <h3>The three styles are finally different — and readable</h3>
       <ul>
-        <li>The engine produced a good inpainted spine for <b>Rock Paper Scissors</b>, but QA rejected it for <b>mask coverage over 55%</b> and the wall kept cloth.</li>
-        <li>Coverage and seam outliers are now <b>review</b>, not <b>fallback</b>. Fallback is reserved for <b>readable leftover text</b> or a spine with too little structure.</li>
-        <li>When a book is still rejected, the reason is specific: <i>“The quality check rejected this spine: residual text is readable in the 52×236 spine.”</i></li>
-        <li>A changed QA policy gives previously failed books their automatic attempts back once, so this book retries on launch instead of waiting for a manual Retry.</li>
+        <li><b>Wrap</b>: art inset under a cream board edge with a smoked title window. Title and author fit without ellipsis; measured ink contrast 8.8:1 over white art.</li>
+        <li><b>Full-bleed</b>: art edge to edge with a soft centred scrim; the type is now centred on the spine instead of sitting in the old 20 px side rail (10.9:1).</li>
+        <li><b>Cloth</b>: no art. A woven board with foil rules and centred foil type (5.99:1).</li>
+        <li>Long titles wrap into up to two vertical columns and shrink to fit rather than clipping mid-word; the author never overlaps the title.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>No more “needs attention” nag</h3>
+      <h3>The picker works, and the choice sticks</h3>
       <ul>
-        <li>The global <b>“N spines need attention · Retry”</b> banner is removed. The chip only shows while spines are being prepared.</li>
-        <li>The <b>!</b> badge on shelf spines is removed; its tooltip now just says “cloth spine”.</li>
-        <li>Problems live per book: Edit → Spine and Settings → Spine engine, not over the library.</li>
+        <li>Taps on the style tiles were being swallowed by the fixed undo toast at the bottom of the screen. The toast now passes taps through; only its Undo button is interactive.</li>
+        <li>EditBook kept a second copy of the style; the picker could show Full-bleed while the preview or shelf used the stale value. There is now one record.</li>
+        <li>Choose a style and close immediately: it persists. Undo restores it everywhere; a reload keeps it.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>Settings reads like a status card</h3>
+      <h3>Smaller fixes</h3>
       <ul>
-        <li>One line of status, a queue line only when there is work, and <b>only problem books</b> with a reason and a Retry.</li>
-        <li><b>All books · details</b> and <b>What these checks mean</b> are collapsed by default; the full Artifact / Shelf strip / Verdict table is one tap away.</li>
-        <li>Measured −72% height when healthy and −53% with a fallback, still exactly centred at 320 and 390 with no horizontal overflow.</li>
+        <li>Removed the confusing Review note and its “Use Cloth” link; the picker is the way to choose Cloth.</li>
+        <li>Pass copy is just “Passed the on-device check.” — no false “Wrap is applied by default”.</li>
+        <li>“View the source record” is a proper brass action instead of an unstyled blue link.</li>
       </ul>
     </div>
   </div>
@@ -227,7 +227,7 @@
     <div class="note limits" style="border:0;background:transparent;padding:0">
       <h3>This is a test build</h3>
       <ul>
-        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.14.</li>
+        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.15.</li>
         <li><b>arm64 only.</b> It will not install on 32-bit, x86, or an emulator without arm64 translation.</li>
         <li><b>~64.97 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
         <li>Generation runs fully on the device. On a phone it is slower than the host timings in the evidence; the inpaint route can take noticeably longer than the crop route.</li>
@@ -238,8 +238,8 @@
 
   <footer>
     Built from the payload- and typography-fix release at <span class="mono">HEAD 694c152</span> on 2026-11-27.
-    Version 0.1.14 (1014), 68,123,753 bytes, SHA-256
-    <span class="mono">692db881b23e00f01ff86f421bd63520bc01bd12fcbbfac3e8aa7ee7d85d156f</span>.
+    Version 0.1.15 (1015), 68,127,785 bytes, SHA-256
+    <span class="mono">a72203f844532464b6cd3b2d8ec6b22cbdf17988173251c7c5d29dc7affe7d45</span>.
     Verification: <span class="mono">apksigner</span> v2 signature valid,
     <span class="mono">zipalign -c -P 16 -v 4</span> passed, packaged manifest has <span class="mono">android:extractNativeLibs="true"</span> so
     <span class="mono">nativeLibraryDir/libonnxruntime.so</span> exists after install.
