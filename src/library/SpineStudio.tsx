@@ -33,12 +33,12 @@ export const SPINE_STYLES: ReadonlyArray<{
   {
     id: "wrap",
     label: "Wrap",
-    note: "Page-count spine width. Back and spine are composed from the text-free art.",
+    note: "Page-count spine width. Type runs down the spine over the text-free art.",
   },
   {
     id: "full-bleed",
     label: "Full-bleed",
-    note: "The crop edge to edge, with the title and author centred over a soft scrim.",
+    note: "The crop edge to edge, with the title and author down the spine over a soft scrim.",
   },
   {
     id: "cloth",
@@ -84,6 +84,18 @@ function SpineCanvas({
     canvas.dataset.blockCy = meta.block.y.toFixed(2);
     canvas.dataset.blockWidth = meta.block.width.toFixed(2);
     canvas.dataset.blockHeight = meta.block.height.toFixed(2);
+    canvas.dataset.textRun = meta.vertical ? "vertical" : "horizontal";
+    canvas.dataset.titleCy = meta.title.y.toFixed(2);
+    canvas.dataset.titleWidth = meta.title.width.toFixed(2);
+    canvas.dataset.titleHeight = meta.title.height.toFixed(2);
+    canvas.dataset.titleFontSize = meta.title.fs.toFixed(2);
+    canvas.dataset.titleLines = String(meta.title.lines);
+    canvas.dataset.authorCy = meta.author?.y.toFixed(2) ?? "";
+    canvas.dataset.authorWidth = meta.author?.width.toFixed(2) ?? "";
+    canvas.dataset.authorHeight = meta.author?.height.toFixed(2) ?? "";
+    canvas.dataset.authorFontSize = meta.author?.fs.toFixed(2) ?? "";
+    canvas.dataset.authorLines = meta.author ? String(meta.author.lines) : "";
+    canvas.dataset.colophonY = meta.colophon.y.toFixed(2);
     canvas.setAttribute("dir", meta.direction);
   }, [book, style, strip]);
   return <canvas ref={ref} data-testid={testId} />;

@@ -41,6 +41,20 @@ function svgArt(top: string, bottom: string): string {
   );
 }
 
+/** A light/dark split that survives the 52:236 cover crop, so both bands are
+ * mixed luminance and no single ink clears 4.5:1 without a scrim. */
+function mixedArt(): string {
+  return (
+    "data:image/svg+xml;utf8," +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450">` +
+        `<rect width="150" height="450" fill="#f4f4f4"/>` +
+        `<rect x="150" width="150" height="450" fill="#111111"/>` +
+        `</svg>`,
+    )
+  );
+}
+
 function spineStrip(color: string): string {
   return (
     "data:image/svg+xml;utf8," +
@@ -320,40 +334,104 @@ test("a cover change queues the book again", async ({ page }) => {
     .toBeGreaterThanOrEqual(2);
 });
 
-test("full-bleed centres the type block and forces a scrim on mixed art", async ({
+test("Wrap and Full-bleed run the type down the spine in the upper and lower thirds", async ({
   page,
 }) => {
   await boot(page, {
     books: [book(1, { title: "The War of the Worlds", authors: ["H. G. Wells"] })],
+    spine: { artifacts: { 1: artifact({ artDataUrl: mixedArt() }) } },
+  });
+
+  await page.getByTestId("spine").first().click();
+  await expect(page.getByTestId("spine-result")).toBeVisible();
+  const canvas = page.getByTestId("spine-preview-canvas");
+
+  const readMeta = () =>
+    canvas.evaluate((element) => {
+      const canvas = element as HTMLCanvasElement;
+      const data = canvas.dataset;
+      return {
+        run: data.textRun,
+        cx: Number(data.blockCx),
+        titleCy: Number(data.titleCy),
+        titleWidth: Number(data.titleWidth),
+        titleHeight: Number(data.titleHeight),
+        titleLines: Number(data.titleLines),
+        authorCy: Number(data.authorCy),
+        authorHeight: Number(data.authorHeight),
+        authorLines: Number(data.authorLines),
+        colophonY: Number(data.colophonY),
+        contrast: Number(data.contrast),
+      };
+    });
+
+  for (const style of ["full-bleed", "wrap"]) {
+    await page.getByTestId(`spine-style-${style}`).click();
+    await expect(canvas).toHaveAttribute("data-style", style);
+    const meta = await readMeta();
+    expect(meta.run).toBe("vertical");
+    // Full-bleed is 52 px wide; the 320-page Wrap spine is 18 px.
+    expect(meta.cx).toBeCloseTo(style === "full-bleed" ? 26 : 9, 0);
+    // The whole title run sits in the upper third, the author in the lower.
+    expect(meta.titleCy - meta.titleHeight / 2).toBeGreaterThan(0);
+    expect(meta.titleCy + meta.titleHeight / 2).toBeLessThanOrEqual(236 / 3);
+    expect(meta.authorCy - meta.authorHeight / 2).toBeGreaterThanOrEqual(
+      (236 * 2) / 3,
+    );
+    expect(meta.authorCy).toBeGreaterThan((236 * 2) / 3);
+    // The run is taller than it is wide, so it reads down the spine.
+    expect(meta.titleHeight).toBeGreaterThan(meta.titleWidth);
+    expect(meta.titleLines).toBeLessThanOrEqual(2);
+    expect(meta.authorLines).toBe(1);
+    // Title and author do not collide, and neither reaches the colophon.
+    expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
+      meta.authorCy - meta.authorHeight / 2,
+    );
+    expect(meta.authorCy + meta.authorHeight / 2).toBeLessThan(
+      meta.colophonY,
+    );
+    expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
+  }
+
+  await expect(canvas).toHaveAttribute("data-scrim", "true");
+  await expectNoHorizontalOverflow(page);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expectNoHorizontalOverflow(page);
+  await expect(canvas).toHaveAttribute("data-scrim", "true");
+  await expect(canvas).toHaveAttribute("data-style", "wrap");
+});
+
+test("a long title settles into at most two lines inside the title band", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [
+      book(1, {
+        title: "The Curious Incident of the Dog in the Night-Time",
+        authors: ["Mark Haddon"],
+      }),
+    ],
     spine: { artifacts: { 1: artifact() } },
   });
 
   await page.getByTestId("spine").first().click();
   await expect(page.getByTestId("spine-result")).toBeVisible();
   await page.getByTestId("spine-style-full-bleed").click();
-  const canvas = page.getByTestId("spine-preview-canvas");
-  await expect(canvas).toHaveAttribute("data-style", "full-bleed");
-  await expect(canvas).toHaveAttribute("data-scrim", "true");
-
-  const meta = await canvas.evaluate((element) => {
-    const canvas = element as HTMLCanvasElement;
-    return {
-      cx: Number(canvas.dataset.blockCx),
-      cy: Number(canvas.dataset.blockCy),
-      contrast: Number(canvas.dataset.contrast),
-      width: canvas.width,
-      height: canvas.height,
-    };
-  });
-  expect(meta.cx).toBeCloseTo(26, 0);
-  expect(meta.cy).toBeCloseTo(118, 0);
-  expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
-
-  await expectNoHorizontalOverflow(page);
-  await page.setViewportSize({ width: 320, height: 844 });
-  await expectNoHorizontalOverflow(page);
-  await expect(canvas).toHaveAttribute("data-scrim", "true");
-  await expect(canvas).toHaveAttribute("data-style", "full-bleed");
+  const meta = await page
+    .getByTestId("spine-preview-canvas")
+    .evaluate((element) => {
+      const data = (element as HTMLCanvasElement).dataset;
+      return {
+        lines: Number(data.titleLines),
+        fs: Number(data.titleFontSize),
+        width: Number(data.titleWidth),
+        height: Number(data.titleHeight),
+      };
+    });
+  expect(meta.lines).toBeLessThanOrEqual(2);
+  expect(meta.fs).toBeGreaterThan(1);
+  expect(meta.height).toBeLessThanOrEqual(78 - 16);
+  expect(meta.width).toBeLessThan(52 - 8);
 });
 
 test("choosing a style persists it through spineSetStyle", async ({ page }) => {
@@ -397,6 +475,23 @@ test("a Hebrew title sets canvas direction without mirroring the glyphs", async 
   const canvas = page.getByTestId("spine-preview-canvas");
   await expect(canvas).toHaveAttribute("data-direction", "rtl");
   await expect(canvas).toHaveAttribute("dir", "rtl");
+  // Hebrew still runs down the spine; the renderer mirrors the rotation
+  // rather than reversing the string.
+  await expect(canvas).toHaveAttribute("data-text-run", "vertical");
+  const hebrewMeta = await canvas.evaluate((element) => {
+    const data = (element as HTMLCanvasElement).dataset;
+    return {
+      titleCy: Number(data.titleCy),
+      authorCy: Number(data.authorCy),
+      authorHeight: Number(data.authorHeight),
+      colophonY: Number(data.colophonY),
+    };
+  });
+  expect(hebrewMeta.titleCy).toBeLessThan(236 / 3);
+  expect(hebrewMeta.authorCy).toBeGreaterThan((236 * 2) / 3);
+  expect(hebrewMeta.authorCy + hebrewMeta.authorHeight / 2).toBeLessThan(
+    hebrewMeta.colophonY,
+  );
   await expect(page.getByTestId("detail-title")).toHaveText(
     "המלחמה של העולמות",
   );

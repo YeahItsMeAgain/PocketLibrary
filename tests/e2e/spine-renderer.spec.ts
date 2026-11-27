@@ -6,6 +6,8 @@ import {
   contrast,
   fallbackCrop,
   readableInk,
+  SPINE_STRIP_SIZE,
+  spineTypeZones,
   textDirection,
   wrapGeometry,
 } from "../../src/library/spineRenderer";
@@ -67,6 +69,21 @@ test("wrapGeometry scales the spine with page count", () => {
 
   expect(wrapGeometry(0).spineW).toBe(10);
   expect(wrapGeometry(2000).spineW).toBe(40);
+});
+
+test("the real-book bands put the title up top and the author low", () => {
+  const zones = spineTypeZones();
+  const height = SPINE_STRIP_SIZE.height;
+  expect(zones.titleTop).toBeGreaterThan(0);
+  expect(zones.titleBottom).toBeLessThanOrEqual(height / 3);
+  expect(zones.titleCenter).toBeLessThan(height / 3);
+  expect(zones.authorTop).toBeGreaterThanOrEqual((height * 2) / 3);
+  expect(zones.authorCenter).toBeGreaterThan((height * 2) / 3);
+  expect(zones.titleBottom).toBeLessThan(zones.authorTop);
+  // The author never reaches the colophon rule at the base.
+  expect(zones.authorBottom).toBeLessThan(zones.colophonRuleY);
+  expect(zones.colophonRuleY).toBeLessThan(zones.colophonBaseY);
+  expect(zones.colophonBaseY).toBeLessThan(height);
 });
 
 test("textDirection follows the first strong character", () => {
