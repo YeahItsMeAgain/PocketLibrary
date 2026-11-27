@@ -1638,11 +1638,15 @@ pub fn run() {
             app.manage(spine_service::SpineService::new(data_dir.clone()));
             let spine_queue = spine_queue::SpineQueue::new(data_dir.clone(), app.handle().clone());
             app.manage(spine_queue);
-            // Once per model bundle, queue the existing library behind any
-            // restored jobs. New downloads, scans and cover changes enqueue
-            // their own book immediately.
-            app.state::<spine_queue::SpineQueue>()
-                .backfill_once(app.state::<Api>().inner());
+            // Once per launch, queue the existing library behind any restored
+            // jobs, but only books with no complete strip. This repairs a warm
+            // install whose backfill flag was already cleared as well as a
+            // cache that was trimmed or lost. New downloads, scans and cover
+            // changes enqueue their own book immediately.
+            app.state::<spine_queue::SpineQueue>().backfill_once(
+                app.state::<Api>().inner(),
+                app.state::<spine_service::SpineService>().inner(),
+            );
             let updates_state = updates::UpdatesState::from_config(app.config());
             app.manage(updates_state);
             app.manage(BackupExchange::default());

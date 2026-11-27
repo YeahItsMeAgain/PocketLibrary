@@ -569,6 +569,19 @@ test("mergeCachedStrips seeds state once and never enqueues", async ({
       strips,
       hydrated,
     );
+    const refreshed = mergeCachedStrips(
+      first.spines,
+      first.jobs,
+      [
+        {
+          bookId: 1,
+          verdict: "pass" as const,
+          spineDataUrl: "data:image/jpeg;base64,CC==",
+        },
+      ],
+      hydrated,
+      true,
+    );
     return {
       added: first.added,
       passSpine: first.spines[1],
@@ -578,6 +591,8 @@ test("mergeCachedStrips seeds state once and never enqueues", async ({
       secondAdded: second.added,
       sameSpines: second.spines === first.spines,
       sameJobs: second.jobs === first.jobs,
+      refreshedSpine: refreshed.spines[1],
+      refreshedAdded: refreshed.added,
     };
   });
 
@@ -590,6 +605,8 @@ test("mergeCachedStrips seeds state once and never enqueues", async ({
     secondAdded: [],
     sameSpines: true,
     sameJobs: true,
+    refreshedSpine: "data:image/jpeg;base64,CC==",
+    refreshedAdded: [1],
   });
 });
 
@@ -667,11 +684,10 @@ test("a failed job shows a marker until a manual generation succeeds", async ({
 
   await spine.click();
   await expect(page.getByTestId("book-detail")).toBeVisible();
-  await expect(page.getByTestId("spine-book-state")).toHaveAttribute(
-    "data-state",
-    "needs-attention",
-  );
   await openEdit(page);
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-book-state"),
+  ).toHaveAttribute("data-state", "needs-attention");
   await page.getByTestId("spine-generate").click();
   await expect(
     page.getByTestId("edit-book").getByTestId("spine-verdict"),
@@ -686,3 +702,68 @@ test("a failed job shows a marker until a manual generation succeeds", async ({
     page.getByTestId("spine").first().getByTestId("spine-generated"),
   ).toBeVisible();
 });
+
+test("a warm cache with a missing strip enqueues that book automatically", async ({
+  page,
+}) => {
+  // `backfillPending: false` is the stale-flag case: the shell's one-time
+  // backfill already ran, but this book never got art. The launch repair must
+  // still queue it once instead of leaving the shelf empty.
+  await boot(page, {
+    spine: { backfillPending: false, queueStepMs: 25 },
+  });
+
+  await expect
+    .poll(() => queuedIds(page), { timeout: 8_000 })
+    .toContain(1);
+  await expect(
+    page.getByTestId("spine").first().getByTestId("spine-generated"),
+  ).toBeVisible({ timeout: 8_000 });
+});
+
+test("Wrap and Full-bleed show generated art while Cloth keeps the face", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [
+      book(1, { spineStyle: "wrap" }),
+      book(2, { spineStyle: "full-bleed" }),
+      book(3, { spineStyle: "cloth" }),
+    ],
+    spine: {
+      backfillPending: false,
+      artifacts: {
+        1: artifact({ bookId: 1 }),
+        2: artifact({ bookId: 2 }),
+        3: artifact({ bookId: 3 }),
+      },
+    },
+  });
+
+  const spines = page.getByTestId("spine");
+  await expect(spines.nth(0).getByTestId("spine-generated")).toBeVisible();
+  await expect(spines.nth(1).getByTestId("spine-generated")).toBeVisible();
+  await expect(spines.nth(2).getByTestId("spine-generated")).toHaveCount(0);
+  await expect(spines.nth(2).locator(".spine-text")).toBeVisible();
+});
+
+test("the generated strip stays visible at 390 and 320 wide", async ({
+  page,
+}) => {
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await boot(page, {
+      spine: {
+        backfillPending: false,
+        artifacts: { 1: artifact({ bookId: 1 }) },
+      },
+    });
+    const image = page.getByTestId("spine-generated");
+    await expect(image).toBeVisible();
+    const box = await image.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThan(0);
+    await expectNoHorizontalOverflow(page);
+    await page.goto("about:blank");
+  }
+});
+

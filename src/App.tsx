@@ -317,22 +317,59 @@ function AppShell() {
   const initialLoadStarted = useRef(false);
   const spineBackfillStarted = useRef(false);
   const spineHydratedStarted = useRef(false);
+  const spineRepairStarted = useRef(false);
   const enqueueSpines = spineActivity.enqueue;
   const hydrateSpines = spineActivity.hydrate;
+  const hydrateFailed = spineActivity.hydrateFailed;
 
   useEffect(() => {
-    // Seed the wall from the cache as soon as the library is ready. This is
-    // independent of `backfillPending`: a warm cache has no queue work left,
-    // so the worker never emits a completion for it.
-    if (status?.state !== "ready" || spineHydratedStarted.current) return;
+    // Seed the wall from the cache as soon as the library is ready, then
+    // refresh on a wall reload and after every completed queue job. The first
+    // call is a launch seed; later calls may replace strips that changed.
+    if (status?.state !== "ready") return;
+    const first = !spineHydratedStarted.current;
     spineHydratedStarted.current = true;
+    const repairMissing = (cached: ReadonlySet<number> | null) => {
+      if (spineRepairStarted.current) return;
+      spineRepairStarted.current = true;
+      // Launch repair: a warm install has `backfillPending: false`, so the
+      // shell's one-shot backfill is already done. Any book without a cached
+      // strip is still queued (deduped by the shell queue) so spines generate
+      // automatically in the default Wrap style. When the bulk projection
+      // failed we cannot tell which books are cached, so enqueue all; the
+      // worker skips complete entries.
+      void platform
+        .listBooks()
+        .then((all) => {
+          const missing = all
+            .map((book) => book.id)
+            .filter((id) => !cached?.has(id));
+          if (missing.length > 0) enqueueSpines(missing);
+        })
+        .catch(() => {
+          // The wall's own load retries; the shell also repairs at launch.
+        });
+    };
     void platform
       .spineCachedStrips()
-      .then((strips) => hydrateSpines(strips))
+      .then((strips) => {
+        hydrateSpines(strips, !first);
+        repairMissing(new Set(strips.map((strip) => strip.bookId)));
+      })
       .catch(() => {
-        // A cold or unreadable cache is not a wall failure; jobs fill in.
+        // A cold or unreadable bulk projection is not a wall failure: fall
+        // back to one cached-artifact read per visible book and still queue
+        // the books that need generating.
+        hydrateFailed();
+        repairMissing(null);
       });
-  }, [status?.state, hydrateSpines]);
+  }, [
+    status?.state,
+    reloadKey,
+    hydrateSpines,
+    hydrateFailed,
+    enqueueSpines,
+  ]);
 
   useEffect(() => {
     // The shell queues the existing library once per model bundle and reports

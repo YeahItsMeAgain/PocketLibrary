@@ -44,22 +44,30 @@ export interface SpineActivityValue {
   /** Record a manual generation or a known artifact as the book's result. */
   noteReady(bookId: number, artifact?: SpineArtifact | null): void;
   /**
-   * Seed the wall from cached strips. Never enqueues work, and ignores books
-   * that are already hydrated, so a repeated call is a no-op.
+   * Seed the wall from cached strips. A repeated call with `refresh` updates
+   * strips that changed since launch (a queue job just finished, or the wall
+   * reloaded). Never enqueues work.
    */
-  hydrate(strips: SpineCachedStrip[]): void;
+  hydrate(strips: SpineCachedStrip[], refresh?: boolean): void;
+  /** The bulk launch projection failed; use the per-book read for visible books. */
+  hydrateFailed(): void;
+  /** Per-book fallback for visible books when the bulk call is unavailable. */
+  hydrateVisible(bookIds: number[]): void;
+  /** True when the bulk projection failed and the wall should use the fallback. */
+  bulkHydrationFailed: boolean;
 }
 
 /**
- * Merge cached strips into the wall state. Pure: already-hydrated ids are
- * ignored, fallback verdicts keep the Cloth spine, and no book is enqueued.
- * Reusing the same `hydrated` set makes a second call a no-op.
+ * Merge cached strips into the wall state. Pure: strips already hydrated are
+ * ignored unless `refresh` is set, fallback verdicts keep the Cloth spine, and
+ * no book is enqueued.
  */
 export function mergeCachedStrips(
   spines: Record<number, string>,
   jobs: Record<number, SpineBookState>,
   strips: readonly SpineCachedStrip[],
   hydrated: ReadonlySet<number>,
+  refresh = false,
 ): {
   spines: Record<number, string>;
   jobs: Record<number, SpineBookState>;
@@ -70,7 +78,8 @@ export function mergeCachedStrips(
   const added: number[] = [];
   for (const strip of strips) {
     const { bookId } = strip;
-    if (hydrated.has(bookId) || added.includes(bookId)) continue;
+    if (added.includes(bookId)) continue;
+    if (hydrated.has(bookId) && !refresh) continue;
     added.push(bookId);
     if (strip.verdict === "fallback") {
       if (bookId in nextSpines) {
@@ -118,6 +127,9 @@ const fallback: SpineActivityValue = {
   },
   noteReady: () => {},
   hydrate: () => {},
+  hydrateFailed: () => {},
+  hydrateVisible: () => {},
+  bulkHydrationFailed: false,
 };
 
 const SpineActivityContext = createContext<SpineActivityValue | null>(null);
@@ -131,11 +143,14 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
   const [paused, setPaused] = useState(false);
   const [jobs, setJobs] = useState<Record<number, SpineBookState>>({});
   const [spines, setSpines] = useState<Record<number, string>>({});
+  const [bulkHydrationFailed, setBulkHydrationFailed] = useState(false);
   const [readerOpen, setReaderOpen] = useState(false);
   const prevQueue = useRef<SpineQueueState | null>(null);
   const manualPaused = useRef(false);
   /** Ids the wall already knows a result for; never re-fetched by enqueue. */
   const hydrated = useRef<Set<number>>(new Set());
+  /** Ids the per-book fallback already asked the shell about. */
+  const requested = useRef<Set<number>>(new Set());
   const spinesRef = useRef(spines);
   const jobsRef = useRef(jobs);
   spinesRef.current = spines;
@@ -178,6 +193,29 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
     [applyArtifact],
   );
 
+  const hydrate = useCallback((strips: SpineCachedStrip[], refresh = false) => {
+    const merged = mergeCachedStrips(
+      spinesRef.current,
+      jobsRef.current,
+      strips,
+      hydrated.current,
+      refresh,
+    );
+    setBulkHydrationFailed(false);
+    if (merged.added.length === 0) return;
+    for (const bookId of merged.added) hydrated.current.add(bookId);
+    setSpines(merged.spines);
+    setJobs(merged.jobs);
+  }, []);
+
+  const refreshCached = useCallback(async () => {
+    try {
+      hydrate(await platform.spineCachedStrips(), true);
+    } catch {
+      // The per-book fallback and the next queue event retry.
+    }
+  }, [hydrate]);
+
   const handleQueue = useCallback(
     (next: SpineQueueState) => {
       const prev = prevQueue.current;
@@ -197,6 +235,10 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
           } else if (next.completed > prev.completed) {
             write(bookId, { state: "ready" });
             void loadArtifact(bookId);
+            // The bulk projection is the reliable path: refresh it so every
+            // completed job appears on the wall even if the per-book read
+            // races the cache install.
+            void refreshCached();
           }
         }
         if (next.currentBookId != null) {
@@ -208,7 +250,7 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
         return jobsNext;
       });
     },
-    [loadArtifact],
+    [loadArtifact, refreshCached],
   );
 
   useEffect(() => {
@@ -316,18 +358,21 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
     [applyArtifact, loadArtifact],
   );
 
-  const hydrate = useCallback((strips: SpineCachedStrip[]) => {
-    const merged = mergeCachedStrips(
-      spinesRef.current,
-      jobsRef.current,
-      strips,
-      hydrated.current,
-    );
-    if (merged.added.length === 0) return;
-    for (const bookId of merged.added) hydrated.current.add(bookId);
-    setSpines(merged.spines);
-    setJobs(merged.jobs);
+  const hydrateFailed = useCallback(() => {
+    setBulkHydrationFailed(true);
   }, []);
+
+  const hydrateVisible = useCallback(
+    (bookIds: number[]) => {
+      for (const bookId of bookIds) {
+        if (!Number.isInteger(bookId) || requested.current.has(bookId)) continue;
+        if (hydrated.current.has(bookId)) continue;
+        requested.current.add(bookId);
+        void loadArtifact(bookId);
+      }
+    },
+    [loadArtifact],
+  );
 
   const value = useMemo<SpineActivityValue>(
     () => ({
@@ -342,6 +387,9 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
       readerClosed,
       noteReady,
       hydrate,
+      hydrateFailed,
+      hydrateVisible,
+      bulkHydrationFailed,
     }),
     [
       queue,
@@ -355,6 +403,9 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
       readerClosed,
       noteReady,
       hydrate,
+      hydrateFailed,
+      hydrateVisible,
+      bulkHydrationFailed,
     ],
   );
 

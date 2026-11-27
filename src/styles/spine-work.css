@@ -72,6 +72,7 @@
 .spine-generated {
   position: absolute;
   inset: 0;
+  z-index: 2;
   display: block;
   width: 100%;
   height: 100%;
@@ -79,7 +80,11 @@
   object-fit: fill;
 }
 
+/* The generated strip sits above the cloth face but below the title (z3),
+   labels/seal (z5) and ribbon (z6). The shading pseudo-element stays above the
+   image so the shelf's edge light still reads. */
 .spine.has-generated::after {
+  z-index: 2;
   background: linear-gradient(
     90deg,
     rgba(0, 0, 0, 0.24),

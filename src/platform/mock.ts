@@ -287,6 +287,8 @@ export interface MockConfig {
   downloadFail?: boolean;
   /** Show the transient failover note while a mock download runs. */
   downloadFailover?: boolean;
+  /** Data URL used as every book's cover; defaults to the tiny SVG plate. */
+  coverDataUrl?: string;
   /** Force a typed failure reason. */
   downloadFailCode?: "mirror_failed" | "offline" | "truncated_file";
   /** Result the mock save picker reports; `null` simulates cancelling. */
@@ -1082,9 +1084,10 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
       hasGap: true,
       attribution: null,
     };
+    const initialCover = config.coverDataUrl ?? MOCK_COVER;
     enrichmentStates.set(book.id, state);
-    coverDataByBook.set(book.id, MOCK_COVER);
-    originalCoverData.set(book.id, MOCK_COVER);
+    coverDataByBook.set(book.id, initialCover);
+    originalCoverData.set(book.id, initialCover);
     fileDescriptions.set(book.id, book.description);
     return state;
   }

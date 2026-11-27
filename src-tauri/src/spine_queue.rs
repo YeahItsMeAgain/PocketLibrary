@@ -39,6 +39,8 @@ pub struct SpineQueue {
     app_data_dir: PathBuf,
     app: AppHandle,
     worker_running: AtomicBool,
+    /// The launch repair has already compared the catalogue to the cache.
+    repair_done: AtomicBool,
 }
 
 impl SpineQueue {
@@ -54,6 +56,7 @@ impl SpineQueue {
             app_data_dir,
             app,
             worker_running: AtomicBool::new(false),
+            repair_done: AtomicBool::new(false),
         }
     }
 
@@ -87,19 +90,35 @@ impl SpineQueue {
         self.kick();
     }
 
-    /// Queue the existing library once per model bundle. Restored pending jobs
-    /// stay ahead of it because they were enqueued first.
-    pub fn backfill_once(&self, api: &Api) {
-        let pending = self
-            .core
-            .lock()
-            .map(|core| core.backfill_pending())
-            .unwrap_or(false);
-        if !pending {
+    /// Queue every book that has no complete strip yet, once per launch.
+    ///
+    /// The flag in `backfill.json` still records the one-time full-library
+    /// backfill, but a warm install can have the flag cleared while books
+    /// imported later (or a cache trimmed/gone) still lack art. The repair
+    /// check is therefore unconditional and cheap: it reads
+    /// `artifact.json` ids, never hashes covers or runs inference. Cached
+    /// books are not enqueued; the queue core dedupes the rest.
+    pub fn backfill_once(&self, api: &Api, service: &SpineService) {
+        if self.repair_done.swap(true, Ordering::SeqCst) {
             return;
         }
         let ids = match api.list_books() {
-            Ok(books) => books.into_iter().map(|book| book.id).collect::<Vec<_>>(),
+            Ok(books) => {
+                let cached = service.cached_book_ids();
+                books
+                    .into_iter()
+                    .filter(|book| !cached.contains(&book.id))
+                    // A book without a cover cannot generate; leave it for a
+                    // later launch after the cover is restored.
+                    .filter(|book| {
+                        book.cover_path
+                            .as_deref()
+                            .map(|path| std::path::Path::new(path).is_file())
+                            .unwrap_or(false)
+                    })
+                    .map(|book| book.id)
+                    .collect::<Vec<_>>()
+            }
             Err(error) => {
                 // Leave the flag pending: the next launch (or the frontend
                 // fallback) can retry without a permanent skip.

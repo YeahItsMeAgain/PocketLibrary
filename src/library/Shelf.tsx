@@ -108,9 +108,12 @@ export const Spine = memo(function Spine({
 }: SpineProps) {
   const statusLabel = STATUS_LABELS[book.readingStatus];
   const style = useMemo(() => shelfSpineStyle(book), [book]);
+  // Missing/undefined is the documented Wrap default; only an explicit
+  // Cloth choice suppresses generated art.
+  const spineStyle = book.spineStyle ?? "wrap";
   // Wrap and Full-bleed paint the generated strip; Cloth is the typographic
   // spine rendered below. A rejected fallback never reaches here with a strip.
-  const showGenerated = Boolean(generatedSpine) && book.spineStyle !== "cloth";
+  const showGenerated = Boolean(generatedSpine) && spineStyle !== "cloth";
   const attention = spineState?.state === "needs-attention";
   const spineNote =
     spineState?.state === "working"

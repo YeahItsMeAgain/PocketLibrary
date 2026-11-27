@@ -10,23 +10,28 @@
 //! Nothing here touches the network. Models come from `spine_assets`, which
 //! extracts the APK assets on first use and sets `ORT_DYLIB_PATH`.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+#[cfg(test)]
 use std::time::SystemTime;
 
-use base64::Engine as _;
+#[cfg(test)]
 use base64::engine::general_purpose::STANDARD;
-use image::imageops::FilterType;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 
-use pocketlibrary_core::spine_cache::{ARTIFACT_FILE, SpineCache, cache_key as spine_cache_key};
+#[cfg(test)]
+use pocketlibrary_core::spine_cache::ARTIFACT_FILE;
+use pocketlibrary_core::spine_cache::SpineCache;
+use pocketlibrary_core::spine_cache::cache_key as spine_cache_key;
+use pocketlibrary_core::spine_strip;
 use pocketlibrary_core::{Api, ApiError, Book};
-use pocketlibrary_spine::{BookInput, Engine, Models, SPINE_H, SPINE_W, Stage};
+use pocketlibrary_spine::{BookInput, Engine, Models, Stage};
+#[cfg(test)]
+use pocketlibrary_spine::{SPINE_H, SPINE_W};
 
 use crate::spine_assets::{self, SpineModelPaths};
 
@@ -35,51 +40,12 @@ pub const BUNDLE_ID: &str = "spine-v1";
 /// Page estimate used when a book has no reliable page count.
 const ESTIMATED_PAGES: u32 = 320;
 
-/// The wire shape shared with the frontend. Kept camelCase by serde.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SpineArtifact {
-    pub book_id: i64,
-    /// "crop" | "inpaint" | "fallback"
-    pub route: String,
-    /// "pass" | "review" | "fallback"
-    pub verdict: String,
-    pub mask_percent: f64,
-    pub crop_box: Option<CropBox>,
-    /// `data:image/jpeg;base64,...`
-    pub art_data_url: String,
-    /// `data:image/jpeg;base64,...`, exactly 52 x 236.
-    pub spine_data_url: String,
-    /// `data:image/jpeg;base64,...`
-    pub fallback_data_url: String,
-    /// True when the page count used for geometry was an estimate.
-    #[serde(default)]
-    pub pages_approximate: bool,
-    pub run_json: Value,
-    pub qa_json: Value,
-}
-
-/// One shelf-ready strip projected from a complete cache entry. The wall only
-/// needs the verdict and the 52 x 236 image, so this wire shape stays small.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SpineCachedStrip {
-    pub book_id: i64,
-    /// "pass" | "review" | "fallback"
-    pub verdict: String,
-    /// `data:image/jpeg;base64,...`, exactly 52 x 236.
-    pub spine_data_url: String,
-}
-
-/// The v8 pipeline's `final.crop_box_work`, expressed for the wire.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CropBox {
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32,
-}
+// The wire shape lives in core with the projection that produces it, so the
+// real generation → cache → strip path is host-testable. Re-exported here for
+// the command signatures and the shell's tests.
+#[cfg(test)]
+pub use pocketlibrary_core::spine_strip::CropBox;
+pub use pocketlibrary_core::spine_strip::{SpineArtifact, SpineCachedStrip};
 
 /// Engine availability, surfaced by `spine_status`.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -236,49 +202,33 @@ impl SpineService {
     /// never runs inference and never hashes a cover. Corrupt entries, and
     /// entries whose strip cannot be decoded, are skipped.
     ///
-    /// A book can own more than one key (a changed cover keeps the old entry
-    /// until the trim); the most recently written artifact wins.
+    /// Every call writes one summary line to `spine/spine.log` so an empty
+    /// wall can be explained from a diagnostics export.
     pub fn cached_strips(&self) -> Vec<SpineCachedStrip> {
-        let Ok(entries) = fs::read_dir(self.cache.books_dir()) else {
-            return Vec::new();
+        let report = spine_strip::cached_strips(self.cache.books_dir());
+        let root_state = if report.root.is_dir() {
+            "present"
+        } else {
+            "missing"
         };
-        let mut latest: BTreeMap<i64, (SystemTime, SpineCachedStrip)> = BTreeMap::new();
-        for entry in entries.flatten() {
-            let path = entry.path();
-            let name = entry.file_name();
-            if name.to_string_lossy().starts_with('.') {
-                // Hidden staging directories are not complete entries.
-                continue;
-            }
-            if !entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false) {
-                continue;
-            }
-            let Some(artifact) = self.cache.read::<SpineArtifact>(&path) else {
-                continue;
-            };
-            let Some(spine_data_url) = projected_strip(&path, &artifact) else {
-                eprintln!(
-                    "pocketlibrary spine cache: cannot project strip in {}",
-                    path.display()
-                );
-                continue;
-            };
-            let modified = fs::metadata(path.join(ARTIFACT_FILE))
-                .and_then(|meta| meta.modified())
-                .unwrap_or(SystemTime::UNIX_EPOCH);
-            let strip = SpineCachedStrip {
-                book_id: artifact.book_id,
-                verdict: artifact.verdict,
-                spine_data_url,
-            };
-            match latest.get(&strip.book_id) {
-                Some((seen, _)) if *seen > modified => {}
-                _ => {
-                    latest.insert(strip.book_id, (modified, strip));
-                }
-            }
-        }
-        latest.into_values().map(|(_, strip)| strip).collect()
+        spine_assets::log(
+            &self.app_data_dir,
+            &format!(
+                "hydrate: scanned {}, projected {}, skipped {}, root {} ({root_state})",
+                report.scanned,
+                report.projected,
+                report.skipped,
+                report.root.display()
+            ),
+        );
+        report.strips
+    }
+
+    /// The ids that already own a complete artifact. This reads artifacts only
+    /// (no image decode, no cover hashing) and is the cheap repair check the
+    /// launch queue uses to decide which books still need a spine.
+    pub fn cached_book_ids(&self) -> HashSet<i64> {
+        spine_strip::cached_book_ids(self.cache.books_dir())
     }
 
     /// Resolve the model bundle once and report it. Never builds the engine.
@@ -492,119 +442,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 
 /// Build the wire artifact from the seven engine files in `dir`.
 pub fn artifact_from_dir(dir: &Path, book_id: i64) -> Result<SpineArtifact, ApiError> {
-    let run = read_json(&dir.join("run.json"))?;
-    let qa = read_json(&dir.join("qa.json"))?;
-
-    let route = run
-        .pointer("/final/route")
-        .and_then(Value::as_str)
-        .unwrap_or("fallback");
-    let verdict = run
-        .pointer("/final/verdict")
-        .and_then(Value::as_str)
-        .unwrap_or("fallback");
-    let mask_percent = run
-        .pointer("/mask/coverage_pct")
-        .and_then(Value::as_f64)
-        .unwrap_or(0.0);
-    let crop_box = run
-        .pointer("/final/crop_box_work")
-        .and_then(Value::as_array)
-        .and_then(|values| {
-            if values.len() < 4 {
-                return None;
-            }
-            Some(CropBox {
-                x: values[0].as_u64()? as u32,
-                y: values[1].as_u64()? as u32,
-                width: values[2].as_u64()? as u32,
-                height: values[3].as_u64()? as u32,
-            })
-        });
-
-    Ok(SpineArtifact {
-        book_id,
-        route: route_wire(route).to_owned(),
-        verdict: verdict_wire(verdict).to_owned(),
-        mask_percent,
-        crop_box,
-        art_data_url: jpeg_data_url(&dir.join("art.jpg"))?,
-        spine_data_url: spine_data_url(&dir.join("spine-2x.jpg"))?,
-        fallback_data_url: jpeg_data_url(&dir.join("fallback-spine.jpg"))?,
-        pages_approximate: false,
-        run_json: run,
-        qa_json: qa,
-    })
-}
-
-fn read_json(path: &Path) -> Result<Value, ApiError> {
-    let text = fs::read_to_string(path)
-        .map_err(|error| cache_error(format!("read {}: {error}", path.display())))?;
-    serde_json::from_str(&text)
-        .map_err(|error| cache_error(format!("parse {}: {error}", path.display())))
-}
-
-fn route_wire(route: &str) -> &'static str {
-    match route {
-        "text-free crop" | "crop" => "crop",
-        "inpaint" => "inpaint",
-        _ => "fallback",
-    }
-}
-
-fn verdict_wire(verdict: &str) -> &'static str {
-    match verdict {
-        "pass" => "pass",
-        "review" => "review",
-        _ => "fallback",
-    }
-}
-
-fn jpeg_data_url(path: &Path) -> Result<String, ApiError> {
-    let bytes =
-        fs::read(path).map_err(|error| cache_error(format!("read {}: {error}", path.display())))?;
-    Ok(format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
-}
-
-/// `spine-2x.jpg` is 104 x 472; the contract wants a 52 x 236 data URL.
-fn spine_data_url(path: &Path) -> Result<String, ApiError> {
-    let image = image::open(path)
-        .map_err(|error| cache_error(format!("decode {}: {error}", path.display())))?
-        .to_rgb8();
-    encode_spine_strip(&image)
-}
-
-/// A complete entry that has lost `spine-2x.jpg` can still be projected from
-/// the strip already stored in its artifact.
-fn spine_data_url_from_artifact(data_url: &str) -> Result<String, ApiError> {
-    let encoded = data_url
-        .strip_prefix("data:image/jpeg;base64,")
-        .unwrap_or(data_url);
-    let bytes = STANDARD
-        .decode(encoded)
-        .map_err(|error| cache_error(format!("decode cached spine: {error}")))?;
-    let image = image::load_from_memory(&bytes)
-        .map_err(|error| cache_error(format!("read cached spine image: {error}")))?
-        .to_rgb8();
-    encode_spine_strip(&image)
-}
-
-/// The shelf contract is one 52 x 236 JPEG, whichever file it came from.
-fn encode_spine_strip(image: &image::RgbImage) -> Result<String, ApiError> {
-    let spine = image::imageops::resize(image, SPINE_W, SPINE_H, FilterType::Nearest);
-    let mut bytes = Vec::new();
-    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, 92);
-    encoder
-        .encode_image(&spine)
-        .map_err(|error| cache_error(format!("encode spine: {error}")))?;
-    Ok(format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
-}
-
-/// Prefer the runtime file; fall back to the strip stored in the artifact.
-fn projected_strip(dir: &Path, artifact: &SpineArtifact) -> Option<String> {
-    spine_data_url(&dir.join("spine-2x.jpg"))
-        .or_else(|_| spine_data_url_from_artifact(&artifact.spine_data_url))
-        .ok()
+    spine_strip::artifact_from_dir(dir, book_id).map_err(cache_error)
 }
 
 fn bundle_bytes(paths: &SpineModelPaths) -> u64 {
@@ -668,6 +506,7 @@ fn cache_error(detail: String) -> ApiError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::Engine as _;
 
     fn fixture(dir: &Path) {
         fs::create_dir_all(dir).expect("create fixture");
@@ -948,5 +787,146 @@ mod tests {
             classify_model_error("JNI JavaVM::from_raw: jni error"),
             "error"
         );
+    }
+
+    /// A real EPUB on disk, exposed through the same `FileSource` seam the
+    /// scanner uses on Android. One file at the root is enough for the scan.
+    struct HostSource {
+        root: PathBuf,
+        name: String,
+    }
+
+    impl pocketlibrary_core::FileSource for HostSource {
+        fn list(
+            &self,
+            dir_handle: Option<&str>,
+        ) -> pocketlibrary_core::Result<Vec<pocketlibrary_core::SourceEntry>> {
+            if dir_handle.is_some() {
+                return Ok(Vec::new());
+            }
+            Ok(vec![pocketlibrary_core::SourceEntry {
+                name: self.name.clone(),
+                path: self.name.clone(),
+                kind: pocketlibrary_core::SourceKind::File,
+                handle: self.name.clone(),
+            }])
+        }
+
+        fn read_quick(
+            &self,
+            handle: &str,
+        ) -> pocketlibrary_core::Result<pocketlibrary_core::QuickBytes> {
+            let mut file = fs::File::open(self.root.join(handle))?;
+            pocketlibrary_core::QuickBytes::read_from(&mut file)
+        }
+
+        fn read_file(&self, handle: &str) -> pocketlibrary_core::Result<Vec<u8>> {
+            Ok(fs::read(self.root.join(handle))?)
+        }
+    }
+
+    fn host_models() -> Option<(PathBuf, PathBuf)> {
+        let repo = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()?
+            .to_path_buf();
+        let models = repo.join(".scratch/spine-cover-art-prototype/v8-app/models");
+        let migan =
+            repo.join(".scratch/spine-cover-art-prototype/v8-models/dist/inpaint-migan/migan_pipeline_v2.onnx");
+        (models.join("det.onnx").is_file()
+            && models.join("rec.onnx").is_file()
+            && models.join("keys.txt").is_file()
+            && migan.is_file())
+        .then_some((models, migan))
+    }
+
+    fn set_host_models(models: &Path, migan: &Path) {
+        static ONCE: std::sync::Once = std::sync::Once::new();
+        ONCE.call_once(|| {
+            // The service resolves models from the environment once per
+            // process; this test is the only writer in this binary.
+            unsafe {
+                std::env::set_var("SPINE_MODELS_DIR", models);
+                std::env::set_var("SPINE_MIGAN", migan);
+            }
+            if std::env::var_os("ORT_DYLIB_PATH").is_none() {
+                let candidates = [
+                    "/tmp/opencode/venv/lib/python3.13/site-packages/onnxruntime/capi/libonnxruntime.so.1.32.0",
+                    "/tmp/opencode/ortlib/libonnxruntime.so",
+                    "/usr/lib/libonnxruntime.so",
+                ];
+                if let Some(found) = candidates.iter().find(|path| Path::new(path).is_file()) {
+                    unsafe { std::env::set_var("ORT_DYLIB_PATH", found) };
+                }
+            }
+        });
+    }
+
+    /// The real path: generate a spine from a scanned book into the temp app
+    /// data dir, then project that same directory through `cached_strips()`.
+    /// A fixture that writes `spine-2x.jpg` by hand would not catch a cache
+    /// root, serialization or strip-size mismatch.
+    #[test]
+    fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
+        let Some((models, migan)) = host_models() else {
+            eprintln!("spine models missing; skipping real generation test");
+            return;
+        };
+        set_host_models(&models, &migan);
+
+        let temp = tempfile::tempdir().expect("tempdir");
+        let app_data = temp.path().join("app-data");
+        fs::create_dir_all(&app_data).expect("app data dir");
+        let api = Api::open(app_data.join("library.db")).expect("open catalog");
+
+        let library = temp.path().join("library");
+        fs::create_dir_all(&library).expect("library dir");
+        let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("test-assets/sample.epub");
+        fs::copy(&sample, library.join("sample.epub")).expect("copy sample");
+        let source = HostSource {
+            root: library,
+            name: "sample.epub".to_owned(),
+        };
+        api.scan(&source).expect("scan sample");
+        let book = api.list_books().expect("list books").remove(0);
+        assert!(
+            book.cover_path
+                .as_deref()
+                .is_some_and(|path| Path::new(path).is_file()),
+            "the scan must produce a cover for generation"
+        );
+
+        let service = SpineService::new(app_data.clone());
+        let artifact = service.generate(book.id, &api).expect("generate spine");
+        assert_eq!(artifact.book_id, book.id);
+        assert_eq!(&artifact.spine_data_url[..23], "data:image/jpeg;base64,");
+
+        // A fresh service (the next launch) scans the same app-data root.
+        let relaunched = SpineService::new(app_data.clone());
+        let strips = relaunched.cached_strips();
+        let strip = strips
+            .iter()
+            .find(|strip| strip.book_id == book.id)
+            .expect("the generated book projects from the cache root");
+        assert_eq!(strip.verdict, artifact.verdict);
+
+        let bytes = STANDARD
+            .decode(
+                strip
+                    .spine_data_url
+                    .strip_prefix("data:image/jpeg;base64,")
+                    .expect("data url prefix"),
+            )
+            .expect("base64 strip");
+        let image = image::load_from_memory(&bytes)
+            .expect("decode strip")
+            .to_rgb8();
+        assert_eq!((image.width(), image.height()), (SPINE_W, SPINE_H));
+
+        // The diagnostic summary names the root that was actually scanned.
+        let log = fs::read_to_string(app_data.join("spine").join("spine.log"))
+            .expect("hydration summary log");
+        assert!(log.contains("hydrate: scanned 1, projected 1, skipped 0"));
     }
 }

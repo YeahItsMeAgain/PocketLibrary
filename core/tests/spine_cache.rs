@@ -3,6 +3,7 @@
 mod common;
 
 use common::{FakeDir, database};
+use pocketlibrary_core::SpineStyle;
 use pocketlibrary_core::spine_cache::{SpineCache, cache_key};
 use serde::{Deserialize, Serialize};
 
@@ -78,4 +79,22 @@ fn the_skip_path_reads_one_book_and_skips_cached_entries() {
 
     assert_eq!(skipped, 1, "the complete entry is skipped");
     assert_eq!(queued, 1, "the uncached book stays queued");
+}
+
+#[test]
+fn a_new_book_defaults_to_the_wrap_spine_style() {
+    let (_dir, api) = database();
+    let source = FakeDir::new().file("one.epub");
+    api.scan(&source).expect("scan books");
+
+    let book = api.list_books().expect("list books").remove(0);
+    assert_eq!(
+        book.spine_style,
+        SpineStyle::Wrap,
+        "a scanned book's insert default is Wrap, not NULL"
+    );
+    assert_eq!(
+        api.book(book.id).expect("reload").spine_style,
+        SpineStyle::Wrap
+    );
 }

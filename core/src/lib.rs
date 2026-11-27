@@ -19,6 +19,7 @@ mod service;
 mod source;
 pub mod spine_cache;
 pub mod spine_queue;
+pub mod spine_strip;
 pub mod updates;
 
 pub use acquisition::{

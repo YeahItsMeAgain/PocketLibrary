@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentType,
   type CSSProperties,
 } from "react";
 
@@ -23,6 +24,7 @@ import { ReportAction } from "../Diagnostics";
 import { Masthead } from "../shell/Masthead";
 import { FilterStrip } from "../labels/FilterStrip";
 import { matchingBookIds } from "./filter";
+import type { DetailPanelProps } from "./DetailPanel";
 import { LibrarySkeleton } from "./LibrarySkeleton";
 import { ShelfCase, SpineFace } from "./Shelf";
 import { SPINE_GOLD, SPINE_INK, shelfMark, shelfSpineStyle } from "./spine";
@@ -45,9 +47,32 @@ import {
 // Keeping them out of the startup chunk protects first shelf time.
 const EpubReader = lazy(() => import("../reader/EpubReader"));
 const PdfReader = lazy(() => import("../reader/PdfReader"));
-const DetailPanel = lazy(() =>
-  import("./DetailPanel").then((module) => ({ default: module.DetailPanel })),
-);
+
+// DetailPanel is split out of the startup bundle but preloaded after the wall
+// paints. React.lazy always suspends on the first render even when its chunk is
+// already in memory (a retry lands on a later frame, ~120 ms on a throttled
+// phone); holding the resolved component lets a warm tap render synchronously.
+let detailPanelComponent: ComponentType<DetailPanelProps> | null = null;
+let detailPanelPromise: Promise<void> | null = null;
+function loadDetailPanel(): Promise<void> {
+  if (!detailPanelPromise) {
+    detailPanelPromise = import("./DetailPanel")
+      .then((module) => {
+        detailPanelComponent = module.DetailPanel;
+      })
+      .catch((error: unknown) => {
+        // A failed prefetch must not poison every later tap.
+        detailPanelPromise = null;
+        throw error;
+      });
+  }
+  return detailPanelPromise;
+}
+function DetailPanelHost(props: DetailPanelProps) {
+  if (!detailPanelComponent) throw loadDetailPanel();
+  const Panel = detailPanelComponent;
+  return <Panel {...props} />;
+}
 const ManageLabels = lazy(() =>
   import("../labels/ManageLabels").then((module) => ({
     default: module.ManageLabels,
@@ -83,6 +108,8 @@ export function LibraryWall({
     jobs: spineJobs,
     readerOpened: pauseForReader,
     readerClosed: resumeAfterReader,
+    bulkHydrationFailed,
+    hydrateVisible,
   } = useSpineActivity();
   const [range, setRange] = useState<ShelfRange>({ start: 0, end: 0 });
   const rangeRef = useRef(range);
@@ -135,6 +162,18 @@ export function LibraryWall({
     dismissHint,
   });
 
+  const displayBookIds = useMemo(
+    () => displayBooks.map((book) => book.id).join(","),
+    [displayBooks],
+  );
+
+  useEffect(() => {
+    // The bulk cache projection failed. Repair the visible shelf one book at
+    // a time instead of leaving every spine blank.
+    if (!bulkHydrationFailed) return;
+    hydrateVisible(displayBookIds ? displayBookIds.split(",").map(Number) : []);
+  }, [bulkHydrationFailed, displayBookIds, hydrateVisible]);
+
   const refreshLabels = useCallback(async () => {
     try {
       setLabels(await platform.listLabels());
@@ -149,7 +188,13 @@ export function LibraryWall({
       const next = await platform.listBooks();
       // The platform may return the same objects it mutated (the mock does);
       // memoised shelves need fresh references to pick up reader progress.
-      setBooks(next.map((book) => ({ ...book })));
+      // A missing style is the documented Wrap default.
+      setBooks(
+        next.map((book) => ({
+          ...book,
+          spineStyle: book.spineStyle ?? "wrap",
+        })),
+      );
     } catch {
       // A failed refresh leaves the current wall in place.
     }
@@ -194,6 +239,22 @@ export function LibraryWall({
   }, [readerBook, pauseForReader, resumeAfterReader]);
 
   useEffect(() => {
+    // The wall owns the first tap. Fetch the detail chunk once the shelves
+    // have painted, so the first book opens without waiting for the network;
+    // the chunk (and its edit code) is split out of the startup bundle.
+    if (!shelves) return;
+    let cancelled = false;
+    const warm = () => {
+      if (!cancelled) void loadDetailPanel().catch(() => {});
+    };
+    const timer = window.setTimeout(warm, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [shelves]);
+
+  useEffect(() => {
     let alive = true;
     setFailed(false);
     // The wall only waits for shelves and the book index. Label usage can
@@ -209,7 +270,12 @@ export function LibraryWall({
               : 1,
         });
         setShelves(nextShelves);
-        setBooks(nextBooks);
+        setBooks(
+          nextBooks.map((book) => ({
+            ...book,
+            spineStyle: book.spineStyle ?? "wrap",
+          })),
+        );
         window.requestAnimationFrame(() => {
           if (alive) void refreshLabels();
         });
@@ -534,7 +600,7 @@ export function LibraryWall({
       </div>
       {openBookId !== null ? (
         <Suspense fallback={null}>
-          <DetailPanel
+          <DetailPanelHost
             bookId={openBookId}
             shelfLabel={
               shelfMark(
