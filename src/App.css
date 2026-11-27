@@ -1274,7 +1274,9 @@ button:focus-visible {
   position: absolute;
   right: -12px;
   bottom: -14px;
-  z-index: 4;
+  z-index: 5;
+  /* Decorative: sit above the change-cover hit layer without eating its taps. */
+  pointer-events: none;
 }
 
 .detail h2 {

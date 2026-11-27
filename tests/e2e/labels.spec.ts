@@ -246,6 +246,90 @@ test("the detail cover shows a paper percentage sticker and a gold sticker, with
   ).toBeVisible();
 });
 
+test("the detail finished sticker paints above the change-cover layer at narrow widths", async ({
+  page,
+}) => {
+  await seed(page, {
+    state: "ready",
+    folderName: "PocketLibrary",
+    books: [mockBook(1, "Completed", 0, "finished")],
+  });
+
+  for (const width of [390, 320]) {
+    for (const reducedMotion of ["no-preference", "reduce"] as const) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.emulateMedia({ reducedMotion });
+
+      await page.getByTestId("spine").first().click();
+      const detail = page.getByTestId("book-detail");
+      await expect(detail).toBeVisible();
+      // Let the detail frame settle so the back button is a stable target.
+      await page.locator(".detail .v4d-frame").evaluate((element) =>
+        Promise.all(
+          element.getAnimations().map((animation) => animation.finished.catch(() => {})),
+        ),
+      );
+
+      const sticker = page.getByTestId("detail-sticker");
+      await expect(sticker).toHaveAttribute("data-sticker", "gold");
+      await expect(sticker).toBeVisible();
+
+      const layers = await page.evaluate(() => {
+        const seal = document.querySelector<HTMLElement>(
+          '[data-testid="detail-sticker"]',
+        );
+        const hit = document.querySelector<HTMLElement>(
+          '[data-testid="detail-cover-button"]',
+        );
+        if (!seal || !hit) throw new Error("cover layers missing");
+        const sealStyle = getComputedStyle(seal);
+        const hitStyle = getComputedStyle(hit);
+        const sealBox = seal.getBoundingClientRect();
+        const hitBox = hit.getBoundingClientRect();
+        const x = sealBox.x + sealBox.width / 2;
+        const y = sealBox.y + sealBox.height / 2;
+        const top = document.elementFromPoint(x, y);
+        return {
+          sealZ: Number(sealStyle.zIndex),
+          hitZ: Number(hitStyle.zIndex),
+          sealPointerEvents: sealStyle.pointerEvents,
+          // The seal centre sits over the full-cover hit layer, so paint order
+          // decides whether the brass seal or the dark gradient is visible.
+          overlap:
+            x >= hitBox.x &&
+            x <= hitBox.x + hitBox.width &&
+            y >= hitBox.y &&
+            y <= hitBox.y + hitBox.height,
+          sealInViewport:
+            sealBox.top >= 0 &&
+            sealBox.left >= 0 &&
+            sealBox.right <= window.innerWidth &&
+            sealBox.bottom <= window.innerHeight,
+          // Taps still fall through the decorative seal to the cover button.
+          hitReceivesTap: top === hit || hit.contains(top),
+        };
+      });
+
+      const label = `${width}px ${reducedMotion}`;
+      expect(layers.overlap, `${label}: seal overlaps cover hit layer`).toBe(
+        true,
+      );
+      expect(layers.sealInViewport, `${label}: seal fully on screen`).toBe(true);
+      expect(layers.sealZ, `${label}: seal paints above cover hit layer`)
+        .toBeGreaterThan(layers.hitZ);
+      expect(layers.sealPointerEvents, `${label}: seal passes taps through`).toBe(
+        "none",
+      );
+      expect(layers.hitReceivesTap, `${label}: cover button stays hittable`).toBe(
+        true,
+      );
+
+      await page.getByTestId("detail-back").click();
+      await expect(detail).toHaveCount(0);
+    }
+  }
+});
+
 test("manage labels can rename and recolour without a free colour picker", async ({
   page,
 }) => {
