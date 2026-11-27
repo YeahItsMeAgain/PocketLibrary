@@ -274,13 +274,15 @@ test("review state offers Use Cloth and applies it instantly", async ({
   expect(await generateCalls(page)).toBe(1);
 });
 
-test("fallback state applies Cloth automatically", async ({ page }) => {
+test("fallback state previews Cloth without persisting the style", async ({
+  page,
+}) => {
   await boot(page, { verdict: "fallback", route: "fallback" });
   await generate(page);
   const edit = page.getByTestId("edit-book");
   await expect(edit.getByTestId("spine-verdict")).toHaveText("Fallback");
   await expect(edit.getByTestId("spine-fallback-note")).toContainText(
-    "Cloth applied automatically",
+    "Cloth preview only",
   );
   await expect(page.getByTestId("spine-preview")).toHaveAttribute(
     "data-style",
@@ -290,6 +292,18 @@ test("fallback state applies Cloth automatically", async ({ page }) => {
     "aria-pressed",
     "true",
   );
+  // A failed result must not pin Cloth to the book: that would hide later
+  // successful art behind the cloth shelf with no way to tell why.
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __POCKETLIBRARY_SPINE_STYLES__?: Record<number, string>;
+          }
+        ).__POCKETLIBRARY_SPINE_STYLES__?.[1],
+    ),
+  ).toBeUndefined();
 });
 
 test("an approximate page count labels the spine width", async ({ page }) => {

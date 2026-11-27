@@ -8,6 +8,11 @@
 }
 
 .settings-main {
+  /* One column that can always shrink: an auto-sized track lets a wide table
+     or an unbreakable path expand the grid past the viewport, which is what
+     pushed the card off centre. */
+  grid-template-columns: minmax(0, 1fr);
+  box-sizing: border-box;
   min-height: 100dvh;
   padding-bottom: calc(var(--drawer-pull-space) + 40px);
 }
@@ -128,8 +133,34 @@
 }
 
 .settings-card {
+  box-sizing: border-box;
   width: min(370px, 100%);
+  max-width: 100%;
+  min-width: 0;
   text-align: left;
+}
+
+/* Grid and flex children default to min-width: auto, so long book titles,
+   model paths and error strings would otherwise widen the card instead of
+   wrapping or scrolling inside it. */
+.settings-card > *,
+.settings-section,
+.settings-list,
+.settings-list > div,
+.setting-row {
+  min-width: 0;
+}
+
+.settings-card .settings-note,
+.settings-card .settings-value,
+.settings-card .action-error,
+.settings-card .scan-notice {
+  overflow-wrap: anywhere;
+}
+
+.settings-card .setting-row dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .settings-card h2,

@@ -224,15 +224,29 @@ export function SpineStudio({
   const [internalStyle, setInternalStyle] = useState<SpineStyle>(
     initialStyle ?? "wrap",
   );
-  const style = controlledStyle ?? internalStyle;
+  // A fallback result previews as Cloth, because that is the honest output of
+  // the engine. It must not be persisted as the book's style: pinning Cloth
+  // here buried later successful art behind a cloth shelf forever.
+  const [autoCloth, setAutoCloth] = useState(false);
+  const persistedStyle: SpineStyle = controlledStyle ?? internalStyle;
+  const style: SpineStyle = autoCloth ? "cloth" : persistedStyle;
   const [prepared, setPrepared] = useState<RenderBook | null>(null);
   const [busy, setBusy] = useState(false);
+  // The Edit layer reports every style choice by updating `detail.spineStyle`,
+  // which flows back in here. That is a style change, not a different book: it
+  // must never re-run the artifact/preview load (which collapses the studio
+  // and makes the page jump). Read the value for the current book only when
+  // the book itself changes.
+  const initialStyleRef = useRef(initialStyle);
+  initialStyleRef.current = initialStyle;
 
   const chooseStyle = useCallback(
     (next: SpineStyle) => {
-      if (next === style) return;
+      const current = controlledStyle ?? internalStyle;
+      setAutoCloth(false);
+      if (next === current) return;
       if (onStyleChange) {
-        onStyleChange(next, style);
+        onStyleChange(next, current);
         return;
       }
       setInternalStyle(next);
@@ -240,23 +254,15 @@ export function SpineStudio({
         // The preview still switches; the next open retries persistence.
       });
     },
-    [bookId, onStyleChange, style],
+    [bookId, controlledStyle, internalStyle, onStyleChange],
   );
-
-  const applyAutomaticCloth = useCallback(() => {
-    if (onStyleChange) {
-      if (style !== "cloth") onStyleChange("cloth", style);
-      return;
-    }
-    setInternalStyle("cloth");
-    void platform.spineSetStyle(bookId, "cloth").catch(() => {});
-  }, [bookId, onStyleChange, style]);
 
   useEffect(() => {
     let alive = true;
     setState({ kind: "loading" });
     setPrepared(null);
-    setInternalStyle(initialStyle ?? "wrap");
+    setInternalStyle(initialStyleRef.current ?? "wrap");
+    setAutoCloth(false);
     setStatus(null);
     // Opening a book must do zero engine work: only read the cache. Model
     // resolution (JNI asset extraction, ONNX Runtime) waits for Generate.
@@ -269,7 +275,7 @@ export function SpineStudio({
           // Reading a cached result also repairs the wall: an entry loaded
           // here is the same strip the shelf should show.
           noteReady(bookId, artifact);
-          if (artifact.verdict === "fallback") setInternalStyle("cloth");
+          if (artifact.verdict === "fallback") setAutoCloth(true);
         } else {
           setState({ kind: "idle" });
         }
@@ -286,7 +292,7 @@ export function SpineStudio({
     return () => {
       alive = false;
     };
-  }, [bookId, initialStyle, noteReady]);
+  }, [bookId, noteReady]);
 
   useEffect(() => {
     // A queued job that finishes while the sheet is open should appear without
@@ -367,7 +373,9 @@ export function SpineStudio({
       ]);
       if (nextStatus) setStatus(nextStatus);
       if (artifact.verdict === "fallback") {
-        applyAutomaticCloth();
+        setAutoCloth(true);
+      } else {
+        setAutoCloth(false);
       }
       setState({ kind: "result", artifact });
       noteReady(bookId, artifact);
@@ -381,7 +389,7 @@ export function SpineStudio({
     } finally {
       setBusy(false);
     }
-  }, [bookId, busy, noteReady, applyAutomaticCloth]);
+  }, [bookId, busy, noteReady]);
 
   const engineReady =
     status === null ||
@@ -585,7 +593,7 @@ export function SpineStudio({
                   className="spine-note"
                   data-testid="spine-readonly-fallback-note"
                 >
-                  Cloth applied automatically.
+                  Cloth preview only — this result is not applied to the shelf.
                 </p>
               ) : (
                 <p
@@ -610,9 +618,17 @@ export function SpineStudio({
                   />
                 </div>
               ) : (
-                <p className="spine-fine" role="status">
-                  Preparing the spine preview…
-                </p>
+                <div
+                  className={`spine-preview spine-preview--static${
+                    style === "wrap" ? " is-wrap" : ""
+                  }`}
+                  data-testid="spine-static-preview"
+                  data-style={style}
+                >
+                  <p className="spine-fine" role="status">
+                    Preparing the spine preview…
+                  </p>
+                </div>
               )}
               {state.artifact.verdict !== "pass" && onFixSpine ? (
                 <button
@@ -642,8 +658,8 @@ export function SpineStudio({
                 </p>
               ) : state.artifact.verdict === "fallback" ? (
                 <p className="spine-note" data-testid="spine-fallback-note">
-                  Cloth applied automatically. The wrap stays available as a
-                  preview below.
+                  Cloth preview only. The shelf keeps the book's selected style
+                  until the spine passes; try Generate again.
                 </p>
               ) : (
                 <p className="spine-fine" data-testid="spine-pass-note">
@@ -717,9 +733,17 @@ export function SpineStudio({
                   </p>
                 </>
               ) : (
-                <p className="spine-fine" role="status">
-                  Preparing the spine preview…
-                </p>
+                <div
+                  className={`spine-preview${
+                    style === "wrap" ? " is-wrap" : ""
+                  }`}
+                  data-testid="spine-preview"
+                  data-style={style}
+                >
+                  <p className="spine-fine" role="status">
+                    Preparing the spine preview…
+                  </p>
+                </div>
               )}
             </>
           )}

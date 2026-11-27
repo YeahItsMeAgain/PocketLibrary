@@ -345,6 +345,150 @@ test("Escape closes only the Edit layer", async ({ page }) => {
 });
 
 for (const width of [390, 320]) {
+  test(`switching spine styles never moves the page at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await boot(page);
+    await openDetail(page);
+    await openEdit(page);
+    await page.getByTestId("spine-generate").click();
+    await expect(
+      page.getByTestId("edit-book").getByTestId("spine-verdict"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("spine-style-grid").locator("canvas"),
+    ).toHaveCount(3);
+
+    // Put the whole stage and the style row in view so a click never needs to
+    // scroll anything into view first.
+    await page
+      .getByTestId("spine-preview")
+      .evaluate((element) => element.scrollIntoView({ block: "start" }));
+    await page.waitForTimeout(150);
+
+    const read = () =>
+      page.evaluate(() => {
+        const layer = document.querySelector<HTMLElement>(
+          '[data-testid="edit-book"]',
+        );
+        const box = (selector: string) => {
+          const element = document.querySelector<HTMLElement>(selector);
+          if (!element) return null;
+          const rect = element.getBoundingClientRect();
+          return { top: rect.top, height: rect.height };
+        };
+        return {
+          windowScrollY: window.scrollY,
+          layerScrollTop: layer?.scrollTop ?? -1,
+          documentScrollHeight: document.documentElement.scrollHeight,
+          layerScrollHeight: layer?.scrollHeight ?? -1,
+          stage: box('[data-testid="spine-preview"]'),
+          heading: box("#spine-studio-title"),
+          grid: box('[data-testid="spine-style-grid"]'),
+          studioHeight:
+            document
+              .querySelector<HTMLElement>('[data-testid="spine-studio"]')
+              ?.getBoundingClientRect().height ?? -1,
+          chipTops: Array.from(
+            document.querySelectorAll<HTMLElement>(
+              '[data-testid^="spine-style-"]',
+            ),
+          )
+            .filter((element) => element.tagName === "BUTTON")
+            .map((element) => element.getBoundingClientRect().top),
+        };
+      });
+
+    const baseline = await read();
+    expect(baseline.stage).not.toBeNull();
+    expect(baseline.heading).not.toBeNull();
+    expect(baseline.grid).not.toBeNull();
+    // Wrap, Full-bleed and Cloth stay on one row.
+    expect(new Set(baseline.chipTops).size).toBe(1);
+
+    for (const style of ["full-bleed", "cloth", "wrap"]) {
+      // Sample every frame: the old regression collapsed the whole studio to
+      // its loading placeholder for a few frames after each choice, which a
+      // settled-state assertion would miss.
+      await page.evaluate(() => {
+        const layer = document.querySelector<HTMLElement>(
+          '[data-testid="edit-book"]',
+        );
+        const studio = document.querySelector<HTMLElement>(
+          '[data-testid="spine-studio"]',
+        );
+        const store = window as unknown as {
+          __spineJumpSamples?: Array<{
+            scrollTop: number;
+            studioHeight: number;
+          }>;
+          __stopSpineJumpSampling?: () => void;
+        };
+        const samples: Array<{ scrollTop: number; studioHeight: number }> = [];
+        store.__spineJumpSamples = samples;
+        let active = true;
+        store.__stopSpineJumpSampling = () => {
+          active = false;
+        };
+        const tick = () => {
+          if (!active) return;
+          samples.push({
+            scrollTop: layer?.scrollTop ?? -1,
+            studioHeight: studio?.getBoundingClientRect().height ?? -1,
+          });
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+
+      await page.getByTestId(`spine-style-${style}`).click();
+      await expect(page.getByTestId("spine-preview")).toHaveAttribute(
+        "data-style",
+        style,
+      );
+      await page.waitForTimeout(400);
+      const samples = await page.evaluate(() => {
+        const store = window as unknown as {
+          __spineJumpSamples?: Array<{
+            scrollTop: number;
+            studioHeight: number;
+          }>;
+          __stopSpineJumpSampling?: () => void;
+        };
+        store.__stopSpineJumpSampling?.();
+        return store.__spineJumpSamples ?? [];
+      });
+      expect(samples.length).toBeGreaterThan(5);
+      for (const sample of samples) {
+        expect(sample.scrollTop).toBe(baseline.layerScrollTop);
+        expect(
+          Math.abs(sample.studioHeight - baseline.studioHeight),
+        ).toBeLessThanOrEqual(1);
+      }
+
+      const next = await read();
+
+      expect(next.windowScrollY).toBe(0);
+      expect(next.layerScrollTop).toBe(baseline.layerScrollTop);
+      expect(next.documentScrollHeight).toBe(baseline.documentScrollHeight);
+      expect(next.layerScrollHeight).toBe(baseline.layerScrollHeight);
+      expect(Math.abs(next.stage!.top - baseline.stage!.top)).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(next.stage!.height - baseline.stage!.height),
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(next.heading!.top - baseline.heading!.top),
+      ).toBeLessThanOrEqual(1);
+      expect(Math.abs(next.grid!.top - baseline.grid!.top)).toBeLessThanOrEqual(
+        1,
+      );
+      expect(new Set(next.chipTops).size).toBe(1);
+    }
+  });
+}
+
+for (const width of [390, 320]) {
   test(`the read and edit layers do not overflow at ${width}px`, async ({
     page,
   }) => {
