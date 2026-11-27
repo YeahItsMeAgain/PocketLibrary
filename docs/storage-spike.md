@@ -1,5 +1,8 @@
 # Android storage spike (ticket 10)
 
+> **Historical.** This describes the throwaway 0.1.0 diagnostic build, not the
+> current app. Version, SDK and APK hashes below are from that build.
+
 A throwaway diagnostic build that proves the SAF (Storage Access Framework)
 library-folder flow on a real phone using `tauri-plugin-android-fs` **30.2.0**.
 

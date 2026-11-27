@@ -127,6 +127,12 @@ sanity-checks the APK (version, `assets/spine/*`, `lib/arm64-v8a/libonnxruntime.
 `extractNativeLibs="true"`). It is safe to re-run; a second run applies no
 patches and rebuilds only what changed.
 
+With no release keystore (for example on a CI runner), set
+`POCKETLIBRARY_ANDROID_UNSIGNED=1` to build a debug APK instead. The same
+version, asset and native-library assertions still run; only signing is
+skipped. When `POCKETLIBRARY_KEYSTORE` is present the script always builds the
+signed release APK.
+
 ### When to run `tauri android init`
 
 Only after deleting `src-tauri/gen/android`, or when you deliberately want to
@@ -169,8 +175,11 @@ Release, arm64 only (the default):
 src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 ```
 
-Release builds are minified and signed with the release key, so they are
-roughly 10–20 MB. Use `--split-per-abi` if you want per-ABI release APKs.
+Release builds are minified and signed with the release key. The current arm64
+APK is about 65 MB.
+
+That includes the ~41.2 MB spine model bundle. Use `--split-per-abi` if you
+want per-ABI release APKs.
 
 Debug output, only with `--debug`:
 
@@ -344,5 +353,5 @@ machine with the Tauri desktop prerequisites.
   `aapt2` + Playwright, plus sideloading on a physical phone via `adb`.
 - **`adb` has no device**: expected. `tauri android dev/run` need a device;
   `init/build` do not.
-- **APK is ~129 MiB**: debug builds keep Rust symbols. Release builds are much
-  smaller.
+- **Debug APK is ~286 MiB**: debug builds keep Rust symbols. Release builds are
+  much smaller.

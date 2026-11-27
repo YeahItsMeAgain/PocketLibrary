@@ -17,3 +17,7 @@ The five canonical defaults are used: `needs-triage`, `needs-info`, `ready-for-a
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` at the repo root plus `docs/adr/`. See `docs/agents/domain.md`.
+
+## Parallel work
+
+Multiple agents need one worktree each and a file-ownership table; see [`docs/agents/parallel-work.md`](docs/agents/parallel-work.md).

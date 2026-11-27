@@ -1,5 +1,9 @@
 # PocketLibrary 0.1.6 release notes
 
+> **Historical.** The version, schema and artifact numbers below describe the
+> release named in the title, not the current code. Current values live in the
+> repository metadata checked by `scripts/check-docs.mjs`.
+
 Android-only, arm64-v8a, package `app.pocketlibrary`, version `0.1.6`
 (versionCode `1004`), Android 8.0+ (API 24, targets API 36).
 

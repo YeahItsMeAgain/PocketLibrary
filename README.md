@@ -1,12 +1,12 @@
 # PocketLibrary
 
-[![CI](https://github.com/YeahItsMeAgain/PocketLibrary/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/YeahItsMeAgain/PocketLibrary/actions/workflows/ci.yml)
+[![Check](https://github.com/YeahItsMeAgain/PocketLibrary/actions/workflows/check.yml/badge.svg?branch=master)](https://github.com/YeahItsMeAgain/PocketLibrary/actions/workflows/check.yml)
 
 An Android-only reading room for the EPUBs and PDFs you already own. Point it at
 a folder, arrange the books on manual shelves, and read them in place. No
 account, sync service, store or telemetry.
 
-**Version 0.1.7** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
+**Latest release 0.1.7** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
 
 ## Features
 
@@ -80,8 +80,11 @@ source scripts/android-env.sh
 npm run tauri android build -- --apk --target aarch64 --ci
 ```
 
-CI runs the core tests, type check, web build and Playwright suite. The Android
-APK is built locally because it needs the SDK, NDK and release keystore.
+CI runs the fast gate (`./scripts/check.sh`): type check, web build, Rust
+format/clippy/tests, the smoke/spine/reader Playwright specs and the Android
+patch check. The full suite and APK build are opt-in (`./scripts/check.sh full`,
+`./scripts/check.sh android`); the manual Android workflow builds an unsigned
+debug APK when no release keystore is configured.
 
 ## Architecture
 

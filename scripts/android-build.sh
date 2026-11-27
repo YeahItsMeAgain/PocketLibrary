@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Build a signed, arm64 release APK from a clean checkout.
+# Build an arm64 APK from a clean checkout.
 #
 # Usage:
 #   ./scripts/android-build.sh
+#   POCKETLIBRARY_ANDROID_UNSIGNED=1 ./scripts/android-build.sh   # no keystore
 #
 # This is the one-command Android path. It:
 #   1. sources scripts/android-env.sh (JDK, SDK, NDK, signing env);
@@ -21,7 +22,11 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 ANDROID_PROJECT="$REPO_ROOT/src-tauri/gen/android"
-APK="$ANDROID_PROJECT/app/build/outputs/apk/universal/release/app-universal-release.apk"
+
+# CI has no release keystore. POCKETLIBRARY_ANDROID_UNSIGNED=1 asks for a debug
+# APK instead of a signed release APK; when a keystore is present the release
+# path still wins. This keeps local releases signed and lets CI verify contents.
+BUILD_VARIANT="release"
 
 die() {
   printf 'error: %s\n' "$*" >&2
@@ -35,6 +40,20 @@ info() {
 # shellcheck source=android-env.sh
 source "$HERE/android-env.sh"
 
+if [[ "${POCKETLIBRARY_ANDROID_UNSIGNED:-0}" == "1" && -z "${POCKETLIBRARY_KEYSTORE:-}" ]]; then
+  BUILD_VARIANT="debug"
+  info "Release signing is not configured; building a debug APK (signing skipped)"
+  info "Set POCKETLIBRARY_KEYSTORE and POCKETLIBRARY_KEYSTORE_PASS to build a signed release APK"
+fi
+
+if [[ "$BUILD_VARIANT" == "debug" ]]; then
+  APK="$ANDROID_PROJECT/app/build/outputs/apk/universal/debug/app-universal-debug.apk"
+  BUILD_ARGS=(--debug --apk --target aarch64 --ci)
+else
+  APK="$ANDROID_PROJECT/app/build/outputs/apk/universal/release/app-universal-release.apk"
+  BUILD_ARGS=(--apk --target aarch64 --ci)
+fi
+
 [ -f "$ANDROID_PROJECT/app/build.gradle.kts" ] || die "Android project not found at $ANDROID_PROJECT
 run \`npm run tauri android init -- --ci\` once, then re-run ./scripts/android-build.sh"
 
@@ -44,9 +63,9 @@ info "Re-applying Android patches (idempotent)"
 info "Staging spine models and ONNX Runtime"
 "$HERE/stage-spine-android-assets.sh"
 
-info "Building the release APK (arm64)"
+info "Building the $BUILD_VARIANT APK (arm64)"
 cd "$REPO_ROOT"
-npm run tauri android build -- --apk --target aarch64 --ci
+npm run tauri android build -- "${BUILD_ARGS[@]}"
 
 [ -f "$APK" ] || die "build finished but no APK at $APK"
 

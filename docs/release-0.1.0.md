@@ -1,6 +1,10 @@
 # PocketLibrary 0.1.0 release notes
 
-The current release is [0.1.1](release-0.1.1.md). These notes are kept for
+> **Historical.** The version, schema and artifact numbers below describe the
+> release named in the title, not the current code. Current values live in the
+> repository metadata checked by `scripts/check-docs.mjs`.
+
+The next release was [0.1.1](release-0.1.1.md). These notes are kept for
 history.
 
 ## 0.1.0

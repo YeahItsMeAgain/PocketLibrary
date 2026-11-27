@@ -20,27 +20,42 @@ telemetry.
 Prerequisites are Node 24, Rust stable, and (for Android builds) JDK 21 plus the
 Android SDK/NDK described in [`docs/build.md`](docs/build.md).
 
+The single verification gate is `./scripts/check.sh` (also `npm run check`). It
+names any failed stage and prints that stage's log tail. It checks formatting
+first, then runs the remaining stages (independent web, core and spine groups
+in parallel): `npx tsc --noEmit`, `npm run build`, `cargo fmt --check` for
+`core`, `spine` and `src-tauri`, `cargo clippy -- -D warnings` and `cargo test`
+for `core` and `spine`, the smoke/spine/reader Playwright specs serially, and
+`./scripts/android-patch.sh check`.
+
 ```bash
 npm ci
-npm run build
-npx tsc --noEmit
-npm run test:e2e                 # Playwright; installs its own browser if needed
-cargo test --manifest-path core/Cargo.toml
+npx playwright install chromium   # once, if the browser is missing
+./scripts/check.sh                # fast gate; what CI runs on every push/PR
+./scripts/check.sh full           # adds the full Playwright suite + Android cross-check
+./scripts/check.sh android        # builds the arm64 APK (slow; needs SDK/NDK)
 ```
+
+`full` adds the complete Playwright suite and
+`source scripts/android-env.sh && (cd src-tauri && cargo check --target aarch64-linux-android -p pocketlibrary)`.
+`android` is the same as `./scripts/android-build.sh`; it needs the SDK, NDK and
+(unless `POCKETLIBRARY_ANDROID_UNSIGNED=1`) a local release keystore.
+
+The fast gate is the only job that runs on every push and pull request. The
+Android APK job is manual (`workflow_dispatch`); in CI it builds a debug APK
+when no release keystore is present, and asserts the APK contains the spine
+assets and native libraries. Release signing stays local because its keystore
+is a secret.
 
 Useful extra checks:
 
 ```bash
-npx playwright install --with-deps chromium   # CI-equivalent browser setup
-source scripts/android-env.sh
-cargo clippy --manifest-path src-tauri/Cargo.toml \
-  --target aarch64-linux-android --all-targets -- -D warnings
 node perf/bench.mjs                            # 2,000-book proxy benchmark
 ```
 
-The Android APK is **not** built in CI because it needs the SDK, NDK and a local
-release keystore. Build it locally with the commands in [`docs/build.md`](docs/build.md)
-or the README, and run the device checklist before calling a release done.
+Build and sign a release APK locally with the commands in
+[`docs/build.md`](docs/build.md), and run the device checklist before calling a
+release done.
 
 ## Code style
 
@@ -51,6 +66,19 @@ or the README, and run the device checklist before calling a release done.
   directly from components.
 - Keep the Rust core free of Tauri dependencies so it stays testable on a
   headless host. Run `cargo fmt` and keep `cargo clippy` clean.
+- Keep modules within the size budgets checked by
+  `npm run check:structure` (`scripts/check-structure.mjs`). TypeScript under
+  `src/` warns at 600 lines; Rust under `core/src`, `spine/src` and
+  `src-tauri/src` warns at 800; either fails at 1,000 lines unless the file is
+  allowlisted in the script with a reason and a follow-up. Allowlisted files
+  are pinned to their current size, so split them instead of growing the
+  baseline.
+- Keep the crate dependency arrows one-way: `core` must not depend on Tauri or
+  `pocketlibrary-spine`, `spine` must not depend on `core` or `src-tauri`, and
+  only `src-tauri` may depend on both. In the web seam,
+  `src/platform/index.ts` and `src/platform/types.ts` must not import React,
+  and `src/spineSpec.ts` stays dependency-free. The structure check enforces
+  all of this.
 - Prefer small, readable functions and explicit types at module boundaries.
   Avoid unrelated refactors in a bug-fix commit.
 - Add or update tests for behaviour changes. Playwright specs live in
