@@ -96,14 +96,6 @@ const ALLOWLIST = [
     followUp: "Separate the archive codec from the merge policy module.",
   },
   {
-    path: "src/library/spineRenderer.ts",
-    baseline: 1330,
-    reason:
-      "First review item: canvas spine rendering, metrics, fallbacks and the model-event bridge live together.",
-    followUp:
-      "Split drawing, metrics and the queue/event bridge; target <600 lines.",
-  },
-  {
     path: "src/library/DetailPanel.tsx",
     baseline: 1069,
     reason:
