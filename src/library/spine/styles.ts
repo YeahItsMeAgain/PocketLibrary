@@ -11,10 +11,9 @@ import {
   mix,
   paletteFor,
   panelCrop,
-  readableInk,
   SPINE_H,
-  SPINE_RAIL,
   SPINE_W,
+  spineScrimRect,
   wrapGeometry,
 } from "./geometry";
 import {
@@ -44,32 +43,46 @@ function provenance(book: RenderBook): "original" | "reconstructed" | "fallback"
 }
 
 /**
- * The prototype's smoked Full-bleed rail: 20 px wide, inset 2 px, a thin cream
- * border, and a rule under the head. It is painted before the type so the
- * contrast guard samples the rail composite; a local scrim can then raise the
- * ink alpha without touching the art.
+ * Paint the smoked type window before the type so the contrast guard samples
+ * the real backdrop. Wrap gets a hard inset label with a cream hairline;
+ * Full-bleed gets a softer, narrower scrim that leaves the art visible at both
+ * edges. The type itself stays centred on the spine in both styles.
  */
-function drawFullBleedRail(
+export function drawSpineWindow(
   ctx: CanvasRenderingContext2D,
-  book: RenderBook,
+  x: number,
+  width: number,
+  style: "wrap" | "full-bleed",
 ) {
-  const palette = paletteFor(book);
-  const railX = SPINE_W - SPINE_RAIL.width - SPINE_RAIL.inset;
-  const railTop = SPINE_RAIL.head;
-  const railHeight = SPINE_H - SPINE_RAIL.head - SPINE_RAIL.tail;
+  const rect = spineScrimRect(style, width);
   ctx.save();
-  ctx.fillStyle = mix("#0c0d10", palette.avg, 0.1);
-  ctx.globalAlpha = 0.88;
-  ctx.fillRect(railX, railTop, SPINE_RAIL.width, railHeight);
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = "rgba(240,226,196,.24)";
-  ctx.lineWidth = SPINE_RAIL.borderWidth;
-  ctx.strokeRect(
-    railX + 0.3,
-    railTop + 0.3,
-    SPINE_RAIL.width - 0.6,
-    railHeight - 0.6,
-  );
+  if (style === "wrap") {
+    ctx.fillStyle = "rgba(8,6,4,0.78)";
+    ctx.fillRect(x + rect.x, rect.y, rect.width, rect.height);
+    ctx.strokeStyle = "rgba(240,226,196,0.22)";
+    ctx.lineWidth = 0.6;
+    ctx.strokeRect(
+      x + rect.x + 0.3,
+      rect.y + 0.3,
+      rect.width - 0.6,
+      rect.height - 0.6,
+    );
+    ctx.fillStyle = "rgba(240,226,196,0.16)";
+    ctx.fillRect(x + rect.x + 2.5, rect.y + 3.5, rect.width - 5, 0.6);
+  } else {
+    const gradient = ctx.createLinearGradient(
+      x + rect.x,
+      0,
+      x + rect.x + rect.width,
+      0,
+    );
+    gradient.addColorStop(0, "rgba(8,6,4,0)");
+    gradient.addColorStop(0.16, "rgba(8,6,4,0.84)");
+    gradient.addColorStop(0.84, "rgba(8,6,4,0.84)");
+    gradient.addColorStop(1, "rgba(8,6,4,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x + rect.x, rect.y, rect.width, rect.height);
+  }
   ctx.restore();
 }
 
@@ -81,45 +94,58 @@ export function drawFullBleed(
   vignette(ctx, SPINE_W, SPINE_H);
   spineEdges(ctx, SPINE_W, SPINE_H);
   ctx.direction = book.direction;
-  drawFullBleedRail(ctx, book);
+  drawSpineWindow(ctx, 0, SPINE_W, "full-bleed");
   const meta = drawSpineType(ctx, book, SPINE_W, 0, "full-bleed");
   grain(ctx, SPINE_W, SPINE_H, 0.03);
-  return meta;
+  return { ...meta, scrim: true, scrimAlpha: 0.84 };
 }
 
 export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): RenderMeta {
   const palette = paletteFor(book);
+  // The cloth is derived from the sampled jacket palette, then pulled towards a
+  // dyed book cloth so it never reads as a flat grey. It is always dark enough
+  // for warm foil; a light jacket does not produce a washed-out board.
   let cloth = palette.light
-    ? mix(palette.avg, "#1c1611", 0.68)
-    : mix(palette.avg, "#0d0b09", 0.58);
-  if (luminance(cloth) > 0.24) cloth = mix(cloth, "#0b0907", 0.35);
-  const foil = readableInk(cloth) === "#f2e6c9" ? "#e8d3a1" : "#2b2018";
+    ? mix(palette.avg, "#231610", 0.68)
+    : mix(palette.avg, "#100b08", 0.6);
+  if (luminance(cloth) > 0.2) cloth = mix(cloth, "#0b0907", 0.4);
+  const foil = "#ecd7a4";
+  const foilDim = "#c9b07a";
   ctx.direction = book.direction;
 
   ctx.fillStyle = cloth;
   ctx.fillRect(0, 0, SPINE_W, SPINE_H);
   ctx.save();
-  ctx.globalAlpha = 0.09;
+  // A woven cloth grain: fine vertical warp and a slower weft.
+  ctx.globalAlpha = 0.1;
   for (let x = 0; x < SPINE_W; x += 2) {
     ctx.fillStyle = x % 4 === 0 ? "#fff" : "#000";
     ctx.fillRect(x, 0, 0.5, SPINE_H);
   }
+  ctx.globalAlpha = 0.05;
+  for (let y = 0; y < SPINE_H; y += 3) {
+    ctx.fillStyle = y % 6 === 0 ? "#fff" : "#000";
+    ctx.fillRect(0, y, SPINE_W, 0.5);
+  }
   ctx.restore();
   const look = {
     x: SPINE_W / 2,
-    thick: SPINE_W - 10,
-    head: 34,
-    tail: 20,
-    ornY: 15,
+    thick: Math.min(SPINE_W - 12, 30),
+    head: 36,
+    tail: 22,
+    ornY: 16,
     ornSize: 10,
   };
-  ctx.fillStyle = "rgba(0,0,0,.28)";
+  // Double foil rules at the head and tail, plus a shadowed board edge.
+  ctx.fillStyle = "rgba(0,0,0,.3)";
   ctx.fillRect(0, 27, SPINE_W, 0.8);
   ctx.fillRect(0, SPINE_H - 27, SPINE_W, 0.8);
   ctx.fillStyle = foil;
-  ctx.globalAlpha = 0.7;
+  ctx.globalAlpha = 0.72;
   ctx.fillRect(9, 12, SPINE_W - 18, 0.7);
+  ctx.fillRect(9, 15, SPINE_W - 18, 0.4);
   ctx.fillRect(9, SPINE_H - 12, SPINE_W - 18, 0.7);
+  ctx.fillRect(9, SPINE_H - 15, SPINE_W - 18, 0.4);
   ctx.globalAlpha = 1;
 
   const authorFit = fitVertical(book.author || "", {
@@ -158,7 +184,7 @@ export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): Rend
     authorFit,
     look.x,
     SPINE_H - look.tail - authorLength / 2,
-    foil,
+    foilDim,
     {
       family: SERIF,
       weight: 400,
@@ -187,6 +213,7 @@ export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): Rend
   return {
     direction: book.direction,
     scrim: false,
+    scrimAlpha: 0,
     contrast: contrast(foil, cloth),
     block: {
       x: look.x,
@@ -323,9 +350,10 @@ export function drawWrap(
   );
   ctx.textAlign = "left";
 
-  // Wrap and Full-bleed share one measured type block, but the Full-bleed
-  // layout owns the rail. The ink is chosen from the pixels under the type,
-  // and the scrim stays inside the spine (or inside the rail).
+  // A framed, inset title window: the art still shows around its edges, but
+  // the type never sits on raw cover copy. Full-bleed deliberately does not do
+  // this, so the two styles read as different treatments.
+  drawSpineWindow(ctx, spineX, geometry.spineW, "wrap");
   const typeMeta = drawSpineType(
     ctx,
     book,
@@ -411,6 +439,8 @@ export function drawWrap(
   ctx.fillRect(frontX - 0.4, 0, 0.8, geometry.height);
   return {
     ...typeMeta,
+    scrim: true,
+    scrimAlpha: 0.78,
     // The reported block is local to the spine; keep the case offset out of
     // the geometry so Wrap and Full-bleed are directly comparable.
     block: typeMeta.block,

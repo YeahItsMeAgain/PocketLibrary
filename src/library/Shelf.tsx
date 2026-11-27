@@ -14,6 +14,7 @@ import {
   spineLabelAbbr,
   surname,
 } from "./spine";
+import { mix, readableInk } from "./spineRenderer";
 import type { SpineBookState } from "./spineActivity";
 
 interface ShelfCaseProps {
@@ -26,12 +27,23 @@ interface ShelfCaseProps {
   onPress: (book: Book, event: ReactPointerEvent<HTMLLIElement>) => void;
 }
 
-export function SpineFace({ book }: { book: Book }) {
+export function SpineFace({
+  book,
+  spineStyle = "wrap",
+  showScrim = false,
+}: {
+  book: Book;
+  spineStyle?: "wrap" | "full-bleed" | "cloth";
+  showScrim?: boolean;
+}) {
   const bands = book.labels.slice(0, 2);
   const hiddenLabels = book.labels.length - bands.length;
   const author = book.authors[0];
   return (
     <>
+      {showScrim && spineStyle !== "cloth" ? (
+        <span className="spine-scrim" aria-hidden="true" />
+      ) : null}
       <span className="spine-text">
         <span className="st">{book.title}</span>
         {author ? <span className="sa">{surname(author)}</span> : null}
@@ -93,6 +105,25 @@ interface SpineProps {
 }
 
 /**
+ * The shelf title has to fit a narrow spine without clipping mid-word. A
+ * vertical run can use at most two columns, so a long title shrinks just
+ * enough that two columns hold it; ordinary titles keep the shelf's chosen
+ * size and wrap at a word boundary.
+ */
+function shelfTitleFont(
+  title: string,
+  style: { height: number; fontSize: string },
+): string {
+  const base = Number.parseFloat(style.fontSize) || 10;
+  // Top/bottom insets and the author run leave this much inline length.
+  const available = Math.max(48, style.height - 16 - 50 - 16);
+  const chars = Math.max(1, String(title).trim().length);
+  const twoColumnLimit = (2 * available) / (0.62 * chars);
+  const size = Math.min(base, Math.max(6.4, twoColumnLimit));
+  return `${Math.floor(size * 10) / 10}px`;
+}
+
+/**
  * One spine. Filtering and slot recycling must not reconcile the other
  * twenty-odd spines on a shelf, so each book is its own memoised leaf.
  * Callbacks are intentionally excluded: their behaviour is ref-stable and
@@ -111,6 +142,19 @@ export const Spine = memo(function Spine({
   // Missing/undefined is the documented Wrap default; only an explicit
   // Cloth choice suppresses generated art.
   const spineStyle = book.spineStyle ?? "wrap";
+  const titleFont = useMemo(
+    () => shelfTitleFont(book.title, style),
+    [book.title, style],
+  );
+  // The backdrop standardises the art, so the ink is chosen against the smoked
+  // window rather than the raw pixels. Cloth has no window; its foil is fixed
+  // and tested against the board colour.
+  const foil = "#ecd7a4";
+  const ink =
+    spineStyle === "cloth"
+      ? foil
+      : readableInk(mix(style.c1, "#0b0908", 0.78));
+  const inkDim = spineStyle === "cloth" ? "#cbb78c" : "#dccba4";
   // Wrap and Full-bleed paint the generated strip; Cloth is the typographic
   // spine rendered below. A rejected fallback never reaches here with a strip.
   // The list payload carries the cached strip; the activity map only supplies
@@ -134,6 +178,7 @@ export const Spine = memo(function Spine({
       data-book-id={book.id}
       data-slot={book.slotIndex ?? undefined}
       data-status={book.readingStatus}
+      data-style={spineStyle}
       data-spine-state={spineState?.state ?? "waiting"}
       data-dragging={dragging || undefined}
       title={`${book.title} — ${statusLabel} — ${spineNote}`}
@@ -151,6 +196,10 @@ export const Spine = memo(function Spine({
           "--ink": SPINE_INK,
           "--lean": `${style.lean}deg`,
           "--fs": style.fontSize,
+          "--title-fs": titleFont,
+          "--spine-ink": ink,
+          "--spine-ink-dim": inkDim,
+          "--foil": foil,
         } as CSSProperties
       }
       onPointerDown={(event) => onPress(book, event)}
@@ -171,7 +220,11 @@ export const Spine = memo(function Spine({
           draggable={false}
         />
       ) : null}
-      <SpineFace book={book} />
+      <SpineFace
+        book={book}
+        spineStyle={spineStyle}
+        showScrim={showGenerated}
+      />
     </li>
   );
 }, areSpineEqual);

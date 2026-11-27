@@ -1,0 +1,2733 @@
+{
+  "phase": "after",
+  "screenshots": [
+    "after-shelf-390.png",
+    "after-edit-wrap-390.png",
+    "after-edit-full-bleed-390.png",
+    "after-edit-cloth-390.png",
+    "after-shelf-320.png",
+    "after-edit-wrap-320.png",
+    "after-edit-full-bleed-320.png",
+    "after-edit-cloth-320.png"
+  ],
+  "measurements": {
+    "shelf390": [
+      {
+        "bookId": "1",
+        "style": "wrap",
+        "width": 33,
+        "height": 204,
+        "hasArt": true,
+        "artZ": "2",
+        "textZ": "4",
+        "scrim": {
+          "opacity": "1",
+          "background": "rgba(8, 6, 4, 0.78)"
+        },
+        "titleFont": 10.2,
+        "titleOverflow": {
+          "scrollHeight": 105,
+          "clientHeight": 105,
+          "scrollWidth": 20,
+          "clientWidth": 19,
+          "textOverflow": "clip",
+          "whiteSpace": "normal"
+        },
+        "authorFont": 7.2,
+        "titleCx": 16.5,
+        "authorCx": 16.5,
+        "spineCx": 16.5,
+        "titleBottom": 121.36,
+        "authorTop": 125.36,
+        "textTop": 16,
+        "textBottom": 154,
+        "titleText": "Rock Paper Scissors",
+        "authorText": "Feeney"
+      },
+      {
+        "bookId": "2",
+        "style": "full-bleed",
+        "width": 31,
+        "height": 212,
+        "hasArt": true,
+        "artZ": "2",
+        "textZ": "4",
+        "scrim": {
+          "opacity": "1",
+          "background": "rgba(8, 6, 4, 0.84)"
+        },
+        "titleFont": 10.2,
+        "titleOverflow": {
+          "scrollHeight": 113,
+          "clientHeight": 113,
+          "scrollWidth": 20,
+          "clientWidth": 19,
+          "textOverflow": "clip",
+          "whiteSpace": "normal"
+        },
+        "authorFont": 7.2,
+        "titleCx": 15.5,
+        "authorCx": 15.5,
+        "spineCx": 15.5,
+        "titleBottom": 129.36,
+        "authorTop": 133.36,
+        "textTop": 16,
+        "textBottom": 162,
+        "titleText": "Rock Paper Scissors",
+        "authorText": "Feeney"
+      },
+      {
+        "bookId": "3",
+        "style": "cloth",
+        "width": 37.4,
+        "height": 221,
+        "hasArt": false,
+        "artZ": null,
+        "textZ": "4",
+        "scrim": null,
+        "titleFont": 10.2,
+        "titleOverflow": {
+          "scrollHeight": 115,
+          "clientHeight": 115,
+          "scrollWidth": 10,
+          "clientWidth": 10,
+          "textOverflow": "clip",
+          "whiteSpace": "normal"
+        },
+        "authorFont": 7.2,
+        "titleCx": 17.3,
+        "authorCx": 20.34,
+        "spineCx": 18.71,
+        "titleBottom": 131.43,
+        "authorTop": 135.07,
+        "textTop": 16.03,
+        "textBottom": 170.95,
+        "titleText": "Rock Paper Scissors",
+        "authorText": "Feeney"
+      }
+    ],
+    "editwrap390": {
+      "previewStyle": "wrap",
+      "preview": {
+        "style": "wrap",
+        "direction": "ltr",
+        "scrim": "true",
+        "contrast": 16.32,
+        "blockCx": 9,
+        "canvasWidth": 345,
+        "blockCy": 126.84,
+        "titleCy": 97.04,
+        "titleHeight": 108.72,
+        "titleWidth": 6.01,
+        "titleFontSize": 7.8,
+        "titleLines": 1,
+        "authorCy": 197.04,
+        "authorHeight": 27.92,
+        "authorFontSize": 3.6,
+        "authorLines": 1,
+        "cssWidth": 336,
+        "cssHeight": 229.8
+      },
+      "pickers": {
+        "wrap": {
+          "style": "wrap",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 9,
+          "canvasWidth": 345,
+          "blockCy": 126.84,
+          "titleCy": 97.04,
+          "titleHeight": 108.72,
+          "titleWidth": 6.01,
+          "titleFontSize": 7.8,
+          "titleLines": 1,
+          "authorCy": 197.04,
+          "authorHeight": 27.92,
+          "authorFontSize": 3.6,
+          "authorLines": 1,
+          "cssWidth": 102.7,
+          "cssHeight": 70.2
+        },
+        "fullBleed": {
+          "style": "full-bleed",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 120.41,
+          "titleCy": 98.22,
+          "titleHeight": 132.81,
+          "titleWidth": 7.24,
+          "titleFontSize": 9.4,
+          "titleLines": 1,
+          "authorCy": 193.22,
+          "authorHeight": 31.56,
+          "authorFontSize": 4.2,
+          "authorLines": 1,
+          "cssWidth": 29.1,
+          "cssHeight": 132
+        },
+        "cloth": {
+          "style": "cloth",
+          "direction": "ltr",
+          "scrim": "false",
+          "contrast": 5.99,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 118,
+          "titleCy": 106.1,
+          "titleHeight": 117.21,
+          "titleWidth": 10.86,
+          "titleFontSize": 11.2,
+          "titleLines": 1,
+          "authorCy": 198.6,
+          "authorHeight": 30.8,
+          "authorFontSize": 4.6,
+          "authorLines": 1,
+          "cssWidth": 29.1,
+          "cssHeight": 132
+        }
+      }
+    },
+    "editfull-bleed390": {
+      "previewStyle": "full-bleed",
+      "preview": {
+        "style": "full-bleed",
+        "direction": "ltr",
+        "scrim": "true",
+        "contrast": 16.32,
+        "blockCx": 26,
+        "canvasWidth": 52,
+        "blockCy": 120.41,
+        "titleCy": 98.22,
+        "titleHeight": 132.81,
+        "titleWidth": 7.24,
+        "titleFontSize": 9.4,
+        "titleLines": 1,
+        "authorCy": 193.22,
+        "authorHeight": 31.56,
+        "authorFontSize": 4.2,
+        "authorLines": 1,
+        "cssWidth": 66.1,
+        "cssHeight": 300
+      },
+      "pickers": {
+        "wrap": {
+          "style": "wrap",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 9,
+          "canvasWidth": 345,
+          "blockCy": 126.84,
+          "titleCy": 97.04,
+          "titleHeight": 108.72,
+          "titleWidth": 6.01,
+          "titleFontSize": 7.8,
+          "titleLines": 1,
+          "authorCy": 197.04,
+          "authorHeight": 27.92,
+          "authorFontSize": 3.6,
+          "authorLines": 1,
+          "cssWidth": 102.7,
+          "cssHeight": 70.2
+        },
+        "fullBleed": {
+          "style": "full-bleed",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 120.41,
+          "titleCy": 98.22,
+          "titleHeight": 132.81,
+          "titleWidth": 7.24,
+          "titleFontSize": 9.4,
+          "titleLines": 1,
+          "authorCy": 193.22,
+          "authorHeight": 31.56,
+          "authorFontSize": 4.2,
+          "authorLines": 1,
+          "cssWidth": 29.1,
+          "cssHeight": 132
+        },
+        "cloth": {
+          "style": "cloth",
+          "direction": "ltr",
+          "scrim": "false",
+          "contrast": 5.99,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 118,
+          "titleCy": 106.1,
+          "titleHeight": 117.21,
+          "titleWidth": 10.86,
+          "titleFontSize": 11.2,
+          "titleLines": 1,
+          "authorCy": 198.6,
+          "authorHeight": 30.8,
+          "authorFontSize": 4.6,
+          "authorLines": 1,
+          "cssWidth": 29.1,
+          "cssHeight": 132
+        }
+      }
+    },
+    "editcloth390": {
+      "previewStyle": "cloth",
+      "preview": {
+        "style": "cloth",
+        "direction": "ltr",
+        "scrim": "false",
+        "contrast": 5.99,
+        "blockCx": 26,
+        "canvasWidth": 52,
+        "blockCy": 118,
+        "titleCy": 106.1,
+        "titleHeight": 117.21,
+        "titleWidth": 10.86,
+        "titleFontSize": 11.2,
+        "titleLines": 1,
+        "authorCy": 198.6,
+        "authorHeight": 30.8,
+        "authorFontSize": 4.6,
+        "authorLines": 1,
+        "cssWidth": 66.1,
+        "cssHeight": 300
+      },
+      "pickers": {
+        "wrap": {
+          "style": "wrap",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 9,
+          "canvasWidth": 345,
+          "blockCy": 126.84,
+          "titleCy": 97.04,
+          "titleHeight": 108.72,
+          "titleWidth": 6.01,
+          "titleFontSize": 7.8,
+          "titleLines": 1,
+          "authorCy": 197.04,
+          "authorHeight": 27.92,
+          "authorFontSize": 3.6,
+          "authorLines": 1,
+          "cssWidth": 102.7,
+          "cssHeight": 70.2
+        },
+        "fullBleed": {
+          "style": "full-bleed",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 120.41,
+          "titleCy": 98.22,
+          "titleHeight": 132.81,
+          "titleWidth": 7.24,
+          "titleFontSize": 9.4,
+          "titleLines": 1,
+          "authorCy": 193.22,
+          "authorHeight": 31.56,
+          "authorFontSize": 4.2,
+          "authorLines": 1,
+          "cssWidth": 29.1,
+          "cssHeight": 132
+        },
+        "cloth": {
+          "style": "cloth",
+          "direction": "ltr",
+          "scrim": "false",
+          "contrast": 5.99,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 118,
+          "titleCy": 106.1,
+          "titleHeight": 117.21,
+          "titleWidth": 10.86,
+          "titleFontSize": 11.2,
+          "titleLines": 1,
+          "authorCy": 198.6,
+          "authorHeight": 30.8,
+          "authorFontSize": 4.6,
+          "authorLines": 1,
+          "cssWidth": 29.1,
+          "cssHeight": 132
+        }
+      }
+    },
+    "shelf320": [
+      {
+        "bookId": "1",
+        "style": "wrap",
+        "width": 33,
+        "height": 204,
+        "hasArt": true,
+        "artZ": "2",
+        "textZ": "4",
+        "scrim": {
+          "opacity": "1",
+          "background": "rgba(8, 6, 4, 0.78)"
+        },
+        "titleFont": 10.2,
+        "titleOverflow": {
+          "scrollHeight": 105,
+          "clientHeight": 105,
+          "scrollWidth": 20,
+          "clientWidth": 19,
+          "textOverflow": "clip",
+          "whiteSpace": "normal"
+        },
+        "authorFont": 7.2,
+        "titleCx": 16.5,
+        "authorCx": 16.5,
+        "spineCx": 16.5,
+        "titleBottom": 121.36,
+        "authorTop": 125.36,
+        "textTop": 16,
+        "textBottom": 154,
+        "titleText": "Rock Paper Scissors",
+        "authorText": "Feeney"
+      },
+      {
+        "bookId": "2",
+        "style": "full-bleed",
+        "width": 31,
+        "height": 212,
+        "hasArt": true,
+        "artZ": "2",
+        "textZ": "4",
+        "scrim": {
+          "opacity": "1",
+          "background": "rgba(8, 6, 4, 0.84)"
+        },
+        "titleFont": 10.2,
+        "titleOverflow": {
+          "scrollHeight": 113,
+          "clientHeight": 113,
+          "scrollWidth": 20,
+          "clientWidth": 19,
+          "textOverflow": "clip",
+          "whiteSpace": "normal"
+        },
+        "authorFont": 7.2,
+        "titleCx": 15.5,
+        "authorCx": 15.5,
+        "spineCx": 15.5,
+        "titleBottom": 129.36,
+        "authorTop": 133.36,
+        "textTop": 16,
+        "textBottom": 162,
+        "titleText": "Rock Paper Scissors",
+        "authorText": "Feeney"
+      },
+      {
+        "bookId": "3",
+        "style": "cloth",
+        "width": 37.4,
+        "height": 221,
+        "hasArt": false,
+        "artZ": null,
+        "textZ": "4",
+        "scrim": null,
+        "titleFont": 10.2,
+        "titleOverflow": {
+          "scrollHeight": 115,
+          "clientHeight": 115,
+          "scrollWidth": 10,
+          "clientWidth": 10,
+          "textOverflow": "clip",
+          "whiteSpace": "normal"
+        },
+        "authorFont": 7.2,
+        "titleCx": 17.3,
+        "authorCx": 20.34,
+        "spineCx": 18.71,
+        "titleBottom": 131.43,
+        "authorTop": 135.07,
+        "textTop": 16.03,
+        "textBottom": 170.95,
+        "titleText": "Rock Paper Scissors",
+        "authorText": "Feeney"
+      }
+    ],
+    "editwrap320": {
+      "previewStyle": "wrap",
+      "preview": {
+        "style": "wrap",
+        "direction": "ltr",
+        "scrim": "true",
+        "contrast": 16.32,
+        "blockCx": 9,
+        "canvasWidth": 345,
+        "blockCy": 126.84,
+        "titleCy": 97.04,
+        "titleHeight": 108.72,
+        "titleWidth": 6.01,
+        "titleFontSize": 7.8,
+        "titleLines": 1,
+        "authorCy": 197.04,
+        "authorHeight": 27.92,
+        "authorFontSize": 3.6,
+        "authorLines": 1,
+        "cssWidth": 274,
+        "cssHeight": 187.4
+      },
+      "pickers": {
+        "wrap": {
+          "style": "wrap",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 9,
+          "canvasWidth": 345,
+          "blockCy": 126.84,
+          "titleCy": 97.04,
+          "titleHeight": 108.72,
+          "titleWidth": 6.01,
+          "titleFontSize": 7.8,
+          "titleLines": 1,
+          "authorCy": 197.04,
+          "authorHeight": 27.92,
+          "authorFontSize": 3.6,
+          "authorLines": 1,
+          "cssWidth": 87.3,
+          "cssHeight": 59.7
+        },
+        "fullBleed": {
+          "style": "full-bleed",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 120.41,
+          "titleCy": 98.22,
+          "titleHeight": 132.81,
+          "titleWidth": 7.24,
+          "titleFontSize": 9.4,
+          "titleLines": 1,
+          "authorCy": 193.22,
+          "authorHeight": 31.56,
+          "authorFontSize": 4.2,
+          "authorLines": 1,
+          "cssWidth": 24.7,
+          "cssHeight": 112
+        },
+        "cloth": {
+          "style": "cloth",
+          "direction": "ltr",
+          "scrim": "false",
+          "contrast": 5.99,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 118,
+          "titleCy": 106.1,
+          "titleHeight": 117.21,
+          "titleWidth": 10.86,
+          "titleFontSize": 11.2,
+          "titleLines": 1,
+          "authorCy": 198.6,
+          "authorHeight": 30.8,
+          "authorFontSize": 4.6,
+          "authorLines": 1,
+          "cssWidth": 24.7,
+          "cssHeight": 112
+        }
+      }
+    },
+    "editfull-bleed320": {
+      "previewStyle": "full-bleed",
+      "preview": {
+        "style": "full-bleed",
+        "direction": "ltr",
+        "scrim": "true",
+        "contrast": 16.32,
+        "blockCx": 26,
+        "canvasWidth": 52,
+        "blockCy": 120.41,
+        "titleCy": 98.22,
+        "titleHeight": 132.81,
+        "titleWidth": 7.24,
+        "titleFontSize": 9.4,
+        "titleLines": 1,
+        "authorCy": 193.22,
+        "authorHeight": 31.56,
+        "authorFontSize": 4.2,
+        "authorLines": 1,
+        "cssWidth": 53.8,
+        "cssHeight": 244.2
+      },
+      "pickers": {
+        "wrap": {
+          "style": "wrap",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 9,
+          "canvasWidth": 345,
+          "blockCy": 126.84,
+          "titleCy": 97.04,
+          "titleHeight": 108.72,
+          "titleWidth": 6.01,
+          "titleFontSize": 7.8,
+          "titleLines": 1,
+          "authorCy": 197.04,
+          "authorHeight": 27.92,
+          "authorFontSize": 3.6,
+          "authorLines": 1,
+          "cssWidth": 87.3,
+          "cssHeight": 59.7
+        },
+        "fullBleed": {
+          "style": "full-bleed",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 120.41,
+          "titleCy": 98.22,
+          "titleHeight": 132.81,
+          "titleWidth": 7.24,
+          "titleFontSize": 9.4,
+          "titleLines": 1,
+          "authorCy": 193.22,
+          "authorHeight": 31.56,
+          "authorFontSize": 4.2,
+          "authorLines": 1,
+          "cssWidth": 24.7,
+          "cssHeight": 112
+        },
+        "cloth": {
+          "style": "cloth",
+          "direction": "ltr",
+          "scrim": "false",
+          "contrast": 5.99,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 118,
+          "titleCy": 106.1,
+          "titleHeight": 117.21,
+          "titleWidth": 10.86,
+          "titleFontSize": 11.2,
+          "titleLines": 1,
+          "authorCy": 198.6,
+          "authorHeight": 30.8,
+          "authorFontSize": 4.6,
+          "authorLines": 1,
+          "cssWidth": 24.7,
+          "cssHeight": 112
+        }
+      }
+    },
+    "editcloth320": {
+      "previewStyle": "cloth",
+      "preview": {
+        "style": "cloth",
+        "direction": "ltr",
+        "scrim": "false",
+        "contrast": 5.99,
+        "blockCx": 26,
+        "canvasWidth": 52,
+        "blockCy": 118,
+        "titleCy": 106.1,
+        "titleHeight": 117.21,
+        "titleWidth": 10.86,
+        "titleFontSize": 11.2,
+        "titleLines": 1,
+        "authorCy": 198.6,
+        "authorHeight": 30.8,
+        "authorFontSize": 4.6,
+        "authorLines": 1,
+        "cssWidth": 53.8,
+        "cssHeight": 244.2
+      },
+      "pickers": {
+        "wrap": {
+          "style": "wrap",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 9,
+          "canvasWidth": 345,
+          "blockCy": 126.84,
+          "titleCy": 97.04,
+          "titleHeight": 108.72,
+          "titleWidth": 6.01,
+          "titleFontSize": 7.8,
+          "titleLines": 1,
+          "authorCy": 197.04,
+          "authorHeight": 27.92,
+          "authorFontSize": 3.6,
+          "authorLines": 1,
+          "cssWidth": 87.3,
+          "cssHeight": 59.7
+        },
+        "fullBleed": {
+          "style": "full-bleed",
+          "direction": "ltr",
+          "scrim": "true",
+          "contrast": 16.32,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 120.41,
+          "titleCy": 98.22,
+          "titleHeight": 132.81,
+          "titleWidth": 7.24,
+          "titleFontSize": 9.4,
+          "titleLines": 1,
+          "authorCy": 193.22,
+          "authorHeight": 31.56,
+          "authorFontSize": 4.2,
+          "authorLines": 1,
+          "cssWidth": 24.7,
+          "cssHeight": 112
+        },
+        "cloth": {
+          "style": "cloth",
+          "direction": "ltr",
+          "scrim": "false",
+          "contrast": 5.99,
+          "blockCx": 26,
+          "canvasWidth": 52,
+          "blockCy": 118,
+          "titleCy": 106.1,
+          "titleHeight": 117.21,
+          "titleWidth": 10.86,
+          "titleFontSize": 11.2,
+          "titleLines": 1,
+          "authorCy": 198.6,
+          "authorHeight": 30.8,
+          "authorFontSize": 4.6,
+          "authorLines": 1,
+          "cssWidth": 24.7,
+          "cssHeight": 112
+        }
+      }
+    }
+  },
+  "taps": {
+    "wrap-390": {
+      "wrap": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 16,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-wrap"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "wrap",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "wrap",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "wrap"
+      },
+      "full-bleed": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 137.7,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-full-bleed"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "wrap",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "full-bleed",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "full-bleed"
+      },
+      "cloth": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 259.3,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-cloth"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "full-bleed",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "cloth"
+      },
+      "preview": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 16,
+            "y": 102.8,
+            "w": 358,
+            "h": 322
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-preview-canvas"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-preview-canvas",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-preview",
+              "testid": "spine-preview",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": "edit-section-spine",
+              "cls": "edit-section",
+              "testid": "edit-section-spine",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "edit-book-body",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        }
+      },
+      "generate": {
+        "probe": {
+          "found": false
+        }
+      },
+      "retry": {
+        "probe": {
+          "found": false
+        }
+      }
+    },
+    "full-bleed-390": {
+      "wrap": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 16,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-wrap"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "wrap",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "wrap"
+      },
+      "full-bleed": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 137.7,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-full-bleed"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "wrap",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "full-bleed"
+      },
+      "cloth": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 259.3,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-cloth"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "cloth"
+      },
+      "preview": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 16,
+            "y": 102.8,
+            "w": 358,
+            "h": 322
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-preview-canvas"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-preview-canvas",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-preview",
+              "testid": "spine-preview",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": "edit-section-spine",
+              "cls": "edit-section",
+              "testid": "edit-section-spine",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "edit-book-body",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        }
+      },
+      "generate": {
+        "probe": {
+          "found": false
+        }
+      },
+      "retry": {
+        "probe": {
+          "found": false
+        }
+      }
+    },
+    "cloth-390": {
+      "wrap": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 16,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-wrap"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "wrap"
+        },
+        "pressed": "true",
+        "previewStyle": "wrap"
+      },
+      "full-bleed": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 137.7,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-full-bleed"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "wrap"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "full-bleed"
+        },
+        "pressed": "true",
+        "previewStyle": "full-bleed"
+      },
+      "cloth": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 259.3,
+            "y": 468.6,
+            "w": 114.7,
+            "h": 161
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-cloth"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "full-bleed"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "cloth"
+      },
+      "preview": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 16,
+            "y": 102.8,
+            "w": 358,
+            "h": 322
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-preview-canvas"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-preview-canvas",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-preview",
+              "testid": "spine-preview",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": "edit-section-spine",
+              "cls": "edit-section",
+              "testid": "edit-section-spine",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "edit-book-body",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        }
+      },
+      "generate": {
+        "probe": {
+          "found": false
+        }
+      },
+      "retry": {
+        "probe": {
+          "found": false
+        }
+      }
+    },
+    "wrap-320": {
+      "wrap": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 12,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-wrap"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "wrap",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "wrap",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "wrap"
+      },
+      "full-bleed": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 112.3,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-full-bleed"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "wrap",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "full-bleed",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "full-bleed"
+      },
+      "cloth": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 212.7,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-cloth"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "full-bleed",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "cloth"
+      },
+      "preview": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 12,
+            "y": 177.8,
+            "w": 296,
+            "h": 266.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-preview-canvas"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-preview-canvas",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-preview",
+              "testid": "spine-preview",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": "edit-section-spine",
+              "cls": "edit-section",
+              "testid": "edit-section-spine",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "edit-book-body",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        }
+      },
+      "generate": {
+        "probe": {
+          "found": false
+        }
+      },
+      "retry": {
+        "probe": {
+          "found": false
+        }
+      }
+    },
+    "full-bleed-320": {
+      "wrap": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 12,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-wrap"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "wrap",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "wrap"
+      },
+      "full-bleed": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 112.3,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-full-bleed"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "wrap",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "full-bleed"
+      },
+      "cloth": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 212.7,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-cloth"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "full-bleed",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "cloth"
+      },
+      "preview": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 12,
+            "y": 177.8,
+            "w": 296,
+            "h": 266.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-preview-canvas"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-preview-canvas",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-preview",
+              "testid": "spine-preview",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": "edit-section-spine",
+              "cls": "edit-section",
+              "testid": "edit-section-spine",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "edit-book-body",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        }
+      },
+      "generate": {
+        "probe": {
+          "found": false
+        }
+      },
+      "retry": {
+        "probe": {
+          "found": false
+        }
+      }
+    },
+    "cloth-320": {
+      "wrap": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 12,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-wrap"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-wrap",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "cloth"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "wrap"
+        },
+        "pressed": "true",
+        "previewStyle": "wrap"
+      },
+      "full-bleed": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 112.3,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-full-bleed"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-full-bleed",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "wrap"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "full-bleed"
+        },
+        "pressed": "true",
+        "previewStyle": "full-bleed"
+      },
+      "cloth": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 212.7,
+            "y": 487.9,
+            "w": 95.3,
+            "h": 138.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-canvas-cloth"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-canvas-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SPAN",
+              "id": null,
+              "cls": "spine-style-art",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "BUTTON",
+              "id": null,
+              "cls": "spine-style",
+              "testid": "spine-style-cloth",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-style-grid",
+              "testid": "spine-style-grid",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        },
+        "before": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "full-bleed"
+        },
+        "after": {
+          "1": "cloth",
+          "2": "cloth",
+          "3": "cloth"
+        },
+        "pressed": "true",
+        "previewStyle": "cloth"
+      },
+      "preview": {
+        "probe": {
+          "found": true,
+          "rect": {
+            "x": 12,
+            "y": 177.8,
+            "w": 296,
+            "h": 266.2
+          },
+          "target": {
+            "tag": "CANVAS",
+            "cls": "",
+            "testid": "spine-preview-canvas"
+          },
+          "chain": [
+            {
+              "tag": "CANVAS",
+              "id": null,
+              "cls": "",
+              "testid": "spine-preview-canvas",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-preview",
+              "testid": "spine-preview",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "spine-result",
+              "testid": "spine-result",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": null,
+              "cls": "spine-studio",
+              "testid": "spine-studio",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "SECTION",
+              "id": "edit-section-spine",
+              "cls": "edit-section",
+              "testid": "edit-section-spine",
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            },
+            {
+              "tag": "DIV",
+              "id": null,
+              "cls": "edit-book-body",
+              "testid": null,
+              "z": "auto",
+              "pointer": "auto",
+              "position": "static"
+            }
+          ]
+        }
+      },
+      "generate": {
+        "probe": {
+          "found": false
+        }
+      },
+      "retry": {
+        "probe": {
+          "found": false
+        }
+      }
+    }
+  }
+}

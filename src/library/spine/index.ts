@@ -16,16 +16,18 @@ import {
 } from "./geometry";
 import { drawArt, spineEdges } from "./draw";
 import { drawSpineType, type RenderMeta } from "./text";
-import { drawCloth, drawFullBleed, drawWrap } from "./styles";
+import { drawCloth, drawFullBleed, drawSpineWindow, drawWrap } from "./styles";
 
 export {
   artCropRect,
   contrast,
   fallbackCrop,
+  mix,
   readableInk,
   SPINE_RAIL,
   SPINE_STRIP_SIZE,
   SPINE_TYPE_LAYOUT,
+  spineScrimRect,
   spineTypeBands,
   spineTypeZones,
   wrapGeometry,
@@ -81,5 +83,7 @@ export function renderSpineStrip(
   ctx.fillStyle = "rgba(0,0,0,.16)";
   ctx.fillRect(0, 0, SPINE_W, SPINE_H);
   spineEdges(ctx, SPINE_W, SPINE_H);
-  return drawSpineType(ctx, book, SPINE_W, 0, "wrap");
+  drawSpineWindow(ctx, 0, SPINE_W, "wrap");
+  const meta = drawSpineType(ctx, book, SPINE_W, 0, "wrap");
+  return { ...meta, scrim: true, scrimAlpha: 0.78 };
 }

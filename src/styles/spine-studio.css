@@ -210,23 +210,6 @@
   font-size: 10px;
 }
 
-.spine-inline-action {
-  min-height: 34px;
-  margin-left: 4px;
-  padding: 0 12px;
-  border: 1px solid rgba(201, 168, 106, 0.7);
-  border-radius: 2px;
-  background: rgba(201, 168, 106, 0.16);
-  color: #f2ddad;
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.spine-inline-action:active {
-  transform: translateY(1px);
-}
-
 .spine-preview {
   display: flex;
   align-items: center;

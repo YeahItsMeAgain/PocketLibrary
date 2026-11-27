@@ -79,6 +79,7 @@ export function SpineCanvas({
     canvas.dataset.style = style;
     canvas.dataset.direction = meta.direction;
     canvas.dataset.scrim = String(meta.scrim);
+    canvas.dataset.scrimAlpha = meta.scrimAlpha.toFixed(2);
     canvas.dataset.contrast = meta.contrast.toFixed(2);
     canvas.dataset.blockCx = meta.block.x.toFixed(2);
     canvas.dataset.blockCy = meta.block.y.toFixed(2);
@@ -581,19 +582,12 @@ export function SpineStudio({
 
           {readOnly ? (
             <>
-              {state.artifact.verdict === "review" ? (
-                <p
-                  className="spine-note"
-                  data-testid="spine-readonly-review-note"
-                >
-                  The check found art it cannot vouch for.
-                </p>
-              ) : state.artifact.verdict === "fallback" ? (
+              {state.artifact.verdict === "fallback" ? (
                 <p
                   className="spine-note"
                   data-testid="spine-readonly-fallback-note"
                 >
-                  Cloth preview only — this result is not applied to the shelf.
+                  This result was rejected, so the cloth spine is shown.
                 </p>
               ) : (
                 <p
@@ -643,29 +637,15 @@ export function SpineStudio({
             </>
           ) : (
             <>
-              {state.artifact.verdict === "review" ? (
-                <p className="spine-note" data-testid="spine-review-note">
-                  The check found art it cannot vouch for. Inspect the spine,
-                  then use Cloth if it reads as cover copy.{" "}
-                  <button
-                    type="button"
-                    className="spine-inline-action"
-                    data-testid="spine-use-cloth"
-                    onClick={() => chooseStyle("cloth")}
-                  >
-                    Use Cloth
-                  </button>
-                </p>
-              ) : state.artifact.verdict === "fallback" ? (
+              {state.artifact.verdict === "fallback" ? (
                 <p className="spine-note" data-testid="spine-fallback-note">
-                  Cloth preview only. The shelf keeps the book's selected style
-                  until the spine passes; try Generate again.
+                  This result was rejected, so the cloth spine is shown.
                 </p>
-              ) : (
+              ) : state.artifact.verdict === "pass" ? (
                 <p className="spine-fine" data-testid="spine-pass-note">
-                  Passed the on-device check. Wrap is applied by default.
+                  Passed the on-device check.
                 </p>
-              )}
+              ) : null}
 
               {prepared ? (
                 <>

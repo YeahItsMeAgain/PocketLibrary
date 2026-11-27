@@ -19,8 +19,9 @@ export const SPINE_STRIP_SIZE = { width: SPINE_W, height: SPINE_H } as const;
  *
  * The title is not confined to a third: it gets the whole run between the head
  * and the author, and shrinks only to fit. The author sits below it and the
- * provenance/colophon mark closes the base. Full-bleed additionally has the
- * prototype's 20 px smoked rail, inset 2 px from the fore edge.
+ * provenance/colophon mark closes the base. Both Wrap and Full-bleed centre the
+ * type on the spine; Full-bleed's old fore-edge rail is retained only as a
+ * reference for the rule/provenance positions.
  */
 export const SPINE_RAIL = {
   width: 20,
@@ -54,6 +55,30 @@ export const SPINE_TYPE_LAYOUT = {
 } as const;
 
 export type SpineTypeStyle = "wrap" | "full-bleed";
+
+/**
+ * The smoked type window each style paints before the type. Wrap is a hard
+ * inset label (a defined title window over a framed art spine); Full-bleed is a
+ * narrower, soft-edged scrim that leaves the art visible edge to edge. Both
+ * cover the whole title/author run so the type never sits on raw art.
+ */
+export function spineScrimRect(style: SpineTypeStyle, width: number) {
+  if (style === "wrap") {
+    return {
+      x: 2,
+      y: 10,
+      width: Math.max(6, width - 4),
+      height: SPINE_H - 20,
+    };
+  }
+  const scrimWidth = Math.max(12, Math.min(width - 8, 34));
+  return {
+    x: (width - scrimWidth) / 2,
+    y: 10,
+    width: scrimWidth,
+    height: SPINE_H - 20,
+  };
+}
 
 /**
  * The dynamic title and author bands for one spine. `authorLength` is the

@@ -379,9 +379,9 @@ test("Wrap and Full-bleed fill the spine run with the title and put the author b
     await expect(canvas).toHaveAttribute("data-style", style);
     const meta = await readMeta();
     expect(meta.run).toBe("vertical");
-    // Full-bleed type centres on the 20 px rail; the 320-page Wrap spine is
-    // 18 px wide, so its type centres at 9.
-    expect(meta.cx).toBeCloseTo(style === "full-bleed" ? 40 : 9, 0);
+    // Both styles centre the run on the spine: Full-bleed on the 52 px strip
+    // (26) and Wrap on the 18 px case spine (9). Only the art treatment differs.
+    expect(meta.cx).toBeCloseTo(style === "full-bleed" ? 26 : 9, 0);
     // The title now occupies the majority of the 236 px run, not a third.
     expect(meta.titleHeight).toBeGreaterThan(236 / 2);
     expect(meta.titleHeight).toBeGreaterThan(meta.authorHeight * 2);
@@ -760,6 +760,111 @@ test("the shelf shows the generated strip only for Wrap and Full-bleed", async (
   await expect(cloth.getByTestId("spine-generated")).toHaveCount(0);
   await expect(cloth).not.toHaveClass(/has-generated/);
   await expect(cloth.locator(".spine-text")).toBeVisible();
+
+  await expect(wrap).toHaveAttribute("data-style", "wrap");
+  await expect(fullBleed).toHaveAttribute("data-style", "full-bleed");
+  await expect(cloth).toHaveAttribute("data-style", "cloth");
+  // Wrap keeps a defined inset window; full-bleed leaves the art at the edges.
+  await expect(wrap.locator(".spine-scrim")).toBeVisible();
+  await expect(fullBleed.locator(".spine-scrim")).toBeVisible();
+  await expect(cloth.locator(".spine-scrim")).toHaveCount(0);
+
+  const presentation = async (style: "wrap" | "full-bleed" | "cloth") =>
+    page
+      .locator(`[data-testid="spine"][data-book-id="${
+        style === "wrap" ? 1 : style === "full-bleed" ? 2 : 3
+      }"]`)
+      .evaluate((spine) => {
+        const title = spine.querySelector<HTMLElement>(".st")!;
+        const author = spine.querySelector<HTMLElement>(".sa")!;
+        const scrim = spine.querySelector<HTMLElement>(".spine-scrim");
+        const rect = spine.getBoundingClientRect();
+        const titleRect = title.getBoundingClientRect();
+        const authorRect = author.getBoundingClientRect();
+        const alpha = (value: string) => {
+          const match = value.match(/rgba?\(([^)]+)\)/);
+          if (!match) return 1;
+          const parts = match[1].split(",").map(Number);
+          return parts.length === 4 ? parts[3] : 1;
+        };
+        return {
+          centre: rect.width / 2,
+          titleCentre: titleRect.x + titleRect.width / 2 - rect.x,
+          authorCentre: authorRect.x + authorRect.width / 2 - rect.x,
+          titleBottom: titleRect.bottom,
+          authorTop: authorRect.top,
+          titleClientHeight: title.clientHeight,
+          titleScrollHeight: title.scrollHeight,
+          scrimAlpha: scrim
+            ? alpha(getComputedStyle(scrim).backgroundColor)
+            : 0,
+          titleColor: getComputedStyle(title).color,
+        };
+      });
+
+  for (const style of ["wrap", "full-bleed", "cloth"] as const) {
+    const meta = await presentation(style);
+    expect(Math.abs(meta.titleCentre - meta.centre)).toBeLessThanOrEqual(2);
+    expect(Math.abs(meta.authorCentre - meta.centre)).toBeLessThanOrEqual(2);
+    expect(meta.titleBottom).toBeLessThanOrEqual(meta.authorTop);
+    expect(meta.titleScrollHeight).toBeLessThanOrEqual(
+      meta.titleClientHeight + 2,
+    );
+    if (style === "cloth") {
+      expect(meta.scrimAlpha).toBe(0);
+    } else {
+      // A real smoked backdrop, not just a text shadow.
+      expect(meta.scrimAlpha).toBeGreaterThanOrEqual(0.6);
+    }
+  }
+});
+
+test("a long shelf title shrinks into two columns instead of clipping mid-title", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [
+      book(1, {
+        title: "The Curious Incident of the Dog in the Night-Time",
+        authors: ["Mark Haddon"],
+      }),
+    ],
+    spine: {
+      backfillPending: false,
+      artifacts: { 1: artifact({ bookId: 1 }) },
+    },
+  });
+  const spine = page.getByTestId("spine").first();
+  await expect(spine.getByTestId("spine-generated")).toBeVisible({
+    timeout: 8_000,
+  });
+  const title = spine.locator(".st");
+  await expect(title).toHaveText(
+    "The Curious Incident of the Dog in the Night-Time",
+  );
+  const fit = await title.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      font: Number.parseFloat(style.fontSize),
+      base: Number.parseFloat(
+        getComputedStyle(element.parentElement!.parentElement!).getPropertyValue(
+          "--fs",
+        ),
+      ),
+      whiteSpace: style.whiteSpace,
+      textOverflow: style.textOverflow,
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+    };
+  });
+  expect(fit.whiteSpace).toBe("normal");
+  expect(fit.textOverflow).toBe("clip");
+  // Two vertical columns, not a clipped single line.
+  expect(fit.scrollHeight).toBeLessThanOrEqual(fit.clientHeight + 2);
+  expect(fit.scrollWidth).toBeLessThanOrEqual(fit.clientWidth + 2);
+  expect(fit.font).toBeLessThan(fit.base);
 });
 
 test("a failed job is reported in Edit until a manual generation succeeds", async ({

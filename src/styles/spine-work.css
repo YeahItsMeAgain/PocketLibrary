@@ -80,6 +80,17 @@
   object-fit: fill;
 }
 
+/* The edit sheet's undo toast floats above the bottom of the viewport. Only
+   its Undo button is interactive: the toast body must not swallow taps meant
+   for the spine picker underneath it. */
+.edit-undo {
+  pointer-events: none;
+}
+
+.edit-undo-button {
+  pointer-events: auto;
+}
+
 /* The generated strip sits above the cloth face but below the title (z3),
    labels/seal (z5) and ribbon (z6). The shading pseudo-element stays above the
    image so the shelf's edge light still reads. */

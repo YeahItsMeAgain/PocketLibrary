@@ -74,6 +74,114 @@
   transform: rotate(var(--lean)) translateY(-3px);
 }
 
+/* --------------------------------------------------------- style faces */
+
+/* Wrap keeps the generated art inset inside a fine board edge: a defined
+   title window over a framed spine. Full-bleed runs the art to every edge. */
+.spine[data-style="wrap"] .spine-generated {
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 1px rgba(240, 226, 196, 0.24);
+}
+
+/* The smoked window is a real backdrop, not a text shadow: it standardises the
+   pixels behind the type so the ink keeps its contrast on any cover. */
+.spine .spine-scrim {
+  position: absolute;
+  z-index: 3;
+  border-radius: 1px;
+  background-color: rgba(8, 6, 4, 0.78);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05),
+    transparent 22%,
+    transparent 78%,
+    rgba(0, 0, 0, 0.22)
+  );
+  box-shadow: inset 0 0 0 1px rgba(240, 226, 196, 0.18);
+  pointer-events: none;
+}
+
+.spine[data-style="wrap"] .spine-scrim {
+  inset: 14px 3px 44px;
+}
+
+.spine[data-style="full-bleed"] .spine-scrim {
+  inset: 14px 6px 44px;
+  border-radius: 4px;
+  background-color: rgba(8, 6, 4, 0.84);
+  box-shadow: none;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 12%,
+    #000 88%,
+    transparent 100%
+  );
+}
+
+/* Cloth is the typographic spine: no art, a woven board in the book's palette,
+   foil rules and warm foil type. */
+.spine[data-style="cloth"] {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      rgba(0, 0, 0, 0.06) 1px 2px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.028) 0 1px,
+      transparent 1px 3px
+    ),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+}
+
+.spine[data-style="cloth"]::after {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0 19px,
+      rgba(236, 215, 164, 0.5) 19px 19.7px,
+      transparent 19.7px calc(100% - 24px),
+      rgba(236, 215, 164, 0.42) calc(100% - 24px) calc(100% - 23.3px),
+      transparent calc(100% - 23.3px)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.34) 0%,
+      transparent 14%,
+      transparent 86%,
+      rgba(0, 0, 0, 0.36) 100%
+    );
+}
+
+.spine[data-style="cloth"] .st {
+  color: var(--foil, #ecd7a4);
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 0 5px rgba(236, 215, 164, 0.25);
+}
+
+.spine[data-style="cloth"] .sa {
+  color: var(--spine-ink-dim, #cbb78c);
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+
 .spine[data-dimmed="true"] {
   opacity: 0.24;
 }
@@ -93,49 +201,57 @@
 
 .spine .spine-text {
   position: absolute;
-  top: 18px;
-  right: 2px;
-  bottom: 54px;
-  left: 2px;
-  z-index: 3;
+  top: 16px;
+  right: 1px;
+  bottom: 50px;
+  left: 1px;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .spine .st,
 .spine .sa {
   max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
   writing-mode: vertical-rl;
   text-orientation: mixed;
+  text-align: center;
 }
 
 .spine .st {
-  max-height: calc(100% - 22px);
-  color: #f4e6c4;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--spine-ink, #f4e6c4);
   font-family: var(--display);
-  font-size: var(--fs);
+  font-size: var(--title-fs, var(--fs));
   font-weight: 600;
+  line-height: 0.94;
   letter-spacing: 0.012em;
-  text-overflow: ellipsis;
+  /* Wrapping into a second column is better than clipping the title. */
+  text-overflow: clip;
+  white-space: normal;
   text-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.85),
-    0 0 6px rgba(0, 0, 0, 0.35);
+    0 1px 1px rgba(0, 0, 0, 0.9),
+    0 0 4px rgba(0, 0, 0, 0.5);
 }
 
 .spine .sa {
   flex: 0 0 auto;
-  max-height: 60px;
-  color: #dfcda8;
-  font-size: 7.4px;
+  max-height: 46px;
+  overflow: hidden;
+  color: var(--spine-ink-dim, #dfcda8);
+  font-size: 7.2px;
   font-weight: 500;
   letter-spacing: 0.06em;
-  opacity: 0.88;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.75);
+  opacity: 0.92;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.85);
 }
 
 .spine .tail {

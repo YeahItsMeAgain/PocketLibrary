@@ -8,8 +8,8 @@ import type { RenderBook, SpineTypeStyle } from "./geometry";
 import {
   clamp,
   luminance,
-  SPINE_H,
   SPINE_RAIL,
+  spineScrimRect,
   spineTypeBands,
   spineTypeZones,
 } from "./geometry";
@@ -183,6 +183,8 @@ export interface SpineBlock {
 export interface RenderMeta {
   direction: "ltr" | "rtl";
   scrim: boolean;
+  /** The alpha of the painted backdrop behind the type, 0 when none. */
+  scrimAlpha: number;
   contrast: number;
   /** The union of the title and author runs. */
   block: { x: number; y: number; width: number; height: number };
@@ -517,10 +519,13 @@ function layoutSpineType(
   const spec = fullBleed
     ? spineTypeZones().fullBleed
     : spineTypeZones().wrap;
-  // Full-bleed type owns the rail; Wrap type centres on the spine.
-  const cx = fullBleed ? spineTypeZones().rail.centerX : width / 2;
-  const titleThick = fullBleed ? SPINE_RAIL.width - 3.4 : width - 3;
-  const authorThick = fullBleed ? SPINE_RAIL.width - 4 : width - 3;
+  // Both styles centre the type on the spine: the difference is the art
+  // treatment, not where the text sits. Full-bleed used to own the fore-edge
+  // rail, which pushed the run off-centre.
+  const cx = width / 2;
+  const window = spineScrimRect(style, width);
+  const titleThick = Math.max(6, window.width - 6);
+  const authorThick = Math.max(6, window.width - 8);
 
   const authorText = String(book.author || "").trim();
   const author = authorText
@@ -588,20 +593,20 @@ function layoutSpineType(
   const bottom = authorBlock
     ? authorBlock.y + authorBlock.height / 2
     : titleBlock.y + titleBlock.height / 2;
-  const bandX = fullBleed ? spineTypeZones().rail.x + 1 : 0;
-  const bandWidth = fullBleed ? SPINE_RAIL.width - 2 : width;
-  const railTop = SPINE_RAIL.head;
-  const railBottom = SPINE_H - SPINE_RAIL.tail;
+  const bandX = window.x;
+  const bandWidth = window.width;
+  const bandTop = window.y;
+  const bandBottom = window.y + window.height;
   const titleRunTop = bands.titleCenter - title.length / 2;
-  const titleBandTop = Math.max(fullBleed ? railTop + 1 : 0, titleRunTop - 2);
+  const titleBandTop = Math.max(bandTop + 1, titleRunTop - 2);
   const titleBandBottom = Math.min(
-    fullBleed ? railBottom - 1 : SPINE_H,
+    bandBottom - 1,
     titleRunTop + title.length + 2,
   );
-  const authorBandTop = Math.max(fullBleed ? railTop + 1 : 0, bands.authorTop - 2);
+  const authorBandTop = Math.max(bandTop + 1, bands.authorTop - 2);
   const authorBandBottom = fullBleed
-    ? railBottom - 1
-    : spineTypeZones().colophonBaseY + 8;
+    ? bandBottom - 1
+    : Math.min(bandBottom - 1, spineTypeZones().colophonBaseY + 8);
   return {
     title,
     author,
@@ -640,15 +645,17 @@ function drawColophon(
 ) {
   const zones = spineTypeZones();
   if (style === "full-bleed") {
-    // Prototype: a rule under the head and a provenance diamond at the base.
-    const railX = zones.rail.x;
+    // A centred rule under the head and a provenance diamond at the base. Both
+    // sit on the spine centre, matching the type; there is no side rail.
+    const cx = width / 2;
     ctx.save();
     ctx.direction = direction;
     ctx.fillStyle = ink;
     ctx.globalAlpha = 0.55;
-    ctx.fillRect(railX + 4, SPINE_RAIL.ruleY, SPINE_RAIL.width - 8, 0.7);
+    const ruleWidth = Math.min(20, Math.max(6, width - 16));
+    ctx.fillRect(cx - ruleWidth / 2, SPINE_RAIL.ruleY, ruleWidth, 0.7);
     ctx.restore();
-    drawProvenance(ctx, zones.rail.centerX, zones.provenanceY, kind);
+    drawProvenance(ctx, cx, zones.provenanceY, kind);
     return;
   }
   const cx = width / 2;
@@ -770,27 +777,27 @@ export function drawSpineType(
   );
   ctx.restore();
   const zones = spineTypeZones();
-  const fullBleed = style === "full-bleed";
   return {
     direction: book.direction,
     scrim: titleGuard.usedScrim || authorGuard.usedScrim,
+    scrimAlpha:
+      titleGuard.usedScrim || authorGuard.usedScrim ? 0.85 : 0,
     contrast: Math.min(titleGuard.contrast, authorGuard.contrast),
     block: layout.block,
     title: layout.titleBlock,
     author: layout.authorBlock,
-    colophon: fullBleed
-      ? {
-          x: zones.rail.centerX,
-          y: zones.provenanceY,
-          width: 4.4,
-          height: 4.4,
-        }
-      : {
-          x: width / 2,
-          y: zones.colophonRuleY,
-          width: Math.min(24, Math.max(5, width - 14)),
-          height: zones.colophonBaseY - zones.colophonRuleY + 4,
-        },
+    colophon: {
+      x: width / 2,
+      y: style === "full-bleed" ? zones.provenanceY : zones.colophonRuleY,
+      width:
+        style === "full-bleed"
+          ? 4.4
+          : Math.min(24, Math.max(5, width - 14)),
+      height:
+        style === "full-bleed"
+          ? 4.4
+          : zones.colophonBaseY - zones.colophonRuleY + 4,
+    },
     vertical: true,
   };
 }
