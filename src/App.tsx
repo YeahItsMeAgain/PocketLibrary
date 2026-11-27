@@ -319,10 +319,14 @@ function AppShell() {
   const enqueueSpines = spineActivity.enqueue;
 
   useEffect(() => {
-    // First library-ready: a low-priority backfill. The backend dedupes and
-    // skips cached books, so a reload costs nothing.
+    // The shell queues the existing library once per model bundle and reports
+    // `backfillPending` in the queue payload. Wait for that state, then only
+    // pay for a catalogue load when the backfill is genuinely still due.
     if (status?.state !== "ready" || spineBackfillStarted.current) return;
+    const queue = spineActivity.queue;
+    if (!queue) return;
     spineBackfillStarted.current = true;
+    if (queue.backfillPending === false) return;
     let alive = true;
     void platform
       .listBooks()
@@ -336,7 +340,7 @@ function AppShell() {
     return () => {
       alive = false;
     };
-  }, [status?.state, enqueueSpines]);
+  }, [status?.state, spineActivity.queue, enqueueSpines]);
 
   useEffect(() => {
     // A single launch reconciliation; StrictMode may replay this effect, but
