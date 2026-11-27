@@ -803,3 +803,96 @@ test("the generated strip stays visible at 390 and 320 wide", async ({
   }
 });
 
+
+async function openSettings(page: Page) {
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await page
+    .getByRole("dialog", { name: "Navigation" })
+    .getByRole("button", { name: "Settings" })
+    .click();
+  await expect(page.getByTestId("settings-view")).toBeVisible();
+}
+
+test("a failed job stays in the snapshot, chip and shelf marker until retried", async ({
+  page,
+}) => {
+  await boot(page, { spine: { queueStepMs: 15, failIds: [1] } });
+
+  const chip = page.getByTestId("spine-activity");
+  await expect(chip).toBeVisible({ timeout: 8_000 });
+  await expect(chip).toContainText("1 spine needs attention");
+  await expect(chip.getByTestId("spine-retry-all")).toBeVisible();
+  await expect(
+    page.getByTestId("spine").first().getByTestId("spine-failed-marker"),
+  ).toBeVisible({ timeout: 8_000 });
+
+  const events = await queueEvents(page);
+  const snapshots = events
+    .filter((entry) => entry.event === "queue")
+    .map(
+      (entry) =>
+        entry.payload as {
+          failed: number;
+          attention: Array<{
+            bookId: number;
+            state: string;
+            error: string;
+            attempts: number;
+          }>;
+        },
+    );
+  const failedSnapshot = snapshots.find(
+    (snapshot) => snapshot.failed === 1 && snapshot.attention.length === 1,
+  );
+  expect(failedSnapshot?.attention[0].bookId).toBe(1);
+  expect(failedSnapshot?.attention[0].state).toBe("needs-attention");
+  expect(failedSnapshot?.attention[0].error).toContain("could not be generated");
+  expect(failedSnapshot?.attention[0].attempts).toBe(1);
+
+  const before = (await queuedIds(page)).filter((id) => id === 1).length;
+  await chip.getByTestId("spine-retry-all").click();
+  await expect
+    .poll(async () => (await queuedIds(page)).filter((id) => id === 1).length)
+    .toBeGreaterThan(before);
+});
+
+test("the Settings spine panel renders and Retry all enqueues failures", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [book(1), book(2)],
+    spine: {
+      queueStepMs: 15,
+      failIds: [1],
+      missingCoverIds: [1],
+    },
+  });
+  await expect(
+    page.getByTestId("spine").first().getByTestId("spine-failed-marker"),
+  ).toBeVisible({ timeout: 8_000 });
+
+  await openSettings(page);
+  await expect(page.getByTestId("settings-spine-status")).toBeVisible();
+  await expect(page.getByTestId("settings-spine-engine")).toContainText(
+    "Engine ready",
+  );
+  await expect(page.getByTestId("settings-spine-bundle")).toContainText(
+    "spine-v1",
+  );
+  await expect(page.getByTestId("settings-spine-model-path")).toContainText(
+    "present",
+  );
+  await expect(page.getByTestId("settings-spine-queue")).toContainText(
+    "needing attention",
+  );
+  const table = page.getByTestId("spine-status-table");
+  await expect(table).toContainText("Shelf Volume 1");
+  await expect(table).toContainText("Missing");
+  await expect(table).toContainText("spine_failed");
+
+  const before = (await queuedIds(page)).filter((id) => id === 1).length;
+  await page.getByTestId("settings-spine-retry-all").click();
+  await expect
+    .poll(async () => (await queuedIds(page)).filter((id) => id === 1).length)
+    .toBeGreaterThan(before);
+});

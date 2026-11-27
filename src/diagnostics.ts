@@ -81,7 +81,12 @@ export function diagnosticsSummaryText(
   ].join("\n");
 }
 
-async function writeClipboard(text: string): Promise<void> {
+/**
+ * Write text with the async Clipboard API, then the legacy hidden-textarea
+ * copy. Throws only when both paths fail, so the caller can offer a manual
+ * selection sheet.
+ */
+export async function writeClipboardText(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
@@ -94,12 +99,21 @@ async function writeClipboard(text: string): Promise<void> {
   area.value = text;
   area.setAttribute("readonly", "");
   area.style.position = "fixed";
+  area.style.top = "0";
+  area.style.left = "0";
+  area.style.width = "1px";
+  area.style.height = "1px";
   area.style.opacity = "0";
   document.body.appendChild(area);
-  area.select();
-  const copied = document.execCommand?.("copy") ?? false;
-  area.remove();
-  if (!copied) throw new Error("clipboard unavailable");
+  try {
+    area.focus();
+    area.select();
+    area.setSelectionRange(0, text.length);
+    const copied = document.execCommand?.("copy") ?? false;
+    if (!copied) throw new Error("clipboard unavailable");
+  } finally {
+    area.remove();
+  }
 }
 
 /** Build and copy the summary, throwing if the browser refuses both paths. */
@@ -109,7 +123,7 @@ export async function copyDiagnosticsSummary(): Promise<string> {
     platform.diagnosticsSummary(),
   ]);
   const text = diagnosticsSummaryText(info, summary);
-  await writeClipboard(text);
+  await writeClipboardText(text);
   return text;
 }
 

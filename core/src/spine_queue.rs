@@ -31,6 +31,28 @@ impl QueueStage {
     }
 }
 
+/// One book whose automatic job failed and has not been retried yet.
+///
+/// A failed job is never dropped: it leaves the pending queue but stays here so
+/// the chip, the shelf marker and the Settings panel can explain it, and so a
+/// retry starts from a known state. `state` is always `"needs-attention"`.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueueFailure {
+    pub book_id: i64,
+    #[serde(default = "attention_state")]
+    pub state: String,
+    #[serde(default)]
+    pub code: String,
+    pub error: String,
+    #[serde(default)]
+    pub attempts: u32,
+}
+
+fn attention_state() -> String {
+    "needs-attention".to_owned()
+}
+
 /// The full queue state sent as `spine://queue` and returned by `spine_queue`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,6 +61,8 @@ pub struct QueueState {
     pub paused: bool,
     pub pending: usize,
     pub completed: u64,
+    /// The number of books currently needing attention. This is outstanding
+    /// work, not a lifetime counter, so retrying clears it.
     pub failed: u64,
     pub current_book_id: Option<i64>,
     /// "art" | "text" | "check" | null
@@ -46,6 +70,8 @@ pub struct QueueState {
     /// True when the existing library has not yet been queued for this model
     /// bundle. The shell clears it after one full-library enqueue.
     pub backfill_pending: bool,
+    /// Every failed book, with the last error and attempt count.
+    pub attention: Vec<QueueFailure>,
 }
 
 /// One stage event sent as `spine://progress`.
@@ -64,6 +90,8 @@ pub struct QueueProgress {
 struct PersistedQueue {
     #[serde(default)]
     pending: Vec<i64>,
+    #[serde(default)]
+    attention: Vec<QueueFailure>,
 }
 
 /// Pure queue state. A single job runs at a time; `spine_generate` removes its
@@ -75,10 +103,12 @@ pub struct QueueCore {
     paused: bool,
     running: bool,
     completed: u64,
-    failed: u64,
+    /// Lifetime failure count, used only for progress indices.
+    failed_total: u64,
     stage: Option<QueueStage>,
     waiting: bool,
     backfill_pending: bool,
+    attention: Vec<QueueFailure>,
 }
 
 impl QueueCore {
@@ -159,17 +189,94 @@ impl QueueCore {
         }
     }
 
+    /// Finish the current job. Failures are retained in `attention`; use
+    /// `fail_current` when the shell has a typed code and a clear message.
     pub fn finish(&mut self, ok: bool) {
-        if self.current.take().is_some() {
-            if ok {
-                self.completed += 1;
-            } else {
-                self.failed += 1;
-            }
+        if ok {
+            self.complete_current();
+        } else {
+            self.fail_current(
+                "spine_failed",
+                "The spine could not be generated for this book. Please try again.",
+            );
         }
         self.running = false;
         self.stage = None;
         self.waiting = false;
+    }
+
+    /// Complete the current job and clear any previous failure for that book.
+    pub fn complete_current(&mut self) {
+        if let Some(id) = self.current.take() {
+            self.completed += 1;
+            self.attention.retain(|failure| failure.book_id != id);
+        }
+        self.running = false;
+        self.stage = None;
+        self.waiting = false;
+    }
+
+    /// Fail the current job without dropping it. The book moves to
+    /// `attention` with its last error and bumped attempt count.
+    pub fn fail_current(&mut self, code: &str, error: impl Into<String>) {
+        if let Some(id) = self.current.take() {
+            self.failed_total += 1;
+            self.record_failure(id, code, error.into());
+        }
+        self.running = false;
+        self.stage = None;
+        self.waiting = false;
+    }
+
+    fn record_failure(&mut self, book_id: i64, code: &str, error: String) {
+        if let Some(existing) = self
+            .attention
+            .iter_mut()
+            .find(|failure| failure.book_id == book_id)
+        {
+            existing.state = attention_state();
+            existing.code = code.to_owned();
+            existing.error = error;
+            existing.attempts = existing.attempts.saturating_add(1);
+            return;
+        }
+        self.attention.push(QueueFailure {
+            book_id,
+            state: attention_state(),
+            code: code.to_owned(),
+            error,
+            attempts: 1,
+        });
+    }
+
+    /// Restore failures from the persisted queue file.
+    pub fn restore_failures(&mut self, failures: impl IntoIterator<Item = QueueFailure>) {
+        for failure in failures {
+            if failure.book_id <= 0 {
+                continue;
+            }
+            if let Some(existing) = self
+                .attention
+                .iter_mut()
+                .find(|candidate| candidate.book_id == failure.book_id)
+            {
+                *existing = failure;
+            } else {
+                self.attention.push(failure);
+            }
+        }
+    }
+
+    /// Clear a book's failed state before requeueing it.
+    pub fn clear_failure(&mut self, id: i64) -> bool {
+        let before = self.attention.len();
+        self.attention.retain(|failure| failure.book_id != id);
+        before != self.attention.len()
+    }
+
+    /// The outstanding failures, in first-failure order.
+    pub fn attention(&self) -> &[QueueFailure] {
+        &self.attention
     }
 
     /// Engine models are not ready yet. Keep every pending job.
@@ -185,15 +292,16 @@ impl QueueCore {
             paused: self.paused,
             pending: self.pending.len(),
             completed: self.completed,
-            failed: self.failed,
+            failed: self.attention.len() as u64,
             current_book_id: self.current,
             stage: self.stage.map(|stage| stage.as_str().to_owned()),
             backfill_pending: self.backfill_pending,
+            attention: self.attention.clone(),
         }
     }
 
     pub fn progress(&self, book_id: i64, stage: QueueStage) -> QueueProgress {
-        let index = self.completed + self.failed + 1;
+        let index = self.completed + self.failed_total + 1;
         let total = index + self.pending.len() as u64;
         QueueProgress {
             book_id,
@@ -288,21 +396,29 @@ fn write_backfill(path: &Path, bundle_id: &str) -> std::io::Result<()> {
     }
 }
 
-pub fn load_pending(path: &Path) -> Vec<i64> {
+/// Load both the pending ids and the persisted failures.
+pub fn load_queue(path: &Path) -> (Vec<i64>, Vec<QueueFailure>) {
     let Ok(text) = fs::read_to_string(path) else {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     };
     serde_json::from_str::<PersistedQueue>(&text)
-        .map(|queue| queue.pending)
+        .map(|queue| (queue.pending, queue.attention))
         .unwrap_or_default()
 }
 
-pub fn save_pending(path: &Path, ids: &[i64]) -> std::io::Result<()> {
+pub fn load_pending(path: &Path) -> Vec<i64> {
+    load_queue(path).0
+}
+
+/// Persist pending work and outstanding failures together so a restart keeps
+/// the chip and the shelf marker.
+pub fn save_queue(path: &Path, ids: &[i64], attention: &[QueueFailure]) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
     let text = serde_json::to_string_pretty(&PersistedQueue {
         pending: ids.to_vec(),
+        attention: attention.to_vec(),
     })
     .map_err(std::io::Error::other)?;
     let staged = path.with_extension(format!("json.tmp-{}", std::process::id()));
@@ -314,6 +430,10 @@ pub fn save_pending(path: &Path, ids: &[i64]) -> std::io::Result<()> {
             Err(error)
         }
     }
+}
+
+pub fn save_pending(path: &Path, ids: &[i64]) -> std::io::Result<()> {
+    save_queue(path, ids, &[])
 }
 
 #[cfg(test)]
@@ -453,5 +573,73 @@ mod tests {
         assert!(core.snapshot().backfill_pending);
         core.set_backfill_pending(false);
         assert!(!core.snapshot().backfill_pending);
+    }
+
+    #[test]
+    fn a_failed_job_stays_in_the_snapshot_until_retry() {
+        let mut core = QueueCore::default();
+        core.enqueue([7]);
+        assert_eq!(core.take_next(), Some(7));
+        core.fail_current("cover_missing", "This book has no cover.");
+        let state = core.snapshot();
+        assert_eq!(state.pending, 0);
+        assert_eq!(state.failed, 1);
+        assert_eq!(state.attention.len(), 1);
+        assert_eq!(state.attention[0].book_id, 7);
+        assert_eq!(state.attention[0].state, "needs-attention");
+        assert_eq!(state.attention[0].code, "cover_missing");
+        assert_eq!(state.attention[0].error, "This book has no cover.");
+        assert_eq!(state.attention[0].attempts, 1);
+        assert!(!state.running);
+
+        // A second failure bumps attempts instead of duplicating the row.
+        core.enqueue([7]);
+        assert_eq!(core.take_next(), Some(7));
+        core.fail_current("spine_failed", "Still failing.");
+        assert_eq!(core.snapshot().failed, 1);
+        assert_eq!(core.snapshot().attention[0].attempts, 2);
+
+        // Retry clears the state before the job is queued again.
+        assert!(core.clear_failure(7));
+        assert_eq!(core.snapshot().failed, 0);
+        assert_eq!(core.enqueue([7]), 1);
+        assert_eq!(core.take_next(), Some(7));
+        core.finish(true);
+        assert_eq!(core.snapshot().completed, 1);
+        assert!(core.snapshot().attention.is_empty());
+    }
+
+    #[test]
+    fn failures_survive_a_restart_and_a_success_clears_them() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("spine").join(QUEUE_FILE);
+        let mut core = QueueCore::default();
+        core.enqueue([4, 5]);
+        assert_eq!(core.take_next(), Some(4));
+        core.fail_current("spine_failed", "The engine stopped.");
+        save_queue(&path, &core.persist_ids(), core.attention()).expect("save queue");
+
+        let (pending, attention) = load_queue(&path);
+        let mut reloaded = QueueCore::default();
+        reloaded.enqueue(pending);
+        reloaded.restore_failures(attention);
+        assert_eq!(reloaded.snapshot().failed, 1);
+        assert_eq!(reloaded.snapshot().attention[0].book_id, 4);
+        assert_eq!(reloaded.snapshot().attention[0].attempts, 1);
+        assert_eq!(reloaded.snapshot().pending, 1);
+
+        assert_eq!(reloaded.take_next(), Some(5));
+        reloaded.finish(true);
+        assert_eq!(
+            reloaded.snapshot().failed,
+            1,
+            "book 4 still waits for retry"
+        );
+        assert!(reloaded.clear_failure(4));
+        reloaded.enqueue([4]);
+        assert_eq!(reloaded.take_next(), Some(4));
+        reloaded.finish(true);
+        assert_eq!(reloaded.snapshot().failed, 0);
+        assert!(reloaded.snapshot().attention.is_empty());
     }
 }

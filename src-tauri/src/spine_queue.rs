@@ -5,16 +5,17 @@
 //! is covered by host tests. This module owns the single worker, the model
 //! readiness gate and the `spine://queue` / `spine://progress` events.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use tauri::{AppHandle, Emitter, Manager};
 
-use pocketlibrary_core::Api;
 use pocketlibrary_core::spine_queue::{self, BackfillFlag, QueueCore, QueueStage};
+use pocketlibrary_core::{Api, ApiError};
 use pocketlibrary_spine::Stage;
 
+use crate::spine_assets;
 use crate::spine_service::{BUNDLE_ID, SpineService};
 
 pub const QUEUE_EVENT: &str = "spine://queue";
@@ -23,6 +24,32 @@ pub const PROGRESS_EVENT: &str = "spine://progress";
 pub use pocketlibrary_core::spine_queue::{
     QueueProgress as SpineProgress, QueueState as SpineQueueState,
 };
+
+/// One queue line in `<app data>/spine/spine.log`.
+///
+/// Every enqueue, skip, start, success and failure goes through here, so the
+/// log always answers "what happened to book N?" without needing logcat.
+fn log_queue_event(
+    app_data_dir: &Path,
+    action: &str,
+    book_id: i64,
+    title: &str,
+    code: &str,
+    message: &str,
+) {
+    let line =
+        format!("queue {action}: book {book_id} title={title:?} code={code} message={message:?}");
+    // Keep stderr for `cargo tauri dev` and logcat; the file survives the app
+    // being closed and is the line a user can send us later.
+    eprintln!("pocketlibrary spine {line}");
+    spine_assets::log(app_data_dir, &line);
+}
+
+fn book_title(api: &Api, book_id: i64) -> String {
+    api.book(book_id)
+        .map(|book| book.title)
+        .unwrap_or_else(|_| "unknown title".to_owned())
+}
 
 fn stage_from_engine(stage: Stage) -> QueueStage {
     match stage {
@@ -46,8 +73,9 @@ pub struct SpineQueue {
 impl SpineQueue {
     pub fn new(app_data_dir: PathBuf, app: AppHandle) -> Self {
         let mut core = QueueCore::default();
-        let restored = spine_queue::load_pending(&spine_queue::queue_path(&app_data_dir));
+        let (restored, failures) = spine_queue::load_queue(&spine_queue::queue_path(&app_data_dir));
         core.enqueue(restored);
+        core.restore_failures(failures);
         let backfill = BackfillFlag::load(&app_data_dir);
         core.set_backfill_pending(backfill.is_pending(BUNDLE_ID));
         Self {
@@ -72,15 +100,30 @@ impl SpineQueue {
                 current_book_id: None,
                 stage: None,
                 backfill_pending: false,
+                attention: Vec::new(),
             },
         }
     }
 
     /// Idempotently add books. Cached books are skipped when the worker peeks
     /// at them, so the caller does not need to hash every cover first.
-    pub fn enqueue(&self, book_ids: Vec<i64>) {
+    ///
+    /// Each requested book gets one log line, including the title, so the log
+    /// explains both work that was queued and work that was already waiting.
+    pub fn enqueue(&self, books: Vec<(i64, String)>) {
+        let ids: Vec<i64> = books.iter().map(|(id, _)| *id).collect();
+        for (book_id, title) in &books {
+            log_queue_event(
+                &self.app_data_dir,
+                "enqueue",
+                *book_id,
+                title,
+                "queued",
+                "automatic spine job requested",
+            );
+        }
         let changed = match self.core.lock() {
-            Ok(mut core) => core.enqueue(book_ids) > 0,
+            Ok(mut core) => core.enqueue(ids) > 0,
             Err(_) => false,
         };
         if changed {
@@ -88,6 +131,46 @@ impl SpineQueue {
             self.emit_queue();
         }
         self.kick();
+    }
+
+    /// Clear failed state and queue the books again. This is the explicit
+    /// Retry path, so the old error disappears before the new job starts.
+    pub fn retry(&self, books: Vec<(i64, String)>) {
+        if books.is_empty() {
+            return;
+        }
+        {
+            if let Ok(mut core) = self.core.lock() {
+                for (book_id, _) in &books {
+                    core.clear_failure(*book_id);
+                }
+            }
+        }
+        for (book_id, title) in &books {
+            log_queue_event(
+                &self.app_data_dir,
+                "retry",
+                *book_id,
+                title,
+                "retry",
+                "failed spine job cleared for another attempt",
+            );
+        }
+        self.persist();
+        self.emit_queue();
+        self.enqueue(books);
+    }
+
+    /// Clear a book's failure when the user starts an explicit generation.
+    pub fn clear_failure(&self, book_id: i64) {
+        let changed = match self.core.lock() {
+            Ok(mut core) => core.clear_failure(book_id),
+            Err(_) => false,
+        };
+        if changed {
+            self.persist();
+            self.emit_queue();
+        }
     }
 
     /// Queue every book that has no complete strip yet, once per launch.
@@ -98,38 +181,51 @@ impl SpineQueue {
     /// check is therefore unconditional and cheap: it reads
     /// `artifact.json` ids, never hashes covers or runs inference. Cached
     /// books are not enqueued; the queue core dedupes the rest.
+    ///
+    /// A book without a usable cover is still enqueued: the worker repairs or
+    /// re-extracts the cover before generation, and only then may it fail with
+    /// a visible needs-cover reason.
     pub fn backfill_once(&self, api: &Api, service: &SpineService) {
         if self.repair_done.swap(true, Ordering::SeqCst) {
             return;
         }
-        let ids = match api.list_books() {
-            Ok(books) => {
-                let cached = service.cached_book_ids();
-                books
-                    .into_iter()
-                    .filter(|book| !cached.contains(&book.id))
-                    // A book without a cover cannot generate; leave it for a
-                    // later launch after the cover is restored.
-                    .filter(|book| {
-                        book.cover_path
-                            .as_deref()
-                            .map(|path| std::path::Path::new(path).is_file())
-                            .unwrap_or(false)
-                    })
-                    .map(|book| book.id)
-                    .collect::<Vec<_>>()
-            }
+        let books = match api.list_books() {
+            Ok(books) => books,
             Err(error) => {
                 // Leave the flag pending: the next launch (or the frontend
                 // fallback) can retry without a permanent skip.
-                eprintln!(
-                    "pocketlibrary spine: backfill catalogue read failed ({}): {}",
-                    error.code, error.message
+                self.repair_done.store(false, Ordering::SeqCst);
+                spine_assets::log(
+                    &self.app_data_dir,
+                    &format!(
+                        "queue backfill: catalogue read failed code={} message={:?}",
+                        error.code, error.message
+                    ),
                 );
                 return;
             }
         };
-        self.enqueue(ids);
+        let cached = service.cached_book_ids();
+        let mut entries = Vec::new();
+        for book in books {
+            if cached.contains(&book.id) {
+                log_queue_event(
+                    &self.app_data_dir,
+                    "skip",
+                    book.id,
+                    &book.title,
+                    "cached",
+                    "a complete cached strip already exists",
+                );
+                continue;
+            }
+            entries.push((book.id, book.title));
+        }
+        spine_assets::log(
+            &self.app_data_dir,
+            &format!("queue backfill: enqueueing {} book(s)", entries.len()),
+        );
+        self.enqueue(entries);
         self.finish_backfill();
     }
 
@@ -148,7 +244,10 @@ impl SpineQueue {
             Err(error) => {
                 // The in-memory queue already has the work. Keeping the flag
                 // pending only means a harmless re-enqueue next launch.
-                eprintln!("pocketlibrary spine: persist backfill flag: {error}");
+                spine_assets::log(
+                    &self.app_data_dir,
+                    &format!("queue backfill: persist flag failed message={error:?}"),
+                );
             }
         }
     }
@@ -198,23 +297,39 @@ impl SpineQueue {
             Ok(core) => core.persist_ids(),
             Err(_) => return,
         };
-        if let Err(error) =
-            spine_queue::save_pending(&spine_queue::queue_path(&self.app_data_dir), &ids)
-        {
-            eprintln!("pocketlibrary spine: persist queue: {error}");
+        let attention = self
+            .core
+            .lock()
+            .map(|core| core.attention().to_vec())
+            .unwrap_or_default();
+        if let Err(error) = spine_queue::save_queue(
+            &spine_queue::queue_path(&self.app_data_dir),
+            &ids,
+            &attention,
+        ) {
+            spine_assets::log(
+                &self.app_data_dir,
+                &format!("queue persist: failed message={error:?}"),
+            );
         }
     }
 
     fn emit_queue(&self) {
         let state = self.snapshot();
         if let Err(error) = self.app.emit(QUEUE_EVENT, state) {
-            eprintln!("pocketlibrary spine: emit {QUEUE_EVENT}: {error}");
+            spine_assets::log(
+                &self.app_data_dir,
+                &format!("queue emit: {QUEUE_EVENT} failed message={error:?}"),
+            );
         }
     }
 
     fn emit_progress(&self, progress: SpineProgress) {
         if let Err(error) = self.app.emit(PROGRESS_EVENT, progress) {
-            eprintln!("pocketlibrary spine: emit {PROGRESS_EVENT}: {error}");
+            spine_assets::log(
+                &self.app_data_dir,
+                &format!("queue emit: {PROGRESS_EVENT} failed message={error:?}"),
+            );
         }
     }
 
@@ -241,20 +356,47 @@ impl SpineQueue {
         Some(id)
     }
 
-    fn skip_cached(&self, book_id: i64) {
+    fn skip_cached(&self, book_id: i64, title: &str) {
         let changed = match self.core.lock() {
             Ok(mut core) => core.skip_front(book_id),
             Err(_) => false,
         };
         if changed {
+            log_queue_event(
+                &self.app_data_dir,
+                "skip",
+                book_id,
+                title,
+                "cached",
+                "worker found a complete cached strip",
+            );
             self.persist();
             self.emit_queue();
         }
     }
 
-    fn finish_job(&self, ok: bool) {
+    fn finish_job(&self, ok: bool, code: &str, error: &str, title: &str) {
+        let book_id = self.snapshot().current_book_id;
         if let Ok(mut core) = self.core.lock() {
-            core.finish(ok);
+            if ok {
+                core.complete_current();
+            } else {
+                core.fail_current(code, error);
+            }
+        }
+        if let Some(book_id) = book_id {
+            if ok {
+                log_queue_event(
+                    &self.app_data_dir,
+                    "success",
+                    book_id,
+                    title,
+                    "ok",
+                    "spine strip generated and cached",
+                );
+            } else {
+                log_queue_event(&self.app_data_dir, "failure", book_id, title, code, error);
+            }
         }
         self.persist();
         self.emit_queue();
@@ -306,26 +448,90 @@ fn run_worker(app: AppHandle) {
             break;
         };
         let api = app.state::<Api>();
+        let title = book_title(api.inner(), book_id);
         if service.is_cached(book_id, api.inner()) {
-            queue.skip_cached(book_id);
+            queue.skip_cached(book_id, &title);
             continue;
         }
         let Some(book_id) = queue.begin_next() else {
             break;
         };
+        log_queue_event(
+            &queue.app_data_dir,
+            "start",
+            book_id,
+            &title,
+            "started",
+            "generation began",
+        );
         let result = service.generate_with_progress(book_id, api.inner(), |stage| {
             queue.stage_started(book_id, stage);
         });
         match result {
-            Ok(_) => queue.finish_job(true),
+            Ok(_) => queue.finish_job(true, "ok", "", &title),
             Err(error) => {
-                eprintln!(
-                    "pocketlibrary spine queue: book {book_id} failed ({:?}): {}",
-                    error.code, error.message
-                );
-                queue.finish_job(false);
+                queue.finish_job(false, error.code, &error.message, &title);
             }
         }
     }
     app.state::<SpineQueue>().worker_done();
+}
+
+/// Explicit retry for the chip and the Settings panel. The shell clears each
+/// failed state before handing the books back to the queue.
+#[tauri::command]
+pub async fn spine_retry(app: AppHandle, book_ids: Vec<i64>) -> Result<(), ApiError> {
+    let api = app.state::<Api>();
+    let books = book_ids
+        .into_iter()
+        .filter_map(|book_id| api.book(book_id).ok().map(|book| (book.id, book.title)))
+        .collect::<Vec<_>>();
+    app.state::<SpineQueue>().retry(books);
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_failure_line_names_the_book_code_and_message() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        log_queue_event(
+            temp.path(),
+            "failure",
+            42,
+            "The Book & Its Title",
+            "cover_missing",
+            "This book has no cover to build a spine from.",
+        );
+        let log = std::fs::read_to_string(spine_assets::log_path(temp.path()))
+            .expect("spine.log written");
+        assert!(log.contains("queue failure: book 42"));
+        assert!(log.contains("title=\"The Book & Its Title\""));
+        assert!(log.contains("code=cover_missing"));
+        assert!(log.contains("This book has no cover"));
+    }
+
+    #[test]
+    fn every_queue_event_is_one_line() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        for action in ["enqueue", "skip", "start", "success"] {
+            log_queue_event(
+                temp.path(),
+                action,
+                action.len() as i64,
+                "A Book",
+                "ok",
+                "message",
+            );
+        }
+        let log = std::fs::read_to_string(spine_assets::log_path(temp.path()))
+            .expect("spine.log written");
+        assert_eq!(log.lines().count(), 4);
+        assert!(log.contains("queue enqueue:"));
+        assert!(log.contains("queue skip:"));
+        assert!(log.contains("queue start:"));
+        assert!(log.contains("queue success:"));
+    }
 }

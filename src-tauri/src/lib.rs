@@ -29,6 +29,7 @@ use pocketlibrary_core::{
 #[cfg(target_os = "android")]
 mod saf;
 mod spine_assets;
+mod spine_diagnostics;
 mod spine_queue;
 mod spine_service;
 mod updates;
@@ -332,7 +333,7 @@ fn diagnostics_zip(app: &AppHandle) -> Result<Vec<u8>, ApiError> {
         })
 }
 
-async fn blocking<T, F>(task: F) -> Result<T, ApiError>
+pub(crate) async fn blocking<T, F>(task: F) -> Result<T, ApiError>
 where
     T: Send + 'static,
     F: FnOnce() -> Result<T, ApiError> + Send + 'static,
@@ -943,7 +944,10 @@ async fn spine_generate(
     book_id: i64,
 ) -> Result<spine_service::SpineArtifact, ApiError> {
     // An explicit generate leaves the automatic queue, so it runs next rather
-    // than waiting behind earlier pending books.
+    // than waiting behind earlier pending books. Retrying must also clear the
+    // old failure before the new result is known.
+    app.state::<spine_queue::SpineQueue>()
+        .clear_failure(book_id);
     app.state::<spine_queue::SpineQueue>().remove(book_id);
     blocking(move || {
         let service = app.state::<spine_service::SpineService>();
@@ -957,7 +961,18 @@ async fn spine_generate(
 /// by the worker before inference.
 #[tauri::command]
 async fn spine_enqueue(app: AppHandle, book_ids: Vec<i64>) -> Result<(), ApiError> {
-    app.state::<spine_queue::SpineQueue>().enqueue(book_ids);
+    let api = app.state::<Api>();
+    let books = book_ids
+        .into_iter()
+        .map(|book_id| {
+            let title = api
+                .book(book_id)
+                .map(|book| book.title)
+                .unwrap_or_else(|_| "unknown title".to_owned());
+            (book_id, title)
+        })
+        .collect();
+    app.state::<spine_queue::SpineQueue>().enqueue(books);
     Ok(())
 }
 
@@ -1046,6 +1061,57 @@ fn log_diagnostic(
 #[tauri::command]
 fn diagnostics_summary(diag: tauri::State<'_, Arc<Diagnostics>>) -> DiagnosticsSummary {
     diag.summary()
+}
+
+/// One plain-text report for the Copy logs button.
+///
+/// Queue state is a cheap mutex read. Model status is only reported as a path
+/// presence check; resolving the bundle would extract assets and is too heavy
+/// for a clipboard action.
+#[tauri::command]
+async fn diagnostics_text(app: AppHandle) -> Result<String, ApiError> {
+    blocking(move || {
+        let environment = diagnostics_environment(&app)?;
+        let queue = app.state::<spine_queue::SpineQueue>().snapshot();
+        let queue_section = format!(
+            "running={} paused={} pending={} completed={} failed={} current={} stage={} backfillPending={}",
+            queue.running,
+            queue.paused,
+            queue.pending,
+            queue.completed,
+            queue.failed,
+            queue
+                .current_book_id
+                .map(|id| id.to_string())
+                .unwrap_or_else(|| "none".to_owned()),
+            queue.stage.as_deref().unwrap_or("none"),
+            queue.backfill_pending,
+        );
+        let models_present = app
+            .path()
+            .app_data_dir()
+            .ok()
+            .map(|dir| {
+                dir.join("spine")
+                    .join("models")
+                    .join(spine_assets::MODEL_DIR_NAME)
+                    .is_dir()
+            })
+            .unwrap_or(false);
+        let model_section = format!(
+            "bundle={} modelsPathPresent={}",
+            spine_service::BUNDLE_ID,
+            models_present
+        );
+        Ok(diagnostics_of(&app).export_text(
+            &environment,
+            &[
+                ("spine queue", queue_section),
+                ("spine models", model_section),
+            ],
+        ))
+    })
+    .await
 }
 
 #[tauri::command]
@@ -1750,6 +1816,7 @@ pub fn run() {
             open_book_externally,
             log_diagnostic,
             diagnostics_summary,
+            diagnostics_text,
             clear_diagnostics,
             export_diagnostics,
             save_diagnostics,
@@ -1758,9 +1825,11 @@ pub fn run() {
             spine_artifact,
             spine_cached_strips,
             spine_status,
+            spine_diagnostics::spine_diagnostics,
             spine_enqueue,
             spine_queue,
             spine_pause,
+            spine_queue::spine_retry,
             spine_set_style
         ])
         .build(tauri::generate_context!())

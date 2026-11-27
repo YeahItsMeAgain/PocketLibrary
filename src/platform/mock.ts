@@ -53,6 +53,7 @@ import type {
   SpineArtifact,
   SpineCachedStrip,
   SpineCropBox,
+  SpineDiagnostics,
   SpineProgress,
   SpineProgressListener,
   SpineQueueListener,
@@ -399,6 +400,8 @@ export interface MockSpineConfig {
   queueStepMs?: number;
   /** Books whose automatic job fails at the check stage. */
   failIds?: number[];
+  /** Books whose cached cover is reported missing in the status panel. */
+  missingCoverIds?: number[];
   /** Start the queue paused, so a test can resume it deliberately. */
   queueStartPaused?: boolean;
   /** Whether the library still needs its one-time bundle backfill. */
@@ -421,6 +424,59 @@ interface MockLogEntry {
   level: DiagnosticLevel;
   event: string;
   message: string;
+}
+
+const MOCK_SPINE_LOG = [
+  "2025-01-01T00:00:00Z ensure_models: start",
+  "2025-01-01T00:00:00Z models: cache verified",
+  "2025-01-01T00:00:01Z spine: ready (bundle spine-v1)",
+  "2025-01-01T00:00:02Z 42: art -> text -> check",
+].join("\n");
+
+function mockDiagnosticsText(entries: MockLogEntry[]): string {
+  const summary = summarizeMockLog(entries);
+  const failures = entries
+    .filter((entry) => entry.level === "error" || entry.level === "warn")
+    .slice(-20)
+    .map(
+      (entry) =>
+        `${new Date(entry.at).toISOString()} ${entry.level.toUpperCase()} ${entry.event}: ${entry.message}`,
+    )
+    .join("\n");
+  const lines = entries.slice(-2000).map(
+    (entry) =>
+      `${new Date(entry.at).toISOString()} ${entry.level.toUpperCase()} ${entry.event}: ${entry.message}`,
+  );
+  return [
+    `${MOCK_APP_INFO.name} diagnostics`,
+    `Generated: ${new Date(0).toISOString()}`,
+    `App: ${MOCK_APP_INFO.name} v${MOCK_APP_INFO.appVersion}`,
+    `Schema: ${MOCK_APP_INFO.schemaVersion}`,
+    "Android: 14",
+    "Device: Pixel 8",
+    "Counts: books=0, shelves=1, labels=0, downloads=0, failedDownloads=0",
+    "",
+    "===== summary =====",
+    `Log: ${summary.logBytes} bytes, ${summary.logLines} lines`,
+    `Errors: ${summary.errors}, warnings: ${summary.warnings}`,
+    `Last error: ${summary.lastError ?? "none"}`,
+    "",
+    "===== recent failures =====",
+    failures || "(none recorded)",
+    "",
+    "===== spine queue =====",
+    "running=false paused=false pending=0 completed=0 failed=0 current=none stage=none backfillPending=false",
+    "",
+    "===== spine models =====",
+    "bundle=spine-v1 modelsPathPresent=true",
+    "",
+    "===== app log (last 2000 lines) =====",
+    lines.join("\n"),
+    "",
+    "===== spine.log =====",
+    MOCK_SPINE_LOG,
+    "",
+  ].join("\n");
 }
 
 function summarizeMockLog(entries: MockLogEntry[]): DiagnosticsSummary {
@@ -864,6 +920,21 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
       window as unknown as { __POCKETLIBRARY_SPINE_STATUS_CALLS__?: number }
     ).__POCKETLIBRARY_SPINE_STATUS_CALLS__ = spineStatusCalls;
   };
+  const spineStatusValue = (): SpineStatus => {
+    const status: SpineStatus = {
+      models: "ready",
+      bundleId: SPINE_BUNDLE_ID,
+      bytes: 41_229_063,
+      modelPath: "/data/app/spine/models/spine-v1",
+      modelPresent: true,
+      error: null,
+      ...spineConfig.status,
+    };
+    if (status.models === "missing" || status.models === "error") {
+      status.modelPresent = false;
+    }
+    return status;
+  };
   let spineCachedStripCalls = 0;
   const noteSpineCachedStrips = () => {
     spineCachedStripCalls += 1;
@@ -887,6 +958,7 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     currentBookId: null,
     stage: null,
     backfillPending: spineConfig.backfillPending ?? true,
+    attention: [],
   };
   const queueJobs: number[] = [];
   const queuedIds = new Set<number>();
@@ -920,7 +992,37 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     scope.__POCKETLIBRARY_SPINE_ARTIFACT_IDS__ = [...spineArtifacts.keys()];
     scope.__POCKETLIBRARY_SPINE_STYLES__ = Object.fromEntries(spineStyles);
   };
-  const queueSnapshot = (): SpineQueueState => ({ ...queue });
+  const queueSnapshot = (): SpineQueueState => ({
+    ...queue,
+    attention: queue.attention.map((failure) => ({ ...failure })),
+  });
+  const syncQueueFailures = () => {
+    queue.failed = queue.attention.length;
+  };
+  const recordQueueFailure = (bookId: number, code: string, error: string) => {
+    const existing = queue.attention.find((failure) => failure.bookId === bookId);
+    if (existing) {
+      existing.code = code;
+      existing.error = error;
+      existing.attempts += 1;
+    } else {
+      queue.attention.push({
+        bookId,
+        state: "needs-attention",
+        code,
+        error,
+        attempts: 1,
+      });
+    }
+    syncQueueFailures();
+  };
+  const clearQueueFailure = (bookId: number) => {
+    queue.attention = queue.attention.filter(
+      (failure) => failure.bookId !== bookId,
+    );
+    failedQueueIds.delete(bookId);
+    syncQueueFailures();
+  };
   const emitQueue = () => {
     const payload = queueSnapshot();
     queueEvents.push({ event: "queue", payload });
@@ -1014,9 +1116,15 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     if (!failed) {
       try {
         await produceSpineArtifact(bookId);
-      } catch {
+      } catch (error) {
+        const typed = error as { code?: string; message?: string };
+        recordQueueFailure(
+          bookId,
+          typed.code ?? "spine_failed",
+          typed.message ??
+            "The spine could not be generated for this book. Please try again.",
+        );
         failedQueueIds.add(bookId);
-        queue.failed += 1;
         queue.currentBookId = null;
         queue.stage = null;
         queue.running = false;
@@ -1029,10 +1137,15 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     queue.stage = null;
     queue.running = false;
     if (failed) {
+      recordQueueFailure(
+        bookId,
+        "spine_failed",
+        spineConfig.error?.message ??
+          "The spine could not be generated for this book. Please try again.",
+      );
       failedQueueIds.add(bookId);
-      queue.failed += 1;
     } else {
-      failedQueueIds.delete(bookId);
+      clearQueueFailure(bookId);
       queue.completed += 1;
     }
     emitQueue();
@@ -1062,6 +1175,18 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     queue.pending = queueJobs.length;
     emitQueue();
     scheduleQueue();
+  }
+
+  function retrySpineIds(bookIds: number[]) {
+    let changed = false;
+    for (const id of bookIds) {
+      if (queue.attention.some((failure) => failure.bookId === id)) {
+        clearQueueFailure(id);
+        changed = true;
+      }
+    }
+    if (changed) emitQueue();
+    enqueueSpineIds(bookIds);
   }
 
   function setQueuePaused(paused: boolean) {
@@ -2200,6 +2325,7 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
       appendMockLog(level, event, message);
     },
     diagnosticsSummary: async () => summarizeMockLog(diagnosticEntries),
+    diagnosticsText: async () => mockDiagnosticsText(diagnosticEntries),
     clearDiagnostics: async () => {
       diagnosticEntries.length = 0;
       writeStored(MOCK_DIAGNOSTICS_KEY, diagnosticEntries);
@@ -2327,7 +2453,10 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     },
     spineGenerate: async (bookId) => {
       noteSpineGenerate();
-      return produceSpineArtifact(bookId);
+      const artifact = await produceSpineArtifact(bookId);
+      clearQueueFailure(bookId);
+      emitQueue();
+      return artifact;
     },
     spineArtifact: async (bookId) => {
       const artifact = spineArtifacts.get(bookId);
@@ -2345,17 +2474,31 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     },
     spineStatus: async () => {
       noteSpineStatus();
-      return {
-        models: "ready",
-        bundleId: SPINE_BUNDLE_ID,
-        bytes: 41_229_063,
-        error: null,
-        ...spineConfig.status,
-      };
+      return spineStatusValue();
     },
+    spineDiagnostics: async (): Promise<SpineDiagnostics> => ({
+      status: spineStatusValue(),
+      queue: queueSnapshot(),
+      books: books.map((book) => ({
+        bookId: book.id,
+        title: book.title,
+        coverPresent: !(spineConfig.missingCoverIds ?? []).includes(book.id),
+        artifactPresent: spineArtifacts.has(book.id),
+        lastError: (() => {
+          const failure = queue.attention.find(
+            (candidate) => candidate.bookId === book.id,
+          );
+          return failure ? `${failure.code}: ${failure.error}` : null;
+        })(),
+      })),
+    }),
     spineEnqueue: async (bookIds) => {
       queuedCalls.push(...bookIds);
       enqueueSpineIds(bookIds);
+    },
+    spineRetry: async (bookIds) => {
+      queuedCalls.push(...bookIds);
+      retrySpineIds(bookIds);
     },
     spineQueue: async () => queueSnapshot(),
     spinePause: async (paused) => {

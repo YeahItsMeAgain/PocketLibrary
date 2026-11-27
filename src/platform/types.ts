@@ -166,7 +166,36 @@ export interface SpineStatus {
   models: "ready" | "bundled" | "missing" | "error";
   bundleId: string;
   bytes: number;
+  /** Resolved model directory, or the expected directory when resolution failed. */
+  modelPath: string | null;
+  /** True when every required model file is present on disk. */
+  modelPresent: boolean;
   error: string | null;
+}
+
+/** One book whose automatic spine job failed and is waiting for a retry. */
+export interface SpineQueueFailure {
+  bookId: number;
+  state: "needs-attention";
+  code: string;
+  error: string;
+  attempts: number;
+}
+
+/** One row of the read-only Settings → Spine status table. */
+export interface SpineBookDiagnostic {
+  bookId: number;
+  title: string;
+  coverPresent: boolean;
+  artifactPresent: boolean;
+  lastError: string | null;
+}
+
+/** Mirrors the shell's `SpineDiagnostics` command payload. */
+export interface SpineDiagnostics {
+  status: SpineStatus;
+  queue: SpineQueueState;
+  books: SpineBookDiagnostic[];
 }
 
 /* ------------------------------------------------------- automatic queue */
@@ -191,6 +220,8 @@ export interface SpineQueueState {
    * current model bundle; the shell clears it once the backfill has run.
    */
   backfillPending: boolean;
+  /** Failed books that stay visible until Retry clears them. */
+  attention: SpineQueueFailure[];
 }
 
 /** Payload of `spine://progress`, one per stage. */
@@ -674,6 +705,8 @@ export interface Platform {
     message: string,
   ): Promise<void>;
   diagnosticsSummary(): Promise<DiagnosticsSummary>;
+  /** One bounded plain-text report, including recent failures and spine.log. */
+  diagnosticsText(): Promise<string>;
   clearDiagnostics(): Promise<void>;
   /** Export the zip through the share sheet, falling back to the save picker. */
   sendDiagnostics(): Promise<DiagnosticsExport>;
@@ -696,8 +729,12 @@ export interface Platform {
   spineCachedStrips(): Promise<SpineCachedStrip[]>;
   /** Whether the required model bundle is installed and usable. */
   spineStatus(): Promise<SpineStatus>;
+  /** Read engine, queue and per-book cache state without changing anything. */
+  spineDiagnostics(): Promise<SpineDiagnostics>;
   /** Queue books for automatic preparation; dedupes and skips cached. */
   spineEnqueue(bookIds: number[]): Promise<void>;
+  /** Clear each failed state, then queue the books again. */
+  spineRetry(bookIds: number[]): Promise<void>;
   /** The worker's current counts and stage. */
   spineQueue(): Promise<SpineQueueState>;
   /** Reader-open pause; manual generation still runs. */

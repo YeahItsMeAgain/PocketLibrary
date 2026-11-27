@@ -55,6 +55,10 @@ pub struct SpineStatus {
     pub models: &'static str,
     pub bundle_id: &'static str,
     pub bytes: u64,
+    /// Directory holding the model files, when it can be resolved.
+    pub model_path: Option<String>,
+    /// True when every required model file is present on disk.
+    pub model_present: bool,
     pub error: Option<String>,
 }
 
@@ -93,6 +97,7 @@ impl SpineService {
         mut progress: impl FnMut(Stage),
     ) -> Result<SpineArtifact, ApiError> {
         let book = find_book(api, book_id)?;
+        let book = self.ensure_cover(book_id, book, api)?;
         let prepared = self.prepare(book_id, &book)?;
 
         if let Some(artifact) = self.cache.read(&prepared.dir) {
@@ -252,6 +257,8 @@ impl SpineService {
                     models: "error",
                     bundle_id: BUNDLE_ID,
                     bytes: 0,
+                    model_path: Some(self.models_dir().display().to_string()),
+                    model_present: false,
                     error: Some("The spine model state could not be read.".to_owned()),
                 };
             }
@@ -264,6 +271,8 @@ impl SpineService {
                 models: READY_STATE,
                 bundle_id: BUNDLE_ID,
                 bytes: bundle_bytes(paths),
+                model_path: paths.det.parent().map(|path| path.display().to_string()),
+                model_present: models_present(paths),
                 error: None,
             },
             Some(Err(error)) => {
@@ -277,6 +286,8 @@ impl SpineService {
                     models: classify_model_error(error),
                     bundle_id: BUNDLE_ID,
                     bytes: 0,
+                    model_path: Some(self.models_dir().display().to_string()),
+                    model_present: false,
                     error: Some(user_safe_model_error(error).to_owned()),
                 }
             }
@@ -284,8 +295,86 @@ impl SpineService {
                 models: "error",
                 bundle_id: BUNDLE_ID,
                 bytes: 0,
+                model_path: Some(self.models_dir().display().to_string()),
+                model_present: false,
                 error: Some("The spine model state could not be resolved.".to_owned()),
             },
+        }
+    }
+
+    fn models_dir(&self) -> PathBuf {
+        self.app_data_dir
+            .join("spine")
+            .join("models")
+            .join(crate::spine_assets::MODEL_DIR_NAME)
+    }
+
+    /// Repair a missing cover before generation.
+    ///
+    /// A cache-cleared or moved cover used to fail the job anonymously. The
+    /// catalog already knows how to restore one from the book file (or draw a
+    /// deterministic plate), so run that path first. Only an actual failure to
+    /// produce a readable cover file becomes `cover_missing`.
+    fn ensure_cover(&self, book_id: i64, book: Book, api: &Api) -> Result<Book, ApiError> {
+        let present = book
+            .cover_path
+            .as_deref()
+            .map(Path::new)
+            .is_some_and(Path::is_file);
+        if present {
+            return Ok(book);
+        }
+        spine_assets::log(
+            &self.app_data_dir,
+            &format!(
+                "cover repair: book {book_id} title={:?} previous={:?}",
+                book.title, book.cover_path
+            ),
+        );
+        match api.get_book_detail(book_id, None) {
+            Ok(detail) => {
+                let restored = detail
+                    .book
+                    .cover_path
+                    .as_deref()
+                    .map(Path::new)
+                    .is_some_and(Path::is_file);
+                if restored {
+                    spine_assets::log(
+                        &self.app_data_dir,
+                        &format!(
+                            "cover repair: book {book_id} title={:?} code=ok path={:?}",
+                            detail.book.title, detail.book.cover_path
+                        ),
+                    );
+                    Ok(detail.book)
+                } else {
+                    spine_assets::log(
+                        &self.app_data_dir,
+                        &format!(
+                            "cover repair: book {book_id} title={:?} code=needs-cover message=\"restore produced no file\"",
+                            book.title
+                        ),
+                    );
+                    Err(api_error(
+                        "cover_missing",
+                        "This book has no cover to build a spine from. Add a cover first.",
+                    ))
+                }
+            }
+            Err(error) => {
+                spine_assets::log(
+                    &self.app_data_dir,
+                    &format!(
+                        "cover repair: book {book_id} title={:?} code={} message={:?}",
+                        book.title, error.code, error.message
+                    ),
+                );
+                Err(api_error(
+                    "cover_missing",
+                    "This book has no cover to build a spine from. Add a cover first.",
+                ))
+            }
         }
     }
 
@@ -463,6 +552,12 @@ fn bundle_bytes(paths: &SpineModelPaths) -> u64 {
         .filter_map(|path| fs::metadata(path).ok())
         .map(|meta| meta.len())
         .sum()
+}
+
+fn models_present(paths: &SpineModelPaths) -> bool {
+    [&paths.det, &paths.rec, &paths.keys, &paths.migan]
+        .into_iter()
+        .all(|path| path.is_file())
 }
 
 #[cfg(target_os = "android")]
@@ -669,6 +764,50 @@ mod tests {
         let absent = temp.path().join("gone.jpg");
         let error = require_cover(3, Some(&absent)).expect_err("cover file absent");
         assert_eq!(error.code, "cover_missing");
+    }
+
+    #[test]
+    fn a_missing_cover_is_repaired_before_generation() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let app_data = temp.path().join("app-data");
+        fs::create_dir_all(&app_data).expect("app data");
+        let api = Api::open(app_data.join("library.db")).expect("open catalog");
+        let library = temp.path().join("library");
+        fs::create_dir_all(&library).expect("library dir");
+        let sample = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("test-assets/sample.epub");
+        fs::copy(&sample, library.join("sample.epub")).expect("copy sample");
+        api.scan(&HostSource {
+            root: library,
+            name: "sample.epub".to_owned(),
+        })
+        .expect("scan sample");
+        let book = api.list_books().expect("list books").remove(0);
+        let cover = PathBuf::from(book.cover_path.as_deref().expect("scan made a cover"));
+        fs::remove_file(&cover).expect("drop the cached cover");
+
+        let service = SpineService::new(app_data.clone());
+        let repaired = service
+            .ensure_cover(book.id, book, &api)
+            .expect("the cover is restored");
+        let restored = PathBuf::from(
+            repaired
+                .cover_path
+                .as_deref()
+                .expect("the repaired book has a cover path"),
+        );
+        assert!(restored.is_file(), "the cover file is back on disk");
+        assert!(
+            fs::read(&restored)
+                .expect("read repaired cover")
+                .starts_with(&[0xff, 0xd8]),
+            "the repaired cover is a JPEG"
+        );
+
+        let log = fs::read_to_string(spine_assets::log_path(&app_data)).expect("spine.log written");
+        assert!(log.contains("cover repair:"));
+        assert!(log.contains("code=ok"));
     }
 
     fn set_modified(path: &Path, secs: u64) {

@@ -129,10 +129,14 @@ test("opening a book does not resolve the engine or run status", async ({
   page,
 }) => {
   await boot(page);
+  await expect.poll(() => statusCalls(page)).toBe(1);
+  const statusAtWall = await statusCalls(page);
   await openEdit(page);
   await expect(page.getByTestId("spine-generate")).toBeVisible();
-  // Mount may read the artifact cache, but never status/models/JNI.
-  expect(await statusCalls(page)).toBe(0);
+  // The wall resolves the engine once when the library is ready, but opening a
+  // book must not resolve it again or run generation.
+  expect(statusAtWall).toBe(1);
+  expect(await statusCalls(page)).toBe(statusAtWall);
   expect(await generateCalls(page)).toBe(0);
 
   await page.getByTestId("spine-generate").click();

@@ -22,7 +22,7 @@ export type SpineBookState =
   | { state: "waiting" }
   | { state: "working"; stage: SpineStage }
   | { state: "ready" }
-  | { state: "needs-attention" };
+  | { state: "needs-attention"; error?: string; attempts?: number };
 
 export interface SpineActivityValue {
   queue: SpineQueueState | null;
@@ -33,6 +33,10 @@ export interface SpineActivityValue {
   spines: Record<number, string>;
   /** Queue books for preparation; cached books settle as ready immediately. */
   enqueue(bookIds: number[]): void;
+  /** Clear the failed state for these books, then queue them again. */
+  retry(bookIds: number[]): void;
+  /** Retry every book currently needing attention. */
+  retryAll(): void;
   /** Explicit user stop. A later reader close must not undo it. */
   stop(): void;
   /** Explicit user resume. */
@@ -113,6 +117,10 @@ const fallback: SpineActivityValue = {
   enqueue: (bookIds) => {
     void platform.spineEnqueue(bookIds).catch(() => {});
   },
+  retry: (bookIds) => {
+    void platform.spineRetry(bookIds).catch(() => {});
+  },
+  retryAll: () => {},
   stop: () => {
     void platform.spinePause(true).catch(() => {});
   },
@@ -230,9 +238,7 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
         };
         if (prev?.currentBookId != null) {
           const bookId = prev.currentBookId;
-          if (next.failed > prev.failed) {
-            write(bookId, { state: "needs-attention" });
-          } else if (next.completed > prev.completed) {
+          if (next.completed > prev.completed) {
             write(bookId, { state: "ready" });
             void loadArtifact(bookId);
             // The bulk projection is the reliable path: refresh it so every
@@ -240,6 +246,17 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
             // races the cache install.
             void refreshCached();
           }
+        }
+        // Persistent failures arrive in every snapshot, including the first
+        // one after launch. They keep the marker and the chip alive until an
+        // explicit retry or a successful generation clears them.
+        for (const failure of next.attention) {
+          if (failure.bookId === next.currentBookId) continue;
+          write(failure.bookId, {
+            state: "needs-attention",
+            error: failure.error,
+            attempts: failure.attempts,
+          });
         }
         if (next.currentBookId != null) {
           write(next.currentBookId, {
@@ -315,6 +332,52 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
     [applyArtifact, handleQueue],
   );
 
+  const retry = useCallback(
+    (bookIds: number[]) => {
+      const unique = [...new Set(bookIds)].filter((id) =>
+        Number.isInteger(id),
+      );
+      if (unique.length === 0) return;
+      setJobs((current) => {
+        const next = { ...current };
+        for (const id of unique) next[id] = { state: "waiting" };
+        return next;
+      });
+      setQueue((current) =>
+        current
+          ? {
+              ...current,
+              attention: current.attention.filter(
+                (failure) => !unique.includes(failure.bookId),
+              ),
+              failed: Math.max(
+                0,
+                current.failed -
+                  current.attention.filter((failure) =>
+                    unique.includes(failure.bookId),
+                  ).length,
+              ),
+            }
+          : current,
+      );
+      void platform
+        .spineRetry(unique)
+        .then(() => platform.spineQueue())
+        .then(handleQueue)
+        .catch(() => {});
+    },
+    [handleQueue],
+  );
+
+  const retryAll = useCallback(() => {
+    const ids =
+      queue?.attention.map((failure) => failure.bookId) ??
+      Object.entries(jobs)
+        .filter(([, job]) => job.state === "needs-attention")
+        .map(([id]) => Number(id));
+    retry(ids);
+  }, [queue, jobs, retry]);
+
   const stop = useCallback(() => {
     manualPaused.current = true;
     setPaused(true);
@@ -381,6 +444,8 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
       jobs,
       spines,
       enqueue,
+      retry,
+      retryAll,
       stop,
       resume,
       readerOpened,
@@ -397,6 +462,8 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
       jobs,
       spines,
       enqueue,
+      retry,
+      retryAll,
       stop,
       resume,
       readerOpened,

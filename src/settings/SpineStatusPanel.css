@@ -1,0 +1,33 @@
+.spine-status-present {
+  color: var(--muted, #8a8174);
+  font-size: 0.88em;
+}
+
+.spine-status-table-wrap {
+  margin-top: 0.9rem;
+  overflow-x: auto;
+}
+
+.spine-status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.spine-status-table th,
+.spine-status-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid rgba(120, 96, 58, 0.25);
+  vertical-align: top;
+}
+
+.spine-status-table th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.spine-status-table td:last-child {
+  max-width: 16rem;
+  overflow-wrap: anywhere;
+}

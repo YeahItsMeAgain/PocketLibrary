@@ -26,6 +26,10 @@ const MAX_AGE_MS: i64 = MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 const TRIM_TARGET_BYTES: usize = (MAX_LOG_BYTES as usize) * 3 / 4;
 const SESSION_FILE: &str = "diagnostics.session";
 const EXPORT_FILE: &str = "pocketlibrary-diagnostics.zip";
+/// Ceiling for the plain-text copy. The app log alone may be 2 MB, so the
+/// text export keeps only the newest lines that fit.
+const MAX_TEXT_BYTES: usize = 200 * 1024;
+const TEXT_LOG_LINES: usize = 2000;
 
 /// Severity stored in the log. Warnings and errors feed recent failures.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -273,6 +277,115 @@ impl Diagnostics {
         Ok(cursor.into_inner())
     }
 
+    /// One plain-text report for pasting into a chat message.
+    ///
+    /// This is deliberately a sibling of [`Self::export_zip`], not a zip
+    /// reader: it keeps the same environment and recent failures, adds the
+    /// newest app and spine log lines, and caps the whole result at
+    /// [`MAX_TEXT_BYTES`]. `extra_sections` lets the shell add cheap runtime
+    /// state (for example the spine queue) without core knowing about it.
+    pub fn export_text(
+        &self,
+        environment: &DiagnosticsEnvironment,
+        extra_sections: &[(&str, String)],
+    ) -> String {
+        let now = SystemTime::now();
+        self.prune(now);
+        let summary = self.summary();
+        let failures = self.recent_failures(20).join("\n");
+        let app_log = self.read_text();
+        // The spine module keeps its own low-level log next to `spine/`.
+        let spine_log = self
+            .path
+            .parent()
+            .map(|data_dir| data_dir.join("spine").join("spine.log"))
+            .and_then(|path| fs::read(path).ok())
+            .map(|bytes| String::from_utf8_lossy(&bytes).into_owned());
+
+        let counts = environment
+            .counts
+            .iter()
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let mut head = String::new();
+        head.push_str(&format!("{} diagnostics\n", environment.app_name));
+        head.push_str(&format!("Generated: {}\n", format_timestamp(now)));
+        head.push_str(&format!(
+            "App: {} v{}\n",
+            environment.app_name, environment.app_version
+        ));
+        head.push_str(&format!("Schema: {}\n", environment.schema_version));
+        head.push_str(&format!("Android: {}\n", environment.android));
+        head.push_str(&format!("Device: {}\n", environment.device));
+        head.push_str(&format!("Counts: {counts}\n"));
+        head.push_str("\n===== summary =====\n");
+        head.push_str(&format!(
+            "Log: {} bytes, {} lines\nErrors: {}, warnings: {}\n",
+            summary.log_bytes, summary.log_lines, summary.errors, summary.warnings
+        ));
+        head.push_str(&format!(
+            "Last error: {}\n",
+            summary.last_error.as_deref().unwrap_or("none")
+        ));
+        head.push_str("\n===== recent failures =====\n");
+        if failures.is_empty() {
+            head.push_str("(none recorded)\n");
+        } else {
+            head.push_str(&format!("{failures}\n"));
+        }
+        for (title, body) in extra_sections {
+            head.push_str(&format!("\n===== {title} =====\n{body}\n"));
+        }
+
+        let app_header = "\n===== app log (last 2000 lines) =====\n";
+        let spine_header = "\n===== spine.log =====\n";
+        let body_budget =
+            MAX_TEXT_BYTES.saturating_sub(head.len() + app_header.len() + spine_header.len());
+        let app_budget = body_budget / 2;
+        let spine_budget = body_budget.saturating_sub(app_budget);
+        let (app_body, app_truncated) = tail_lines(&app_log, TEXT_LOG_LINES);
+        let (app_body, app_clipped) = clip_bytes(&app_body, app_budget.saturating_sub(24));
+        let (spine_body, spine_truncated) = spine_log
+            .as_deref()
+            .map(|text| tail_lines(text, TEXT_LOG_LINES))
+            .unwrap_or_default();
+        let (spine_body, spine_clipped) = clip_bytes(&spine_body, spine_budget.saturating_sub(24));
+
+        let mut text = head;
+        text.push_str(app_header);
+        if app_truncated || app_clipped {
+            text.push_str("(older lines omitted)\n");
+        }
+        text.push_str(&app_body);
+        if !app_body.is_empty() && !app_body.ends_with('\n') {
+            text.push('\n');
+        }
+        text.push_str(spine_header);
+        if spine_log.is_none() {
+            text.push_str("(not present yet)\n");
+        } else {
+            if spine_truncated || spine_clipped {
+                text.push_str("(older lines omitted)\n");
+            }
+            text.push_str(&spine_body);
+            if !spine_body.is_empty() && !spine_body.ends_with('\n') {
+                text.push('\n');
+            }
+        }
+        // A pathological single line in the summary must not defeat the cap.
+        if text.len() > MAX_TEXT_BYTES {
+            let marker = "\n(report truncated)\n";
+            let mut cut = MAX_TEXT_BYTES.saturating_sub(marker.len());
+            while cut > 0 && !text.is_char_boundary(cut) {
+                cut -= 1;
+            }
+            text.truncate(cut);
+            text.push_str(marker);
+        }
+        strip_home(text)
+    }
+
     /// Drop sessions/log lines older than [`MAX_AGE_DAYS`], then trim to the
     /// size cap from the newest line backwards.
     pub fn prune(&self, now: SystemTime) {
@@ -333,6 +446,43 @@ pub fn export_file_name() -> &'static str {
 fn split_line(line: &str) -> Option<(&str, &str)> {
     let (at, rest) = line.split_once(' ')?;
     Some((at, rest))
+}
+
+/// Keep the newest `max_lines` lines; report whether older ones were dropped.
+fn tail_lines(text: &str, max_lines: usize) -> (String, bool) {
+    let mut lines: Vec<&str> = text.lines().collect();
+    let truncated = lines.len() > max_lines;
+    if truncated {
+        lines.drain(0..lines.len() - max_lines);
+    }
+    (lines.join("\n"), truncated)
+}
+
+/// Keep the newest bytes (whole lines where possible) and report truncation.
+fn clip_bytes(text: &str, max_bytes: usize) -> (String, bool) {
+    if text.len() <= max_bytes {
+        return (text.to_owned(), false);
+    }
+    let mut cut = text.len() - max_bytes;
+    while cut < text.len() && !text.is_char_boundary(cut) {
+        cut += 1;
+    }
+    let suffix = &text[cut..];
+    // Drop a partial first line; it would otherwise look like a corrupt entry.
+    let start = suffix.find('\n').map(|index| index + 1).unwrap_or(0);
+    (suffix[start..].to_owned(), true)
+}
+
+/// Replace the user's home prefix so pasted paths are less identifying.
+fn strip_home(text: String) -> String {
+    let Ok(home) = std::env::var("HOME") else {
+        return text;
+    };
+    let home = home.trim_end_matches('/');
+    if home.len() < 6 || !text.contains(home) {
+        return text;
+    }
+    text.replace(home, "~")
 }
 
 fn sanitize(text: &str) -> String {
@@ -580,6 +730,70 @@ mod tests {
             .read_to_string(&mut spine_text)
             .unwrap();
         assert!(spine_text.contains("ensure_models: error"));
+    }
+
+    #[test]
+    fn text_export_includes_environment_failures_and_spine_log() {
+        let dir = tempdir().unwrap();
+        let diagnostics = Diagnostics::new(dir.path().join("diagnostics.log"));
+        diagnostics.append(Level::Error, "download", "Book One failed");
+        diagnostics.append(Level::Info, "download", "Book Two completed");
+        fs::create_dir_all(dir.path().join("spine")).unwrap();
+        fs::write(
+            dir.path().join("spine").join("spine.log"),
+            "123 ensure_models: error: no JNI context\n",
+        )
+        .unwrap();
+        let environment = DiagnosticsEnvironment {
+            app_name: "PocketLibrary".to_owned(),
+            app_version: "0.1.1".to_owned(),
+            schema_version: 4,
+            android: "14".to_owned(),
+            device: "Pixel 8".to_owned(),
+            counts: BTreeMap::from([("books".to_owned(), 12)]),
+        };
+        let text =
+            diagnostics.export_text(&environment, &[("spine queue", "pending=2\n".to_owned())]);
+        assert!(text.contains("PocketLibrary v0.1.1"));
+        assert!(text.contains("Schema: 4"));
+        assert!(text.contains("Android: 14"));
+        assert!(text.contains("books=12"));
+        let failures_section = text
+            .split("===== recent failures =====")
+            .nth(1)
+            .and_then(|rest| rest.split("===== spine queue =====").next())
+            .unwrap_or_default();
+        assert!(text.contains("===== recent failures ====="));
+        assert!(failures_section.contains("Book One failed"));
+        assert!(!failures_section.contains("Book Two completed"));
+        assert!(text.contains("===== app log (last 2000 lines) ====="));
+        assert!(text.contains("===== spine queue ====="));
+        assert!(text.contains("pending=2"));
+        assert!(text.contains("===== spine.log ====="));
+        assert!(text.contains("ensure_models: error"));
+        assert!(text.len() <= MAX_TEXT_BYTES);
+    }
+
+    #[test]
+    fn text_export_is_bounded_and_keeps_the_newest_lines() {
+        let dir = tempdir().unwrap();
+        let diagnostics = Diagnostics::new(dir.path().join("diagnostics.log"));
+        let filler = "x".repeat(200);
+        for index in 0..3000 {
+            diagnostics.append(Level::Info, "bulk", &format!("{index} {filler}"));
+        }
+        let environment = DiagnosticsEnvironment {
+            app_name: "PocketLibrary".to_owned(),
+            app_version: "0.1.1".to_owned(),
+            schema_version: 4,
+            android: "14".to_owned(),
+            device: "Pixel 8".to_owned(),
+            counts: BTreeMap::new(),
+        };
+        let text = diagnostics.export_text(&environment, &[]);
+        assert!(text.len() <= MAX_TEXT_BYTES);
+        assert!(text.contains("2999"));
+        assert!(!text.contains("bulk: 0 "));
     }
 
     #[test]

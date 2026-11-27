@@ -318,9 +318,21 @@ function AppShell() {
   const spineBackfillStarted = useRef(false);
   const spineHydratedStarted = useRef(false);
   const spineRepairStarted = useRef(false);
+  const spineStatusStarted = useRef(false);
   const enqueueSpines = spineActivity.enqueue;
   const hydrateSpines = spineActivity.hydrate;
   const hydrateFailed = spineActivity.hydrateFailed;
+
+  useEffect(() => {
+    // Resolve the models once the library is usable. The shell kicks the
+    // worker after a successful status, so a queue that was waiting for model
+    // extraction resumes without the user opening Edit.
+    if (status?.state !== "ready" || spineStatusStarted.current) return;
+    spineStatusStarted.current = true;
+    void platform.spineStatus().catch(() => {
+      // The Settings panel and the next launch retry; the queue stays pending.
+    });
+  }, [status?.state]);
 
   useEffect(() => {
     // Seed the wall from the cache as soon as the library is ready, then

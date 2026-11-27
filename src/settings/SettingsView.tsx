@@ -22,6 +22,8 @@ import {
   type ReaderTheme,
 } from "../reader/settings";
 import { BackupSection } from "./BackupSection";
+import { CopyLogsAction } from "./CopyLogsAction";
+import { SpineStatusPanel } from "./SpineStatusPanel";
 import { downloadNameExample } from "./naming";
 import { UpdateSection } from "./UpdateSection";
 import type { UpdateCheckController } from "../updates/useUpdateCheck";
@@ -424,6 +426,8 @@ export function SettingsView({
           ) : null}
         </section>
 
+        <SpineStatusPanel />
+
         <BackupSection busy={busy} onLibraryChanged={onLibraryChanged} />
 
         <UpdateSection
@@ -474,6 +478,7 @@ export function SettingsView({
             >
               {diagnosticsBusy ? "Preparing…" : "Send diagnostics"}
             </button>
+            <CopyLogsAction />
             <button
               type="button"
               className="secondary-action"

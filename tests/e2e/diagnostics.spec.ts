@@ -97,6 +97,117 @@ test("settings shows log details, sends, copies and clears", async ({
   );
 });
 
+test("copy logs writes the full report including spine.log", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          (window as unknown as { __copied?: string }).__copied = text;
+        },
+      },
+    });
+  });
+  await boot(page);
+  await openSettings(page);
+
+  const send = page.getByTestId("settings-send-diagnostics");
+  const copyLogs = page.getByTestId("settings-copy-logs");
+  await expect(send).toBeVisible();
+  await expect(copyLogs).toBeVisible();
+  await expect(
+    send.locator("xpath=following-sibling::button[1]"),
+  ).toHaveAttribute("data-testid", "settings-copy-logs");
+
+  await copyLogs.click();
+  await expect(page.getByTestId("copy-logs-notice")).toContainText(
+    "Copied to clipboard",
+  );
+  const copied = await page.evaluate(
+    () => (window as unknown as { __copied?: string }).__copied,
+  );
+  expect(copied).toContain("PocketLibrary v0.1.11");
+  expect(copied).toContain("===== spine.log =====");
+  expect(copied).toContain("ensure_models: start");
+  expect(copied).toContain("Book One: mirror_failed");
+});
+
+test("copy logs offers a selected textarea when the clipboard is refused", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          throw new Error("clipboard denied");
+        },
+      },
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: () => false,
+    });
+  });
+  await boot(page);
+  await openSettings(page);
+
+  await page.getByTestId("settings-copy-logs").click();
+  const sheet = page.getByTestId("diagnostics-copy-fallback");
+  const area = page.getByTestId("diagnostics-copy-text");
+  await expect(sheet).toBeVisible();
+  await expect(area).toBeFocused();
+  await expect(area).toHaveValue(/===== spine\.log =====/);
+  const selection = await area.evaluate((element) => {
+    const textarea = element as HTMLTextAreaElement;
+    return [
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      textarea.value.length,
+    ];
+  });
+  expect(selection[0]).toBe(0);
+  expect(selection[1]).toBe(selection[2]);
+  await expect(page.getByTestId("diagnostics-copy-select-all")).toBeVisible();
+
+  await page.getByTestId("diagnostics-copy-close").click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByTestId("settings-copy-logs")).toBeFocused();
+});
+
+test("copy logs stays inside 390 and 320 wide screens", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          throw new Error("clipboard denied");
+        },
+      },
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: () => false,
+    });
+  });
+  await boot(page);
+  await openSettings(page);
+
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.getByTestId("settings-copy-logs").click();
+    await expect(page.getByTestId("diagnostics-copy-fallback")).toBeVisible();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+    const box = await page.getByTestId("diagnostics-copy-fallback").boundingBox();
+    expect(box).not.toBeNull();
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+    await page.getByTestId("diagnostics-copy-close").click();
+  }
+});
+
 test("send diagnostics hands the zip to the native share sheet", async ({
   page,
 }) => {

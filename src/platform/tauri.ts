@@ -45,6 +45,7 @@ import type {
   Shelf,
   SpineArtifact,
   SpineCachedStrip,
+  SpineDiagnostics,
   SpineProgress,
   SpineQueueState,
   SpineStatus,
@@ -172,6 +173,7 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<void>("log_diagnostic", { level, event, message }),
     diagnosticsSummary: () =>
       call<DiagnosticsSummary>("diagnostics_summary"),
+    diagnosticsText: () => call<string>("diagnostics_text"),
     clearDiagnostics: () => call<void>("clear_diagnostics"),
     sendDiagnostics: () =>
       shareOrSaveDiagnostics(
@@ -197,8 +199,12 @@ export function createTauriPlatform(call: Invoke): Platform {
     spineCachedStrips: () =>
       call<SpineCachedStrip[]>("spine_cached_strips"),
     spineStatus: () => call<SpineStatus>("spine_status"),
+    spineDiagnostics: () =>
+      call<SpineDiagnostics>("spine_diagnostics"),
     spineEnqueue: (bookIds) =>
       call<void>("spine_enqueue", { bookIds }),
+    spineRetry: (bookIds) =>
+      call<void>("spine_retry", { bookIds }),
     spineQueue: () => call<SpineQueueState>("spine_queue"),
     spinePause: (paused) => call<void>("spine_pause", { paused }),
     spineSetStyle: (bookId, style) =>
