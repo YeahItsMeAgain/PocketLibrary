@@ -1377,9 +1377,30 @@ async fn search_libgen(
     api.search_libgen(query).await
 }
 
+/// The list payload behind the wall: the catalogue plus the cached strip for
+/// every book, projected once from disk. Generation and inference are never
+/// part of this path, and a failed projection only leaves strips absent.
+fn shelf_books(api: &Api, service: &spine_service::SpineService) -> Result<Vec<Book>, ApiError> {
+    let mut books = api.list_books()?;
+    let report = service.cached_strips_report();
+    pocketlibrary_core::spine_strip::apply_cached_strips(&mut books, &report.strips);
+    let present = report.root.is_dir();
+    spine_assets::log(
+        service.app_data_dir(),
+        &format!(
+            "shelf: books {}, strips {}, root {}, present {present}",
+            books.len(),
+            report.strips.len(),
+            report.root.display()
+        ),
+    );
+    Ok(books)
+}
+
 #[tauri::command]
-fn list_books(api: tauri::State<'_, Api>) -> Result<Vec<Book>, ApiError> {
-    api.list_books()
+fn list_books(app: AppHandle, api: tauri::State<'_, Api>) -> Result<Vec<Book>, ApiError> {
+    let service = app.state::<spine_service::SpineService>();
+    shelf_books(api.inner(), service.inner())
 }
 
 #[tauri::command]

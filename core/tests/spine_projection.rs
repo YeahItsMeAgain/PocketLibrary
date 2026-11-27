@@ -4,14 +4,20 @@
 //! cache root or a strip that never reached `artifact.json` could still ship.
 //! This test runs the actual ONNX pipeline when the model bundle and ONNX
 //! Runtime are present (the same skip pattern as `spine/tests/pipeline.rs`),
-//! stores the result with the production cache helpers, then projects it from
-//! the app-data root a launch would scan.
+//! stores the result with the production cache helpers, then projects and
+//! merges it into a real catalogue book the way `list_books` does.
+
+mod common;
 
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 
+use common::{FakeDir, database};
+use pocketlibrary_core::SpineStyle;
 use pocketlibrary_core::spine_cache::{SpineCache, cache_key};
-use pocketlibrary_core::spine_strip::{artifact_from_dir, cached_strips, install_artifact};
+use pocketlibrary_core::spine_strip::{
+    apply_cached_strips, artifact_from_dir, cached_strips, install_artifact,
+};
 use pocketlibrary_spine::{BookInput, Engine, Models, SPINE_H, SPINE_W};
 
 fn repo() -> PathBuf {
@@ -54,31 +60,6 @@ fn set_ort() {
     });
 }
 
-/// A cover with real structure (bands, a light window) so the engine has text
-/// and edges to work with rather than a flat colour.
-fn write_cover(path: &Path) {
-    let mut image = image::RgbImage::new(600, 900);
-    for (x, y, pixel) in image.enumerate_pixels_mut() {
-        let stripe = (x / 40) % 2 == 0;
-        let band = y < 120 || (240..300).contains(&y) || (600..660).contains(&y);
-        *pixel = if band {
-            image::Rgb([32, 18, 40])
-        } else if stripe {
-            image::Rgb([176, 92, 58])
-        } else {
-            image::Rgb([204, 150, 92])
-        };
-    }
-    image::save_buffer(
-        path,
-        image.as_raw(),
-        image.width(),
-        image.height(),
-        image::ColorType::Rgb8,
-    )
-    .expect("write cover");
-}
-
 #[test]
 fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
     let Some(models) = model_bundle() else {
@@ -91,8 +72,22 @@ fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
     let app_data = temp.path().join("app-data");
     std::fs::create_dir_all(&app_data).expect("app data dir");
 
-    let cover = temp.path().join("cover.jpg");
-    write_cover(&cover);
+    // A real catalogue row, so the book arrives with the same fields the
+    // `list_books` command serialises.
+    let (_db_dir, api) = database();
+    let source = FakeDir::new().file("the-real-path.epub");
+    api.scan(&source).expect("scan the fixture book");
+    let book = api.list_books().expect("list books").remove(0);
+    assert_eq!(
+        book.spine_style,
+        SpineStyle::Wrap,
+        "a book with no stored style defaults to Wrap"
+    );
+    let cover = PathBuf::from(
+        book.cover_path
+            .as_deref()
+            .expect("the scan produced a cover for generation"),
+    );
 
     let engine = Engine::new(Models {
         det: models.join("det.onnx"),
@@ -105,22 +100,26 @@ fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
     // The service stages `<app data>/spine/books/.<key>.tmp-<pid>` and installs
     // it as `<app data>/spine/books/<key>`. Mirror that exactly.
     let cache = SpineCache::new(&app_data);
-    let key = cache_key("content-hash", "cover-hash", 320, "spine-v1");
+    assert_eq!(
+        cache.books_dir(),
+        app_data.join("spine").join("books"),
+        "generation and projection share the same app-data root"
+    );
+    let key = cache_key(&book.content_hash, "cover-hash", 320, "spine-v1");
     let staged = cache.staged_dir(&key);
     engine
         .generate(
             &BookInput {
                 cover,
-                title: "The Real Path".to_owned(),
-                author: "A. Tester".to_owned(),
+                title: book.title.clone(),
+                author: book.authors.first().cloned().unwrap_or_default(),
                 pages: 320,
             },
             &staged,
         )
         .expect("generate the spine");
 
-    let artifact = artifact_from_dir(&staged, 42).expect("artifact from runtime files");
-    assert_eq!(artifact.book_id, 42);
+    let artifact = artifact_from_dir(&staged, book.id).expect("artifact from runtime files");
     install_artifact(&cache, &key, &staged, &artifact).expect("install the cache entry");
     assert!(cache.entry_dir(&key).join("artifact.json").is_file());
 
@@ -132,13 +131,25 @@ fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
     assert_eq!(report.skipped, 0);
     assert_eq!(report.strips.len(), 1);
     let strip = &report.strips[0];
-    assert_eq!(strip.book_id, 42);
+    assert_eq!(strip.book_id, book.id);
     assert!(strip.spine_data_url.starts_with("data:image/jpeg;base64,"));
+
+    // The shelf payload carries that strip with the book, exactly as
+    // `list_books` merges it, so the wall never waits for hydration events.
+    let mut books = vec![book];
+    apply_cached_strips(&mut books, &report.strips);
+    let merged = &books[0];
+    assert_eq!(merged.spine_style, SpineStyle::Wrap);
+    let shelf_url = merged
+        .spine_data_url
+        .as_deref()
+        .expect("the list payload carries the cached strip");
+    assert_eq!(shelf_url, strip.spine_data_url);
 
     use base64::Engine as _;
     let bytes = base64::engine::general_purpose::STANDARD
-        .decode(&strip.spine_data_url["data:image/jpeg;base64,".len()..])
-        .expect("base64 strip");
-    let image = image::load_from_memory(&bytes).expect("decode strip");
+        .decode(&shelf_url["data:image/jpeg;base64,".len()..])
+        .expect("base64 shelf strip");
+    let image = image::load_from_memory(&bytes).expect("decode shelf strip");
     assert_eq!((image.width(), image.height()), (SPINE_W, SPINE_H));
 }

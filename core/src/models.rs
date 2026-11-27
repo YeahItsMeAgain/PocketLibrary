@@ -412,6 +412,12 @@ pub struct Book {
     /// How this book's generated spine is presented. Defaults to Wrap.
     #[serde(default)]
     pub spine_style: SpineStyle,
+    /// The cached 52 x 236 strip for this book, when one exists.
+    ///
+    /// The shell stamps this while listing so the wall can paint immediately
+    /// from the list payload; it is never read from SQLite and never a path.
+    #[serde(default)]
+    pub spine_data_url: Option<String>,
     /// Cached cover path. Never serialised to the UI.
     #[serde(skip)]
     pub cover_path: Option<String>,

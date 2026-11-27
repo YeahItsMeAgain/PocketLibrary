@@ -641,6 +641,7 @@ fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
         slot_index: row.get(21)?,
         reading_status: row.get::<_, ReadingStatus>(22)?,
         spine_style: row.get(23)?,
+        spine_data_url: None,
         labels: Vec::new(),
     })
 }

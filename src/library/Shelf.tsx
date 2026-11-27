@@ -113,7 +113,10 @@ export const Spine = memo(function Spine({
   const spineStyle = book.spineStyle ?? "wrap";
   // Wrap and Full-bleed paint the generated strip; Cloth is the typographic
   // spine rendered below. A rejected fallback never reaches here with a strip.
-  const showGenerated = Boolean(generatedSpine) && spineStyle !== "cloth";
+  // The list payload carries the cached strip; the activity map only supplies
+  // live updates from the queue or a manual generation.
+  const generatedStrip = generatedSpine || book.spineDataUrl || undefined;
+  const showGenerated = Boolean(generatedStrip) && spineStyle !== "cloth";
   const attention = spineState?.state === "needs-attention";
   const spineNote =
     spineState?.state === "working"
@@ -160,11 +163,11 @@ export const Spine = memo(function Spine({
         }
       }}
     >
-      {showGenerated ? (
+      {showGenerated && generatedStrip ? (
         <img
           className="spine-generated"
           data-testid="spine-generated"
-          src={generatedSpine}
+          src={generatedStrip}
           alt=""
           draggable={false}
         />

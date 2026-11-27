@@ -95,6 +95,11 @@ export interface Book {
   labels: Label[];
   /** Persisted renderer style; absent means the default, Wrap. */
   spineStyle?: SpineStyle;
+  /**
+   * Cached 52 x 236 strip delivered with the list payload, when one exists.
+   * The shelf paints this immediately; live queue state can replace it.
+   */
+  spineDataUrl?: string | null;
 }
 
 /** Mirrors `pocketlibrary_core::BookDetail`. */

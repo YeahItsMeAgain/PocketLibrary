@@ -59,6 +59,25 @@ pub struct SpineArtifact {
     pub qa_json: Value,
 }
 
+/// Stamp each book with the cached strip the shelf should paint.
+///
+/// This is the single merge used by the Tauri `list_books` command and by the
+/// host test, so the list payload and the on-disk projection cannot drift. A
+/// fallback verdict is not shelf art: the typographic Cloth spine stays, so
+/// those books keep `None`.
+pub fn apply_cached_strips(books: &mut [crate::Book], strips: &[SpineCachedStrip]) {
+    let by_book: BTreeMap<i64, &str> = strips
+        .iter()
+        .filter(|strip| strip.verdict != "fallback")
+        .map(|strip| (strip.book_id, strip.spine_data_url.as_str()))
+        .collect();
+    for book in books {
+        if let Some(url) = by_book.get(&book.id) {
+            book.spine_data_url = Some((*url).to_owned());
+        }
+    }
+}
+
 /// One shelf-ready strip projected from a complete cache entry.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -839,6 +839,17 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
   for (const [id, artifact] of Object.entries(spineConfig.artifacts ?? {})) {
     spineArtifacts.set(Number(id), artifact);
   }
+  /**
+   * Stamp the cached strip into the list payload, matching the shell's
+   * `list_books`. A fallback verdict is not shelf art, so it stays absent.
+   */
+  const withCachedSpine = (book: Book): Book => {
+    const artifact = spineArtifacts.get(book.id);
+    if (!artifact || artifact.verdict === "fallback") return book;
+    return book.spineDataUrl === artifact.spineDataUrl
+      ? book
+      : { ...book, spineDataUrl: artifact.spineDataUrl };
+  };
   let spineGenerateCalls = 0;
   const noteSpineGenerate = () => {
     spineGenerateCalls += 1;
@@ -1526,7 +1537,7 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     },
     listBooks: async () => {
       await libraryDelay();
-      return books;
+      return books.map(withCachedSpine);
     },
     listShelves: async () => {
       await libraryDelay();

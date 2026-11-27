@@ -205,6 +205,13 @@ impl SpineService {
     /// Every call writes one summary line to `spine/spine.log` so an empty
     /// wall can be explained from a diagnostics export.
     pub fn cached_strips(&self) -> Vec<SpineCachedStrip> {
+        self.cached_strips_report().strips
+    }
+
+    /// The same projection, plus the root that was scanned and the projection
+    /// counts. `list_books` uses this once per shelf load to stamp strips into
+    /// the book payload and to log exactly what the wall was given.
+    pub fn cached_strips_report(&self) -> spine_strip::CachedStrips {
         let report = spine_strip::cached_strips(self.cache.books_dir());
         let root_state = if report.root.is_dir() {
             "present"
@@ -221,7 +228,12 @@ impl SpineService {
                 report.root.display()
             ),
         );
-        report.strips
+        report
+    }
+
+    /// The app-data root the cache and the spine log live under.
+    pub fn app_data_dir(&self) -> &Path {
+        &self.app_data_dir
     }
 
     /// The ids that already own a complete artifact. This reads artifacts only
@@ -628,6 +640,7 @@ mod tests {
             identifier: None,
             page_count: None,
             spine_style: pocketlibrary_core::SpineStyle::Wrap,
+            spine_data_url: None,
             cover_path: None,
             cover_source: None,
             file_cover_path: None,
@@ -924,9 +937,45 @@ mod tests {
             .to_rgb8();
         assert_eq!((image.width(), image.height()), (SPINE_W, SPINE_H));
 
-        // The diagnostic summary names the root that was actually scanned.
+        // The shelf payload carries that strip with the book, so the wall does
+        // not have to wait for a hydration map or an event round-trip.
+        let mut merged = crate::shelf_books(&api, &relaunched).expect("shelf books");
+        let merged_book = merged
+            .drain(..)
+            .find(|candidate| candidate.id == book.id)
+            .expect("the book is still in the catalogue");
+        let shelf_url = merged_book
+            .spine_data_url
+            .as_deref()
+            .expect("the list payload carries the cached strip");
+        assert!(shelf_url.starts_with("data:image/jpeg;base64,"));
+        assert_eq!(
+            merged_book.spine_style,
+            pocketlibrary_core::SpineStyle::Wrap,
+            "a book with no stored style defaults to Wrap"
+        );
+
+        let shelf_bytes = STANDARD
+            .decode(
+                shelf_url
+                    .strip_prefix("data:image/jpeg;base64,")
+                    .expect("data url prefix"),
+            )
+            .expect("base64 shelf strip");
+        let shelf_image = image::load_from_memory(&shelf_bytes)
+            .expect("decode shelf strip")
+            .to_rgb8();
+        assert_eq!(
+            (shelf_image.width(), shelf_image.height()),
+            (SPINE_W, SPINE_H)
+        );
+
+        // The diagnostic summary names the root and the counts the wall got.
         let log = fs::read_to_string(app_data.join("spine").join("spine.log"))
             .expect("hydration summary log");
         assert!(log.contains("hydrate: scanned 1, projected 1, skipped 0"));
+        assert!(log.contains("shelf: books 1, strips 1"));
+        assert!(log.contains(&format!("root {}", app_data.join("spine/books").display())));
+        assert!(log.contains("present true"));
     }
 }
