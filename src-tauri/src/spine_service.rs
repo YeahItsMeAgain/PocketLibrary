@@ -100,7 +100,13 @@ impl SpineService {
         let book = self.ensure_cover(book_id, book, api)?;
         let prepared = self.prepare(book_id, &book)?;
 
-        if let Some(artifact) = self.cache.read(&prepared.dir) {
+        // A cached artifact is only reusable when it is real shelf art. A
+        // `fallback` verdict or an entry whose strip cannot decode must go
+        // through the engine again; otherwise a failed book looks "done"
+        // forever while the wall keeps the cloth spine.
+        if let Some(artifact) = self.cache.read(&prepared.dir)
+            && spine_strip::shelf_strip(&prepared.dir).is_some()
+        {
             return Ok(artifact);
         }
 
@@ -127,11 +133,20 @@ impl SpineService {
         engine
             .generate_with_progress(&prepared.input, &staged, &mut progress)
             .map_err(|error| {
-                eprintln!("pocketlibrary spine {book_id}: {error:#}");
+                let detail = format!("{error:#}");
+                eprintln!("pocketlibrary spine {book_id}: {detail}");
+                // The attention row and Settings carry this message, and Copy
+                // logs carries the full chain. Without it an engine failure on
+                // the phone is indistinguishable from a missing cover.
+                spine_assets::log(
+                    &self.app_data_dir,
+                    &format!("engine failure: book {book_id} error={detail}"),
+                );
                 self.cache.discard(&staged);
+                let short: String = detail.chars().take(320).collect();
                 api_error(
                     "spine_failed",
-                    "The spine could not be generated for this book. Please try again.",
+                    format!("The on-device spine engine failed: {short}"),
                 )
             })?;
 
@@ -167,7 +182,9 @@ impl SpineService {
         self.cache.remove_book(book_id);
     }
 
-    /// True when this book already has a complete cache entry.
+    /// True when this book already has a shelf-eligible strip the wall can
+    /// paint. An artifact that exists but cannot project, or that carries a
+    /// `fallback` verdict, is *not* cached: the worker must regenerate it.
     pub fn is_cached(&self, book_id: i64, api: &Api) -> bool {
         let Ok(book) = find_book(api, book_id) else {
             return false;
@@ -175,7 +192,7 @@ impl SpineService {
         let Ok(prepared) = self.prepare(book_id, &book) else {
             return false;
         };
-        self.cache.read::<SpineArtifact>(&prepared.dir).is_some()
+        spine_strip::shelf_strip(&prepared.dir).is_some()
     }
 
     /// Resolve the bundled models once. Never builds an ONNX session.
@@ -202,10 +219,12 @@ impl SpineService {
         Ok(self.cache.read(&prepared.dir))
     }
 
-    /// Project every complete cache entry into a shelf strip. This is the
-    /// launch fast path: it scans `spine/books/*/artifact.json` directly, so it
-    /// never runs inference and never hashes a cover. Corrupt entries, and
-    /// entries whose strip cannot be decoded, are skipped.
+    /// Project every complete cache entry into a strip. The result includes
+    /// `fallback` entries for diagnostics; shelf callers must keep only
+    /// `SpineCachedStrip::is_shelf_eligible` rows. This is the launch fast path:
+    /// it scans `spine/books/*/artifact.json` directly, so it never runs
+    /// inference and never hashes a cover. Corrupt entries, and entries whose
+    /// strip cannot be decoded, are skipped.
     ///
     /// Every call writes one summary line to `spine/spine.log` so an empty
     /// wall can be explained from a diagnostics export.
@@ -226,10 +245,12 @@ impl SpineService {
         spine_assets::log(
             &self.app_data_dir,
             &format!(
-                "hydrate: scanned {}, projected {}, skipped {}, root {} ({root_state})",
+                "hydrate: scanned {}, projected {}, skipped {}, shelf {}, fallback {}, root {} ({root_state})",
                 report.scanned,
                 report.projected,
                 report.skipped,
+                report.shelf_eligible_count(),
+                report.fallback_count(),
                 report.root.display()
             ),
         );
@@ -241,11 +262,17 @@ impl SpineService {
         &self.app_data_dir
     }
 
-    /// The ids that already own a complete artifact. This reads artifacts only
-    /// (no image decode, no cover hashing) and is the cheap repair check the
-    /// launch queue uses to decide which books still need a spine.
-    pub fn cached_book_ids(&self) -> HashSet<i64> {
-        spine_strip::cached_book_ids(self.cache.books_dir())
+    /// The ids whose artifacts are readable on disk, even when they are not
+    /// usable shelf strips. Settings uses this for its "Artifact" column.
+    pub fn artifact_book_ids(&self) -> HashSet<i64> {
+        spine_strip::artifact_book_ids(self.cache.books_dir())
+    }
+
+    /// The single definition of done: a book is finished only when it owns a
+    /// shelf-eligible projected strip. This decodes the strip, so it agrees
+    /// exactly with `list_books` and with the Settings shelf column.
+    pub fn shelf_book_ids(&self) -> HashSet<i64> {
+        spine_strip::shelf_book_ids(self.cache.books_dir())
     }
 
     /// Resolve the model bundle once and report it. Never builds the engine.
@@ -454,6 +481,7 @@ impl SpineService {
             return Ok(Arc::clone(engine));
         }
         let paths = self.model_paths()?;
+        let det_log = paths.det.clone();
         let engine = Engine::new(Models {
             det: paths.det,
             rec: paths.rec,
@@ -461,10 +489,16 @@ impl SpineService {
             migan: Some(paths.migan),
         })
         .map_err(|error| {
-            eprintln!("pocketlibrary spine: engine failed to load: {error:#}");
+            let detail = format!("{error:#}");
+            eprintln!("pocketlibrary spine: engine failed to load: {detail}");
+            spine_assets::log(
+                &self.app_data_dir,
+                &format!("engine load failure: error={detail} models={det_log:?}"),
+            );
+            let short: String = detail.chars().take(320).collect();
             api_error(
                 "spine_engine",
-                "The spine engine could not be started. Its models may be damaged.",
+                format!("The on-device spine engine could not start: {short}"),
             )
         })?;
         let engine = Arc::new(engine);
@@ -867,6 +901,7 @@ mod tests {
             .expect("read pass artifact");
         artifact.book_id = 9;
         artifact.spine_data_url = "not a data url".to_owned();
+        artifact.art_data_url = "not a data url".to_owned();
         cache
             .write(&unprojectable, &artifact)
             .expect("write unprojectable");
@@ -887,6 +922,46 @@ mod tests {
             let spine = decode_spine(strip);
             assert_eq!((spine.width(), spine.height()), (SPINE_W, SPINE_H));
         }
+    }
+
+    #[test]
+    fn fallback_and_unprojectable_artifacts_are_not_shelf_ready() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cache = SpineCache::new(temp.path());
+        write_cached_entry(&cache, "pass", 1, "pass");
+        write_cached_entry(&cache, "fallback", 2, "fallback");
+
+        let broken = cache.entry_dir("broken");
+        let mut artifact = cache
+            .read::<SpineArtifact>(&cache.entry_dir("pass"))
+            .expect("read pass artifact");
+        artifact.book_id = 3;
+        artifact.spine_data_url = "not a data url".to_owned();
+        artifact.art_data_url = "not a data url".to_owned();
+        cache.write(&broken, &artifact).expect("write broken");
+
+        let service = SpineService::new(temp.path().to_path_buf());
+        let artifacts = service.artifact_book_ids();
+        let shelf = service.shelf_book_ids();
+
+        assert_eq!(
+            artifacts,
+            HashSet::from([1, 2, 3]),
+            "every readable artifact is present on disk"
+        );
+        assert_eq!(
+            shelf,
+            HashSet::from([1]),
+            "only projected pass/review art counts as done"
+        );
+        assert!(
+            !service
+                .cached_strips_report()
+                .strips
+                .iter()
+                .any(|strip| strip.book_id == 3),
+            "the broken entry is skipped by projection"
+        );
     }
 
     #[test]

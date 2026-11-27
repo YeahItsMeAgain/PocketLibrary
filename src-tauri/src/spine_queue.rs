@@ -205,17 +205,28 @@ impl SpineQueue {
                 return;
             }
         };
-        let cached = service.cached_book_ids();
+        let shelf_ready = service.shelf_book_ids();
         let mut entries = Vec::new();
         for book in books {
-            if cached.contains(&book.id) {
+            if shelf_ready.contains(&book.id) {
                 log_queue_event(
                     &self.app_data_dir,
                     "skip",
                     book.id,
                     &book.title,
                     "cached",
-                    "a complete cached strip already exists",
+                    "a shelf-eligible cached strip already exists",
+                );
+                continue;
+            }
+            if !self.automatic_attempt_due(book.id) {
+                log_queue_event(
+                    &self.app_data_dir,
+                    "skip",
+                    book.id,
+                    &book.title,
+                    "attention-cap",
+                    "automatic attempts exhausted; waiting for Retry",
                 );
                 continue;
             }
@@ -223,7 +234,11 @@ impl SpineQueue {
         }
         spine_assets::log(
             &self.app_data_dir,
-            &format!("queue backfill: enqueueing {} book(s)", entries.len()),
+            &format!(
+                "queue backfill: {} shelf-ready, enqueueing {} book(s)",
+                shelf_ready.len(),
+                entries.len()
+            ),
         );
         self.enqueue(entries);
         self.finish_backfill();
@@ -290,6 +305,21 @@ impl SpineQueue {
 
     fn peek(&self) -> Option<i64> {
         self.core.lock().ok().and_then(|core| core.peek())
+    }
+
+    /// Automatic attempts already spent on this book.
+    fn attempts(&self, book_id: i64) -> u32 {
+        self.core
+            .lock()
+            .map(|core| core.attempts(book_id))
+            .unwrap_or(0)
+    }
+
+    fn automatic_attempt_due(&self, book_id: i64) -> bool {
+        self.core
+            .lock()
+            .map(|core| core.automatic_attempt_due(book_id))
+            .unwrap_or(true)
     }
 
     fn persist(&self) {
@@ -368,7 +398,32 @@ impl SpineQueue {
                 book_id,
                 title,
                 "cached",
-                "worker found a complete cached strip",
+                "worker found a shelf-eligible cached strip",
+            );
+            self.persist();
+            self.emit_queue();
+        }
+    }
+
+    /// The book has used its automatic attempts and the failure is already in
+    /// `attention`. Drop it from pending without running inference again; the
+    /// row stays visible until the user retries.
+    fn skip_attention_capped(&self, book_id: i64, title: &str, attempts: u32) {
+        let changed = match self.core.lock() {
+            Ok(mut core) => core.skip_front(book_id),
+            Err(_) => false,
+        };
+        if changed {
+            log_queue_event(
+                &self.app_data_dir,
+                "skip",
+                book_id,
+                title,
+                "attention-cap",
+                &format!(
+                    "automatic attempts exhausted ({attempts}/{}); waiting for Retry",
+                    pocketlibrary_core::spine_queue::MAX_AUTOMATIC_ATTEMPTS
+                ),
             );
             self.persist();
             self.emit_queue();
@@ -453,6 +508,14 @@ fn run_worker(app: AppHandle) {
             queue.skip_cached(book_id, &title);
             continue;
         }
+        // A fallback or unprojectable artifact has already failed. Retry it
+        // automatically only while it has attempts left; after that the
+        // attention row is the user-visible truth and Retry resets it.
+        if !queue.automatic_attempt_due(book_id) {
+            let attempts = queue.attempts(book_id);
+            queue.skip_attention_capped(book_id, &title, attempts);
+            continue;
+        }
         let Some(book_id) = queue.begin_next() else {
             break;
         };
@@ -468,6 +531,17 @@ fn run_worker(app: AppHandle) {
             queue.stage_started(book_id, stage);
         });
         match result {
+            Ok(artifact) if artifact.verdict == "fallback" => {
+                // The engine completed, but its QA gate rejected the art. That
+                // is not a success: count it as an automatic failure so the
+                // chip, marker and Settings explain why cloth is still shown.
+                queue.finish_job(
+                    false,
+                    "spine_fallback",
+                    "The quality check rejected this spine, so the cloth spine is still shown. Retry to try again.",
+                    &title,
+                );
+            }
             Ok(_) => queue.finish_job(true, "ok", "", &title),
             Err(error) => {
                 queue.finish_job(false, error.code, &error.message, &title);

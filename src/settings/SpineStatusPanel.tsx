@@ -44,7 +44,7 @@ export function SpineStatusPanel() {
       failed.length > 0
         ? failed
         : diagnostics.books
-            .filter((book) => !book.artifactPresent)
+            .filter((book) => !book.shelfStripPresent)
             .map((book) => book.bookId);
     if (ids.length === 0) return;
     setBusy(true);
@@ -71,9 +71,20 @@ export function SpineStatusPanel() {
     >
       <h3 id="settings-spine-status">Spine engine</h3>
       <p className="settings-note">
-        A read-only report for the automatic spine queue. Failures stay here
+        A read-only report for the automatic spine queue. <b>Shelf strip</b> is
+        the only column that means the wall can paint art; an artifact on disk
+        may still be a quality-gate fallback or unreadable. Failures stay here
         until retried, and every attempt is also written to{" "}
         <code>spine/spine.log</code>.
+      </p>
+      <p className="settings-note" data-testid="settings-spine-summary">
+        {diagnostics
+          ? `${diagnostics.paintable} of ${diagnostics.books.length} book${
+              diagnostics.books.length === 1 ? "" : "s"
+            } can paint spine art · ${diagnostics.artifactsPresent} artifact${
+              diagnostics.artifactsPresent === 1 ? "" : "s"
+            } on disk`
+          : "Reading the shelf projection…"}
       </p>
       <dl className="settings-list">
         <div className="setting-row">
@@ -142,6 +153,15 @@ export function SpineStatusPanel() {
         </p>
       ) : null}
 
+      {diagnostics?.books.some(
+        (book) => book.shelfStripPresent && !book.paintsArt,
+      ) ? (
+        <p className="settings-note" data-testid="settings-spine-cloth-note">
+          A book whose stored style is Cloth deliberately hides its art. Change
+          it in Edit → Spine if you want the art spine on the wall.
+        </p>
+      ) : null}
+
       <div className="spine-status-table-wrap">
         <table className="spine-status-table" data-testid="spine-status-table">
           <thead>
@@ -149,6 +169,8 @@ export function SpineStatusPanel() {
               <th scope="col">Book</th>
               <th scope="col">Cover</th>
               <th scope="col">Artifact</th>
+              <th scope="col">Shelf strip</th>
+              <th scope="col">Verdict</th>
               <th scope="col">Last error</th>
             </tr>
           </thead>
@@ -159,12 +181,20 @@ export function SpineStatusPanel() {
                   <td>{book.title}</td>
                   <td>{book.coverPresent ? "Present" : "Missing"}</td>
                   <td>{book.artifactPresent ? "Present" : "Missing"}</td>
+                  <td data-testid="spine-status-shelf">
+                    {book.paintsArt
+                      ? "Paints art"
+                      : book.shelfStripPresent
+                        ? "Suppressed by Cloth style"
+                        : book.shelfReason ?? "Missing"}
+                  </td>
+                  <td>{book.verdict ?? "—"}</td>
                   <td>{book.lastError ?? "—"}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={4}>No books reported.</td>
+                <td colSpan={6}>No books reported.</td>
               </tr>
             )}
           </tbody>

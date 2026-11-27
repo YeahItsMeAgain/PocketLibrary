@@ -637,7 +637,7 @@ test("mergeCachedStrips seeds state once and never enqueues", async ({
     passSpine: "data:image/jpeg;base64,AA==",
     passJob: "ready",
     fallbackSpine: undefined,
-    fallbackJob: "ready",
+    fallbackJob: "needs-attention",
     secondAdded: [],
     sameSpines: true,
     sameJobs: true,
@@ -656,12 +656,15 @@ test("the shelf swaps to the generated spine when ready", async ({ page }) => {
   await expect(spine).toHaveAttribute("data-spine-state", "ready");
 });
 
-test("a fallback verdict leaves the shelf on its cloth spine", async ({
+test("a fallback verdict stays on the cloth spine and asks for attention", async ({
   page,
 }) => {
   await boot(page, {
+    books: [book(1)],
     spine: {
       queueStepMs: 25,
+      verdict: "fallback",
+      route: "fallback",
       artifacts: {
         1: artifact({ verdict: "fallback", route: "fallback" }),
       },
@@ -669,11 +672,63 @@ test("a fallback verdict leaves the shelf on its cloth spine", async ({
   });
 
   const spine = page.getByTestId("spine").first();
-  await expect(spine).toHaveAttribute("data-spine-state", "ready", {
+  await expect(spine).toHaveAttribute("data-spine-state", "needs-attention", {
     timeout: 8_000,
   });
   await expect(spine.getByTestId("spine-generated")).toHaveCount(0);
   await expect(spine).not.toHaveClass(/has-generated/);
+  await expect(spine.getByTestId("spine-failed-marker")).toBeVisible();
+  await expect(page.getByTestId("spine-activity")).toContainText(
+    "1 spine needs attention",
+  );
+
+  // The fallback artifact was not treated as done: the shelf repair queued it.
+  expect(await queuedIds(page)).toContain(1);
+});
+
+test("a cached fallback artifact is regenerated and paints when QA passes", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [book(1)],
+    spine: {
+      backfillPending: false,
+      queueStepMs: 25,
+      artifacts: { 1: artifact({ verdict: "fallback", route: "fallback" }) },
+    },
+  });
+
+  const spine = page.getByTestId("spine").first();
+  await expect(spine.getByTestId("spine-generated")).toBeVisible({
+    timeout: 8_000,
+  });
+  await expect(spine).toHaveAttribute("data-spine-state", "ready");
+  await expect(spine.getByTestId("spine-failed-marker")).toHaveCount(0);
+  expect(await queuedIds(page)).toContain(1);
+});
+
+test("a NULL or unknown style never suppresses generated art", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [
+      book(1),
+      book(2, {
+        // An old backup could carry a value the current enum does not know.
+        spineStyle: "hybrid" as unknown as Book["spineStyle"],
+      }),
+    ],
+    spine: {
+      backfillPending: false,
+      artifacts: {
+        1: artifact({ bookId: 1 }),
+        2: artifact({ bookId: 2 }),
+      },
+    },
+  });
+  const spines = page.getByTestId("spine");
+  await expect(spines.nth(0).getByTestId("spine-generated")).toBeVisible();
+  await expect(spines.nth(1).getByTestId("spine-generated")).toBeVisible();
 });
 
 test("the shelf shows the generated strip only for Wrap and Full-bleed", async ({
@@ -812,6 +867,64 @@ async function openSettings(page: Page) {
     .click();
   await expect(page.getByTestId("settings-view")).toBeVisible();
 }
+
+test("Settings separates artifact presence from a paint-capable shelf strip", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [book(1), book(2), book(3)],
+    spine: {
+      backfillPending: false,
+      queueStartPaused: true,
+      artifacts: {
+        1: artifact({ bookId: 1, verdict: "fallback", route: "fallback" }),
+        2: artifact({ bookId: 2 }),
+      },
+    },
+  });
+  await openSettings(page);
+
+  await expect(page.getByTestId("settings-spine-summary")).toHaveText(
+    "1 of 3 books can paint spine art · 2 artifacts on disk",
+  );
+  const rows = page.getByTestId("spine-status-row");
+  await expect(rows).toHaveCount(3);
+  const fallback = rows.filter({ hasText: "Shelf Volume 1" });
+  await expect(fallback).toContainText("Present");
+  await expect(fallback).toContainText("quality gate returned fallback");
+  await expect(fallback).toContainText("fallback");
+  const painted = rows.filter({ hasText: "Shelf Volume 2" });
+  await expect(painted).toContainText("Paints art");
+  await expect(painted).toContainText("pass");
+  const missing = rows.filter({ hasText: "Shelf Volume 3" });
+  await expect(missing).toContainText("Missing");
+});
+
+test("Settings reports a Cloth-style book as suppressed even with usable art", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [book(1), book(2, { spineStyle: "cloth" })],
+    spine: {
+      backfillPending: false,
+      queueStartPaused: true,
+      artifacts: {
+        1: artifact({ bookId: 1 }),
+        2: artifact({ bookId: 2 }),
+      },
+    },
+  });
+  await openSettings(page);
+
+  await expect(page.getByTestId("settings-spine-summary")).toHaveText(
+    "1 of 2 books can paint spine art · 2 artifacts on disk",
+  );
+  const cloth = page
+    .getByTestId("spine-status-row")
+    .filter({ hasText: "Shelf Volume 2" });
+  await expect(cloth).toContainText("Suppressed by Cloth style");
+  await expect(cloth).toContainText("pass");
+});
 
 test("a failed job stays in the snapshot, chip and shelf marker until retried", async ({
   page,

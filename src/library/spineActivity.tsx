@@ -61,6 +61,9 @@ export interface SpineActivityValue {
   bulkHydrationFailed: boolean;
 }
 
+export const SPINE_FALLBACK_MESSAGE =
+  "The quality check rejected this spine, so the cloth spine is still shown.";
+
 /**
  * Merge cached strips into the wall state. Pure: strips already hydrated are
  * ignored unless `refresh` is set, fallback verdicts keep the Cloth spine, and
@@ -85,19 +88,32 @@ export function mergeCachedStrips(
     if (added.includes(bookId)) continue;
     if (hydrated.has(bookId) && !refresh) continue;
     added.push(bookId);
+    const job = nextJobs[bookId];
     if (strip.verdict === "fallback") {
       if (bookId in nextSpines) {
         if (nextSpines === spines) nextSpines = { ...spines };
         delete nextSpines[bookId];
       }
-    } else if (nextSpines[bookId] !== strip.spineDataUrl) {
-      if (nextSpines === spines) nextSpines = { ...spines };
-      nextSpines[bookId] = strip.spineDataUrl;
-    }
-    const job = nextJobs[bookId];
-    if (!job || job.state === "waiting") {
-      if (nextJobs === jobs) nextJobs = { ...jobs };
-      nextJobs[bookId] = { state: "ready" };
+      // A fallback artifact is unfinished work, not a ready spine. The queue
+      // retries it, and Settings shows the reason until it paints.
+      if (!job || job.state === "waiting") {
+        if (nextJobs === jobs) nextJobs = { ...jobs };
+        nextJobs[bookId] = {
+          state: "needs-attention",
+          error: SPINE_FALLBACK_MESSAGE,
+        };
+      }
+    } else {
+      if (nextSpines[bookId] !== strip.spineDataUrl) {
+        if (nextSpines === spines) nextSpines = { ...spines };
+        nextSpines[bookId] = strip.spineDataUrl;
+      }
+      // A real strip clears a stale fallback marker; it must not clear a job
+      // that is actively being regenerated.
+      if (!job || job.state === "waiting" || job.state === "needs-attention") {
+        if (nextJobs === jobs) nextJobs = { ...jobs };
+        nextJobs[bookId] = { state: "ready" };
+      }
     }
   }
   return { spines: nextSpines, jobs: nextJobs, added };
@@ -169,20 +185,25 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
     const bookId = artifact.bookId;
     if (artifact.verdict === "fallback") {
       // The quality gate rejected the generated art, so the shelf keeps its
-      // typographic Cloth spine. The detail still previews the artifact.
+      // typographic Cloth spine. The detail still previews the artifact, but
+      // the job is not ready: it needs attention and a retry.
       setSpines((current) => {
         if (!(bookId in current)) return current;
         const next = { ...current };
         delete next[bookId];
         return next;
       });
-    } else {
-      setSpines((current) =>
-        current[bookId] === artifact.spineDataUrl
-          ? current
-          : { ...current, [bookId]: artifact.spineDataUrl },
-      );
+      setJobs((current) => ({
+        ...current,
+        [bookId]: { state: "needs-attention", error: SPINE_FALLBACK_MESSAGE },
+      }));
+      return;
     }
+    setSpines((current) =>
+      current[bookId] === artifact.spineDataUrl
+        ? current
+        : { ...current, [bookId]: artifact.spineDataUrl },
+    );
     setJobs((current) =>
       current[bookId]?.state === "ready"
         ? current

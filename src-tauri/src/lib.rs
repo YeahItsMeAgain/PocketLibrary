@@ -1020,13 +1020,22 @@ async fn spine_artifact(
 
 /// Project every cached spine for the shelf wall. Scans the cache directly:
 /// no inference and no cover hashing, so a warm launch paints immediately.
+///
+/// Only shelf-eligible strips cross the wire. A `fallback` artifact is still
+/// visible in Settings diagnostics, but it must not be hydrated as ready art or
+/// counted by the launch repair as cached; leaving it out makes the repair
+/// queue that book for regeneration.
 #[tauri::command]
 async fn spine_cached_strips(
     app: AppHandle,
 ) -> Result<Vec<spine_service::SpineCachedStrip>, ApiError> {
     blocking(move || {
         let service = app.state::<spine_service::SpineService>();
-        Ok(service.cached_strips())
+        Ok(service
+            .cached_strips()
+            .into_iter()
+            .filter(pocketlibrary_core::spine_strip::SpineCachedStrip::is_shelf_eligible)
+            .collect())
     })
     .await
 }
@@ -1454,9 +1463,13 @@ fn shelf_books(api: &Api, service: &spine_service::SpineService) -> Result<Vec<B
     spine_assets::log(
         service.app_data_dir(),
         &format!(
-            "shelf: books {}, strips {}, root {}, present {present}",
+            "shelf: books {}, scanned {}, projected {}, skipped {}, shelf {}, fallback {}, root {}, present {present}",
             books.len(),
-            report.strips.len(),
+            report.scanned,
+            report.projected,
+            report.skipped,
+            report.shelf_eligible_count(),
+            report.fallback_count(),
             report.root.display()
         ),
     );

@@ -67,7 +67,7 @@ import type {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.12",
+  appVersion: "0.1.13",
   schemaVersion: 6,
 };
 
@@ -1050,13 +1050,16 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
       );
     }
     const configured = spineConfig.artifacts?.[bookId];
+    // A cached fallback is unfinished work: a new generation must run rather
+    // than handing the same rejected artifact back.
     const artifact =
-      configured ??
-      (await buildMockSpineArtifact(
-        book,
-        spineConfig,
-        coverDataByBook.get(bookId) ?? MOCK_COVER,
-      ));
+      configured && configured.verdict !== "fallback"
+        ? configured
+        : await buildMockSpineArtifact(
+            book,
+            spineConfig,
+            coverDataByBook.get(bookId) ?? MOCK_COVER,
+          );
     spineArtifacts.set(bookId, artifact);
     exposeMockSpine();
     return artifact;
@@ -1113,9 +1116,10 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
 
   async function finishQueueJob(bookId: number) {
     const failed = (spineConfig.failIds ?? []).includes(bookId);
+    let produced: SpineArtifact | null = null;
     if (!failed) {
       try {
-        await produceSpineArtifact(bookId);
+        produced = await produceSpineArtifact(bookId);
       } catch (error) {
         const typed = error as { code?: string; message?: string };
         recordQueueFailure(
@@ -1144,6 +1148,15 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
           "The spine could not be generated for this book. Please try again.",
       );
       failedQueueIds.add(bookId);
+    } else if (produced?.verdict === "fallback") {
+      // The engine ran but QA rejected the art. Keep the cloth spine and make
+      // it visible as needing attention, exactly like the shell worker.
+      recordQueueFailure(
+        bookId,
+        "spine_fallback",
+        "The quality check rejected this spine, so the cloth spine is still shown.",
+      );
+      failedQueueIds.add(bookId);
     } else {
       clearQueueFailure(bookId);
       queue.completed += 1;
@@ -1156,7 +1169,9 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     let changed = false;
     for (const id of bookIds) {
       if (!books.some((book) => book.id === id)) continue;
-      if (spineArtifacts.has(id)) continue;
+      const cached = spineArtifacts.get(id);
+      // Only a shelf-eligible artifact is done; a fallback must be retried.
+      if (cached && cached.verdict !== "fallback") continue;
       if (queuedIds.has(id) || queue.currentBookId === id) continue;
       queueJobs.push(id);
       queuedIds.add(id);
@@ -2464,34 +2479,59 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     },
     spineCachedStrips: async () => {
       noteSpineCachedStrips();
-      return [...spineArtifacts.values()].map(
-        (artifact): SpineCachedStrip => ({
-          bookId: artifact.bookId,
-          verdict: artifact.verdict,
-          spineDataUrl: artifact.spineDataUrl,
-        }),
-      );
+      // Match the shell: only shelf-eligible strips cross the wire. Fallback
+      // artifacts stay visible through diagnostics but are not "ready" art.
+      return [...spineArtifacts.values()]
+        .filter((artifact) => artifact.verdict !== "fallback")
+        .map(
+          (artifact): SpineCachedStrip => ({
+            bookId: artifact.bookId,
+            verdict: artifact.verdict,
+            spineDataUrl: artifact.spineDataUrl,
+          }),
+        );
     },
     spineStatus: async () => {
       noteSpineStatus();
       return spineStatusValue();
     },
-    spineDiagnostics: async (): Promise<SpineDiagnostics> => ({
-      status: spineStatusValue(),
-      queue: queueSnapshot(),
-      books: books.map((book) => ({
-        bookId: book.id,
-        title: book.title,
-        coverPresent: !(spineConfig.missingCoverIds ?? []).includes(book.id),
-        artifactPresent: spineArtifacts.has(book.id),
-        lastError: (() => {
-          const failure = queue.attention.find(
-            (candidate) => candidate.bookId === book.id,
-          );
-          return failure ? `${failure.code}: ${failure.error}` : null;
-        })(),
-      })),
-    }),
+    spineDiagnostics: async (): Promise<SpineDiagnostics> => {
+      const rows = books.map((book) => {
+        const artifact = spineArtifacts.get(book.id);
+        const shelfStripPresent =
+          artifact !== undefined && artifact.verdict !== "fallback";
+        const spineStyle = spineStyles.get(book.id) ?? book.spineStyle ?? "wrap";
+        const paintsArt = shelfStripPresent && spineStyle !== "cloth";
+        const failure = queue.attention.find(
+          (candidate) => candidate.bookId === book.id,
+        );
+        return {
+          bookId: book.id,
+          title: book.title,
+          coverPresent: !(spineConfig.missingCoverIds ?? []).includes(book.id),
+          artifactPresent: artifact !== undefined,
+          shelfStripPresent,
+          spineStyle,
+          paintsArt,
+          verdict: artifact?.verdict ?? null,
+          shelfReason:
+            artifact && !shelfStripPresent
+              ? "quality gate returned fallback"
+              : null,
+          lastError: failure
+            ? `${failure.code}: ${failure.error}`
+            : null,
+        };
+      });
+      return {
+        status: spineStatusValue(),
+        queue: queueSnapshot(),
+        shelfReady: rows.filter((row) => row.shelfStripPresent).length,
+        paintable: rows.filter((row) => row.paintsArt).length,
+        artifactsPresent: rows.filter((row) => row.artifactPresent).length,
+        books: rows,
+      };
+    },
     spineEnqueue: async (bookIds) => {
       queuedCalls.push(...bookIds);
       enqueueSpineIds(bookIds);

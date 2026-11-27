@@ -13,6 +13,13 @@ use serde::{Deserialize, Serialize};
 const QUEUE_FILE: &str = "queue.json";
 const BACKFILL_FILE: &str = "backfill.json";
 
+/// How many automatic attempts a book gets before it waits for the user.
+///
+/// A fallback verdict, or an artifact that cannot project, must not be retried
+/// on every launch forever. After this many automatic failures the row stays
+/// in `attention` (and Settings explains why) until an explicit Retry clears it.
+pub const MAX_AUTOMATIC_ATTEMPTS: u32 = 3;
+
 /// Coarse pipeline stages exposed on the wire.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum QueueStage {
@@ -277,6 +284,21 @@ impl QueueCore {
     /// The outstanding failures, in first-failure order.
     pub fn attention(&self) -> &[QueueFailure] {
         &self.attention
+    }
+
+    /// How many automatic attempts this book has already failed.
+    pub fn attempts(&self, book_id: i64) -> u32 {
+        self.attention
+            .iter()
+            .find(|failure| failure.book_id == book_id)
+            .map(|failure| failure.attempts)
+            .unwrap_or(0)
+    }
+
+    /// False once a book has used its automatic attempts; only an explicit
+    /// Retry (which clears the failure first) may try again.
+    pub fn automatic_attempt_due(&self, book_id: i64) -> bool {
+        self.attempts(book_id) < MAX_AUTOMATIC_ATTEMPTS
     }
 
     /// Engine models are not ready yet. Keep every pending job.
@@ -607,6 +629,23 @@ mod tests {
         core.finish(true);
         assert_eq!(core.snapshot().completed, 1);
         assert!(core.snapshot().attention.is_empty());
+    }
+
+    #[test]
+    fn automatic_retries_stop_at_the_attempt_cap() {
+        let mut core = QueueCore::default();
+        for attempt in 1..=MAX_AUTOMATIC_ATTEMPTS {
+            assert!(core.automatic_attempt_due(9), "attempt {attempt} is due");
+            core.enqueue([9]);
+            assert_eq!(core.take_next(), Some(9));
+            core.fail_current("spine_fallback", "QA rejected the art.");
+        }
+        assert!(!core.automatic_attempt_due(9));
+        assert_eq!(core.attempts(9), MAX_AUTOMATIC_ATTEMPTS);
+        // The row is still visible and an explicit retry resets the budget.
+        assert_eq!(core.snapshot().failed, 1);
+        assert!(core.clear_failure(9));
+        assert!(core.automatic_attempt_due(9));
     }
 
     #[test]

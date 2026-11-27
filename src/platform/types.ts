@@ -187,7 +187,18 @@ export interface SpineBookDiagnostic {
   bookId: number;
   title: string;
   coverPresent: boolean;
+  /** A readable artifact exists, even if it cannot paint. */
   artifactPresent: boolean;
+  /** The artifact projects and its verdict is pass/review. */
+  shelfStripPresent: boolean;
+  /** The book's stored presentation style. */
+  spineStyle: SpineStyle;
+  /** True only when a usable strip exists and the style does not hide it. */
+  paintsArt: boolean;
+  /** The artifact's verdict, when readable. */
+  verdict: SpineVerdict | null;
+  /** Why an existing artifact cannot paint; null when it can. */
+  shelfReason: string | null;
   lastError: string | null;
 }
 
@@ -195,6 +206,12 @@ export interface SpineBookDiagnostic {
 export interface SpineDiagnostics {
   status: SpineStatus;
   queue: SpineQueueState;
+  /** Books whose projected strip can paint on the wall. */
+  shelfReady: number;
+  /** Books that actually paint: strip present and style is not Cloth. */
+  paintable: number;
+  /** Books with a readable artifact on disk. */
+  artifactsPresent: number;
   books: SpineBookDiagnostic[];
 }
 
@@ -723,8 +740,9 @@ export interface Platform {
   /** Load an existing result without running the pipeline; `null` if none. */
   spineArtifact(bookId: number): Promise<SpineArtifact | null>;
   /**
-   * Project every cached spine for the wall. Scans the cache only: never runs
-   * inference and never hashes a cover.
+   * Project every shelf-eligible cached strip for the wall. Scans the cache
+   * only: never runs inference and never hashes a cover. Fallback artifacts
+   * are reported by `spineDiagnostics`, not hydrated as ready art.
    */
   spineCachedStrips(): Promise<SpineCachedStrip[]>;
   /** Whether the required model bundle is installed and usable. */

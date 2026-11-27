@@ -59,6 +59,15 @@ pub struct SpineArtifact {
     pub qa_json: Value,
 }
 
+/// Which verdicts are allowed on the shelf wall.
+///
+/// `review` still paints: the QA gate flagged it, but the strip is real art.
+/// `fallback` is the typographic cloth plate produced when generation failed
+/// the gate, so it must never be counted as a finished shelf strip.
+pub fn shelf_eligible(verdict: &str) -> bool {
+    matches!(verdict, "pass" | "review")
+}
+
 /// Stamp each book with the cached strip the shelf should paint.
 ///
 /// This is the single merge used by the Tauri `list_books` command and by the
@@ -68,7 +77,7 @@ pub struct SpineArtifact {
 pub fn apply_cached_strips(books: &mut [crate::Book], strips: &[SpineCachedStrip]) {
     let by_book: BTreeMap<i64, &str> = strips
         .iter()
-        .filter(|strip| strip.verdict != "fallback")
+        .filter(|strip| strip.is_shelf_eligible())
         .map(|strip| (strip.book_id, strip.spine_data_url.as_str()))
         .collect();
     for book in books {
@@ -87,6 +96,13 @@ pub struct SpineCachedStrip {
     pub verdict: String,
     /// `data:image/jpeg;base64,...`, exactly 52 x 236.
     pub spine_data_url: String,
+}
+
+impl SpineCachedStrip {
+    /// True only when this strip is real art the wall may paint.
+    pub fn is_shelf_eligible(&self) -> bool {
+        shelf_eligible(&self.verdict) && !self.spine_data_url.is_empty()
+    }
 }
 
 /// The v8 pipeline's `final.crop_box_work`, expressed for the wire.
@@ -108,6 +124,26 @@ pub struct CachedStrips {
     pub projected: usize,
     pub skipped: usize,
     pub root: PathBuf,
+}
+
+impl CachedStrips {
+    /// The strips the wall can actually paint: a projected image and a verdict
+    /// that is not the typographic fallback.
+    pub fn shelf_strips(&self) -> impl Iterator<Item = &SpineCachedStrip> {
+        self.strips.iter().filter(|strip| strip.is_shelf_eligible())
+    }
+
+    pub fn shelf_eligible_count(&self) -> usize {
+        self.shelf_strips().count()
+    }
+
+    /// Entries that projected but are not shelf art because QA said fallback.
+    pub fn fallback_count(&self) -> usize {
+        self.strips
+            .iter()
+            .filter(|strip| strip.verdict == "fallback")
+            .count()
+    }
 }
 
 /// Project every complete entry under `books_dir` into one strip per book.
@@ -166,9 +202,10 @@ pub fn cached_strips(books_dir: &Path) -> CachedStrips {
     out
 }
 
-/// The ids that already own a complete artifact. No image decode and no cover
-/// hashing, so the launch repair can afford to ask about the whole library.
-pub fn cached_book_ids(books_dir: &Path) -> HashSet<i64> {
+/// The ids that own a readable artifact, whether or not it projects or passed
+/// QA. Settings uses this for its "Artifact" column; it is *not* the launch
+/// definition of done.
+pub fn artifact_book_ids(books_dir: &Path) -> HashSet<i64> {
     let mut ids = HashSet::new();
     let Ok(entries) = fs::read_dir(books_dir) else {
         return ids;
@@ -189,6 +226,31 @@ pub fn cached_book_ids(books_dir: &Path) -> HashSet<i64> {
         }
     }
     ids
+}
+
+/// The single definition of "this book still needs a spine": it has no
+/// shelf-eligible projected strip. An artifact that exists but cannot project,
+/// or whose QA verdict is `fallback`, is unfinished work.
+///
+/// This decodes the cached strip, exactly like `list_books`, so the launch
+/// repair can never disagree with what the wall was given.
+pub fn shelf_book_ids(books_dir: &Path) -> HashSet<i64> {
+    cached_strips(books_dir)
+        .strips
+        .iter()
+        .filter(|strip| strip.is_shelf_eligible())
+        .map(|strip| strip.book_id)
+        .collect()
+}
+
+/// One entry's shelf strip, or `None` when the artifact is missing, unusable
+/// or its verdict is not shelf art. Used by the worker before inference.
+pub fn shelf_strip(dir: &Path) -> Option<String> {
+    let artifact = read_artifact(dir)?;
+    if artifact.book_id <= 0 || !shelf_eligible(&artifact.verdict) {
+        return None;
+    }
+    projected_strip(dir, &artifact)
 }
 
 fn read_artifact(dir: &Path) -> Option<SpineArtifact> {
@@ -304,10 +366,13 @@ fn encode_spine_strip(image: &image::RgbImage) -> Result<String, String> {
     Ok(format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
 }
 
-/// Prefer the runtime file; fall back to the strip stored in the artifact.
+/// Prefer the runtime file; fall back to the strip stored in the artifact, then
+/// to the text-free art. A complete artifact therefore still reaches the wall
+/// when `spine-2x.jpg` was trimmed or lost.
 fn projected_strip(dir: &Path, artifact: &SpineArtifact) -> Option<String> {
     spine_data_url(&dir.join("spine-2x.jpg"))
         .or_else(|_| spine_data_url_from_artifact(&artifact.spine_data_url))
+        .or_else(|_| spine_data_url_from_artifact(&artifact.art_data_url))
         .ok()
 }
 
@@ -399,12 +464,91 @@ mod tests {
     }
 
     #[test]
-    fn cached_book_ids_ignore_corrupt_entries() {
+    fn artifact_book_ids_ignore_corrupt_entries() {
         let temp = tempfile::tempdir().expect("tempdir");
         fake_entry(temp.path(), "one", 7, b"x");
         let corrupt = temp.path().join("corrupt");
         fs::create_dir_all(&corrupt).expect("corrupt dir");
         fs::write(corrupt.join(ARTIFACT_FILE), "not json").expect("corrupt");
-        assert_eq!(cached_book_ids(temp.path()), HashSet::from([7]));
+        assert_eq!(artifact_book_ids(temp.path()), HashSet::from([7]));
+    }
+
+    #[test]
+    fn a_fallback_artifact_is_present_but_not_a_shelf_strip() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let dir = fake_entry(temp.path(), "one", 7, b"x");
+        let mut artifact = read_artifact(&dir).expect("artifact");
+        artifact.verdict = "fallback".to_owned();
+        fs::write(
+            dir.join(ARTIFACT_FILE),
+            serde_json::to_string(&artifact).expect("artifact json"),
+        )
+        .expect("rewrite artifact");
+
+        let report = cached_strips(temp.path());
+        assert_eq!(report.projected, 1, "the image still decodes");
+        assert_eq!(report.fallback_count(), 1);
+        assert_eq!(report.shelf_eligible_count(), 0);
+        assert_eq!(artifact_book_ids(temp.path()), HashSet::from([7]));
+        assert!(
+            shelf_book_ids(temp.path()).is_empty(),
+            "fallback is unfinished work, not a cache hit"
+        );
+        assert!(shelf_strip(&dir).is_none());
+    }
+
+    #[test]
+    fn an_unprojectable_artifact_is_not_a_shelf_strip() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let dir = fake_entry(temp.path(), "one", 7, b"x");
+        fs::remove_file(dir.join("spine-2x.jpg")).expect("drop runtime strip");
+        let mut artifact = read_artifact(&dir).expect("artifact");
+        artifact.spine_data_url = "not an image".to_owned();
+        artifact.art_data_url = "not an image".to_owned();
+        fs::write(
+            dir.join(ARTIFACT_FILE),
+            serde_json::to_string(&artifact).expect("artifact json"),
+        )
+        .expect("rewrite artifact");
+
+        let report = cached_strips(temp.path());
+        assert_eq!(report.projected, 0);
+        assert_eq!(report.skipped, 1);
+        assert_eq!(artifact_book_ids(temp.path()), HashSet::from([7]));
+        assert!(
+            shelf_book_ids(temp.path()).is_empty(),
+            "an unusable artifact must be regenerated"
+        );
+        assert!(shelf_strip(&dir).is_none());
+    }
+
+    #[test]
+    fn a_missing_runtime_strip_still_projects_from_art() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let dir = fake_entry(temp.path(), "one", 7, b"x");
+        fs::remove_file(dir.join("spine-2x.jpg")).expect("drop runtime strip");
+        let mut artifact = read_artifact(&dir).expect("artifact");
+        artifact.spine_data_url = String::new();
+        artifact.art_data_url = {
+            let art = image::RgbImage::from_pixel(300, 450, image::Rgb([60, 30, 90]));
+            let mut bytes = Vec::new();
+            image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, 90)
+                .encode_image(&art)
+                .expect("encode art");
+            format!(
+                "data:image/jpeg;base64,{}",
+                base64::engine::general_purpose::STANDARD.encode(bytes)
+            )
+        };
+        fs::write(
+            dir.join(ARTIFACT_FILE),
+            serde_json::to_string(&artifact).expect("artifact json"),
+        )
+        .expect("rewrite artifact");
+
+        assert!(shelf_strip(&dir).is_some());
+        let report = cached_strips(temp.path());
+        assert_eq!(report.projected, 1);
+        assert_eq!(report.skipped, 0);
     }
 }
