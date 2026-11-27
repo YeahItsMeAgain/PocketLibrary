@@ -983,6 +983,8 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     payload: unknown;
   }> = [];
   const exposeMockSpine = () => {
+    // Helper specs import this module in Node to inspect the mock contract.
+    if (typeof window === "undefined") return;
     const scope = window as unknown as {
       __POCKETLIBRARY_SPINE_QUEUED__?: number[];
       __POCKETLIBRARY_SPINE_PAUSE_CALLS__?: boolean[];

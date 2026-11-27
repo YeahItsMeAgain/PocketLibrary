@@ -1,12 +1,17 @@
 import { expect, test } from "@playwright/test";
 
-import type { Book, MockConfig, Shelf } from "../../src/platform";
+import type { Book, Label, MockConfig, Shelf } from "../../src/platform";
+
+function mockLabel(id: number, name: string, colour: string): Label {
+  return { id, name, colour, createdAt: 1_700_000_000 + id };
+}
 
 function mockBook(
   id: number,
   title: string,
   shelfId: number,
   slotIndex: number,
+  labels: Label[] = [],
 ): Book {
   return {
     id,
@@ -25,7 +30,7 @@ function mockBook(
     shelfId,
     slotIndex,
     readingStatus: "unread",
-    labels: [],
+    labels,
   };
 }
 
@@ -311,6 +316,69 @@ test("cross-shelf drag with edge auto-scroll lands on the next shelf", async ({
   await expect(
     page.locator('section[data-shelf-id="1"]').getByTestId("spine"),
   ).toHaveCount(1);
+});
+
+test("an active filter dims books but never blocks or moves a drag", async ({
+  page,
+}) => {
+  const gothic = mockLabel(1, "Gothic", "#6e2630");
+  const winter = mockLabel(2, "Winter", "#6b4d18");
+  await seed(page, {
+    state: "ready",
+    folderName: "PocketLibrary",
+    labels: [gothic, winter],
+    shelves: [mockShelf(1, 0, 6)],
+    books: [
+      mockBook(1, "Alpha", 1, 0, [gothic]),
+      mockBook(2, "Beta", 1, 1, [gothic]),
+      mockBook(3, "Gamma", 1, 2, [winter]),
+    ],
+  });
+
+  const spines = page.getByTestId("spine");
+  await expect(spines).toHaveCount(3);
+  const before = await spines.evaluateAll((elements) =>
+    elements.map((element) => element.getBoundingClientRect().left),
+  );
+
+  await page
+    .getByTestId("filter-label-chip")
+    .filter({ hasText: "Gothic" })
+    .click();
+  await expect(page.getByTestId("filter-count")).toHaveText(
+    "2 of 3 books match",
+  );
+  await expect(spines.nth(2)).toHaveAttribute("data-dimmed", "true");
+  // Dimming changes paint, not layout.
+  expect(
+    await spines.evaluateAll((elements) =>
+      elements.map((element) => element.getBoundingClientRect().left),
+    ),
+  ).toEqual(before);
+
+  const start = await longPress(page, spine(page, "Alpha"));
+  const betaBox = await spine(page, "Beta").boundingBox();
+  expect(betaBox).not.toBeNull();
+  if (!betaBox) return;
+  await page.mouse.move(
+    betaBox.x + betaBox.width + 4,
+    betaBox.y + betaBox.height / 2,
+    { steps: 6 },
+  );
+  await page.mouse.up();
+
+  expect(
+    await spines.evaluateAll((elements) =>
+      elements.map((element) => element.dataset.bookId),
+    ),
+  ).toEqual(["2", "1", "3"]);
+  // The filter still only dims: the non-matching Gamma stays put and stays dim.
+  await expect(spines.nth(2)).toContainText("Gamma");
+  await expect(spines.nth(2)).toHaveAttribute("data-dimmed", "true");
+  await expect(spines.nth(0)).not.toHaveAttribute("data-dimmed", "true");
+  await expect(page.getByTestId("filter-count")).toHaveText(
+    "2 of 3 books match",
+  );
 });
 
 test("a short tap still opens the book detail", async ({ page }) => {

@@ -12,7 +12,7 @@
 - [x] A visible gap shows the drop position and other books slide aside
 - [x] Dropping outside a valid shelf returns the book to its original slot
 - [x] Drag updates are arithmetic on the model, not whole-library DOM measurement
-- [ ] Filters can be active; they still only dim and never move books
+- [x] Filters can be active; they still only dim and never move books
 
 ## Notes
 
@@ -20,9 +20,9 @@
 
 **UI.** A 380 ms long-press lifts the spine into a fixed ghost that follows the pointer with `transform`/`opacity` only; a short tap still opens the detail. Shelf geometry and spine centres are cached at lift/scroll/resize time, and pointer moves do arithmetic against that cache to choose the target shelf and index. The preview reorders the model list, FLIPs only the affected shelves, and leaves the lifted book's slot as the visible source/drop gap. Holding within 88 px of the top or bottom edge auto-scrolls the wall; dropping outside a shelf or on a full shelf returns the ghost and leaves the order unchanged. The commit goes through `platform.moveBook` and preserves scroll. The one-time hint is positioned above the drawer pull and stored in `localStorage`; reduced motion skips the return animation.
 
-**Tests.** `core/tests/rearrange.rs` covers forward/back same-shelf reorder, a cross-shelf move into the middle, source compaction and contiguous target slots, full-target rejection, invalid targets/no-op, preserving status/labels/progress/locator, and persistence across reopen. `tests/e2e/rearrange.spec.ts` covers long-press reorder, cross-shelf edge auto-scroll, short-tap detail, invalid drop return, the one-time hint, and no horizontal overflow at 390x844.
+**Tests.** `core/tests/rearrange.rs` covers forward/back same-shelf reorder, a cross-shelf move into the middle, source compaction and contiguous target slots, full-target rejection, invalid targets/no-op, preserving status/labels/progress/locator, and persistence across reopen. `tests/e2e/rearrange.spec.ts` covers long-press reorder, cross-shelf edge auto-scroll, short-tap detail, invalid drop return, drag with an active filter, the one-time hint, and no horizontal overflow at 390x844.
 
-**Deferred to 06.** Filters do not exist yet, so the filter/dim box stays unticked; the drag preview operates on the whole model and introduces no filter-dependent movement.
+**Filters.** Since ticket 06 landed, an active label/status filter was rechecked against drag: dimming is a `data-dimmed` paint change only, the wall order is untouched, long-press still lifts a dimmed or lit spine, and a completed move re-applies the same dimming without changing which books match.
 
 **Device-only checks.** Real Android long-press feel and vibration, edge auto-scroll against WebView momentum, reduced-motion behaviour, and drag performance at 4x CPU throttle (target ~0.4 ms per pointer update) still need a phone pass.
 
