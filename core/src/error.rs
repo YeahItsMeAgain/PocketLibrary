@@ -63,6 +63,12 @@ pub enum Error {
     #[error("label colour {colour:?} is not in the fixed palette")]
     InvalidLabelColour { colour: String },
 
+    #[error("a book needs a title of 500 characters or fewer")]
+    InvalidBookTitle,
+
+    #[error("a page count must be greater than zero")]
+    InvalidPageCount,
+
     #[error("a reader locator cannot be empty")]
     InvalidReaderLocator,
 
@@ -151,6 +157,8 @@ impl Error {
             Self::LabelExists { .. } => "label_exists",
             Self::InvalidLabelName => "invalid_label_name",
             Self::InvalidLabelColour { .. } => "invalid_label_colour",
+            Self::InvalidBookTitle => "invalid_title",
+            Self::InvalidPageCount => "invalid_page_count",
             Self::InvalidReaderLocator => "invalid_reader_locator",
             Self::BookmarkNotFound { .. } => "bookmark_not_found",
             Self::AnnotationNotFound { .. } => "annotation_not_found",
@@ -212,6 +220,8 @@ impl Error {
             Self::LabelExists { .. } => "A label with that name already exists.",
             Self::InvalidLabelName => "A label needs a name.",
             Self::InvalidLabelColour { .. } => "Choose one of the printed label colours.",
+            Self::InvalidBookTitle => "A book needs a title of 500 characters or fewer.",
+            Self::InvalidPageCount => "Page count must be greater than zero.",
             Self::InvalidReaderLocator => "The reading position could not be saved.",
             Self::BookmarkNotFound { .. } => "That bookmark could not be found.",
             Self::AnnotationNotFound { .. } => "That annotation could not be found.",

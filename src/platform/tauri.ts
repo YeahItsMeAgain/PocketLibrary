@@ -70,6 +70,8 @@ export function createTauriPlatform(call: Invoke): Platform {
     listBooks: () => call<Book[]>("list_books"),
     listShelves: () => call<Shelf[]>("list_shelves"),
     getBookDetail: (id) => call<BookDetail>("get_book_detail", { id }),
+    editBook: (bookId, changes) =>
+      call<BookDetail>("edit_book", { bookId, changes }),
     enrichmentSettings: () =>
       call<EnrichmentSettings>("enrichment_settings"),
     setEnrichmentMode: (mode) =>

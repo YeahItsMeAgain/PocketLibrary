@@ -13,7 +13,7 @@ use crate::download::{DownloadManager, DownloadSink};
 use crate::enrichment::{EnrichmentService, MetadataProvider};
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
-    Annotation, AnnotationKind, AppInfo, Book, BookDetail, Bookmark, CoverChoices,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookEdit, Bookmark, CoverChoices,
     CoverLookupOutcome, CoverOption, DeviceCoverPreview, Download, DownloadRequest, EnrichmentMode,
     EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, LibraryStatus, ReadingState,
     ReadingStatus, ScanReport, Shelf, SpineStyle,
@@ -302,6 +302,16 @@ impl Api {
     ) -> ApiResult<BookDetail> {
         self.service
             .get_book_detail(id, source)
+            .map_err(ApiError::from)
+    }
+
+    /// Apply reader edits to a book's title, authors or page count.
+    ///
+    /// Only the supplied fields change; the refreshed detail is returned so the
+    /// caller can re-render immediately.
+    pub fn update_book(&self, book_id: i64, changes: BookEdit) -> ApiResult<BookDetail> {
+        self.service
+            .update_book(book_id, &changes)
             .map_err(ApiError::from)
     }
 

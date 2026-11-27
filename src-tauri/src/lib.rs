@@ -20,10 +20,10 @@ use pocketlibrary_core::diagnostics::{
 };
 use pocketlibrary_core::{
     Annotation, AnnotationKind, Api, ApiError, AppInfo, BackupPreview, BackupReport, Book,
-    BookDetail, Bookmark, CoverChoices, CoverLookupOutcome, CoverOption, DeviceCoverPreview,
-    Download, DownloadRequest, DownloadSink, EnrichmentMode, EnrichmentOutcome, EnrichmentSettings,
-    ImportMode, Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus, ScanReport,
-    SearchPage, SearchQuery, Shelf,
+    BookDetail, BookEdit, Bookmark, CoverChoices, CoverLookupOutcome, CoverOption,
+    DeviceCoverPreview, Download, DownloadRequest, DownloadSink, EnrichmentMode, EnrichmentOutcome,
+    EnrichmentSettings, ImportMode, Label, LabelUsage, LibraryStatus, ReadingState, ReadingStatus,
+    ScanReport, SearchPage, SearchQuery, Shelf,
 };
 
 #[cfg(target_os = "android")]
@@ -1303,6 +1303,15 @@ fn edit_blurb(
 }
 
 #[tauri::command]
+fn edit_book(
+    api: tauri::State<'_, Api>,
+    book_id: i64,
+    changes: BookEdit,
+) -> Result<BookDetail, ApiError> {
+    api.update_book(book_id, changes)
+}
+
+#[tauri::command]
 fn revert_enrichment(api: tauri::State<'_, Api>, book_id: i64) -> Result<(), ApiError> {
     api.revert_enrichment(book_id)
 }
@@ -1662,6 +1671,7 @@ pub fn run() {
             accept_enrichment_candidate,
             cancel_enrichment,
             edit_blurb,
+            edit_book,
             revert_enrichment,
             cover_choices,
             lookup_cover_candidates,

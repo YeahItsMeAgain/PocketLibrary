@@ -14,6 +14,7 @@ import {
   type SavedDiagnostics,
   type SharedDiagnostics,
 } from "./shared";
+import { editMockBook } from "./mockEdit";
 import {
   DEFAULT_DOWNLOAD_NAMING,
   LABEL_PALETTE,
@@ -1538,6 +1539,8 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
         enrichment: { ...state, hasGap: hasGap(book, state) },
       };
     },
+    editBook: async (bookId, changes) =>
+      editMockBook(bookId, changes, books, coverDataByBook, ensureEnrichment, hasGap, MOCK_COVER),
     enrichmentSettings: async () => ({
       mode: enrichmentMode,
       sourceLabel: enrichmentSourceLabel,

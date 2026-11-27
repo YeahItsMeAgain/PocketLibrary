@@ -5,6 +5,7 @@
 
 mod catalog;
 mod downloads;
+mod edit;
 mod placement;
 mod reading;
 mod scan;

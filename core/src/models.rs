@@ -436,6 +436,39 @@ pub struct Book {
     pub labels: Vec<Label>,
 }
 
+/// The longest title the Edit layer accepts, in characters.
+pub const MAX_BOOK_TITLE_LENGTH: usize = 500;
+
+/// Optional core-field changes submitted by the Edit layer.
+///
+/// An absent field keeps its current value. `page_count` distinguishes an
+/// absent value (keep) from an explicit `null` (clear) because the Edit layer
+/// must be able to remove a page count that does not apply.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BookEdit {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authors: Option<Vec<String>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_present_page_count"
+    )]
+    pub page_count: Option<Option<i64>>,
+}
+
+/// Keep a present `null` distinct from a missing field when deserialising.
+fn deserialize_present_page_count<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<Option<i64>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<i64>::deserialize(deserializer).map(Some)
+}
+
 /// A book plus everything the detail panel needs.
 ///
 /// The cover arrives as a data URL so the UI never learns a filesystem path.

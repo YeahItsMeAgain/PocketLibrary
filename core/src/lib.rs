@@ -38,12 +38,12 @@ pub use enrichment::{
 pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
 pub use models::{
-    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookEnrichmentState, BookFormat,
-    Bookmark, CoverChoices, CoverLookupOutcome, CoverOption, CoverSource, DeviceCoverPreview,
-    Download, DownloadRequest, DownloadState, EnrichmentAttribution, EnrichmentCandidate,
-    EnrichmentMode, EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, Landing,
-    LibraryState, LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue,
-    ScanIssueReason, ScanReport, Shelf, SpineStyle,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookEdit, BookEnrichmentState,
+    BookFormat, Bookmark, CoverChoices, CoverLookupOutcome, CoverOption, CoverSource,
+    DeviceCoverPreview, Download, DownloadRequest, DownloadState, EnrichmentAttribution,
+    EnrichmentCandidate, EnrichmentMode, EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage,
+    Landing, LibraryState, LibraryStatus, MAX_BOOK_TITLE_LENGTH, Placement, ReadingState,
+    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf, SpineStyle,
 };
 pub use service::DEFAULT_DOWNLOAD_NAMING;
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};

@@ -103,6 +103,17 @@ export interface BookDetail extends Book {
   enrichment: BookEnrichmentState;
 }
 
+/**
+ * Fields the Edit layer may change. Absent fields keep their current value;
+ * `pageCount: null` clears the page count. Authors are trimmed and empty
+ * entries are dropped at the edge.
+ */
+export interface BookEdit {
+  title?: string;
+  authors?: string[];
+  pageCount?: number | null;
+}
+
 /* ------------------------------------------------------------- spine engine */
 
 /** Which route the on-device pipeline took from the cover to text-free art. */
@@ -579,6 +590,7 @@ export interface Platform {
   listBooks(): Promise<Book[]>;
   listShelves(): Promise<Shelf[]>;
   getBookDetail(id: number): Promise<BookDetail>;
+  editBook(bookId: number, changes: BookEdit): Promise<BookDetail>;
   enrichmentSettings(): Promise<EnrichmentSettings>;
   setEnrichmentMode(mode: EnrichmentMode): Promise<EnrichmentSettings>;
   lookupEnrichment(bookId: number, force?: boolean): Promise<EnrichmentOutcome>;
