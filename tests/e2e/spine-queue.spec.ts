@@ -114,6 +114,11 @@ async function boot(
   await expect(page.getByTestId("library-wall")).toBeVisible();
 }
 
+async function openEdit(page: Page) {
+  await page.getByTestId("detail-edit").click();
+  await expect(page.getByTestId("edit-book")).toBeVisible();
+}
+
 function queuedIds(page: Page): Promise<number[]> {
   return page.evaluate(
     () =>
@@ -321,7 +326,9 @@ test("a cover change queues the book again", async ({ page }) => {
 
   await page.getByTestId("spine").first().click();
   await expect(page.getByTestId("book-detail")).toBeVisible();
-  await page.getByTestId("detail-cover-button").click();
+  await page.getByTestId("detail-edit").click();
+  await expect(page.getByTestId("edit-book")).toBeVisible();
+  await page.getByTestId("edit-change-cover").click();
   await expect(page.getByTestId("cover-chooser")).toBeVisible();
   await page.getByTestId("cover-device").click();
   await expect(page.getByTestId("cover-use")).toBeEnabled();
@@ -343,7 +350,9 @@ test("Wrap and Full-bleed run the type down the spine in the upper and lower thi
   });
 
   await page.getByTestId("spine").first().click();
-  await expect(page.getByTestId("spine-result")).toBeVisible();
+  await openEdit(page);
+  const edit = page.getByTestId("edit-book");
+  await expect(edit.getByTestId("spine-result")).toBeVisible();
   const canvas = page.getByTestId("spine-preview-canvas");
 
   const readMeta = () =>
@@ -415,7 +424,10 @@ test("a long title settles into at most two lines inside the title band", async 
   });
 
   await page.getByTestId("spine").first().click();
-  await expect(page.getByTestId("spine-result")).toBeVisible();
+  await openEdit(page);
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-result"),
+  ).toBeVisible();
   await page.getByTestId("spine-style-full-bleed").click();
   const meta = await page
     .getByTestId("spine-preview-canvas")
@@ -439,7 +451,10 @@ test("choosing a style persists it through spineSetStyle", async ({ page }) => {
     spine: { artifacts: { 1: artifact() } },
   });
   await page.getByTestId("spine").first().click();
-  await expect(page.getByTestId("spine-result")).toBeVisible();
+  await openEdit(page);
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-result"),
+  ).toBeVisible();
   await page.getByTestId("spine-style-full-bleed").click();
   await expect
     .poll(async () =>
@@ -470,7 +485,10 @@ test("a Hebrew title sets canvas direction without mirroring the glyphs", async 
   });
 
   await page.getByTestId("spine").first().click();
-  await expect(page.getByTestId("spine-result")).toBeVisible();
+  await openEdit(page);
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-result"),
+  ).toBeVisible();
   await page.getByTestId("spine-style-full-bleed").click();
   const canvas = page.getByTestId("spine-preview-canvas");
   await expect(canvas).toHaveAttribute("data-direction", "rtl");
@@ -653,8 +671,12 @@ test("a failed job shows a marker until a manual generation succeeds", async ({
     "data-state",
     "needs-attention",
   );
+  await openEdit(page);
   await page.getByTestId("spine-generate").click();
-  await expect(page.getByTestId("spine-verdict")).toBeVisible();
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-verdict"),
+  ).toBeVisible();
+  await page.getByTestId("edit-book-close").click();
   await page.getByTestId("detail-back").click();
 
   await expect(

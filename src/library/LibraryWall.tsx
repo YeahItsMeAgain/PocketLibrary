@@ -158,16 +158,27 @@ export function LibraryWall({
   const updateBook = useCallback(
     (patch: {
       id: number;
+      title?: string;
+      authors?: string[];
+      pageCount?: number | null;
       readingStatus?: ReadingStatus;
       labels?: Label[];
+      spineStyle?: Book["spineStyle"];
     }) => {
       setBooks((current) =>
         current.map((book) =>
           book.id === patch.id
             ? {
                 ...book,
+                title: patch.title ?? book.title,
+                authors: patch.authors ?? book.authors,
+                pageCount:
+                  patch.pageCount !== undefined
+                    ? patch.pageCount
+                    : book.pageCount,
                 readingStatus: patch.readingStatus ?? book.readingStatus,
                 labels: patch.labels ?? book.labels,
+                spineStyle: patch.spineStyle ?? book.spineStyle,
               }
             : book,
         ),

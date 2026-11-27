@@ -249,7 +249,8 @@ test("a book can be deleted from the library after confirmation", async ({
   await page.getByTestId("spine").first().click();
   const detail = page.getByTestId("book-detail");
   await expect(detail).toBeVisible();
-  await page.getByTestId("detail-actions").click();
+  await page.getByTestId("detail-edit").click();
+  await expect(page.getByTestId("edit-book")).toBeVisible();
   await page.getByTestId("detail-delete").click();
 
   const confirm = page.getByTestId("detail-delete-confirm");

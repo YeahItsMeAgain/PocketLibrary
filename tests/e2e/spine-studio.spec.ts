@@ -46,9 +46,17 @@ async function boot(page: Page, spine: MockSpineConfig = {}) {
   await expect(page.getByTestId("book-detail")).toBeVisible();
 }
 
+async function openEdit(page: Page) {
+  await page.getByTestId("detail-edit").click();
+  await expect(page.getByTestId("edit-book")).toBeVisible();
+}
+
 async function generate(page: Page) {
+  await openEdit(page);
   await page.getByTestId("spine-generate").click();
-  await expect(page.getByTestId("spine-verdict")).toBeVisible();
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-verdict"),
+  ).toBeVisible();
   await expect(page.getByTestId("spine-style-grid").locator("canvas")).toHaveCount(
     3,
   );
@@ -88,16 +96,25 @@ async function expectNoHorizontalOverflow(page: Page) {
   });
   expect(sizes.doc).toBeLessThanOrEqual(1);
   expect(sizes.body).toBeLessThanOrEqual(1);
-  const section = await page.getByTestId("spine-studio").boundingBox();
+  const section = await page
+    .getByTestId("edit-book")
+    .getByTestId("spine-studio")
+    .boundingBox();
   expect(section).not.toBeNull();
   expect(section!.width).toBeLessThanOrEqual(sizes.viewport);
 }
 
-test("opening a book shows the Spine section with one obvious action", async ({
+test("the read view shows a compact spine and Edit holds the one obvious action", async ({
   page,
 }) => {
   await boot(page);
-  const studio = page.getByTestId("spine-studio");
+  await expect(page.getByTestId("book-detail")).toBeVisible();
+  await expect(page.getByTestId("spine-generate")).toHaveCount(0);
+  await expect(page.getByTestId("spine-style-grid")).toHaveCount(0);
+  await expect(page.getByTestId("spine-use-cloth")).toHaveCount(0);
+
+  await openEdit(page);
+  const studio = page.getByTestId("edit-book").getByTestId("spine-studio");
   await expect(studio).toBeVisible();
   await expect(studio).toContainText("Spine");
   await expect(page.getByTestId("spine-generate")).toBeVisible();
@@ -112,6 +129,7 @@ test("opening a book does not resolve the engine or run status", async ({
   page,
 }) => {
   await boot(page);
+  await openEdit(page);
   await expect(page.getByTestId("spine-generate")).toBeVisible();
   // Mount may read the artifact cache, but never status/models/JNI.
   expect(await statusCalls(page)).toBe(0);
@@ -127,15 +145,17 @@ test("generate shows honest progress, then a result with three style canvases", 
   page,
 }) => {
   await boot(page, { generateDelayMs: 700 });
+  await openEdit(page);
   await page.getByTestId("spine-generate").click();
   await expect(page.getByTestId("spine-generating")).toBeVisible();
   await expect(page.getByTestId("spine-generating")).toContainText(
     "Finding cover text",
   );
-  await expect(page.getByTestId("spine-verdict")).toBeVisible();
-  await expect(page.getByTestId("spine-verdict")).toHaveText("Pass");
-  await expect(page.getByTestId("spine-meta")).toContainText("Mask 0.0%");
-  await expect(page.getByTestId("spine-meta")).toContainText("Route crop");
+  const edit = page.getByTestId("edit-book");
+  await expect(edit.getByTestId("spine-verdict")).toBeVisible();
+  await expect(edit.getByTestId("spine-verdict")).toHaveText("Pass");
+  await expect(edit.getByTestId("spine-meta")).toContainText("Mask 0.0%");
+  await expect(edit.getByTestId("spine-meta")).toContainText("Route crop");
   const grid = page.getByTestId("spine-style-grid");
   await expect(grid.locator("canvas")).toHaveCount(3);
   await expect(page.getByTestId("spine-style-wrap")).toHaveAttribute(
@@ -182,11 +202,15 @@ test("reopening a book loads the saved result without generating again", async (
   await generate(page);
   expect(await generateCalls(page)).toBe(1);
 
+  await page.getByTestId("edit-book-close").click();
   await page.getByTestId("detail-back").click();
   await expect(page.getByTestId("book-detail")).toHaveCount(0);
   await page.getByTestId("spine").first().click();
   await expect(page.getByTestId("book-detail")).toBeVisible();
-  await expect(page.getByTestId("spine-verdict")).toBeVisible();
+  await openEdit(page);
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-verdict"),
+  ).toBeVisible();
   await expect(page.getByTestId("spine-style-grid").locator("canvas")).toHaveCount(
     3,
   );
@@ -198,10 +222,11 @@ test("review state offers Use Cloth and applies it instantly", async ({
 }) => {
   await boot(page, { verdict: "review", route: "inpaint", maskPercent: 44.1 });
   await generate(page);
-  await expect(page.getByTestId("spine-verdict")).toHaveText("Review");
-  await expect(page.getByTestId("spine-meta")).toContainText("Mask 44.1%");
-  await expect(page.getByTestId("spine-meta")).toContainText("Route inpaint");
-  await expect(page.getByTestId("spine-review-note")).toBeVisible();
+  const edit = page.getByTestId("edit-book");
+  await expect(edit.getByTestId("spine-verdict")).toHaveText("Review");
+  await expect(edit.getByTestId("spine-meta")).toContainText("Mask 44.1%");
+  await expect(edit.getByTestId("spine-meta")).toContainText("Route inpaint");
+  await expect(edit.getByTestId("spine-review-note")).toBeVisible();
   await expect(page.getByTestId("spine-use-cloth")).toBeVisible();
 
   await page.getByTestId("spine-use-cloth").click();
@@ -215,8 +240,9 @@ test("review state offers Use Cloth and applies it instantly", async ({
 test("fallback state applies Cloth automatically", async ({ page }) => {
   await boot(page, { verdict: "fallback", route: "fallback" });
   await generate(page);
-  await expect(page.getByTestId("spine-verdict")).toHaveText("Fallback");
-  await expect(page.getByTestId("spine-fallback-note")).toContainText(
+  const edit = page.getByTestId("edit-book");
+  await expect(edit.getByTestId("spine-verdict")).toHaveText("Fallback");
+  await expect(edit.getByTestId("spine-fallback-note")).toContainText(
     "Cloth applied automatically",
   );
   await expect(page.getByTestId("spine-preview")).toHaveAttribute(
@@ -232,9 +258,9 @@ test("fallback state applies Cloth automatically", async ({ page }) => {
 test("an approximate page count labels the spine width", async ({ page }) => {
   await boot(page, { pagesApproximate: true });
   await generate(page);
-  await expect(page.getByTestId("spine-approximate-note")).toContainText(
-    "Approximate spine width",
-  );
+  await expect(
+    page.getByTestId("edit-book").getByTestId("spine-approximate-note"),
+  ).toContainText("Approximate spine width");
 });
 
 test("the picker offers exactly Wrap, Full-bleed and Cloth", async ({ page }) => {

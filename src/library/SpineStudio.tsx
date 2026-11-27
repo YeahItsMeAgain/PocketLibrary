@@ -49,7 +49,7 @@ export const SPINE_STYLES: ReadonlyArray<{
 
 /* --------------------------------------------------------- small views */
 
-function SpineCanvas({
+export function SpineCanvas({
   book,
   style,
   strip = false,
@@ -112,6 +112,19 @@ interface StudioProps {
   coverDataUrl?: string | null;
   /** Persisted style from `books.spine_style`; default Wrap. */
   initialStyle?: SpineStyle;
+  /**
+   * The read view's compact summary: a single static preview and verdict,
+   * with no Generate, style tiles, Use Cloth or persistence controls.
+   */
+  readOnly?: boolean;
+  /** Opens the Edit layer at the Spine section (read view only). */
+  onFixSpine?: () => void;
+  /**
+   * Controlled style for the Edit layer. When present the parent persists the
+   * change (and owns Undo); every user or automatic change is reported.
+   */
+  style?: SpineStyle;
+  onStyleChange?: (next: SpineStyle, previous: SpineStyle) => void;
 }
 
 type StudioState =
@@ -199,30 +212,51 @@ export function SpineStudio({
   pages,
   coverDataUrl,
   initialStyle,
+  readOnly = false,
+  onFixSpine,
+  style: controlledStyle,
+  onStyleChange,
 }: StudioProps) {
   const { jobs: spineJobs, noteReady } = useSpineActivity();
   const job: SpineBookState | undefined = spineJobs[bookId];
   const [state, setState] = useState<StudioState>({ kind: "loading" });
   const [status, setStatus] = useState<SpineStatus | null>(null);
-  const [style, setStyle] = useState<SpineStyle>(initialStyle ?? "wrap");
+  const [internalStyle, setInternalStyle] = useState<SpineStyle>(
+    initialStyle ?? "wrap",
+  );
+  const style = controlledStyle ?? internalStyle;
   const [prepared, setPrepared] = useState<RenderBook | null>(null);
   const [busy, setBusy] = useState(false);
 
   const chooseStyle = useCallback(
     (next: SpineStyle) => {
-      setStyle(next);
+      if (next === style) return;
+      if (onStyleChange) {
+        onStyleChange(next, style);
+        return;
+      }
+      setInternalStyle(next);
       void platform.spineSetStyle(bookId, next).catch(() => {
         // The preview still switches; the next open retries persistence.
       });
     },
-    [bookId],
+    [bookId, onStyleChange, style],
   );
+
+  const applyAutomaticCloth = useCallback(() => {
+    if (onStyleChange) {
+      if (style !== "cloth") onStyleChange("cloth", style);
+      return;
+    }
+    setInternalStyle("cloth");
+    void platform.spineSetStyle(bookId, "cloth").catch(() => {});
+  }, [bookId, onStyleChange, style]);
 
   useEffect(() => {
     let alive = true;
     setState({ kind: "loading" });
     setPrepared(null);
-    setStyle(initialStyle ?? "wrap");
+    setInternalStyle(initialStyle ?? "wrap");
     setStatus(null);
     // Opening a book must do zero engine work: only read the cache. Model
     // resolution (JNI asset extraction, ONNX Runtime) waits for Generate.
@@ -235,7 +269,7 @@ export function SpineStudio({
           // Reading a cached result also repairs the wall: an entry loaded
           // here is the same strip the shelf should show.
           noteReady(bookId, artifact);
-          if (artifact.verdict === "fallback") setStyle("cloth");
+          if (artifact.verdict === "fallback") setInternalStyle("cloth");
         } else {
           setState({ kind: "idle" });
         }
@@ -333,8 +367,7 @@ export function SpineStudio({
       ]);
       if (nextStatus) setStatus(nextStatus);
       if (artifact.verdict === "fallback") {
-        setStyle("cloth");
-        void platform.spineSetStyle(bookId, "cloth").catch(() => {});
+        applyAutomaticCloth();
       }
       setState({ kind: "result", artifact });
       noteReady(bookId, artifact);
@@ -348,7 +381,7 @@ export function SpineStudio({
     } finally {
       setBusy(false);
     }
-  }, [bookId, busy, noteReady]);
+  }, [bookId, busy, noteReady, applyAutomaticCloth]);
 
   const engineReady =
     status === null ||
@@ -401,30 +434,46 @@ export function SpineStudio({
       ) : null}
 
       {state.kind === "idle" ? (
-        <div className="spine-intro">
-          <p>
-            Turn this cover into a text-free spine on the device. Three styles
-            render from the same result; nothing is uploaded.
-          </p>
-          {engineProblem ? (
-            <p className="spine-problem" role="status">
-              {engineProblem}
+        readOnly ? (
+          <div className="spine-readonly" data-testid="spine-readonly">
+            <p className="spine-fine">No spine has been prepared yet.</p>
+            {onFixSpine ? (
+              <button
+                type="button"
+                className="spine-fix-link"
+                data-testid="spine-fix"
+                onClick={onFixSpine}
+              >
+                Set up spine
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="spine-intro">
+            <p>
+              Turn this cover into a text-free spine on the device. Three styles
+              render from the same result; nothing is uploaded.
             </p>
-          ) : null}
-          <button
-            type="button"
-            className="spine-generate"
-            data-testid="spine-generate"
-            disabled={!engineReady}
-            onClick={() => void generate()}
-          >
-            Generate spine
-          </button>
-          <p className="spine-fine">
-            Runs locally · 5–20 s on a phone · the shelf keeps its cloth spine
-            meanwhile.
-          </p>
-        </div>
+            {engineProblem ? (
+              <p className="spine-problem" role="status">
+                {engineProblem}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              className="spine-generate"
+              data-testid="spine-generate"
+              disabled={!engineReady}
+              onClick={() => void generate()}
+            >
+              Generate spine
+            </button>
+            <p className="spine-fine">
+              Runs locally · 5–20 s on a phone · the shelf keeps its cloth spine
+              meanwhile.
+            </p>
+          </div>
+        )
       ) : null}
 
       {state.kind === "generating" ? (
@@ -449,137 +498,230 @@ export function SpineStudio({
       ) : null}
 
       {state.kind === "error" ? (
-        <div
-          className="spine-error"
-          data-testid="spine-error"
-          role="alert"
-        >
-          <p className="spine-error-title">{state.heading}</p>
-          <p>{state.message}</p>
-          <button
-            type="button"
-            className="spine-generate"
-            data-testid="spine-retry"
-            disabled={busy || !engineReady}
-            onClick={() => void generate()}
+        readOnly ? (
+          <div className="spine-readonly" data-testid="spine-readonly">
+            <p className="spine-fine">
+              The spine could not be read just now.
+            </p>
+            {onFixSpine ? (
+              <button
+                type="button"
+                className="spine-fix-link"
+                data-testid="spine-fix"
+                onClick={onFixSpine}
+              >
+                Fix spine
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <div
+            className="spine-error"
+            data-testid="spine-error"
+            role="alert"
           >
-            Try again
-          </button>
-        </div>
+            <p className="spine-error-title">{state.heading}</p>
+            <p>{state.message}</p>
+            <button
+              type="button"
+              className="spine-generate"
+              data-testid="spine-retry"
+              disabled={busy || !engineReady}
+              onClick={() => void generate()}
+            >
+              Try again
+            </button>
+          </div>
+        )
       ) : null}
 
       {state.kind === "result" ? (
-        <div className="spine-result" data-testid="spine-result">
+        <div
+          className="spine-result"
+          data-testid={readOnly ? "spine-readonly-result" : "spine-result"}
+        >
           <div className="spine-verdict-row">
             <span
               className={`spine-pill spine-pill--${state.artifact.verdict}`}
-              data-testid="spine-verdict"
+              data-testid={readOnly ? "spine-readonly-verdict" : "spine-verdict"}
               data-verdict={state.artifact.verdict}
             >
               {VERDICT_LABELS[state.artifact.verdict]}
             </span>
-            <span className="spine-meta" data-testid="spine-meta">
+            <span
+              className="spine-meta"
+              data-testid={readOnly ? "spine-readonly-meta" : "spine-meta"}
+            >
               Mask {state.artifact.maskPercent.toFixed(1)}% · Route{" "}
               {state.artifact.route}
             </span>
           </div>
 
           {state.artifact.pagesApproximate ? (
-            <p className="spine-fine" data-testid="spine-approximate-note">
+            <p
+              className="spine-fine"
+              data-testid={
+                readOnly
+                  ? "spine-readonly-approximate-note"
+                  : "spine-approximate-note"
+              }
+            >
               Approximate spine width — no page count, so the wrap uses a
               ~320-page estimate.
             </p>
           ) : null}
 
-          {state.artifact.verdict === "review" ? (
-            <p className="spine-note" data-testid="spine-review-note">
-              The check found art it cannot vouch for. Inspect the spine, then
-              use Cloth if it reads as cover copy.{" "}
-              <button
-                type="button"
-                className="spine-inline-action"
-                data-testid="spine-use-cloth"
-                onClick={() => chooseStyle("cloth")}
-              >
-                Use Cloth
-              </button>
-            </p>
-          ) : state.artifact.verdict === "fallback" ? (
-            <p className="spine-note" data-testid="spine-fallback-note">
-              Cloth applied automatically. The wrap stays available as a
-              preview below.
-            </p>
-          ) : (
-            <p className="spine-fine" data-testid="spine-pass-note">
-              Passed the on-device check. Wrap is applied by default.
-            </p>
-          )}
-
-          {prepared ? (
+          {readOnly ? (
             <>
-              <div
-                className={`spine-preview${style === "wrap" ? " is-wrap" : ""}`}
-                data-testid="spine-preview"
-                data-style={style}
-              >
-                <SpineCanvas
-                  book={prepared}
-                  style={style}
-                  testId="spine-preview-canvas"
-                />
-              </div>
-              <p className="spine-preview-caption">
-                {SPINE_STYLES.find((entry) => entry.id === style)?.note}
-              </p>
-              <div
-                className="spine-style-grid"
-                data-testid="spine-style-grid"
-                role="group"
-                aria-label="Spine style"
-              >
-                {SPINE_STYLES.map((entry) => (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    className="spine-style"
-                    data-testid={`spine-style-${entry.id}`}
-                    aria-pressed={style === entry.id}
-                    onClick={() => chooseStyle(entry.id)}
-                  >
-                    <span className="spine-style-art">
-                      <SpineCanvas
-                        book={prepared}
-                        style={entry.id}
-                        testId={`spine-canvas-${entry.id}`}
-                      />
-                    </span>
-                    <span className="spine-style-label">{entry.label}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="spine-shelf" data-testid="spine-shelf">
-                <div className="spine-shelf-art">
+              {state.artifact.verdict === "review" ? (
+                <p
+                  className="spine-note"
+                  data-testid="spine-readonly-review-note"
+                >
+                  The check found art it cannot vouch for.
+                </p>
+              ) : state.artifact.verdict === "fallback" ? (
+                <p
+                  className="spine-note"
+                  data-testid="spine-readonly-fallback-note"
+                >
+                  Cloth applied automatically.
+                </p>
+              ) : (
+                <p
+                  className="spine-fine"
+                  data-testid="spine-readonly-pass-note"
+                >
+                  Passed the on-device check.
+                </p>
+              )}
+              {prepared ? (
+                <div
+                  className={`spine-preview spine-preview--static${
+                    style === "wrap" ? " is-wrap" : ""
+                  }`}
+                  data-testid="spine-static-preview"
+                  data-style={style}
+                >
                   <SpineCanvas
                     book={prepared}
                     style={style}
-                    strip
-                    testId="spine-strip-canvas"
+                    testId="spine-static-canvas"
                   />
                 </div>
-                <p className="spine-shelf-copy">
-                  <b>At shelf size</b>
-                  52 × 236 spine · the shelf swaps to it when ready
+              ) : (
+                <p className="spine-fine" role="status">
+                  Preparing the spine preview…
                 </p>
-              </div>
-              <p className="spine-fine">
-                Switching styles re-renders the cached art; it does not run the
-                engine again.
-              </p>
+              )}
+              {state.artifact.verdict !== "pass" && onFixSpine ? (
+                <button
+                  type="button"
+                  className="spine-fix-link"
+                  data-testid="spine-fix"
+                  onClick={onFixSpine}
+                >
+                  Fix spine
+                </button>
+              ) : null}
             </>
           ) : (
-            <p className="spine-fine" role="status">
-              Preparing the spine preview…
-            </p>
+            <>
+              {state.artifact.verdict === "review" ? (
+                <p className="spine-note" data-testid="spine-review-note">
+                  The check found art it cannot vouch for. Inspect the spine,
+                  then use Cloth if it reads as cover copy.{" "}
+                  <button
+                    type="button"
+                    className="spine-inline-action"
+                    data-testid="spine-use-cloth"
+                    onClick={() => chooseStyle("cloth")}
+                  >
+                    Use Cloth
+                  </button>
+                </p>
+              ) : state.artifact.verdict === "fallback" ? (
+                <p className="spine-note" data-testid="spine-fallback-note">
+                  Cloth applied automatically. The wrap stays available as a
+                  preview below.
+                </p>
+              ) : (
+                <p className="spine-fine" data-testid="spine-pass-note">
+                  Passed the on-device check. Wrap is applied by default.
+                </p>
+              )}
+
+              {prepared ? (
+                <>
+                  <div
+                    className={`spine-preview${
+                      style === "wrap" ? " is-wrap" : ""
+                    }`}
+                    data-testid="spine-preview"
+                    data-style={style}
+                  >
+                    <SpineCanvas
+                      book={prepared}
+                      style={style}
+                      testId="spine-preview-canvas"
+                    />
+                  </div>
+                  <p className="spine-preview-caption">
+                    {SPINE_STYLES.find((entry) => entry.id === style)?.note}
+                  </p>
+                  <div
+                    className="spine-style-grid"
+                    data-testid="spine-style-grid"
+                    role="group"
+                    aria-label="Spine style"
+                  >
+                    {SPINE_STYLES.map((entry) => (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        className="spine-style"
+                        data-testid={`spine-style-${entry.id}`}
+                        aria-pressed={style === entry.id}
+                        onClick={() => chooseStyle(entry.id)}
+                      >
+                        <span className="spine-style-art">
+                          <SpineCanvas
+                            book={prepared}
+                            style={entry.id}
+                            testId={`spine-canvas-${entry.id}`}
+                          />
+                        </span>
+                        <span className="spine-style-label">
+                          {entry.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="spine-shelf" data-testid="spine-shelf">
+                    <div className="spine-shelf-art">
+                      <SpineCanvas
+                        book={prepared}
+                        style={style}
+                        strip
+                        testId="spine-strip-canvas"
+                      />
+                    </div>
+                    <p className="spine-shelf-copy">
+                      <b>At shelf size</b>
+                      52 × 236 spine · the shelf swaps to it when ready
+                    </p>
+                  </div>
+                  <p className="spine-fine">
+                    Switching styles re-renders the cached art; it does not run
+                    the engine again.
+                  </p>
+                </>
+              ) : (
+                <p className="spine-fine" role="status">
+                  Preparing the spine preview…
+                </p>
+              )}
+            </>
           )}
         </div>
       ) : null}

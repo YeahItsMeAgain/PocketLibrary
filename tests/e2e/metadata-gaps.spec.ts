@@ -80,7 +80,8 @@ async function openSettings(page: Page) {
 }
 
 async function openBookMenu(page: Page) {
-  await page.getByTestId("detail-actions").click();
+  await page.getByTestId("detail-edit").click();
+  await expect(page.getByTestId("edit-book")).toBeVisible();
 }
 
 test("settings has no online-details control", async ({ page }) => {
@@ -163,16 +164,17 @@ test("automatic lookup fills a missing blurb and generated cover", async ({
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "A quiet revolution gathers",
   );
-  await expect(page.getByTestId("detail-attribution")).toContainText(
+  await openBookMenu(page);
+  await expect(page.getByTestId("edit-attribution")).toContainText(
     "Open Library",
   );
-  await expect(page.getByTestId("detail-attribution")).toContainText(
+  await expect(page.getByTestId("edit-attribution")).toContainText(
     "the blurb and the cover",
   );
-  await expect(page.getByTestId("detail-attribution").getByRole("link")).toHaveAttribute(
-    "href",
-    "https://openlibrary.org/books/OL1M",
-  );
+  await expect(
+    page.getByTestId("edit-attribution").getByRole("link"),
+  ).toHaveAttribute("href", "https://openlibrary.org/books/OL1M");
+  await page.getByTestId("edit-book-close").click();
   await expect(page.getByTestId("detail-cover")).toHaveAttribute(
     "src",
     ALT_COVER,
@@ -191,11 +193,12 @@ test("a no-match leaves the generated plate and the honest blank blurb", async (
   const before = await page.getByTestId("detail-cover").getAttribute("src");
 
   await openBookMenu(page);
-  await page.getByTestId("detail-lookup").click();
+  await page.getByTestId("edit-lookup").click();
 
-  await expect(page.getByTestId("detail-enrichment-notice")).toContainText(
+  await expect(page.getByTestId("edit-enrichment-notice")).toContainText(
     "No online match found for this edition",
   );
+  await page.getByTestId("edit-book-close").click();
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "No blurb was printed with this edition.",
   );
@@ -253,7 +256,8 @@ test("automatic review lists candidate editions and applies only the chosen one"
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "The chosen edition's blurb.",
   );
-  await expect(page.getByTestId("detail-attribution")).toContainText(
+  await openBookMenu(page);
+  await expect(page.getByTestId("edit-attribution")).toContainText(
     "Open Library",
   );
 });
@@ -287,7 +291,8 @@ test("the cover chooser previews an online cover, applies it, and resets", async
   await openDetail(page);
   const original = await page.getByTestId("detail-cover").getAttribute("src");
 
-  await page.getByTestId("detail-cover-button").click();
+  await openBookMenu(page);
+  await page.getByTestId("edit-change-cover").click();
   await expect(page.getByTestId("cover-chooser")).toBeVisible();
   await expect(page.getByTestId("cover-preview")).toBeVisible();
   // Opening the sheet makes no request and shows no online candidate yet.
@@ -305,13 +310,14 @@ test("the cover chooser previews an online cover, applies it, and resets", async
     "src",
     original ?? "",
   );
-  await expect(page.getByTestId("detail-attribution")).toContainText(
+  await expect(page.getByTestId("edit-attribution")).toContainText(
     "Open Library",
   );
 
-  await page.getByTestId("detail-cover-button").click();
+  await page.getByTestId("edit-change-cover").click();
   await page.getByTestId("cover-reset").click();
   await expect(page.getByTestId("cover-chooser")).toHaveCount(0);
+  await page.getByTestId("edit-book-close").click();
   await expect(page.getByTestId("detail-cover")).toHaveAttribute(
     "src",
     original ?? "",
@@ -327,7 +333,7 @@ test("a device image can be previewed and applied without leaving the app", asyn
   });
   await openDetail(page);
   await openBookMenu(page);
-  await page.getByTestId("detail-change-cover").click();
+  await page.getByTestId("edit-change-cover").click();
   await expect(page.getByTestId("cover-chooser")).toBeVisible();
 
   await page.getByTestId("cover-device").click();
@@ -337,7 +343,7 @@ test("a device image can be previewed and applied without leaving the app", asyn
   await page.getByTestId("cover-use").click();
 
   await expect(page.getByTestId("cover-chooser")).toHaveCount(0);
-  await expect(page.getByTestId("detail-manual-provenance")).toContainText(
+  await expect(page.getByTestId("edit-manual-provenance")).toContainText(
     "Cover chosen by you",
   );
 });
@@ -360,7 +366,8 @@ test("automatic mode looks up a gap when the Flip opens", async ({ page }) => {
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "Added automatically for a gap.",
   );
-  await expect(page.getByTestId("detail-attribution")).toContainText(
+  await openBookMenu(page);
+  await expect(page.getByTestId("edit-attribution")).toContainText(
     "the blurb",
   );
 });
@@ -379,24 +386,25 @@ test("a blurb edited by the reader survives a refresh", async ({ page }) => {
   });
   await openDetail(page);
   await openBookMenu(page);
-  await page.getByTestId("detail-lookup").click();
+  await page.getByTestId("edit-lookup").click();
+  await expect(page.getByTestId("edit-enrichment-notice")).toContainText(
+    "Added blurb",
+  );
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "A catalogue blurb.",
   );
 
-  await openBookMenu(page);
-  await page.getByTestId("detail-edit-blurb").click();
-  await page.getByTestId("blurb-text").fill("My own note about this edition.");
-  await page.getByTestId("blurb-save").click();
+  await page.getByTestId("edit-blurb").fill("My own note about this edition.");
+  await page.getByTestId("edit-blurb").blur();
+  await expect(page.getByTestId("edit-blurb-status")).toContainText("Saved");
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "My own note about this edition.",
   );
-  await expect(page.getByTestId("detail-manual-provenance")).toContainText(
+  await expect(page.getByTestId("edit-manual-provenance")).toContainText(
     "Blurb edited by you",
   );
 
-  await openBookMenu(page);
-  await page.getByTestId("detail-lookup").click();
+  await page.getByTestId("edit-lookup").click();
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "My own note about this edition.",
   );
@@ -424,7 +432,11 @@ test("revert removes online details and restores the file's blank", async ({
   );
 
   await openBookMenu(page);
-  await page.getByTestId("detail-revert").click();
+  await page.getByTestId("edit-revert").click();
+  await expect(page.getByTestId("edit-enrichment-notice")).toContainText(
+    "Reverted to the file's own details",
+  );
+  await page.getByTestId("edit-book-close").click();
   await expect(page.getByTestId("detail-blurb")).toContainText(
     "No blurb was printed with this edition.",
   );
@@ -440,7 +452,8 @@ test("a cover lookup with no results shows an honest empty state", async ({
     },
   });
   await openDetail(page);
-  await page.getByTestId("detail-cover-button").click();
+  await openBookMenu(page);
+  await page.getByTestId("edit-change-cover").click();
   await page.getByTestId("cover-find").click();
 
   await expect(page.getByTestId("cover-notice")).toHaveText(
@@ -467,7 +480,8 @@ test("a failed cover lookup shows a retryable error instead of an empty state", 
     },
   });
   await openDetail(page);
-  await page.getByTestId("detail-cover-button").click();
+  await openBookMenu(page);
+  await page.getByTestId("edit-change-cover").click();
   await page.getByTestId("cover-find").click();
 
   await expect(page.getByTestId("cover-notice")).toHaveText(message);
@@ -505,10 +519,11 @@ test("the cover chooser shows the online cover found for Rock Paper Scissors", a
     },
   );
   await openDetail(page);
+  await openBookMenu(page);
 
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await page.getByTestId("detail-cover-button").click();
+    await page.getByTestId("edit-change-cover").click();
     await page.getByTestId("cover-find").click();
     await expect(
       page.getByTestId("cover-option-online-open-library-id-10826952"),
@@ -552,10 +567,11 @@ test("the cover chooser keeps online results inside a narrow screen", async ({
     coverCandidates: { 1: [candidate] },
   });
   await openDetail(page);
+  await openBookMenu(page);
 
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await page.getByTestId("detail-cover-button").click();
+    await page.getByTestId("edit-change-cover").click();
     await expect(page.getByTestId("cover-chooser")).toBeVisible();
     await page.getByTestId("cover-find").click();
     await expect(

@@ -72,11 +72,16 @@ test("creating a label, attaching it from the detail, and seeing the spine band"
   await manager.getByRole("button", { name: "Close label manager" }).click();
 
   await page.getByTestId("spine").first().click();
-  await page.getByTestId("detail-add-label").click();
+  await page.getByTestId("detail-edit").click();
+  await page.getByTestId("edit-add-label").click();
   await page
-    .getByTestId("book-detail")
+    .getByTestId("edit-book")
     .getByRole("menuitem", { name: "Gothic" })
     .click();
+  await expect(
+    page.getByTestId("edit-label-chip").filter({ hasText: "Gothic" }),
+  ).toBeVisible();
+  await page.getByTestId("edit-book-close").click();
   await expect(
     page.getByTestId("detail-label-chip").filter({ hasText: "Gothic" }),
   ).toBeVisible();
@@ -217,21 +222,19 @@ test("the detail cover shows a paper percentage sticker and a gold sticker, with
   await page.getByTestId("spine").nth(0).click();
   await expect(page.getByTestId("detail-title")).toBeVisible();
   await expect(page.getByTestId("detail-sticker")).toHaveCount(0);
+  await expect(page.getByTestId("detail-status")).toContainText("Unread");
   const detail = page.getByTestId("book-detail");
-  await expect(detail).not.toContainText("STATUS ·");
-  await expect(detail).not.toContainText(/reading status/i);
-  await expect(
-    detail.getByText(/^(unread|reading|finished)$/i),
-  ).toHaveCount(0);
+  await expect(detail.getByTestId("detail-edit")).toBeVisible();
 
-  await page.getByTestId("detail-actions").click();
-  await expect(
-    page.getByRole("menu", { name: "Set reading status" }),
-  ).toBeVisible();
-  await page.getByTestId("detail-status-option-finished").click();
-  await expect(
-    page.getByRole("menu", { name: "Set reading status" }),
-  ).toHaveCount(0);
+  await page.getByTestId("detail-edit").click();
+  await expect(page.getByTestId("edit-section-status")).toBeVisible();
+  await page.getByTestId("edit-status-finished").click();
+  await expect(page.getByTestId("edit-status-finished")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByTestId("edit-book-close").click();
+  await expect(page.getByTestId("detail-status")).toContainText("Finished");
   await expect(page.getByTestId("detail-sticker")).toHaveAttribute(
     "data-sticker",
     "gold",
@@ -246,7 +249,7 @@ test("the detail cover shows a paper percentage sticker and a gold sticker, with
   ).toBeVisible();
 });
 
-test("the detail finished sticker paints above the change-cover layer at narrow widths", async ({
+test("the read view keeps the finished seal visible and offers no cover hit layer at narrow widths", async ({
   page,
 }) => {
   await seed(page, {
@@ -273,55 +276,38 @@ test("the detail finished sticker paints above the change-cover layer at narrow 
       const sticker = page.getByTestId("detail-sticker");
       await expect(sticker).toHaveAttribute("data-sticker", "gold");
       await expect(sticker).toBeVisible();
+      // The read view is not editable: the cover is not a change-cover hit.
+      await expect(page.getByTestId("detail-cover-button")).toHaveCount(0);
 
-      const layers = await page.evaluate(() => {
+      const geometry = await page.evaluate(() => {
         const seal = document.querySelector<HTMLElement>(
           '[data-testid="detail-sticker"]',
         );
-        const hit = document.querySelector<HTMLElement>(
-          '[data-testid="detail-cover-button"]',
-        );
-        if (!seal || !hit) throw new Error("cover layers missing");
+        if (!seal) throw new Error("finished seal missing");
         const sealStyle = getComputedStyle(seal);
-        const hitStyle = getComputedStyle(hit);
         const sealBox = seal.getBoundingClientRect();
-        const hitBox = hit.getBoundingClientRect();
-        const x = sealBox.x + sealBox.width / 2;
-        const y = sealBox.y + sealBox.height / 2;
-        const top = document.elementFromPoint(x, y);
         return {
-          sealZ: Number(sealStyle.zIndex),
-          hitZ: Number(hitStyle.zIndex),
           sealPointerEvents: sealStyle.pointerEvents,
-          // The seal centre sits over the full-cover hit layer, so paint order
-          // decides whether the brass seal or the dark gradient is visible.
-          overlap:
-            x >= hitBox.x &&
-            x <= hitBox.x + hitBox.width &&
-            y >= hitBox.y &&
-            y <= hitBox.y + hitBox.height,
           sealInViewport:
             sealBox.top >= 0 &&
             sealBox.left >= 0 &&
             sealBox.right <= window.innerWidth &&
             sealBox.bottom <= window.innerHeight,
-          // Taps still fall through the decorative seal to the cover button.
-          hitReceivesTap: top === hit || hit.contains(top),
+          document: document.documentElement.scrollWidth,
+          viewport: window.innerWidth,
         };
       });
 
       const label = `${width}px ${reducedMotion}`;
-      expect(layers.overlap, `${label}: seal overlaps cover hit layer`).toBe(
+      expect(geometry.sealInViewport, `${label}: seal fully on screen`).toBe(
         true,
       );
-      expect(layers.sealInViewport, `${label}: seal fully on screen`).toBe(true);
-      expect(layers.sealZ, `${label}: seal paints above cover hit layer`)
-        .toBeGreaterThan(layers.hitZ);
-      expect(layers.sealPointerEvents, `${label}: seal passes taps through`).toBe(
-        "none",
-      );
-      expect(layers.hitReceivesTap, `${label}: cover button stays hittable`).toBe(
-        true,
+      expect(
+        geometry.sealPointerEvents,
+        `${label}: seal passes taps through`,
+      ).toBe("none");
+      expect(geometry.document, `${label}: no horizontal overflow`).toBeLessThanOrEqual(
+        geometry.viewport,
       );
 
       await page.getByTestId("detail-back").click();
