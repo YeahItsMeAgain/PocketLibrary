@@ -3,6 +3,7 @@
 
 mod common;
 
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -20,6 +21,7 @@ struct FakeProvider {
     requests: Mutex<Vec<String>>,
     cover_requests: Mutex<Vec<String>>,
     cover: Mutex<Vec<u8>>,
+    failing_cover_keys: Mutex<HashSet<String>>,
     failure: Mutex<Option<ProviderError>>,
     transient_failures: AtomicUsize,
     supplement: Mutex<Option<ProviderSupplement>>,
@@ -49,6 +51,16 @@ impl FakeProvider {
 
     fn cover_requests(&self) -> Vec<String> {
         self.cover_requests.lock().unwrap().clone()
+    }
+
+    fn clear_cover_requests(&self) {
+        self.cover_requests.lock().unwrap().clear();
+    }
+
+    fn fail_cover_keys(&self, keys: &[&str]) {
+        let mut failing = self.failing_cover_keys.lock().unwrap();
+        failing.clear();
+        failing.extend(keys.iter().map(|key| (*key).to_owned()));
     }
 
     fn set_lookup_delay(&self, millis: usize) {
@@ -81,8 +93,16 @@ impl MetadataProvider for FakeProvider {
     }
 
     fn fetch_cover<'a>(&'a self, key: String) -> BoxFuture<'a, ProviderResult<Vec<u8>>> {
-        self.cover_requests.lock().unwrap().push(key);
-        Box::pin(async move { Ok(self.cover.lock().unwrap().clone()) })
+        self.cover_requests.lock().unwrap().push(key.clone());
+        Box::pin(async move {
+            if self.failing_cover_keys.lock().unwrap().contains(&key) {
+                return Err(ProviderError {
+                    kind: ProviderErrorKind::Status(404),
+                    retry_after_seconds: None,
+                });
+            }
+            Ok(self.cover.lock().unwrap().clone())
+        })
     }
 
     fn supplement<'a>(&'a self, _ocaid: String) -> BoxFuture<'a, ProviderResult<ProviderSupplement>> {
@@ -609,6 +629,68 @@ fn the_manual_chooser_can_apply_and_reset_an_online_cover() {
     let detail = api.get_book_detail(book.id, None).expect("detail");
     assert_eq!(detail.book.cover_source, Some(CoverSource::Embedded));
     assert!(!detail.enrichment.cover_manual);
+}
+
+#[test]
+fn both_cover_paths_try_work_cover_ids_before_dead_isbn_and_olid_keys() {
+    // The UK Rock Paper Scissors edition has no `covers` of its own, so the
+    // provider pushes its work's `id:` cover to the front of the synthetic
+    // `isbn:`/`olid:` fallbacks. The automatic path and the manual chooser must
+    // walk that key list in the same order.
+    let mut candidate = candidate("Rock Paper Scissors", &["Alice Feeney"]);
+    candidate.year = Some(2021);
+    candidate.cover_keys = vec![
+        "id:10826952".to_owned(),
+        "isbn:9780008371005".to_owned(),
+        "olid:OL52963676M".to_owned(),
+    ];
+    let provider = FakeProvider::with_candidate(candidate);
+    provider.fail_cover_keys(&[
+        "id:10826952",
+        "isbn:9780008371005",
+        "olid:OL52963676M",
+    ]);
+    let (_dir, api) = database_with_provider(Arc::clone(&provider));
+    let book = add_book(
+        &api,
+        "Rock Paper Scissors.epub",
+        &basic_metadata("Rock Paper Scissors", "Alice Feeney", "2021"),
+        None,
+    );
+
+    let manual = runtime()
+        .block_on(api.lookup_cover_candidates(book.id))
+        .expect("find covers");
+    assert!(matches!(
+        manual,
+        pocketlibrary_core::CoverLookupOutcome::NoMatch { .. }
+    ));
+    let manual_order = provider.cover_requests();
+
+    provider.clear_cover_requests();
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
+    assert!(matches!(outcome, EnrichmentOutcome::Applied { .. }));
+    let automatic_order = provider.cover_requests();
+
+    assert_eq!(manual_order, automatic_order);
+    assert_eq!(
+        manual_order,
+        vec![
+            "id:10826952".to_owned(),
+            "isbn:9780008371005".to_owned(),
+            "olid:OL52963676M".to_owned(),
+        ]
+    );
+    let position = |key: &str| {
+        manual_order
+            .iter()
+            .position(|requested| requested == key)
+            .unwrap_or_else(|| panic!("{key} was never tried"))
+    };
+    assert!(position("id:10826952") < position("isbn:9780008371005"));
+    assert!(position("id:10826952") < position("olid:OL52963676M"));
 }
 
 #[test]
