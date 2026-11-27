@@ -66,7 +66,7 @@ import type {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.10",
+  appVersion: "0.1.11",
   schemaVersion: 6,
 };
 
