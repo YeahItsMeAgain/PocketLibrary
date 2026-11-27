@@ -6,18 +6,16 @@ import {
   type SpineArtifact,
   type SpineRoute,
   type SpineStatus,
+  type SpineStyle,
   type SpineVerdict,
 } from "../platform";
+import {
+  STAGE_LABELS,
+  useSpineActivity,
+  type SpineBookState,
+} from "./spineActivity";
 
 /* --------------------------------------------------------------- styles */
-
-export type SpineStyle =
-  | "wrap"
-  | "hybrid"
-  | "fullbleed"
-  | "artonly"
-  | "cloth"
-  | "editorial";
 
 export const SPINE_STYLES: ReadonlyArray<{
   id: SpineStyle;
@@ -30,29 +28,14 @@ export const SPINE_STYLES: ReadonlyArray<{
     note: "Page-count spine width. Back and spine are composed from the text-free art.",
   },
   {
-    id: "hybrid",
-    label: "Hybrid",
-    note: "An art window beside a measured paper label.",
-  },
-  {
-    id: "fullbleed",
+    id: "full-bleed",
     label: "Full-bleed",
-    note: "The crop edge to edge with a smoked title rail.",
-  },
-  {
-    id: "artonly",
-    label: "Textless",
-    note: "The crop with no typography at all.",
+    note: "The crop edge to edge, with the title and author centred over a soft scrim.",
   },
   {
     id: "cloth",
     label: "Cloth",
     note: "Cloth colour sampled from the art, foil type, no art window.",
-  },
-  {
-    id: "editorial",
-    label: "Editorial",
-    note: "Full-bleed art and a narrow type rail in one sans voice.",
   },
 ];
 
@@ -81,6 +64,20 @@ interface RenderBook {
   verdict: SpineVerdict;
   route: SpineRoute;
   palette: Palette | null;
+  direction: "ltr" | "rtl";
+}
+
+const RTL_PATTERN =
+  /[\u0590-\u05ff\u0600-\u06ff\u0700-\u074f\u0750-\u077f\u0780-\u07bf\ufb1d-\ufdff\ufe70-\ufeff]/;
+const LTR_PATTERN = /[A-Za-z\u00c0-\u024f\u0400-\u052f]/;
+
+/** The direction of the first strong character, as the browser would guess. */
+export function textDirection(text: string): "ltr" | "rtl" {
+  for (const char of text) {
+    if (RTL_PATTERN.test(char)) return "rtl";
+    if (LTR_PATTERN.test(char)) return "ltr";
+  }
+  return "ltr";
 }
 
 const clamp = (value: number, min: number, max: number) =>
@@ -139,6 +136,145 @@ function readableInk(background: string): string {
   return contrast(background, cream) >= contrast(background, dark)
     ? cream
     : dark;
+}
+
+const CREAM_INK = "#f2e6c9";
+const DARK_INK = "#1a130d";
+const CREAM_LUMA = luminance(CREAM_INK);
+const DARK_LUMA = luminance(DARK_INK);
+const MIN_CONTRAST = 4.5;
+
+interface RegionStats {
+  min: number;
+  max: number;
+  avg: number;
+}
+
+function contrastLuma(a: number, b: number): number {
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+function samplePixels(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): RegionStats {
+  const fallback: RegionStats = { min: 0.2, max: 0.2, avg: 0.2 };
+  try {
+    const canvas = ctx.canvas;
+    const sx = clamp(Math.floor(x), 0, Math.max(0, canvas.width - 1));
+    const sy = clamp(Math.floor(y), 0, Math.max(0, canvas.height - 1));
+    const sw = clamp(Math.ceil(width), 1, canvas.width - sx);
+    const sh = clamp(Math.ceil(height), 1, canvas.height - sy);
+    const data = ctx.getImageData(sx, sy, sw, sh).data;
+    let min = 1;
+    let max = 0;
+    let sum = 0;
+    let count = 0;
+    for (let index = 0; index < data.length; index += 4) {
+      const r = data[index] / 255;
+      const g = data[index + 1] / 255;
+      const b = data[index + 2] / 255;
+      const channel = (value: number) =>
+        value <= 0.03928
+          ? value / 12.92
+          : Math.pow((value + 0.055) / 1.055, 2.4);
+      const luma = 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      min = Math.min(min, luma);
+      max = Math.max(max, luma);
+      sum += luma;
+      count += 1;
+    }
+    if (count === 0) return fallback;
+    return { min, max, avg: sum / count };
+  } catch {
+    return fallback;
+  }
+}
+
+/** Sample the art as it will appear in a `destW` x `destH` panel. */
+function sampleArtRegion(
+  book: RenderBook,
+  destW: number,
+  destH: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+): RegionStats {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(destW));
+  canvas.height = Math.max(1, Math.round(destH));
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return { min: 0.2, max: 0.2, avg: 0.2 };
+  drawArt(ctx, book, 0, 0, canvas.width, canvas.height);
+  return samplePixels(
+    ctx,
+    rx * (canvas.width / destW),
+    ry * (canvas.height / destH),
+    rw * (canvas.width / destW),
+    rh * (canvas.height / destH),
+  );
+}
+
+/**
+ * Choose ink that clears 4.5:1 against every sampled pixel. When no single ink
+ * can (the War of the Worlds bright-sky case), lay a soft gradient scrim sized
+ * to the type block and use cream on top.
+ */
+function guardInk(
+  ctx: CanvasRenderingContext2D,
+  stats: RegionStats,
+  scrim: { x: number; y: number; width: number; height: number },
+): { ink: string; contrast: number; usedScrim: boolean } {
+  const creamWorst = Math.min(
+    contrastLuma(CREAM_LUMA, stats.max),
+    contrastLuma(CREAM_LUMA, stats.min),
+  );
+  const darkWorst = Math.min(
+    contrastLuma(DARK_LUMA, stats.max),
+    contrastLuma(DARK_LUMA, stats.min),
+  );
+  const useCream = creamWorst >= darkWorst;
+  const best = Math.max(creamWorst, darkWorst);
+  if (best >= MIN_CONTRAST) {
+    return {
+      ink: useCream ? CREAM_INK : DARK_INK,
+      contrast: best,
+      usedScrim: false,
+    };
+  }
+  // A scrim standardises the backdrop. Dark scrim under cream ink is the
+  // house look; a light scrim only happens when the type sits on dark art.
+  const darkScrim = stats.avg < 0.5;
+  const solid = darkScrim ? "rgba(8,6,4,0.82)" : "rgba(244,236,218,0.88)";
+  const clear = darkScrim ? "rgba(8,6,4,0)" : "rgba(244,236,218,0)";
+  const gradient = ctx.createLinearGradient(
+    scrim.x,
+    scrim.y,
+    scrim.x,
+    scrim.y + scrim.height,
+  );
+  gradient.addColorStop(0, clear);
+  gradient.addColorStop(0.22, solid);
+  gradient.addColorStop(0.78, solid);
+  gradient.addColorStop(1, clear);
+  ctx.save();
+  ctx.fillStyle = gradient;
+  ctx.fillRect(scrim.x, scrim.y, scrim.width, scrim.height);
+  ctx.restore();
+  const ink = darkScrim ? CREAM_INK : DARK_INK;
+  const inkLuma = darkScrim ? CREAM_LUMA : DARK_LUMA;
+  const scrimLuma = darkScrim
+    ? luminance("#080604")
+    : luminance("#f4ecda");
+  return {
+    ink,
+    contrast: contrastLuma(inkLuma, scrimLuma),
+    usedScrim: true,
+  };
 }
 
 function paletteFor(book: RenderBook): Palette {
@@ -354,6 +490,14 @@ interface TextMetrics {
   ink: number;
 }
 
+/** What a renderer reports for the canvas data attributes and the tests. */
+export interface RenderMeta {
+  direction: "ltr" | "rtl";
+  scrim: boolean;
+  contrast: number;
+  block: { x: number; y: number; width: number; height: number };
+}
+
 let measureContext: CanvasRenderingContext2D | null = null;
 
 function metrics(
@@ -520,6 +664,8 @@ function fitHorizontal(
     family: string;
     weight: number;
     track?: number;
+    /** Split to two lines when the one-line fit lands below this size. */
+    splitBelow?: number;
   },
 ): HorizontalFit {
   const track = options.track ?? 0.01;
@@ -529,7 +675,7 @@ function fitHorizontal(
     (options.width * 0.96) / Math.max(0.05, one.adv),
   );
   let lines = [text];
-  if (fs < 13 && (options.maxLines ?? 2) > 1) {
+  if (fs < (options.splitBelow ?? 13) && (options.maxLines ?? 2) > 1) {
     const split = bestSplit(text);
     if (split) {
       const measured = split.lines.map((line) =>
@@ -673,171 +819,143 @@ function vignette(
 
 /* ----------------------------------------------------- spine renderers */
 
-function drawFullBleed(ctx: CanvasRenderingContext2D, book: RenderBook) {
-  drawArt(ctx, book, 0, 0, SPINE_W, SPINE_H);
-  vignette(ctx, SPINE_W, SPINE_H);
-  spineEdges(ctx, SPINE_W, SPINE_H);
-  const palette = paletteFor(book);
-  const railW = 20;
-  const railX = SPINE_W - railW - 2;
-  ctx.fillStyle = mix("#0c0d10", palette.avg, 0.1);
-  ctx.globalAlpha = 0.88;
-  ctx.fillRect(railX, 27, railW, SPINE_H - 54);
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = "rgba(240,226,196,.24)";
-  ctx.lineWidth = 0.6;
-  ctx.strokeRect(railX + 0.3, 27.3, railW - 0.6, SPINE_H - 54.6);
-  const ink = "#f2e8d4";
-  const authorFit = fitVertical(book.author || "", {
-    family: SANS,
-    weight: 500,
-    track: 0.1,
-    thick: railW - 4,
-    length: 48,
-    maxSize: 4.2,
-    minSize: 2.8,
-    stack: false,
-  });
-  const authorLength =
-    Math.max(
-      ...authorFit.lines.map((line) => metrics(line, SANS, 500, 0.1).adv),
-    ) * authorFit.fs;
-  const titleArea = SPINE_H - 54 - authorLength - 8;
-  const title = fitVertical(String(book.title || "").toUpperCase(), {
-    family: SANS,
-    weight: 600,
-    track: 0.06,
-    thick: railW - 3.4,
-    length: titleArea,
-    maxSize: 9.4,
-    minSize: 2.8,
-  });
-  drawVertical(ctx, title, railX + railW / 2, 27 + titleArea / 2, ink, {
-    family: SANS,
-    weight: 600,
-    track: 0.06,
-  });
-  drawVertical(
-    ctx,
-    authorFit,
-    railX + railW / 2,
-    SPINE_H - 27 - authorLength / 2,
-    "rgba(242,232,212,.86)",
-    { family: SANS, weight: 500, track: 0.1 },
-  );
-  ctx.fillStyle = "rgba(242,232,212,.55)";
-  ctx.fillRect(railX + 4, 20, railW - 8, 0.7);
-  drawProvenance(ctx, railX + railW / 2, SPINE_H - 16, provenance(book));
-  grain(ctx, SPINE_W, SPINE_H, 0.035);
-}
-
-function drawArtOnly(ctx: CanvasRenderingContext2D, book: RenderBook) {
-  drawArt(ctx, book, 0, 0, SPINE_W, SPINE_H);
-  vignette(ctx, SPINE_W, SPINE_H);
-  spineEdges(ctx, SPINE_W, SPINE_H);
-  grain(ctx, SPINE_W, SPINE_H, 0.03);
-}
-
-function drawDesign(
+function drawFullBleed(
   ctx: CanvasRenderingContext2D,
   book: RenderBook,
-  kind: "hybrid" | "cloth" | "editorial",
-) {
+): RenderMeta {
+  drawArt(ctx, book, 0, 0, SPINE_W, SPINE_H);
+  vignette(ctx, SPINE_W, SPINE_H);
+  spineEdges(ctx, SPINE_W, SPINE_H);
+  ctx.direction = book.direction;
+
+  const maxWidth = SPINE_W - 10;
+  const title = fitHorizontal(String(book.title || "Untitled"), {
+    width: maxWidth,
+    maxSize: 10.5,
+    minSize: 3.2,
+    maxLines: 2,
+    splitBelow: 9.6,
+    family: SERIF,
+    weight: 600,
+    track: 0.01,
+  });
+  const author = fitHorizontal(book.author || "", {
+    width: maxWidth,
+    maxSize: 4.8,
+    minSize: 2.4,
+    maxLines: 1,
+    family: SANS,
+    weight: 500,
+    track: 0.08,
+  });
+  const titleLineHeight = title.fs * 1.12;
+  const titleHeight = title.lines.length * titleLineHeight;
+  const authorHeight = book.author ? author.fs + 3.2 : 0;
+  const blockHeight = titleHeight + authorHeight;
+  const blockTop = (SPINE_H - blockHeight) / 2;
+  const widest = Math.max(
+    ...title.lines.map(
+      (line) => metrics(line, SERIF, 600, 0.01).adv * title.fs,
+    ),
+    book.author
+      ? metrics(book.author, SANS, 500, 0.08).adv * author.fs
+      : 0,
+  );
+  const scrim = {
+    x: (SPINE_W - widest) / 2 - 5,
+    y: blockTop - 6,
+    width: widest + 10,
+    height: blockHeight + 12,
+  };
+  const stats = sampleArtRegion(
+    book,
+    SPINE_W,
+    SPINE_H,
+    Math.max(0, scrim.x),
+    Math.max(0, scrim.y),
+    Math.min(SPINE_W, scrim.width),
+    Math.min(SPINE_H, scrim.height),
+  );
+  const guard = guardInk(ctx, stats, scrim);
+
+  ctx.save();
+  ctx.direction = book.direction;
+  ctx.fillStyle = guard.ink;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.font = `600 ${title.fs}px ${SERIF}`;
+  setTracking(ctx, `${(0.01 * title.fs).toFixed(2)}px`);
+  title.lines.forEach((line, index) =>
+    ctx.fillText(
+      line,
+      SPINE_W / 2,
+      blockTop + index * titleLineHeight,
+    ),
+  );
+  if (book.author) {
+    ctx.globalAlpha = 0.9;
+    ctx.font = `500 ${author.fs}px ${SANS}`;
+    setTracking(ctx, `${(0.08 * author.fs).toFixed(2)}px`);
+    ctx.fillText(
+      author.lines[0],
+      SPINE_W / 2,
+      blockTop + titleHeight + 3.2,
+    );
+  }
+  ctx.restore();
+  grain(ctx, SPINE_W, SPINE_H, 0.03);
+  return {
+    direction: book.direction,
+    scrim: guard.usedScrim,
+    contrast: guard.contrast,
+    block: {
+      x: SPINE_W / 2,
+      y: blockTop + blockHeight / 2,
+      width: widest,
+      height: blockHeight,
+    },
+  };
+}
+
+function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): RenderMeta {
   const palette = paletteFor(book);
   let cloth = palette.light
     ? mix(palette.avg, "#1c1611", 0.68)
     : mix(palette.avg, "#0d0b09", 0.58);
   if (luminance(cloth) > 0.24) cloth = mix(cloth, "#0b0907", 0.35);
-  const paper = mix("#ece2ca", cloth, 0.055);
   const foil = readableInk(cloth) === "#f2e6c9" ? "#e8d3a1" : "#2b2018";
-  let ink: string;
-  let look: {
-    x: number;
-    thick: number;
-    head: number;
-    tail: number;
-    ornY: number;
-    ornSize: number;
-    serif: boolean;
-  };
+  ctx.direction = book.direction;
 
-  if (kind === "editorial") {
-    drawArt(ctx, book, 0, 0, SPINE_W, SPINE_H);
-    vignette(ctx, SPINE_W, SPINE_H);
-    spineEdges(ctx, SPINE_W, SPINE_H);
-    const railW = 23.1;
-    const railX = SPINE_W - railW;
-    ctx.fillStyle = "rgba(9,10,12,.80)";
-    ctx.fillRect(railX, 0, railW, SPINE_H);
-    ctx.fillStyle = "rgba(242,232,212,.22)";
-    ctx.fillRect(railX, 0, 0.6, SPINE_H);
-    ink = "#f2e8d4";
-    look = {
-      x: railX + railW / 2,
-      thick: railW - 4,
-      head: 18,
-      tail: 20,
-      ornY: 11,
-      ornSize: 7,
-      serif: false,
-    };
-  } else if (kind === "cloth") {
-    ctx.fillStyle = cloth;
-    ctx.fillRect(0, 0, SPINE_W, SPINE_H);
-    ctx.save();
-    ctx.globalAlpha = 0.09;
-    for (let x = 0; x < SPINE_W; x += 2) {
-      ctx.fillStyle = x % 4 === 0 ? "#fff" : "#000";
-      ctx.fillRect(x, 0, 0.5, SPINE_H);
-    }
-    ctx.restore();
-    ink = foil;
-    look = {
-      x: SPINE_W / 2,
-      thick: SPINE_W - 10,
-      head: 34,
-      tail: 20,
-      ornY: 15,
-      ornSize: 10,
-      serif: true,
-    };
-    ctx.fillStyle = "rgba(0,0,0,.28)";
-    ctx.fillRect(0, 27, SPINE_W, 0.8);
-    ctx.fillRect(0, SPINE_H - 27, SPINE_W, 0.8);
-    ctx.fillStyle = foil;
-    ctx.globalAlpha = 0.7;
-    ctx.fillRect(9, 12, SPINE_W - 18, 0.7);
-    ctx.fillRect(9, SPINE_H - 12, SPINE_W - 18, 0.7);
-    ctx.globalAlpha = 1;
-  } else {
-    const paperW = SPINE_W * 0.565;
-    const artW = SPINE_W - paperW;
-    drawArt(ctx, book, 0, 0, artW, SPINE_H);
-    spineEdges(ctx, SPINE_W, SPINE_H);
-    ctx.fillStyle = paper;
-    ctx.fillRect(artW, 0, paperW, SPINE_H);
-    ctx.fillStyle = "rgba(40,30,20,.30)";
-    ctx.fillRect(artW, 0, 0.8, SPINE_H);
-    ctx.fillStyle = "rgba(40,30,20,.12)";
-    ctx.fillRect(artW + 3, 0, 0.6, SPINE_H);
-    ink = "#2c2118";
-    look = {
-      x: artW + paperW / 2,
-      thick: paperW - 7,
-      head: 24,
-      tail: 18,
-      ornY: 12,
-      ornSize: 7,
-      serif: true,
-    };
+  ctx.fillStyle = cloth;
+  ctx.fillRect(0, 0, SPINE_W, SPINE_H);
+  ctx.save();
+  ctx.globalAlpha = 0.09;
+  for (let x = 0; x < SPINE_W; x += 2) {
+    ctx.fillStyle = x % 4 === 0 ? "#fff" : "#000";
+    ctx.fillRect(x, 0, 0.5, SPINE_H);
   }
+  ctx.restore();
+  const look = {
+    x: SPINE_W / 2,
+    thick: SPINE_W - 10,
+    head: 34,
+    tail: 20,
+    ornY: 15,
+    ornSize: 10,
+  };
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.fillRect(0, 27, SPINE_W, 0.8);
+  ctx.fillRect(0, SPINE_H - 27, SPINE_W, 0.8);
+  ctx.fillStyle = foil;
+  ctx.globalAlpha = 0.7;
+  ctx.fillRect(9, 12, SPINE_W - 18, 0.7);
+  ctx.fillRect(9, SPINE_H - 12, SPINE_W - 18, 0.7);
+  ctx.globalAlpha = 1;
 
-  const authorFamily = look.serif ? SERIF : SANS;
-  const titleFamily = look.serif ? SERIF : SANS;
   const authorFit = fitVertical(book.author || "", {
-    family: authorFamily,
-    weight: look.serif ? 400 : 500,
-    track: look.serif ? 0.02 : 0.1,
+    family: SERIF,
+    weight: 400,
+    track: 0.02,
     thick: look.thick,
     length: SPINE_H * 0.3,
     maxSize: 4.6,
@@ -847,65 +965,66 @@ function drawDesign(
   const authorLength =
     Math.max(
       ...authorFit.lines.map(
-        (line) =>
-          metrics(
-            line,
-            authorFamily,
-            look.serif ? 400 : 500,
-            look.serif ? 0.02 : 0.1,
-          ).adv,
+        (line) => metrics(line, SERIF, 400, 0.02).adv,
       ),
     ) * authorFit.fs;
   const titleArea = SPINE_H - look.head - look.tail - authorLength - 7;
   const title = fitVertical(String(book.title || ""), {
-    family: titleFamily,
-    weight: look.serif ? 400 : 700,
-    track: look.serif ? 0.01 : 0.07,
+    family: SERIF,
+    weight: 400,
+    track: 0.01,
     thick: look.thick,
     length: titleArea,
-    maxSize: look.serif ? 11.2 : 9.2,
+    maxSize: 11.2,
     minSize: 2.8,
   });
-  drawVertical(ctx, title, look.x, look.head + titleArea / 2, ink, {
-    family: titleFamily,
-    weight: look.serif ? 400 : 700,
-    track: look.serif ? 0.01 : 0.07,
+  drawVertical(ctx, title, look.x, look.head + titleArea / 2, foil, {
+    family: SERIF,
+    weight: 400,
+    track: 0.01,
   });
   drawVertical(
     ctx,
     authorFit,
     look.x,
     SPINE_H - look.tail - authorLength / 2,
-    ink,
+    foil,
     {
-      family: authorFamily,
-      weight: look.serif ? 400 : 500,
-      track: look.serif ? 0.02 : 0.1,
+      family: SERIF,
+      weight: 400,
+      track: 0.02,
       lineGap: 1.1,
     },
   );
   ctx.save();
   ctx.translate(look.x, look.ornY);
-  ctx.strokeStyle = ink;
-  ctx.fillStyle = ink;
+  ctx.strokeStyle = foil;
+  ctx.fillStyle = foil;
   ctx.lineWidth = 0.9;
-  if (kind === "editorial") {
-    ctx.fillRect(-3.2, -0.35, 6.4, 0.7);
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(0, -look.ornSize / 2);
-    ctx.lineTo(look.ornSize / 2, 0);
-    ctx.lineTo(0, look.ornSize / 2);
-    ctx.lineTo(-look.ornSize / 2, 0);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, 0, look.ornSize * 0.13, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  ctx.beginPath();
+  ctx.moveTo(0, -look.ornSize / 2);
+  ctx.lineTo(look.ornSize / 2, 0);
+  ctx.lineTo(0, look.ornSize / 2);
+  ctx.lineTo(-look.ornSize / 2, 0);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, look.ornSize * 0.13, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
   drawProvenance(ctx, look.x, SPINE_H - 9, provenance(book));
-  grain(ctx, SPINE_W, SPINE_H, kind === "cloth" ? 0.07 : 0.025);
+  grain(ctx, SPINE_W, SPINE_H, 0.07);
+  return {
+    direction: book.direction,
+    scrim: false,
+    contrast: contrast(foil, cloth),
+    block: {
+      x: look.x,
+      y: SPINE_H / 2,
+      width: look.thick,
+      height: SPINE_H - look.head - look.tail,
+    },
+  };
 }
 
 /* ------------------------------------------------------- wrap engine --- */
@@ -928,12 +1047,16 @@ function wrapGeometry(pages: number) {
   };
 }
 
-function drawWrap(ctx: CanvasRenderingContext2D, book: RenderBook) {
+function drawWrap(
+  ctx: CanvasRenderingContext2D,
+  book: RenderBook,
+): RenderMeta {
   const geometry = wrapGeometry(book.pages || 320);
   const palette = paletteFor(book);
   const frontX = geometry.bleed + geometry.frontW + geometry.spineW;
   const spineX = geometry.bleed + geometry.frontW;
   const panel = panelCrop(book);
+  ctx.direction = book.direction;
 
   ctx.fillStyle = mix(palette.avg, "#0b0908", 0.55);
   ctx.fillRect(0, 0, geometry.totalW, geometry.height);
@@ -1027,7 +1150,6 @@ function drawWrap(ctx: CanvasRenderingContext2D, book: RenderBook) {
   );
   ctx.textAlign = "left";
 
-  const spineInk = readableInk(palette.avg);
   const authorFit = fitVertical(book.author || "", {
     family: SANS,
     weight: 500,
@@ -1052,6 +1174,25 @@ function drawWrap(ctx: CanvasRenderingContext2D, book: RenderBook) {
     maxSize: 7.8,
     minSize: 2.6,
   });
+  // The rail ink is chosen from the pixels under the type, not the whole art
+  // average. If no ink clears 4.5:1, a soft scrim sits behind the type only;
+  // the wrap's geometry is untouched.
+  const titleStats = sampleArtRegion(
+    book,
+    geometry.spineW,
+    geometry.height,
+    0,
+    20,
+    geometry.spineW,
+    Math.max(12, titleArea + 10),
+  );
+  const titleGuard = guardInk(ctx, titleStats, {
+    x: spineX,
+    y: 18,
+    width: geometry.spineW,
+    height: Math.max(14, titleArea + 14),
+  });
+  const spineInk = titleGuard.ink;
   drawVertical(
     ctx,
     title,
@@ -1086,17 +1227,21 @@ function drawWrap(ctx: CanvasRenderingContext2D, book: RenderBook) {
     family: SERIF,
     weight: 400,
   });
-  drawHorizontal(ctx, backTitle, cardX + 8, cardY + 10, "#2c2118", {
+  const backTextX = book.direction === "rtl" ? cardX + cardW - 8 : cardX + 8;
+  drawHorizontal(ctx, backTitle, backTextX, cardY + 10, "#2c2118", {
     gap: 1,
+    align: book.direction === "rtl" ? "right" : "left",
   });
   ctx.font = `500 5.4px ${SANS}`;
   setTracking(ctx, "0.10em");
+  ctx.textAlign = book.direction === "rtl" ? "right" : "left";
   ctx.fillStyle = "#6a5b45";
   ctx.fillText(
     String(book.author || "").toUpperCase(),
-    cardX + 8,
+    backTextX,
     cardY + 14 + backTitle.lines.length * backTitle.fs,
   );
+  ctx.textAlign = "left";
   ctx.fillStyle = "rgba(44,33,24,.30)";
   ctx.fillRect(
     cardX + 8,
@@ -1140,6 +1285,17 @@ function drawWrap(ctx: CanvasRenderingContext2D, book: RenderBook) {
   ctx.fillStyle = "rgba(0,0,0,.22)";
   ctx.fillRect(spineX - 0.4, 0, 0.8, geometry.height);
   ctx.fillRect(frontX - 0.4, 0, 0.8, geometry.height);
+  return {
+    direction: book.direction,
+    scrim: titleGuard.usedScrim,
+    contrast: titleGuard.contrast,
+    block: {
+      x: spineX + geometry.spineW / 2,
+      y: 25 + titleArea / 2,
+      width: geometry.spineW,
+      height: titleArea,
+    },
+  };
 }
 
 /* ------------------------------------------------------- dispatchers --- */
@@ -1148,22 +1304,14 @@ function drawStyle(
   ctx: CanvasRenderingContext2D,
   book: RenderBook,
   style: SpineStyle,
-) {
+): RenderMeta {
   switch (style) {
     case "wrap":
-      drawWrap(ctx, book);
-      break;
-    case "fullbleed":
-      drawFullBleed(ctx, book);
-      break;
-    case "artonly":
-      drawArtOnly(ctx, book);
-      break;
-    case "hybrid":
+      return drawWrap(ctx, book);
+    case "full-bleed":
+      return drawFullBleed(ctx, book);
     case "cloth":
-    case "editorial":
-      drawDesign(ctx, book, style);
-      break;
+      return drawCloth(ctx, book);
   }
 }
 
@@ -1180,19 +1328,18 @@ function drawStrip(
   ctx: CanvasRenderingContext2D,
   book: RenderBook,
   style: SpineStyle,
-) {
+): RenderMeta {
   if (style !== "wrap") {
-    drawStyle(ctx, book, style);
-    return;
+    return drawStyle(ctx, book, style);
   }
   // The shelf strip is the wrap's spine at 52 x 236, not a scaled crop of the
   // whole case: the case spine is only ~18 px wide, so cropping it up would
   // magnify the type far past what a shelf shows.
+  ctx.direction = book.direction;
   drawArt(ctx, book, 0, 0, SPINE_W, SPINE_H);
   ctx.fillStyle = "rgba(0,0,0,.16)";
   ctx.fillRect(0, 0, SPINE_W, SPINE_H);
   spineEdges(ctx, SPINE_W, SPINE_H);
-  const ink = readableInk(paletteFor(book).avg);
   const authorFit = fitVertical(book.author || "", {
     family: SANS,
     weight: 500,
@@ -1217,7 +1364,22 @@ function drawStrip(
     maxSize: 7.8,
     minSize: 2.6,
   });
-  drawVertical(ctx, title, SPINE_W / 2, 25 + titleArea / 2, ink, {
+  const stats = sampleArtRegion(
+    book,
+    SPINE_W,
+    SPINE_H,
+    0,
+    18,
+    SPINE_W,
+    Math.max(14, titleArea + 14),
+  );
+  const guard = guardInk(ctx, stats, {
+    x: 0,
+    y: 18,
+    width: SPINE_W,
+    height: Math.max(14, titleArea + 14),
+  });
+  drawVertical(ctx, title, SPINE_W / 2, 25 + titleArea / 2, guard.ink, {
     family: SANS,
     weight: 600,
     track: 0.05,
@@ -1227,9 +1389,20 @@ function drawStrip(
     authorFit,
     SPINE_W / 2,
     SPINE_H - 25 - authorLength / 2,
-    ink,
+    guard.ink,
     { family: SANS, weight: 500, track: 0.12 },
   );
+  return {
+    direction: book.direction,
+    scrim: guard.usedScrim,
+    contrast: guard.contrast,
+    block: {
+      x: SPINE_W / 2,
+      y: 25 + titleArea / 2,
+      width: SPINE_W,
+      height: titleArea,
+    },
+  };
 }
 
 /* --------------------------------------------------------- small views */
@@ -1260,8 +1433,18 @@ function SpineCanvas({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingQuality = "high";
     ctx.clearRect(0, 0, size.width, size.height);
-    if (strip) drawStrip(ctx, book, style);
-    else drawStyle(ctx, book, style);
+    const meta = strip
+      ? drawStrip(ctx, book, style)
+      : drawStyle(ctx, book, style);
+    canvas.dataset.style = style;
+    canvas.dataset.direction = meta.direction;
+    canvas.dataset.scrim = String(meta.scrim);
+    canvas.dataset.contrast = meta.contrast.toFixed(2);
+    canvas.dataset.blockCx = meta.block.x.toFixed(2);
+    canvas.dataset.blockCy = meta.block.y.toFixed(2);
+    canvas.dataset.blockWidth = meta.block.width.toFixed(2);
+    canvas.dataset.blockHeight = meta.block.height.toFixed(2);
+    canvas.setAttribute("dir", meta.direction);
   }, [book, style, strip]);
   return <canvas ref={ref} data-testid={testId} />;
 }
@@ -1275,6 +1458,8 @@ interface StudioProps {
   pages: number | null;
   /** The published cover, used for the wrap front; art alone if absent. */
   coverDataUrl?: string | null;
+  /** Persisted style from `books.spine_style`; default Wrap. */
+  initialStyle?: SpineStyle;
 }
 
 type StudioState =
@@ -1361,18 +1546,31 @@ export function SpineStudio({
   author,
   pages,
   coverDataUrl,
+  initialStyle,
 }: StudioProps) {
+  const { jobs: spineJobs, noteReady } = useSpineActivity();
+  const job: SpineBookState | undefined = spineJobs[bookId];
   const [state, setState] = useState<StudioState>({ kind: "loading" });
   const [status, setStatus] = useState<SpineStatus | null>(null);
-  const [style, setStyle] = useState<SpineStyle>("wrap");
+  const [style, setStyle] = useState<SpineStyle>(initialStyle ?? "wrap");
   const [prepared, setPrepared] = useState<RenderBook | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const chooseStyle = useCallback(
+    (next: SpineStyle) => {
+      setStyle(next);
+      void platform.spineSetStyle(bookId, next).catch(() => {
+        // The preview still switches; the next open retries persistence.
+      });
+    },
+    [bookId],
+  );
 
   useEffect(() => {
     let alive = true;
     setState({ kind: "loading" });
     setPrepared(null);
-    setStyle("wrap");
+    setStyle(initialStyle ?? "wrap");
     setStatus(null);
     // Opening a book must do zero engine work: only read the cache. Model
     // resolution (JNI asset extraction, ONNX Runtime) waits for Generate.
@@ -1382,7 +1580,7 @@ export function SpineStudio({
         if (!alive) return;
         if (artifact) {
           setState({ kind: "result", artifact });
-          setStyle(artifact.verdict === "fallback" ? "cloth" : "wrap");
+          if (artifact.verdict === "fallback") setStyle("cloth");
         } else {
           setState({ kind: "idle" });
         }
@@ -1399,7 +1597,26 @@ export function SpineStudio({
     return () => {
       alive = false;
     };
-  }, [bookId]);
+  }, [bookId, initialStyle]);
+
+  useEffect(() => {
+    // A queued job that finishes while the sheet is open should appear without
+    // a reopen. Manual generation already sets the result itself.
+    if (job?.state !== "ready") return;
+    let alive = true;
+    platform
+      .spineArtifact(bookId)
+      .then((artifact) => {
+        if (!alive || !artifact) return;
+        setState((current) =>
+          current.kind === "result" ? current : { kind: "result", artifact },
+        );
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [bookId, job?.state]);
 
   useEffect(() => {
     if (state.kind !== "result") {
@@ -1437,6 +1654,7 @@ export function SpineStudio({
         verdict: artifact.verdict,
         route: artifact.route,
         palette: null,
+        direction: textDirection(`${title} ${author}`),
       };
       paletteFor(book);
       setPrepared(book);
@@ -1459,8 +1677,12 @@ export function SpineStudio({
         platform.spineStatus().catch(() => null),
       ]);
       if (nextStatus) setStatus(nextStatus);
-      setStyle(artifact.verdict === "fallback" ? "cloth" : "wrap");
+      if (artifact.verdict === "fallback") {
+        setStyle("cloth");
+        void platform.spineSetStyle(bookId, "cloth").catch(() => {});
+      }
       setState({ kind: "result", artifact });
+      noteReady(bookId, artifact);
     } catch (error) {
       const described = describeError(error);
       setState({
@@ -1471,7 +1693,7 @@ export function SpineStudio({
     } finally {
       setBusy(false);
     }
-  }, [bookId, busy]);
+  }, [bookId, busy, noteReady]);
 
   const engineReady =
     status === null ||
@@ -1500,6 +1722,23 @@ export function SpineStudio({
         ) : null}
       </header>
 
+      {job ? (
+        <p
+          className={`spine-book-state is-${job.state}`}
+          data-testid="spine-book-state"
+          data-state={job.state}
+          data-stage={job.state === "working" ? job.stage : undefined}
+        >
+          {job.state === "waiting"
+            ? "Waiting its turn."
+            : job.state === "working"
+              ? `Preparing spine · ${STAGE_LABELS[job.stage]}`
+              : job.state === "ready"
+                ? "Spine ready."
+                : "Needs attention — the last attempt did not finish."}
+        </p>
+      ) : null}
+
       {state.kind === "loading" ? (
         <p className="spine-fine" role="status">
           Checking for an existing spine…
@@ -1509,7 +1748,7 @@ export function SpineStudio({
       {state.kind === "idle" ? (
         <div className="spine-intro">
           <p>
-            Turn this cover into a text-free spine on the device. Six styles
+            Turn this cover into a text-free spine on the device. Three styles
             render from the same result; nothing is uploaded.
           </p>
           {engineProblem ? (
@@ -1598,7 +1837,7 @@ export function SpineStudio({
                 type="button"
                 className="spine-inline-action"
                 data-testid="spine-use-cloth"
-                onClick={() => setStyle("cloth")}
+                onClick={() => chooseStyle("cloth")}
               >
                 Use Cloth
               </button>
@@ -1643,7 +1882,7 @@ export function SpineStudio({
                     className="spine-style"
                     data-testid={`spine-style-${entry.id}`}
                     aria-pressed={style === entry.id}
-                    onClick={() => setStyle(entry.id)}
+                    onClick={() => chooseStyle(entry.id)}
                   >
                     <span className="spine-style-art">
                       <SpineCanvas
@@ -1667,7 +1906,7 @@ export function SpineStudio({
                 </div>
                 <p className="spine-shelf-copy">
                   <b>At shelf size</b>
-                  33 px spine · the shelf keeps the wrap strip
+                  52 × 236 spine · the shelf swaps to it when ready
                 </p>
               </div>
               <p className="spine-fine">

@@ -8,6 +8,7 @@ import {
   type CoverOption,
 } from "../platform";
 import { useLayerExit } from "../navigation";
+import { useSpineActivity } from "./spineActivity";
 
 interface CoverChooserProps {
   bookId: number;
@@ -56,6 +57,7 @@ export function CoverChooser({
   const [notice, setNotice] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const close = useLayerExit(true, onClose);
+  const { enqueue: enqueueSpine } = useSpineActivity();
 
   useEffect(() => {
     let alive = true;
@@ -178,6 +180,7 @@ export function CoverChooser({
       }
       const detail = await platform.getBookDetail(bookId);
       onChanged(detail);
+      enqueueSpine([bookId]);
       close();
     } catch (error) {
       if (isApiError(error) && error.code === "cover_needs_acknowledgement") {
@@ -192,7 +195,7 @@ export function CoverChooser({
     } finally {
       setApplyBusy(false);
     }
-  }, [selected, isCurrent, device, bookId, acknowledged, onChanged, close]);
+  }, [selected, isCurrent, device, bookId, acknowledged, onChanged, close, enqueueSpine]);
 
   const reset = useCallback(async () => {
     setApplyBusy(true);
@@ -201,6 +204,7 @@ export function CoverChooser({
       await platform.resetCover(bookId);
       const detail = await platform.getBookDetail(bookId);
       onChanged(detail);
+      enqueueSpine([bookId]);
       close();
     } catch (error) {
       setNotice(
@@ -211,7 +215,7 @@ export function CoverChooser({
     } finally {
       setApplyBusy(false);
     }
-  }, [bookId, onChanged, close]);
+  }, [bookId, onChanged, close, enqueueSpine]);
 
   const groups = choices
     ? [

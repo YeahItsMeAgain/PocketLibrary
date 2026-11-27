@@ -33,7 +33,9 @@ async function boot(page: Page, spine: MockSpineConfig = {}) {
           },
         ],
         shelves: [{ id: 1, ordinal: 0, capacity: 12 }],
-        spine: nextSpine,
+        // These cover the manual studio; automatic preparation is exercised
+        // by spine-queue.spec.ts.
+        spine: { queueStartPaused: true, ...nextSpine },
       };
     },
     { nextSpine: spine },
@@ -48,7 +50,7 @@ async function generate(page: Page) {
   await page.getByTestId("spine-generate").click();
   await expect(page.getByTestId("spine-verdict")).toBeVisible();
   await expect(page.getByTestId("spine-style-grid").locator("canvas")).toHaveCount(
-    6,
+    3,
   );
 }
 
@@ -121,7 +123,7 @@ test("opening a book does not resolve the engine or run status", async ({
   expect(await generateCalls(page)).toBe(1);
 });
 
-test("generate shows honest progress, then a result with six style canvases", async ({
+test("generate shows honest progress, then a result with three style canvases", async ({
   page,
 }) => {
   await boot(page, { generateDelayMs: 700 });
@@ -135,7 +137,7 @@ test("generate shows honest progress, then a result with six style canvases", as
   await expect(page.getByTestId("spine-meta")).toContainText("Mask 0.0%");
   await expect(page.getByTestId("spine-meta")).toContainText("Route crop");
   const grid = page.getByTestId("spine-style-grid");
-  await expect(grid.locator("canvas")).toHaveCount(6);
+  await expect(grid.locator("canvas")).toHaveCount(3);
   await expect(page.getByTestId("spine-style-wrap")).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -186,7 +188,7 @@ test("reopening a book loads the saved result without generating again", async (
   await expect(page.getByTestId("book-detail")).toBeVisible();
   await expect(page.getByTestId("spine-verdict")).toBeVisible();
   await expect(page.getByTestId("spine-style-grid").locator("canvas")).toHaveCount(
-    6,
+    3,
   );
   expect(await generateCalls(page)).toBe(1);
 });
@@ -227,6 +229,19 @@ test("fallback state applies Cloth automatically", async ({ page }) => {
   );
 });
 
+test("the picker offers exactly Wrap, Full-bleed and Cloth", async ({ page }) => {
+  await boot(page);
+  await generate(page);
+  const grid = page.getByTestId("spine-style-grid");
+  await expect(grid.getByRole("button")).toHaveCount(3);
+  await expect(page.getByTestId("spine-style-wrap")).toBeVisible();
+  await expect(page.getByTestId("spine-style-full-bleed")).toBeVisible();
+  await expect(page.getByTestId("spine-style-cloth")).toBeVisible();
+  await expect(page.getByTestId("spine-style-hybrid")).toHaveCount(0);
+  await expect(page.getByTestId("spine-style-artonly")).toHaveCount(0);
+  await expect(page.getByTestId("spine-style-editorial")).toHaveCount(0);
+});
+
 test("no horizontal overflow at 390 or 320 px", async ({ page }) => {
   await boot(page);
   await generate(page);
@@ -234,10 +249,10 @@ test("no horizontal overflow at 390 or 320 px", async ({ page }) => {
 
   await page.setViewportSize({ width: 320, height: 844 });
   await expectNoHorizontalOverflow(page);
-  await page.getByTestId("spine-style-editorial").click();
+  await page.getByTestId("spine-style-full-bleed").click();
   await expect(page.getByTestId("spine-preview")).toHaveAttribute(
     "data-style",
-    "editorial",
+    "full-bleed",
   );
   await expectNoHorizontalOverflow(page);
 });

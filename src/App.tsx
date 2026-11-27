@@ -28,6 +28,11 @@ import { disconnected, runScan, scanNotice } from "./library/scan";
 import { UpdateBanner } from "./updates/UpdateBanner";
 import { useUpdateCheck } from "./updates/useUpdateCheck";
 import { useAutomaticEnrichment } from "./settings/useAutomaticEnrichment";
+import {
+  SpineActivityProvider,
+  useSpineActivity,
+} from "./library/spineActivity";
+import { SpineActivityChip } from "./library/SpineActivityChip";
 
 // Search and Settings are navigation destinations, not first-paint content.
 const SearchView = lazy(() =>
@@ -68,6 +73,15 @@ function ViewSkeleton() {
 
 
 export default function App() {
+  return (
+    <SpineActivityProvider>
+      <AppShell />
+    </SpineActivityProvider>
+  );
+}
+
+function AppShell() {
+  const spineActivity = useSpineActivity();
   const [view, setView] = useState<View>("library");
   const [status, setStatus] = useState<LibraryStatus | null>(null);
   const [statusFailed, setStatusFailed] = useState(false);
@@ -301,6 +315,28 @@ export default function App() {
   }, []);
 
   const initialLoadStarted = useRef(false);
+  const spineBackfillStarted = useRef(false);
+  const enqueueSpines = spineActivity.enqueue;
+
+  useEffect(() => {
+    // First library-ready: a low-priority backfill. The backend dedupes and
+    // skips cached books, so a reload costs nothing.
+    if (status?.state !== "ready" || spineBackfillStarted.current) return;
+    spineBackfillStarted.current = true;
+    let alive = true;
+    void platform
+      .listBooks()
+      .then((all) => {
+        if (!alive) return;
+        enqueueSpines(all.map((book) => book.id));
+      })
+      .catch(() => {
+        // The wall's own load retries; the backfill can wait for it.
+      });
+    return () => {
+      alive = false;
+    };
+  }, [status?.state, enqueueSpines]);
 
   useEffect(() => {
     // A single launch reconciliation; StrictMode may replay this effect, but
@@ -323,13 +359,18 @@ export default function App() {
             outcome.report.relinked > 0 ||
             outcome.report.removed > 0)
         ) {
+          if (outcome.report.added > 0) {
+            enqueueSpines(
+              outcome.report.placements.map((placement) => placement.bookId),
+            );
+          }
           setReloadKey((key) => key + 1);
         }
       } catch {
         setStatusFailed(true);
       }
     })();
-  }, []);
+  }, [enqueueSpines]);
 
   const announcedDownloads = useRef(new Set<number>());
   const failedDownloads = useRef(new Set<number>());
@@ -376,6 +417,11 @@ export default function App() {
         announcedDownloads.current.add(row.id);
       }
       if (fresh.length > 0) {
+        enqueueSpines(
+          fresh
+            .map((row) => row.bookId)
+            .filter((bookId): bookId is number => bookId !== null),
+        );
         setFocusBookId(fresh[0].bookId);
         setReloadKey((key) => key + 1);
       }
@@ -386,7 +432,7 @@ export default function App() {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [refreshDownloads]);
+  }, [refreshDownloads, enqueueSpines]);
 
   useEffect(() => {
     let alive = true;
@@ -412,6 +458,11 @@ export default function App() {
         const outcome = await runScan();
         if (outcome.kind === "report") {
           setNotice(scanNotice(outcome.report));
+          if (outcome.report.added > 0) {
+            enqueueSpines(
+              outcome.report.placements.map((placement) => placement.bookId),
+            );
+          }
         } else if (outcome.kind === "unavailable") {
           next = disconnected(next);
         } else {
@@ -426,7 +477,7 @@ export default function App() {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [enqueueSpines]);
 
   const rescan = useCallback(async () => {
     setBusy(true);
@@ -436,6 +487,11 @@ export default function App() {
       const outcome = await runScan();
       if (outcome.kind === "report") {
         setNotice(scanNotice(outcome.report));
+        if (outcome.report.added > 0) {
+          enqueueSpines(
+            outcome.report.placements.map((placement) => placement.bookId),
+          );
+        }
         setReloadKey((key) => key + 1);
       } else if (outcome.kind === "unavailable") {
         setStatus((current) => (current ? disconnected(current) : current));
@@ -447,7 +503,7 @@ export default function App() {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [enqueueSpines]);
 
   const saveCapacity = useCallback(async (capacity: number) => {
     setBusy(true);
@@ -606,6 +662,8 @@ export default function App() {
       ) : null}
 
       <Suspense fallback={<ViewSkeleton />}>{renderMain()}</Suspense>
+
+      <SpineActivityChip />
 
       <div
         className="edge-zone"

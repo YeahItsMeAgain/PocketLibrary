@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -22,6 +23,7 @@ import { useLayerExit } from "../navigation";
 import { CoverChooser } from "./CoverChooser";
 import { EnrichmentReview } from "./EnrichmentReview";
 import { SpineStudio } from "./SpineStudio";
+import { useSpineActivity } from "./spineActivity";
 import { STATUS_LABELS } from "./spine";
 
 interface DetailPanelProps {
@@ -80,9 +82,14 @@ export function DetailPanel({
   const [blurbEditing, setBlurbEditing] = useState(false);
   const [blurbDraft, setBlurbDraft] = useState("");
   const [blurbBusy, setBlurbBusy] = useState(false);
+  const [blurbExpanded, setBlurbExpanded] = useState(false);
+  const [blurbOverflowing, setBlurbOverflowing] = useState(false);
+  const [blurbAnnouncement, setBlurbAnnouncement] = useState("");
+  const blurbRef = useRef<HTMLParagraphElement>(null);
   const autoLookupDone = useRef<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const close = useLayerExit(true, onClose);
+  const { enqueue: enqueueSpine } = useSpineActivity();
 
   const refreshAvailableLabels = useCallback(async () => {
     try {
@@ -111,6 +118,9 @@ export function DetailPanel({
     setCoverOpen(false);
     setBlurbEditing(false);
     setBlurbDraft("");
+    setBlurbExpanded(false);
+    setBlurbOverflowing(false);
+    setBlurbAnnouncement("");
     autoLookupDone.current = null;
     Promise.all([
       platform.getBookDetail(bookId),
@@ -135,6 +145,33 @@ export function DetailPanel({
       void platform.cancelEnrichment(bookId).catch(() => {});
     };
   }, [bookId]);
+
+  useEffect(() => {
+    setBlurbExpanded(false);
+  }, [detail?.description]);
+
+  useLayoutEffect(() => {
+    const el = blurbRef.current;
+    if (!el || blurbExpanded) return;
+    const measure = () => {
+      setBlurbOverflowing(el.scrollHeight > el.clientHeight + 1);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    document.fonts?.addEventListener("loadingdone", measure);
+    return () => {
+      observer.disconnect();
+      document.fonts?.removeEventListener("loadingdone", measure);
+    };
+  }, [detail?.description, blurbEditing, blurbExpanded]);
+
+  const toggleBlurb = useCallback(() => {
+    setBlurbExpanded((expanded) => {
+      setBlurbAnnouncement(expanded ? "Blurb collapsed." : "Blurb expanded.");
+      return !expanded;
+    });
+  }, []);
 
   const attachLabel = useCallback(
     async (label: Label) => {
@@ -245,6 +282,7 @@ export function DetailPanel({
         if (outcome.state === "applied") {
           const next = await platform.getBookDetail(bookId);
           setDetail(next);
+          enqueueSpine([bookId]);
           setEnrichmentNotice(
             `Added ${outcome.fields
               .map((field) => (field === "description" ? "blurb" : "cover"))
@@ -273,7 +311,7 @@ export function DetailPanel({
         setEnrichmentBusy(false);
       }
     },
-    [bookId, enrichmentBusy],
+    [bookId, enrichmentBusy, enqueueSpine],
   );
 
   useEffect(() => {
@@ -302,6 +340,7 @@ export function DetailPanel({
           setDetail(await platform.getBookDetail(bookId));
           setReview(null);
           setEnrichmentNotice("The chosen edition was applied.");
+          enqueueSpine([bookId]);
         } else if (outcome.state === "noMatch") {
           setReviewNotice("Nothing was missing for that edition.");
         } else if (outcome.state === "unavailable") {
@@ -317,7 +356,7 @@ export function DetailPanel({
         setReviewBusy(false);
       }
     },
-    [bookId],
+    [bookId, enqueueSpine],
   );
 
   const saveBlurb = useCallback(
@@ -348,6 +387,7 @@ export function DetailPanel({
       await platform.revertEnrichment(bookId);
       setDetail(await platform.getBookDetail(bookId));
       setEnrichmentNotice("Reverted to the file's own details.");
+      enqueueSpine([bookId]);
     } catch (error) {
       setEnrichmentNotice(
         isApiError(error)
@@ -357,12 +397,17 @@ export function DetailPanel({
     } finally {
       setEnrichmentBusy(false);
     }
-  }, [bookId]);
+  }, [bookId, enqueueSpine]);
 
-  const handleCoverChanged = useCallback((next: BookDetail) => {
-    setDetail(next);
-    setEnrichmentNotice("Cover updated.");
-  }, []);
+  const handleCoverChanged = useCallback(
+    (next: BookDetail) => {
+      setDetail(next);
+      setEnrichmentNotice("Cover updated.");
+      // The cache key changes with the cover, so queue a fresh job.
+      enqueueSpine([bookId]);
+    },
+    [bookId, enqueueSpine],
+  );
 
   const deleteBook = useCallback(async () => {
     if (!detail) return;
@@ -748,10 +793,43 @@ export function DetailPanel({
                     </div>
                   </form>
                 ) : (
-                  <p className="blurb" data-testid="detail-blurb">
-                    {detail.description ??
-                      "No blurb was printed with this edition."}
-                  </p>
+                  <div className="blurb-block">
+                    <div
+                      className={`blurb-clamp${
+                        blurbExpanded ? " is-expanded" : ""
+                      }${blurbOverflowing ? " has-overflow" : ""}`}
+                    >
+                      <p
+                        id="detail-blurb-text"
+                        ref={blurbRef}
+                        className="blurb"
+                        data-testid="detail-blurb"
+                      >
+                        {detail.description ??
+                          "No blurb was printed with this edition."}
+                      </p>
+                    </div>
+                    {blurbOverflowing ? (
+                      <button
+                        type="button"
+                        className="blurb-toggle"
+                        data-testid="blurb-toggle"
+                        aria-expanded={blurbExpanded}
+                        aria-controls="detail-blurb-text"
+                        onClick={toggleBlurb}
+                      >
+                        {blurbExpanded ? "Show less" : "Read more"}
+                      </button>
+                    ) : null}
+                    <span
+                      className="visually-hidden"
+                      role="status"
+                      aria-live="polite"
+                      data-testid="blurb-announcement"
+                    >
+                      {blurbAnnouncement}
+                    </span>
+                  </div>
                 )}
                 {detail.enrichment.attribution ? (
                   <p
@@ -922,6 +1000,7 @@ export function DetailPanel({
                   author={detail.authors.join(" · ")}
                   pages={detail.pageCount}
                   coverDataUrl={detail.coverDataUrl}
+                  initialStyle={detail.spineStyle}
                 />
 
                 <button

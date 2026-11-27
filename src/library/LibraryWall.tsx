@@ -26,6 +26,7 @@ import { matchingBookIds } from "./filter";
 import { LibrarySkeleton } from "./LibrarySkeleton";
 import { ShelfCase, SpineFace } from "./Shelf";
 import { SPINE_GOLD, SPINE_INK, shelfMark, spineStyle } from "./spine";
+import { useSpineActivity } from "./spineActivity";
 import {
   HINT_KEY,
   prefersReducedMotion,
@@ -77,6 +78,12 @@ export function LibraryWall({
   const [failed, setFailed] = useState(false);
   const [openBookId, setOpenBookId] = useState<number | null>(null);
   const [readerBook, setReaderBook] = useState<Book | null>(null);
+  const {
+    spines: generatedSpines,
+    jobs: spineJobs,
+    readerOpened: pauseForReader,
+    readerClosed: resumeAfterReader,
+  } = useSpineActivity();
   const [range, setRange] = useState<ShelfRange>({ start: 0, end: 0 });
   const rangeRef = useRef(range);
   rangeRef.current = range;
@@ -168,6 +175,12 @@ export function LibraryWall({
     },
     [],
   );
+
+  useEffect(() => {
+    if (!readerBook) return;
+    pauseForReader(readerBook.id);
+    return () => resumeAfterReader();
+  }, [readerBook, pauseForReader, resumeAfterReader]);
 
   useEffect(() => {
     let alive = true;
@@ -495,6 +508,8 @@ export function LibraryWall({
                   shelf={shelf}
                   books={booksByShelf.get(shelf.id) ?? []}
                   draggedBookId={lift?.book.id ?? null}
+                  generatedSpines={generatedSpines}
+                  spineJobs={spineJobs}
                   onOpen={(book) => {
                     if (performance.now() < suppressClickRef.current) return;
                     setOpenBookId(book.id);

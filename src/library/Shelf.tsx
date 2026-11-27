@@ -14,11 +14,14 @@ import {
   spineStyle,
   surname,
 } from "./spine";
+import type { SpineBookState } from "./spineActivity";
 
 interface ShelfCaseProps {
   shelf: Shelf;
   books: Book[];
   draggedBookId: number | null;
+  generatedSpines: Record<number, string>;
+  spineJobs: Record<number, SpineBookState>;
   onOpen: (book: Book) => void;
   onPress: (book: Book, event: ReactPointerEvent<HTMLLIElement>) => void;
 }
@@ -83,6 +86,8 @@ export function SpineFace({ book }: { book: Book }) {
 interface SpineProps {
   book: Book;
   dragging: boolean;
+  generatedSpine?: string;
+  spineState?: SpineBookState;
   onOpen: (book: Book) => void;
   onPress: (book: Book, event: ReactPointerEvent<HTMLLIElement>) => void;
 }
@@ -96,21 +101,35 @@ interface SpineProps {
 export const Spine = memo(function Spine({
   book,
   dragging,
+  generatedSpine,
+  spineState,
   onOpen,
   onPress,
 }: SpineProps) {
   const statusLabel = STATUS_LABELS[book.readingStatus];
   const style = useMemo(() => spineStyle(book), [book]);
+  const attention = spineState?.state === "needs-attention";
+  const spineNote =
+    spineState?.state === "working"
+      ? `spine preparing, ${spineState.stage} stage`
+      : spineState?.state === "ready"
+        ? "spine ready"
+        : attention
+          ? "spine needs attention"
+          : "spine waiting";
   return (
     <li
-      className={`spine book${dragging ? " is-dragging-source" : ""}`}
+      className={`spine book${dragging ? " is-dragging-source" : ""}${
+        generatedSpine ? " has-generated" : ""
+      }`}
       data-testid="spine"
       data-book-id={book.id}
       data-slot={book.slotIndex ?? undefined}
       data-status={book.readingStatus}
+      data-spine-state={spineState?.state ?? "waiting"}
       data-dragging={dragging || undefined}
-      title={`${book.title} — ${statusLabel}`}
-      aria-label={`${book.title}, ${statusLabel}`}
+      title={`${book.title} — ${statusLabel} — ${spineNote}`}
+      aria-label={`${book.title}, ${statusLabel}, ${spineNote}`}
       aria-grabbed={dragging || undefined}
       role="button"
       tabIndex={0}
@@ -135,19 +154,45 @@ export const Spine = memo(function Spine({
         }
       }}
     >
+      {generatedSpine ? (
+        <img
+          className="spine-generated"
+          data-testid="spine-generated"
+          src={generatedSpine}
+          alt=""
+          draggable={false}
+        />
+      ) : null}
       <SpineFace book={book} />
+      {attention ? (
+        <span
+          className="spine-attention"
+          data-testid="spine-failed-marker"
+          aria-label="Spine needs attention"
+          title="Spine needs attention"
+        >
+          !
+        </span>
+      ) : null}
     </li>
   );
 }, areSpineEqual);
 
 function areSpineEqual(prev: SpineProps, next: SpineProps): boolean {
-  return prev.book === next.book && prev.dragging === next.dragging;
+  return (
+    prev.book === next.book &&
+    prev.dragging === next.dragging &&
+    prev.generatedSpine === next.generatedSpine &&
+    prev.spineState === next.spineState
+  );
 }
 
 export const ShelfCase = memo(function ShelfCase({
   shelf,
   books,
   draggedBookId,
+  generatedSpines,
+  spineJobs,
   onOpen,
   onPress,
 }: ShelfCaseProps) {
@@ -188,6 +233,8 @@ export const ShelfCase = memo(function ShelfCase({
                   key={slot}
                   book={book}
                   dragging={draggedBookId === book.id}
+                  generatedSpine={generatedSpines[book.id]}
+                  spineState={spineJobs[book.id]}
                   onOpen={onOpen}
                   onPress={onPress}
                 />
@@ -215,6 +262,12 @@ function areShelfCaseEqual(prev: ShelfCaseProps, next: ShelfCaseProps): boolean 
   if (prev.books.length !== next.books.length) return false;
   for (let index = 0; index < prev.books.length; index += 1) {
     if (prev.books[index] !== next.books[index]) return false;
+  }
+  for (const book of prev.books) {
+    if (prev.generatedSpines[book.id] !== next.generatedSpines[book.id]) {
+      return false;
+    }
+    if (prev.spineJobs[book.id] !== next.spineJobs[book.id]) return false;
   }
   const prevHasDragged =
     prev.draggedBookId !== null &&

@@ -7,6 +7,7 @@
  * without a device.
  */
 import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 export interface AppInfo {
   name: string;
@@ -107,6 +108,8 @@ export interface Book {
   slotIndex: number | null;
   readingStatus: ReadingStatus;
   labels: Label[];
+  /** Persisted renderer style; absent means the default, Wrap. */
+  spineStyle?: SpineStyle;
 }
 
 /** Mirrors `pocketlibrary_core::BookDetail`. */
@@ -154,6 +157,38 @@ export interface SpineStatus {
   bytes: number;
   error: string | null;
 }
+
+/* ------------------------------------------------------- automatic queue */
+
+/** The three renderer styles. Persisted per book in `books.spine_style`. */
+export type SpineStyle = "wrap" | "full-bleed" | "cloth";
+
+/** A pipeline stage the queue reports while a book is being prepared. */
+export type SpineStage = "art" | "text" | "check";
+
+/** Mirrors the shell's `SpineQueueState` (camelCase on the wire). */
+export interface SpineQueueState {
+  running: boolean;
+  paused: boolean;
+  pending: number;
+  completed: number;
+  failed: number;
+  currentBookId: number | null;
+  stage: SpineStage | null;
+}
+
+/** Payload of `spine://progress`, one per stage. */
+export interface SpineProgress {
+  bookId: number;
+  stage: SpineStage;
+  index: number;
+  total: number;
+}
+
+/** Register for queue state transitions; resolves to an unsubscribe function. */
+export type SpineQueueListener = (state: SpineQueueState) => void;
+/** Register for per-stage progress; resolves to an unsubscribe function. */
+export type SpineProgressListener = (progress: SpineProgress) => void;
 
 export type EnrichmentMode = "off" | "ask" | "automatic";
 
@@ -639,6 +674,18 @@ export interface Platform {
   spineArtifact(bookId: number): Promise<SpineArtifact | null>;
   /** Whether the required model bundle is installed and usable. */
   spineStatus(): Promise<SpineStatus>;
+  /** Queue books for automatic preparation; dedupes and skips cached. */
+  spineEnqueue(bookIds: number[]): Promise<void>;
+  /** The worker's current counts and stage. */
+  spineQueue(): Promise<SpineQueueState>;
+  /** Reader-open pause; manual generation still runs. */
+  spinePause(paused: boolean): Promise<void>;
+  /** Persist a book's renderer style. */
+  spineSetStyle(bookId: number, style: SpineStyle): Promise<void>;
+  /** Subscribe to `spine://queue`; resolves to an unsubscribe function. */
+  onSpineQueue(handler: SpineQueueListener): Promise<() => void>;
+  /** Subscribe to `spine://progress`; resolves to an unsubscribe function. */
+  onSpineProgress(handler: SpineProgressListener): Promise<() => void>;
 }
 
 export type Invoke = typeof invoke;
@@ -870,6 +917,20 @@ export function createTauriPlatform(call: Invoke): Platform {
     spineArtifact: (bookId) =>
       call<SpineArtifact | null>("spine_artifact", { bookId }),
     spineStatus: () => call<SpineStatus>("spine_status"),
+    spineEnqueue: (bookIds) =>
+      call<void>("spine_enqueue", { bookIds }),
+    spineQueue: () => call<SpineQueueState>("spine_queue"),
+    spinePause: (paused) => call<void>("spine_pause", { paused }),
+    spineSetStyle: (bookId, style) =>
+      call<void>("spine_set_style", { bookId, style }),
+    onSpineQueue: (handler) =>
+      listen<SpineQueueState>("spine://queue", (event) =>
+        handler(event.payload),
+      ),
+    onSpineProgress: (handler) =>
+      listen<SpineProgress>("spine://progress", (event) =>
+        handler(event.payload),
+      ),
   };
   return traced(base, (method, error) => {
     void call("log_diagnostic", {
@@ -1208,6 +1269,14 @@ export interface MockSpineConfig {
   /** Make generation fail with a typed command error. */
   error?: ApiError;
   status?: Partial<SpineStatus>;
+  /** Milliseconds per mock queue stage (default 45). */
+  queueStepMs?: number;
+  /** Books whose automatic job fails at the check stage. */
+  failIds?: number[];
+  /** Start the queue paused, so a test can resume it deliberately. */
+  queueStartPaused?: boolean;
+  /** Persisted per-book styles before the session starts. */
+  styles?: Record<number, SpineStyle>;
 }
 
 const MOCK_READING_KEY = "pocketlibrary.mock.reading";
@@ -1657,6 +1726,205 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     ).__POCKETLIBRARY_SPINE_STATUS_CALLS__ = spineStatusCalls;
   };
 
+  /* --------------------------------------------------- mock spine queue */
+
+  const queueListeners = new Set<SpineQueueListener>();
+  const progressListeners = new Set<SpineProgressListener>();
+  const queue: SpineQueueState = {
+    running: false,
+    paused: spineConfig.queueStartPaused === true,
+    pending: 0,
+    completed: 0,
+    failed: 0,
+    currentBookId: null,
+    stage: null,
+  };
+  const queueJobs: number[] = [];
+  const queuedIds = new Set<number>();
+  const failedQueueIds = new Set<number>();
+  const spineStyles = new Map<number, SpineStyle>(
+    Object.entries(spineConfig.styles ?? {}).map(([id, style]) => [
+      Number(id),
+      style,
+    ]),
+  );
+  const queueStep = spineConfig.queueStepMs ?? 45;
+  let queueTimer: number | null = null;
+  let pausedStage: { bookId: number; index: number } | null = null;
+  const queuedCalls: number[] = [];
+  const pauseCalls: boolean[] = [];
+  const queueEvents: Array<{
+    event: "queue" | "progress";
+    payload: unknown;
+  }> = [];
+  const exposeMockSpine = () => {
+    const scope = window as unknown as {
+      __POCKETLIBRARY_SPINE_QUEUED__?: number[];
+      __POCKETLIBRARY_SPINE_PAUSE_CALLS__?: boolean[];
+      __POCKETLIBRARY_SPINE_EVENTS__?: typeof queueEvents;
+      __POCKETLIBRARY_SPINE_ARTIFACT_IDS__?: number[];
+      __POCKETLIBRARY_SPINE_STYLES__?: Record<number, SpineStyle>;
+    };
+    scope.__POCKETLIBRARY_SPINE_QUEUED__ = queuedCalls;
+    scope.__POCKETLIBRARY_SPINE_PAUSE_CALLS__ = pauseCalls;
+    scope.__POCKETLIBRARY_SPINE_EVENTS__ = queueEvents;
+    scope.__POCKETLIBRARY_SPINE_ARTIFACT_IDS__ = [...spineArtifacts.keys()];
+    scope.__POCKETLIBRARY_SPINE_STYLES__ = Object.fromEntries(spineStyles);
+  };
+  const queueSnapshot = (): SpineQueueState => ({ ...queue });
+  const emitQueue = () => {
+    const payload = queueSnapshot();
+    queueEvents.push({ event: "queue", payload });
+    exposeMockSpine();
+    for (const handler of queueListeners) handler(payload);
+  };
+  const emitProgress = (progress: SpineProgress) => {
+    queueEvents.push({ event: "progress", payload: progress });
+    exposeMockSpine();
+    for (const handler of progressListeners) handler(progress);
+  };
+
+  async function produceSpineArtifact(bookId: number): Promise<SpineArtifact> {
+    const book = books.find((candidate) => candidate.id === bookId);
+    if (!book) {
+      throw {
+        code: "book_not_found",
+        message: "That book could not be found.",
+      };
+    }
+    if (spineConfig.error) throw spineConfig.error;
+    if (spineConfig.generateDelayMs) {
+      await new Promise<void>((resolve) =>
+        window.setTimeout(resolve, spineConfig.generateDelayMs),
+      );
+    }
+    const configured = spineConfig.artifacts?.[bookId];
+    const artifact =
+      configured ??
+      (await buildMockSpineArtifact(
+        book,
+        spineConfig,
+        coverDataByBook.get(bookId) ?? MOCK_COVER,
+      ));
+    spineArtifacts.set(bookId, artifact);
+    exposeMockSpine();
+    return artifact;
+  }
+
+  const STAGE_ORDER: SpineStage[] = ["art", "text", "check"];
+
+  function scheduleQueue() {
+    if (queueTimer !== null) return;
+    if (queue.paused) return;
+    if (queue.currentBookId !== null) return;
+    const next = queueJobs.shift();
+    if (next === undefined) {
+      queue.running = false;
+      queue.stage = null;
+      emitQueue();
+      return;
+    }
+    queuedIds.delete(next);
+    queue.currentBookId = next;
+    queue.running = true;
+    queue.pending = queueJobs.length;
+    runStage(next, 0);
+  }
+
+  function runStage(bookId: number, index: number) {
+    if (queue.paused) {
+      queue.stage = STAGE_ORDER[index];
+      emitQueue();
+      return;
+    }
+    queue.stage = STAGE_ORDER[index];
+    emitQueue();
+    emitProgress({
+      bookId,
+      stage: STAGE_ORDER[index],
+      index: index + 1,
+      total: STAGE_ORDER.length,
+    });
+    queueTimer = window.setTimeout(() => {
+      queueTimer = null;
+      if (queue.paused) {
+        pausedStage = { bookId, index };
+        emitQueue();
+        return;
+      }
+      if (index < STAGE_ORDER.length - 1) {
+        runStage(bookId, index + 1);
+        return;
+      }
+      void finishQueueJob(bookId);
+    }, queueStep);
+  }
+
+  async function finishQueueJob(bookId: number) {
+    const failed = (spineConfig.failIds ?? []).includes(bookId);
+    if (!failed) {
+      try {
+        await produceSpineArtifact(bookId);
+      } catch {
+        failedQueueIds.add(bookId);
+        queue.failed += 1;
+        queue.currentBookId = null;
+        queue.stage = null;
+        queue.running = false;
+        emitQueue();
+        scheduleQueue();
+        return;
+      }
+    }
+    queue.currentBookId = null;
+    queue.stage = null;
+    queue.running = false;
+    if (failed) {
+      failedQueueIds.add(bookId);
+      queue.failed += 1;
+    } else {
+      failedQueueIds.delete(bookId);
+      queue.completed += 1;
+    }
+    emitQueue();
+    scheduleQueue();
+  }
+
+  function enqueueSpineIds(bookIds: number[]) {
+    let changed = false;
+    for (const id of bookIds) {
+      if (!books.some((book) => book.id === id)) continue;
+      if (spineArtifacts.has(id)) continue;
+      if (queuedIds.has(id) || queue.currentBookId === id) continue;
+      queueJobs.push(id);
+      queuedIds.add(id);
+      changed = true;
+    }
+    if (!changed) {
+      // Still publish a snapshot: a caller may be waiting for the current job.
+      emitQueue();
+      return;
+    }
+    queue.pending = queueJobs.length;
+    emitQueue();
+    scheduleQueue();
+  }
+
+  function setQueuePaused(paused: boolean) {
+    pauseCalls.push(paused);
+    exposeMockSpine();
+    queue.paused = paused;
+    emitQueue();
+    if (paused) return;
+    if (pausedStage) {
+      const staged = pausedStage;
+      pausedStage = null;
+      runStage(staged.bookId, staged.index);
+      return;
+    }
+    scheduleQueue();
+  }
+
   function ensureEnrichment(book: Book): BookEnrichmentState {
     const existing = enrichmentStates.get(book.id);
     if (existing) return existing;
@@ -1698,6 +1966,10 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     state.coverManual = manual;
     state.coverUrl = sourceUrl;
     coverDataByBook.set(book.id, preview);
+    // A cover change changes the cache key; drop the mock's cached spine so a
+    // subsequent enqueue really regenerates it.
+    spineArtifacts.delete(book.id);
+    exposeMockSpine();
   }
 
   function applyEnrichmentFields(
@@ -2898,29 +3170,7 @@ function createMockPlatform(config: MockConfig = {}): Platform {
     },
     spineGenerate: async (bookId) => {
       noteSpineGenerate();
-      const book = books.find((candidate) => candidate.id === bookId);
-      if (!book) {
-        throw {
-          code: "book_not_found",
-          message: "That book could not be found.",
-        };
-      }
-      if (spineConfig.error) throw spineConfig.error;
-      if (spineConfig.generateDelayMs) {
-        await new Promise<void>((resolve) =>
-          window.setTimeout(resolve, spineConfig.generateDelayMs),
-        );
-      }
-      const configured = spineConfig.artifacts?.[bookId];
-      const artifact =
-        configured ??
-        (await buildMockSpineArtifact(
-          book,
-          spineConfig,
-          coverDataByBook.get(bookId) ?? MOCK_COVER,
-        ));
-      spineArtifacts.set(bookId, artifact);
-      return artifact;
+      return produceSpineArtifact(bookId);
     },
     spineArtifact: async (bookId) => {
       const artifact = spineArtifacts.get(bookId);
@@ -2935,6 +3185,31 @@ function createMockPlatform(config: MockConfig = {}): Platform {
         error: null,
         ...spineConfig.status,
       };
+    },
+    spineEnqueue: async (bookIds) => {
+      queuedCalls.push(...bookIds);
+      enqueueSpineIds(bookIds);
+    },
+    spineQueue: async () => queueSnapshot(),
+    spinePause: async (paused) => {
+      setQueuePaused(paused);
+    },
+    spineSetStyle: async (bookId, style) => {
+      spineStyles.set(bookId, style);
+      const book = books.find((candidate) => candidate.id === bookId);
+      if (book) {
+        book.spineStyle = style;
+        books = [...books];
+      }
+      exposeMockSpine();
+    },
+    onSpineQueue: async (handler) => {
+      queueListeners.add(handler);
+      return () => queueListeners.delete(handler);
+    },
+    onSpineProgress: async (handler) => {
+      progressListeners.add(handler);
+      return () => progressListeners.delete(handler);
     },
   };
 
