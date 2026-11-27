@@ -98,6 +98,7 @@ android_cross_check() {
 
 web_group() {
   run_stage "TypeScript" npx tsc --noEmit
+  run_stage "Docs" node scripts/check-docs.mjs
   run_stage "Web build" npm run build
   run_stage "Playwright (fast)" playwright_fast
   run_stage "Android patch check" "$ROOT/scripts/android-patch.sh" check

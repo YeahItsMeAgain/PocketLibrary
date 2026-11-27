@@ -12,6 +12,7 @@
     "check:full": "./scripts/check.sh full",
     "check:android": "./scripts/check.sh android",
     "check:contract": "node scripts/check-contract.mjs",
+    "check:docs": "node scripts/check-docs.mjs",
     "check:structure": "node scripts/check-structure.mjs",
     "tauri": "tauri",
     "sync:pdfjs": "node scripts/sync-pdfjs-assets.mjs",

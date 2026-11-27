@@ -31,5 +31,5 @@ installs over 0.1.x.
 | Contract check | pass |
 | `aapt2 dump badging` | 0.1.17, code 1017 |
 
-APK: `PocketLibrary-0.1.17.apk` · 68,122,525 bytes · SHA-256
+APK: `PocketLibrary-0.1.17.apk` · **68,122,525 bytes** · SHA-256
 `5b39307d6ceb56f9c47e7999beef516c35240af73538b9b40faaf7b9e4e977cd`.

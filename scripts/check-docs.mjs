@@ -214,7 +214,8 @@ function checkLatestRelease(appVersion) {
   }
 
   const doc = read(docName);
-  const docSize = Number(doc.match(/\*\*([\d,]+) bytes\*\*/)?.[1]?.replaceAll(",", ""));
+  // The size may be bold or plain; the number is the contract.
+  const docSize = Number(doc.match(/\*{0,2}([\d,]+) bytes/)?.[1]?.replaceAll(",", ""));
   const docSha = doc.match(/SHA-256\s*`([0-9a-f]{64})`/i)?.[1];
   const expectedUrl = `https://github.com/YeahItsMeAgain/PocketLibrary/releases/download/v${version}/PocketLibrary-${version}.apk`;
 
@@ -267,6 +268,15 @@ function isHistorical(lines) {
   return /^\s*>\s*\*\*Historical\b/im.test(head);
 }
 
+// A release-notes page describes the release named in its own title. The
+// published one is checked as a whole against latest.json by
+// checkLatestRelease(); scanning every historical release page as if it claimed
+// the current version turns the docs check into a fossil that must be
+// re-bannered on every release.
+function isReleaseNotes(file) {
+  return /^docs\/release-\d+\.\d+\.\d+\.md$/.test(file);
+}
+
 function checkDocs(owners, published) {
   const { appVersion, schemaVersion, appCode } = owners;
   const spine = checkSpineSpec() ?? owners.spine;
@@ -287,7 +297,7 @@ function checkDocs(owners, published) {
 
   for (const file of docs) {
     const lines = splitLines(read(file));
-    if (isHistorical(lines)) {
+    if (isHistorical(lines) || isReleaseNotes(file)) {
       historicalCount += 1;
       continue;
     }

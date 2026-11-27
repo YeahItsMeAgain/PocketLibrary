@@ -18,6 +18,10 @@ The five canonical defaults are used: `needs-triage`, `needs-info`, `ready-for-a
 
 Single-context: one `GLOSSARY.md` at the repo root plus `docs/adr/`. See `docs/agents/domain.md`.
 
+## Releasing
+
+Follow [`docs/updates.md`](docs/updates.md). Cut the APK, updater manifest and GitHub release with `./scripts/release.sh`; do not assemble a release by hand.
+
 ## Parallel work
 
 Multiple agents need one worktree each and a file-ownership table; see [`docs/agents/parallel-work.md`](docs/agents/parallel-work.md).
