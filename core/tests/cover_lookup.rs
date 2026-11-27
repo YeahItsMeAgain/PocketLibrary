@@ -12,6 +12,9 @@ use std::thread;
 
 use pocketlibrary_core::{LookupRequest, MetadataProvider, OpenLibraryProvider};
 
+const RPS_ISBN: &str = include_str!("fixtures/openlibrary-rock-paper-scissors-isbn.json");
+const RPS_WORK: &str = include_str!("fixtures/openlibrary-rock-paper-scissors-work.json");
+
 #[derive(Clone)]
 struct Reply {
     status: u16,
@@ -199,6 +202,56 @@ fn isbn_and_olid_cover_keys_use_separate_path_segments() {
             .iter()
             .any(|path| path == "/b/olid/OL52963676M-L.jpg?default=false"),
         "cover request paths were {paths:?}"
+    );
+}
+
+#[test]
+fn isbn_edition_without_covers_borrows_the_work_cover() {
+    // The UK edition (9780008371005) has no `covers` and no usable isbn/olid
+    // cover endpoint, but its work has cover ids. The manual chooser must show
+    // that work cover instead of returning an empty result.
+    let server = FakeServer::start(move |path| {
+        if path == "/isbn/9780008371005.json" {
+            Reply::json(RPS_ISBN)
+        } else if path == "/works/OL24311121W" {
+            Reply::json(RPS_WORK)
+        } else if path == "/b/id/10826952-L.jpg?default=false" {
+            Reply::image(b"\xff\xd8\xff\xe0rps-work-cover")
+        } else {
+            Reply::not_found()
+        }
+    });
+    let provider = provider(&server.base);
+    let runtime = tokio::runtime::Runtime::new().expect("runtime");
+    let candidates = runtime
+        .block_on(provider.lookup(LookupRequest {
+            isbn: Some("9780008371005".to_owned()),
+            edition_key: None,
+            title: "Rock Paper Scissors".to_owned(),
+            authors: vec!["Alice Feeney".to_owned()],
+            year: Some(2021),
+        }))
+        .expect("isbn lookup");
+    assert_eq!(candidates.len(), 1);
+    assert_eq!(candidates[0].title, "Rock Paper Scissors");
+    assert_eq!(
+        candidates[0].cover_keys.first().map(String::as_str),
+        Some("id:10826952"),
+        "work cover should be tried before the dead isbn/olid fallbacks: {:?}",
+        candidates[0].cover_keys
+    );
+
+    let bytes = runtime
+        .block_on(provider.fetch_cover(candidates[0].cover_keys[0].clone()))
+        .expect("fetch work cover");
+    assert!(bytes.starts_with(&[0xff, 0xd8]));
+    assert!(
+        server
+            .paths()
+            .iter()
+            .any(|path| path == "/b/id/10826952-L.jpg?default=false"),
+        "cover request paths were {:?}",
+        server.paths()
     );
 }
 

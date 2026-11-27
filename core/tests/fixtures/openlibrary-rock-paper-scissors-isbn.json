@@ -1,0 +1,7 @@
+{
+  "key": "/books/OL33857195M",
+  "title": "Rock Paper Scissors",
+  "publish_date": "2021",
+  "publishers": ["HarperCollins Publishers Limited"],
+  "works": [{ "key": "/works/OL24311121W" }]
+}

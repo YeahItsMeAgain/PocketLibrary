@@ -338,8 +338,13 @@ impl OpenLibraryProvider {
             .and_then(|value| value.as_str())
             .map(str::to_owned);
 
-        // The edition often has no description; one work request fills it.
-        if candidate.description.is_none()
+        // The edition often has no description or cover of its own; one work
+        // request fills either gap. An edition without `covers` still carries
+        // synthetic `isbn:`/`olid:` keys, so testing `cover_keys.is_empty()`
+        // would miss the work cover even when both fallbacks 404 (as they do
+        // for the UK Rock Paper Scissors edition).
+        let has_cover_id = |keys: &[String]| keys.iter().any(|key| key.starts_with("id:"));
+        if (candidate.description.is_none() || !has_cover_id(&candidate.cover_keys))
             && let Some(work) = edition
                 .get("works")
                 .and_then(|value| value.as_array())
@@ -349,9 +354,19 @@ impl OpenLibraryProvider {
         {
             Self::gate(&self.metadata_gate, Duration::from_millis(360)).await;
             if let Ok(value) = self.get_json(format!("{}{}", self.base, work)).await {
-                candidate.description = edition_description(&value);
-                if candidate.cover_keys.is_empty() {
-                    candidate.cover_keys = edition_cover_keys(&value, isbn);
+                if candidate.description.is_none() {
+                    candidate.description = edition_description(&value);
+                }
+                if !has_cover_id(&candidate.cover_keys) {
+                    let work_covers: Vec<String> = edition_cover_keys(&value, None)
+                        .into_iter()
+                        .filter(|key| key.starts_with("id:"))
+                        .collect();
+                    for key in work_covers.into_iter().rev() {
+                        if !candidate.cover_keys.contains(&key) {
+                            candidate.cover_keys.insert(0, key);
+                        }
+                    }
                 }
             }
         }

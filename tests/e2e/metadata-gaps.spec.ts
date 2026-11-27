@@ -477,6 +477,62 @@ test("a failed cover lookup shows a retryable error instead of an empty state", 
   await expect(page.getByTestId("cover-find")).toBeEnabled();
 });
 
+test("the cover chooser shows the online cover found for Rock Paper Scissors", async ({
+  page,
+}) => {
+  const candidate: CoverOption = {
+    key: "online:open_library:id:10826952",
+    source: "open_library",
+    label: "Rock Paper Scissors",
+    detail: "Alice Feeney · 2021 · Flatiron Books",
+    previewDataUrl: ALT_COVER,
+    isCurrent: false,
+    isOriginal: false,
+    providerCoverKey: "id:10826952",
+    sourceUrl: "https://openlibrary.org/works/OL24311121W",
+  };
+  await boot(
+    page,
+    [
+      book(1, "Rock Paper Scissors", {
+        authors: ["Alice Feeney"],
+        publishedDate: "2021-09-07",
+      }),
+    ],
+    {
+      fileCoverIds: [1],
+      coverCandidates: { 1: [candidate] },
+    },
+  );
+  await openDetail(page);
+
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.getByTestId("detail-cover-button").click();
+    await page.getByTestId("cover-find").click();
+    await expect(
+      page.getByTestId("cover-option-online-open-library-id-10826952"),
+    ).toBeVisible();
+    await expect(page.getByTestId("cover-selected")).toContainText(
+      "Rock Paper Scissors",
+    );
+    const overflow = await page.evaluate(() => {
+      const sheet = document.querySelector<HTMLElement>(
+        '[data-testid="cover-chooser"]',
+      );
+      return {
+        document: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+        sheet: sheet?.scrollWidth ?? 0,
+        sheetClient: sheet?.clientWidth ?? 0,
+      };
+    });
+    expect(overflow.document).toBeLessThanOrEqual(overflow.viewport);
+    expect(overflow.sheet).toBeLessThanOrEqual(overflow.sheetClient + 1);
+    await page.getByTestId("cover-cancel").click();
+  }
+});
+
 test("the cover chooser keeps online results inside a narrow screen", async ({
   page,
 }) => {
