@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary 0.1.7 — spine engine test APK</title>
+<title>PocketLibrary 0.1.8 — spine engine test APK</title>
 <style>
   :root {
     --bg: #0b0709;
@@ -123,30 +123,30 @@
 <main>
   <div class="wordmark"><i aria-hidden="true"></i> PocketLibrary · spine engine test build</div>
 
-  <p class="kicker">Signed arm64 release · version 0.1.7 (1007)</p>
+  <p class="kicker">Signed arm64 release · version 0.1.8 (1008)</p>
   <h1>The spine engine,<br><em>on the phone.</em></h1>
-  <p class="lede">A real PocketLibrary build with the new <b>on-device spine engine</b>: it finds the cover text, removes it, and renders six spine styles without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test.</p>
+  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, now preparing spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. It finds the cover text, removes it, and renders <b>Wrap, Full-bleed and Cloth</b> without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test.</p>
 
   <div class="card">
     <div class="download">
       <div>
-        <h2>PocketLibrary 0.1.7 · spine arm64</h2>
-        <p>APK · 67,513,033 bytes (64.4 MiB) · release-signed · arm64-v8a only</p>
+        <h2>PocketLibrary 0.1.8 · spine arm64</h2>
+        <p>APK · 67,564,185 bytes (64.4 MiB) · release-signed · arm64-v8a only</p>
       </div>
-      <a class="button" href="pocketlibrary-0.1.7-spine-arm64.apk" download>Download APK</a>
+      <a class="button" href="pocketlibrary-0.1.8-spine-arm64.apk" download>Download APK</a>
     </div>
 
     <dl>
       <dt>File</dt>
-      <dd class="mono">pocketlibrary-0.1.7-spine-arm64.apk</dd>
+      <dd class="mono">pocketlibrary-0.1.8-spine-arm64.apk</dd>
       <dt>Size</dt>
-      <dd>67,513,033 bytes · 64.4 MiB</dd>
+      <dd>67,564,185 bytes · 64.4 MiB</dd>
       <dt>SHA-256</dt>
-      <dd><code class="hash">8efe767456b364749655b0721556101bd008d2cba35c467e1e2ca420405749b0</code></dd>
+      <dd><code class="hash">3e6b969ec1f3d2ee598abcd279068d02c2ff771fe4686ed81c521a481b98b6a0</code></dd>
       <dt>Package</dt>
       <dd class="mono">app.pocketlibrary</dd>
       <dt>Version</dt>
-      <dd>0.1.7 · versionCode 1007</dd>
+      <dd>0.1.8 · versionCode 1008</dd>
       <dt>SDK</dt>
       <dd>min 24 · target 36 · compile 36 (Android 16)</dd>
       <dt>ABI</dt>
@@ -162,33 +162,55 @@
   </div>
 
   <h2 class="section">Install</h2>
-  <p class="section-lede">Sideload it over the previous release, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
+  <p class="section-lede">Sideload it over 0.1.7, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
   <ol>
     <li>Download the APK on the phone (or copy it over).</li>
     <li>Open the file. If Android blocks it, allow <b>Install unknown apps</b> for the browser or file manager you used.</li>
-    <li>If an older PocketLibrary is installed: a release build with the same key installs over it. A <b>debug build or a build signed with another key must be uninstalled first</b>; Android will refuse the update otherwise.</li>
-    <li>Open PocketLibrary and import or pick a book. The spine models are extracted from the APK on the first Generate.</li>
+    <li>If 0.1.7 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database migrates from <b>schema 5 to 6</b> on first launch.</li>
+    <li>A <b>debug build or a build signed with another key must be uninstalled first</b>; Android will refuse the update otherwise.</li>
+    <li>Open PocketLibrary. Spines start preparing automatically; on an existing library the backfill runs once at low priority, so the wall stays usable.</li>
   </ol>
-  <p class="section-lede">If the app still crashes when opening a book, export diagnostics again from Settings: the new <code>spine.log</code> is included.</p>
+
+  <h2 class="section">What changed in 0.1.8</h2>
+  <div class="grid">
+    <div class="note">
+      <h3>Automatic queue</h3>
+      <ul>
+        <li>Spines generate <b>after a download completes, after a scan adds books, on the first library-ready backfill, and after a cover change</b> — no Generate tap.</li>
+        <li>A global <b>“Preparing spines · n of m”</b> chip shows progress and the current stage, with <b>Stop</b> and <b>Resume</b>.</li>
+        <li>Preparation pauses while the reader is open and resumes when it closes; a manual Stop survives the reader.</li>
+        <li>Cached books are skipped, unfinished jobs survive process death, and a failure leaves a marker until a later success. The cache trims to 200 MB.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Three styles, better detail</h3>
+      <ul>
+        <li>Only <b>Wrap, Full-bleed and Cloth</b> remain. Wrap is the default; <b>Full-bleed centres the title and author</b> as one block on a soft scrim.</li>
+        <li>The chosen style is stored <b>per book</b> and survives reopen and the upgrade.</li>
+        <li>Long blurbs are clamped with a <b>Read more</b> / <b>Show less</b> control.</li>
+        <li>Cover fixes: Rock Paper Scissors uses the work cover when its ISBN edition has none, and Needful Things matches when the PDF year is a creation date with no edition authors. The finished sticker also paints above the change-cover layer.</li>
+      </ul>
+    </div>
+  </div>
 
   <h2 class="section">What to test</h2>
   <div class="grid">
     <div class="note">
-      <h3>Basic flow</h3>
+      <h3>Upgrade and backfill</h3>
       <ul>
-        <li>Open a book → <b>Spine</b> → <b>Generate spine</b>.</li>
-        <li>Wait through the progress labels, then check the verdict and the six style canvases.</li>
-        <li>Switch <b>Wrap</b> and <b>Cloth</b>: the preview should re-render instantly without generating again.</li>
-        <li>Go back and reopen the book: the saved result should still be there.</li>
+        <li>Install over 0.1.7 without uninstalling. Your shelf, reading state and labels should be intact.</li>
+        <li>Leave the app on the wall: the backfill should prepare spines quietly, showing the chip, without blocking scrolling.</li>
+        <li>Open a book while it is preparing: the queue should pause, then resume when you go back.</li>
+        <li>Tap <b>Stop</b>, then <b>Resume</b>, and confirm the counts continue rather than starting over.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>Edge cases</h3>
+      <h3>Fresh work and edge cases</h3>
       <ul>
-        <li>Try a text-heavy commercial cover such as <b>Rock Paper Scissors</b>; it should land on <b>Review</b> with a <b>Use Cloth</b> action.</li>
-        <li>Tap <b>Use Cloth</b>: it should apply immediately, with no second generate.</li>
-        <li>Check the 33 px shelf spine after the detail view.</li>
-        <li>Rotate the phone and confirm the Spine section does not overflow or clip.</li>
+        <li>Download or scan a new book: a spine should appear without opening the Spine section.</li>
+        <li>Change a cover: the old job should be replaced and the shelf spine should update when the new one is ready.</li>
+        <li>Switch Wrap / Full-bleed / Cloth: the preview should re-render instantly; Full-bleed should be centred.</li>
+        <li>Check a long blurb for <b>Read more</b>, and try Rock Paper Scissors or Needful Things for the cover fixes.</li>
       </ul>
     </div>
   </div>
@@ -198,17 +220,18 @@
     <div class="note limits" style="border:0;background:transparent;padding:0">
       <h3>This is a test build</h3>
       <ul>
-        <li><b>Models are bundled</b> in this APK for testing. The production model downloader/cache is not part of this build yet.</li>
+        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.8.</li>
         <li><b>arm64 only.</b> It will not install on 32-bit, x86, or an emulator without arm64 translation.</li>
-        <li><b>~63 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
-        <li>Generate runs fully on the device. On a phone it is slower than the host timings in the evidence; the inpaint route can take noticeably longer than the crop route.</li>
+        <li><b>~64 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
+        <li>Generation runs fully on the device. On a phone it is slower than the host timings in the evidence; the inpaint route can take noticeably longer than the crop route.</li>
         <li>Release-signed, so it will not install over a debug build. Uninstall the old app first.</li>
       </ul>
     </div>
   </div>
 
   <footer>
-    Built from the committed spine engine and Spine Studio UI. Verification: <span class="mono">apksigner</span> v2 signature valid,
+    Built from the automatic-queue release at <span class="mono">HEAD 227dfbe</span> on 2026-11-27.
+    Verification: <span class="mono">apksigner</span> v2 signature valid,
     <span class="mono">zipalign -c -p 4</span> passed, packaged manifest has <span class="mono">android:extractNativeLibs="true"</span> so
     <span class="mono">nativeLibraryDir/libonnxruntime.so</span> exists after install.
     <a href="../">Spine engine notes</a>.
