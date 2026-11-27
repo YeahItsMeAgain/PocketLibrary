@@ -1,0 +1,113 @@
+{
+  "label": "final-jpeg6",
+  "generatedAt": "2026-11-27T09:19:30.713Z",
+  "environment": {
+    "viewport": "390x844",
+    "deviceScaleFactor": 1,
+    "cpuThrottle": 4,
+    "browser": "Chromium 159.0.8154.6"
+  },
+  "assetBytes": {
+    "cover": 368885,
+    "art": 116093,
+    "strip": 18665
+  },
+  "timings": {
+    "clickAtMs": 730.3,
+    "detailMountedAtMs": 864.6,
+    "clickToDetailMs": 134.3,
+    "clickToTitleMs": 134.3,
+    "openToInteractiveMs": 134.3,
+    "openToSpinePreviewMs": null,
+    "windowMs": 813
+  },
+  "longTasks": [
+    {
+      "start": 745.6,
+      "duration": 87,
+      "blocking": null,
+      "renderStart": null,
+      "styleAndLayoutStart": null,
+      "offset": 15.3
+    }
+  ],
+  "loaf": [
+    {
+      "start": 727.4,
+      "duration": 138,
+      "blocking": 46.7,
+      "renderStart": 856.4,
+      "styleAndLayoutStart": 864.6,
+      "offset": -2.9
+    }
+  ],
+  "resources": [
+    {
+      "name": "DetailPanel-tT3p5ao1.js",
+      "startTime": 558,
+      "duration": 5.6,
+      "transferSize": 12930,
+      "decodedBodySize": 39611
+    }
+  ],
+  "frames": {
+    "count": 41,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 116.7,
+    "droppedOver20ms": 2,
+    "droppedOver33ms": 2,
+    "raw": [
+      116.7,
+      33.3,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.7,
+      16.6,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.6,
+      16.8,
+      16.6,
+      16.7,
+      16.7
+    ]
+  },
+  "detailText": {
+    "title": "The Ledger of Small Doors",
+    "preview": false,
+    "canvas": false,
+    "cover": {
+      "complete": true,
+      "width": 1400
+    }
+  }
+}

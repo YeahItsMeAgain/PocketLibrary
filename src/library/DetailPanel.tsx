@@ -1,4 +1,6 @@
 import {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -18,13 +20,22 @@ import {
   type ReadingStatus,
 } from "../platform";
 import { useLayerExit } from "../navigation";
-import { EditBook, type EditSection } from "./EditBook";
-import { EnrichmentReview } from "./EnrichmentReview";
-import { SpineStudio } from "./SpineStudio";
 import { useSpineActivity } from "./spineActivity";
 import { STATUS_LABELS } from "./spine";
 
-interface DetailPanelProps {
+// Editing and enrichment review are not on the read path. Loading them only
+// when opened keeps the first tap's chunk smaller; both are idle-prefetched
+// after the detail has settled.
+const EditBook = lazy(() =>
+  import("./EditBook").then((module) => ({ default: module.EditBook })),
+);
+const EnrichmentReview = lazy(() =>
+  import("./EnrichmentReview").then((module) => ({
+    default: module.EnrichmentReview,
+  })),
+);
+
+export interface DetailPanelProps {
   bookId: number;
   shelfLabel: string;
   onClose: () => void;
@@ -68,7 +79,6 @@ export function DetailPanel({
   const [blurbOverflowing, setBlurbOverflowing] = useState(false);
   const [blurbAnnouncement, setBlurbAnnouncement] = useState("");
   const [editOpen, setEditOpen] = useState(false);
-  const [editSection, setEditSection] = useState<EditSection>("details");
   const blurbRef = useRef<HTMLParagraphElement>(null);
   const autoLookupDone = useRef<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -88,7 +98,6 @@ export function DetailPanel({
     setBlurbOverflowing(false);
     setBlurbAnnouncement("");
     setEditOpen(false);
-    setEditSection("details");
     autoLookupDone.current = null;
     Promise.all([
       platform.getBookDetail(bookId),
@@ -139,8 +148,7 @@ export function DetailPanel({
     });
   }, []);
 
-  const openEdit = useCallback((section: EditSection = "details") => {
-    setEditSection(section);
+  const openEdit = useCallback(() => {
     setEditOpen(true);
   }, []);
 
@@ -203,9 +211,26 @@ export function DetailPanel({
     ) {
       return;
     }
+    // The entrance animation owns the first half second. An online lookup can
+    // resolve with a new cover (and a spine job) mid-flight; wait until the
+    // frame has settled so that work never lands on an animating layer.
     autoLookupDone.current = bookId;
-    void runLookup(false);
+    const timer = window.setTimeout(() => {
+      void runLookup(false);
+    }, 520);
+    return () => window.clearTimeout(timer);
   }, [detail, mode, bookId, runLookup]);
+
+  useEffect(() => {
+    if (!detail) return;
+    // Editing and review are not on the read path; warm their chunks once the
+    // open has settled, so the first Edit tap is still instant.
+    const timer = window.setTimeout(() => {
+      void import("./EditBook");
+      void import("./EnrichmentReview");
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [detail]);
 
   const acceptCandidate = useCallback(
     async (candidateKey: string) => {
@@ -240,8 +265,10 @@ export function DetailPanel({
   );
 
   useEffect(() => {
-    closeRef.current?.focus();
-  }, []);
+    // The frame mounts with its data, so focus moves at the same moment the
+    // entrance animation starts rather than onto a transient shell.
+    if (detail || failed) closeRef.current?.focus();
+  }, [detail, failed]);
 
   const authors =
     detail && detail.authors.length > 0
@@ -276,6 +303,7 @@ export function DetailPanel({
         aria-label="Close book detail"
         onClick={close}
       />
+      {failed || detail ? (
       <section
         className="detail d3 d4 is-open"
         role="dialog"
@@ -518,17 +546,6 @@ export function DetailPanel({
                     .join(" · ") || "Pocket Library edition"}
                 </p>
 
-                <SpineStudio
-                  bookId={bookId}
-                  title={detail.title}
-                  author={detail.authors.join(" · ")}
-                  pages={detail.pageCount}
-                  coverDataUrl={detail.coverDataUrl}
-                  initialStyle={detail.spineStyle}
-                  readOnly
-                  onFixSpine={() => openEdit("spine")}
-                />
-
                 <button
                   type="button"
                   className="btn-read"
@@ -555,31 +572,33 @@ export function DetailPanel({
           <p className="hint">Tap outside or press Esc to close</p>
         </div>
       </section>
-      {editOpen && detail ? (
-        <EditBook
-          bookId={bookId}
-          initialDetail={detail}
-          initialSection={editSection}
-          onClose={closeEdit}
-          onDetailChanged={handleDetailChanged}
-          onBookChanged={onBookChanged}
-          onLabelsChanged={onLabelsChanged}
-          onDeleted={onDeleted}
-        />
       ) : null}
-      {review ? (
-        <EnrichmentReview
-          candidates={review.candidates}
-          attribution={review.attribution}
-          busy={reviewBusy}
-          notice={reviewNotice}
-          onChoose={(candidate) => void acceptCandidate(candidate.key)}
-          onClose={() => {
-            setReview(null);
-            setReviewNotice(null);
-          }}
-        />
-      ) : null}
+      <Suspense fallback={null}>
+        {editOpen && detail ? (
+          <EditBook
+            bookId={bookId}
+            initialDetail={detail}
+            onClose={closeEdit}
+            onDetailChanged={handleDetailChanged}
+            onBookChanged={onBookChanged}
+            onLabelsChanged={onLabelsChanged}
+            onDeleted={onDeleted}
+          />
+        ) : null}
+        {review ? (
+          <EnrichmentReview
+            candidates={review.candidates}
+            attribution={review.attribution}
+            busy={reviewBusy}
+            notice={reviewNotice}
+            onChoose={(candidate) => void acceptCandidate(candidate.key)}
+            onClose={() => {
+              setReview(null);
+              setReviewNotice(null);
+            }}
+          />
+        ) : null}
+      </Suspense>
     </>
   );
 }

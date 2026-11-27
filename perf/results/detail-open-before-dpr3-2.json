@@ -1,0 +1,117 @@
+{
+  "label": "before-dpr3-2",
+  "generatedAt": "2026-11-27T09:10:03.370Z",
+  "environment": {
+    "viewport": "390x844",
+    "deviceScaleFactor": 3,
+    "cpuThrottle": 4,
+    "browser": "Chromium 159.0.8154.6"
+  },
+  "assetBytes": {
+    "cover": 368885,
+    "art": 116093,
+    "strip": 18665
+  },
+  "timings": {
+    "clickToDetailMs": 401.9,
+    "clickToTitleMs": 608.2,
+    "openToInteractiveMs": 608.4,
+    "openToSpinePreviewMs": null,
+    "windowMs": 830.7
+  },
+  "longTasks": [
+    {
+      "start": 1769.7,
+      "duration": 154,
+      "blocking": null,
+      "renderStart": null,
+      "styleAndLayoutStart": null,
+      "offset": 409
+    },
+    {
+      "start": 2032.7,
+      "duration": 63,
+      "blocking": null,
+      "renderStart": null,
+      "styleAndLayoutStart": null,
+      "offset": 672
+    },
+    {
+      "start": 1701.9,
+      "duration": 53,
+      "blocking": null,
+      "renderStart": null,
+      "styleAndLayoutStart": null,
+      "offset": 341.2
+    }
+  ],
+  "loaf": [
+    {
+      "start": 1769.1,
+      "duration": 202.6,
+      "blocking": 121.7,
+      "renderStart": 1954.2,
+      "styleAndLayoutStart": 1969.8,
+      "offset": 408.4
+    },
+    {
+      "start": 1686.5,
+      "duration": 76.2,
+      "blocking": 9.9,
+      "renderStart": 1755.9,
+      "styleAndLayoutStart": 1762.7,
+      "offset": 325.8
+    }
+  ],
+  "resources": [
+    {
+      "name": "DetailPanel-CuNHlo0B.js",
+      "startTime": 1394,
+      "duration": 22.7,
+      "transferSize": 19558,
+      "decodedBodySize": 66877
+    }
+  ],
+  "frames": {
+    "count": 23,
+    "p50": 16.7,
+    "p95": 116.7,
+    "max": 216.6,
+    "droppedOver20ms": 5,
+    "droppedOver33ms": 5,
+    "raw": [
+      33.3,
+      16.7,
+      16.6,
+      16.8,
+      16.6,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      66.7,
+      216.6,
+      100,
+      116.7
+    ]
+  },
+  "detailText": {
+    "title": "The Ledger of Small Doors",
+    "preview": false,
+    "canvas": false,
+    "cover": {
+      "complete": true,
+      "width": 1400
+    }
+  }
+}

@@ -115,7 +115,9 @@
 
 .detail .v4d-frame {
   opacity: 0;
-  transform: translateY(18px) scale(0.985);
+  /* Translation only: scaling a tall, content-filled layer forces Chrome to
+     re-raster it on every frame, which reads as a stutter on a phone. */
+  transform: translateY(18px);
   animation:
     detail-in 0.48s var(--ease-out) forwards,
     detail-fade 0.24s linear forwards;
@@ -124,7 +126,7 @@
 
 .detail.is-open .v4d-frame {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
 }
 
 .detail .v3d-top {
@@ -680,10 +682,10 @@
 
 @keyframes detail-in {
   from {
-    transform: translateY(18px) scale(0.985);
+    transform: translateY(18px);
   }
   to {
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 

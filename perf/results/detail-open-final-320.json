@@ -1,0 +1,115 @@
+{
+  "label": "final-320",
+  "generatedAt": "2026-11-27T09:19:03.890Z",
+  "environment": {
+    "viewport": "320x568",
+    "deviceScaleFactor": 1,
+    "cpuThrottle": 4,
+    "browser": "Chromium 159.0.8154.6"
+  },
+  "assetBytes": {
+    "cover": 368885,
+    "art": 116093,
+    "strip": 18665
+  },
+  "timings": {
+    "clickAtMs": 639.2,
+    "detailMountedAtMs": 744.6,
+    "clickToDetailMs": 105.4,
+    "clickToTitleMs": 105.4,
+    "openToInteractiveMs": 105.4,
+    "openToSpinePreviewMs": null,
+    "windowMs": 814.7
+  },
+  "longTasks": [
+    {
+      "start": 653,
+      "duration": 67,
+      "blocking": null,
+      "renderStart": null,
+      "styleAndLayoutStart": null,
+      "offset": 13.8
+    }
+  ],
+  "loaf": [
+    {
+      "start": 638.5,
+      "duration": 106.9,
+      "blocking": 27.1,
+      "renderStart": 735.5,
+      "styleAndLayoutStart": 745.4,
+      "offset": -0.7
+    }
+  ],
+  "resources": [
+    {
+      "name": "DetailPanel-tT3p5ao1.js",
+      "startTime": 476.9,
+      "duration": 4.8,
+      "transferSize": 12930,
+      "decodedBodySize": 39611
+    }
+  ],
+  "frames": {
+    "count": 43,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 83.3,
+    "droppedOver20ms": 2,
+    "droppedOver33ms": 2,
+    "raw": [
+      83.3,
+      33.3,
+      16.7,
+      16.7,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.6,
+      16.8,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.7,
+      16.6,
+      16.7,
+      16.7,
+      16.6,
+      16.7
+    ]
+  },
+  "detailText": {
+    "title": "The Ledger of Small Doors",
+    "preview": false,
+    "canvas": false,
+    "cover": {
+      "complete": true,
+      "width": 1400
+    }
+  }
+}
