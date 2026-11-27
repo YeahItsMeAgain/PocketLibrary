@@ -81,7 +81,7 @@ test("settings shows log details, sends, copies and clears", async ({
   const copied = await page.evaluate(
     () => (window as unknown as { __copied?: string }).__copied,
   );
-  expect(copied).toContain("PocketLibrary v0.1.10");
+  expect(copied).toContain("PocketLibrary v0.1.11");
   expect(copied).toContain("1 error, 1 warning");
   expect(copied).toContain("Book One");
 
