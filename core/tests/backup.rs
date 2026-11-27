@@ -8,7 +8,7 @@ use std::path::Path;
 use common::{FakeDir, database, database_at};
 use pocketlibrary_core::{
     Api, BACKUP_EXTENSION, BACKUP_FORMAT_VERSION, BookFormat, DownloadRequest, ImportMode,
-    ReadingStatus,
+    ReadingStatus, SpineStyle,
 };
 use serde_json::Value;
 use zip::write::SimpleFileOptions;
@@ -486,6 +486,43 @@ fn corrupt_older_and_wrong_schema_archives_are_rejected() {
             "version {version}"
         );
     }
+}
+
+#[test]
+fn spine_style_round_trips_through_export_and_replace_import() {
+    let (_dir, api) = database();
+    api.scan(&source(&["alpha", "beta"])).expect("scan");
+    let alpha = book(&api, "alpha");
+    api.set_spine_style(alpha.id, SpineStyle::FullBleed)
+        .expect("set full bleed");
+    let beta = book(&api, "beta");
+    assert_eq!(
+        beta.spine_style,
+        SpineStyle::Wrap,
+        "a never-set style reads as the wrap default"
+    );
+
+    let bytes = api.export_backup().expect("export");
+    let manifest = manifest(&bytes);
+    let styles = manifest["books"]
+        .as_array()
+        .expect("books")
+        .iter()
+        .map(|book| (book["title"].as_str().expect("title"), &book["spineStyle"]))
+        .collect::<Vec<_>>();
+    assert!(
+        styles.iter().any(|(title, style)| {
+            *title == "alpha" && *style == &Value::String("full-bleed".to_owned())
+        }),
+        "the explicit style is exported: {styles:?}"
+    );
+
+    let (_restored_dir, restored) = database();
+    restored
+        .import_backup(&bytes, ImportMode::Replace)
+        .expect("replace import");
+    assert_eq!(book(&restored, "alpha").spine_style, SpineStyle::FullBleed);
+    assert_eq!(book(&restored, "beta").spine_style, SpineStyle::Wrap);
 }
 
 #[test]

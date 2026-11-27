@@ -15,7 +15,7 @@ use crate::migrations;
 use crate::models::{
     Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookFormat, Bookmark, CoverSource,
     Download, DownloadRequest, Label, LabelUsage, Landing, LibraryStatus, Placement, ReadingState,
-    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf, SpineStyle,
 };
 use crate::source::{FileSource, ScannedBook, collect_books};
 use crate::{APP_NAME, SCHEMA_VERSION, cover, identity, metadata};
@@ -26,7 +26,7 @@ const BOOK_COLUMNS: &str =
      b.series, b.language, b.description, b.publisher, b.published_date, b.identifier,
      b.page_count, b.cover_path, b.cover_source, b.file_cover_path, b.file_cover_source,
      b.file_description, b.added_at, b.shelf_id, b.slot_index,
-     COALESCE(r.status, 'unread')";
+     COALESCE(r.status, 'unread'), COALESCE(b.spine_style, 'wrap')";
 
 const BOOK_SOURCE: &str = "FROM books b LEFT JOIN reading_state r ON r.book_id = b.id";
 
@@ -385,6 +385,18 @@ impl Service {
         tx.execute("UPDATE shelves SET capacity = ?1", [capacity])?;
         tx.commit()?;
         Ok(capacity)
+    }
+
+    /// Persist how a book's generated spine is presented. The database column
+    /// stays nullable; writing an explicit style is always allowed.
+    pub fn set_spine_style(&self, book_id: i64, style: SpineStyle) -> Result<()> {
+        let conn = self.connection()?;
+        ensure_book(&conn, book_id)?;
+        conn.execute(
+            "UPDATE books SET spine_style = ?1 WHERE id = ?2",
+            params![style, book_id],
+        )?;
+        Ok(())
     }
 
     /// Move a book to a shelf and final slot index.
@@ -2111,6 +2123,7 @@ fn book_from_row(row: &Row<'_>) -> rusqlite::Result<Book> {
         shelf_id: row.get(20)?,
         slot_index: row.get(21)?,
         reading_status: row.get::<_, ReadingStatus>(22)?,
+        spine_style: row.get(23)?,
         labels: Vec::new(),
     })
 }

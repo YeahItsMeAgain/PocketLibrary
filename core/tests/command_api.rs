@@ -81,6 +81,7 @@ fn serialised_books_do_not_leak_filesystem_paths() {
         published_date: None,
         identifier: None,
         page_count: Some(320),
+        spine_style: pocketlibrary_core::SpineStyle::Wrap,
         cover_path: Some("/covers/secret.jpg".to_owned()),
         cover_source: Some(pocketlibrary_core::CoverSource::Embedded),
         file_cover_path: Some("/covers/secret.jpg".to_owned()),

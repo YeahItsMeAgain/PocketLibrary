@@ -17,6 +17,8 @@ mod migrations;
 mod models;
 mod service;
 mod source;
+pub mod spine_cache;
+pub mod spine_queue;
 pub mod updates;
 
 pub use acquisition::{
@@ -36,17 +38,18 @@ pub use enrichment::{
 pub use error::{ApiError, ApiResult, Error, Result};
 pub use identity::{QUICK_SPAN, content_hash, quick_key, quick_key_from_parts};
 pub use models::{
-    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookEnrichmentState, BookFormat, Bookmark,
-    CoverChoices, CoverLookupOutcome, CoverOption, CoverSource, DeviceCoverPreview, Download,
-    DownloadRequest, DownloadState, EnrichmentAttribution, EnrichmentCandidate, EnrichmentMode,
-    EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, Landing, LibraryState, LibraryStatus,
-    Placement, ReadingState, ReadingStatus, ScanIssue, ScanIssueReason, ScanReport, Shelf,
+    Annotation, AnnotationKind, AppInfo, Book, BookDetail, BookEnrichmentState, BookFormat,
+    Bookmark, CoverChoices, CoverLookupOutcome, CoverOption, CoverSource, DeviceCoverPreview,
+    Download, DownloadRequest, DownloadState, EnrichmentAttribution, EnrichmentCandidate,
+    EnrichmentMode, EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, Landing,
+    LibraryState, LibraryStatus, Placement, ReadingState, ReadingStatus, ScanIssue,
+    ScanIssueReason, ScanReport, Shelf, SpineStyle,
 };
 pub use service::DEFAULT_DOWNLOAD_NAMING;
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 
 /// The schema version this build knows how to create and read.
-pub const SCHEMA_VERSION: i64 = 5;
+pub const SCHEMA_VERSION: i64 = 6;
 
 /// User-facing application name.
 pub const APP_NAME: &str = "PocketLibrary";

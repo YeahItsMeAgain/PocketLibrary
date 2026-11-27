@@ -14,9 +14,9 @@ use crate::enrichment::{EnrichmentService, MetadataProvider};
 use crate::error::{ApiError, ApiResult, Result};
 use crate::models::{
     Annotation, AnnotationKind, AppInfo, Book, BookDetail, Bookmark, CoverChoices,
-    CoverLookupOutcome, CoverOption, DeviceCoverPreview, Download, DownloadRequest,
-    EnrichmentMode, EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, LibraryStatus,
-    ReadingState, ReadingStatus, ScanReport, Shelf,
+    CoverLookupOutcome, CoverOption, DeviceCoverPreview, Download, DownloadRequest, EnrichmentMode,
+    EnrichmentOutcome, EnrichmentSettings, Label, LabelUsage, LibraryStatus, ReadingState,
+    ReadingStatus, ScanReport, Shelf, SpineStyle,
 };
 use crate::service::Service;
 use crate::source::FileSource;
@@ -140,7 +140,9 @@ impl Api {
 
     /// Local cover choices, the current cover and any cached online list.
     pub fn cover_choices(&self, book_id: i64) -> ApiResult<CoverChoices> {
-        self.enrichment.cover_choices(book_id).map_err(ApiError::from)
+        self.enrichment
+            .cover_choices(book_id)
+            .map_err(ApiError::from)
     }
 
     /// Explicit "Find covers"; opening the chooser makes no request.
@@ -331,6 +333,13 @@ impl Api {
     pub fn set_download_naming(&self, pattern: &str) -> ApiResult<String> {
         self.service
             .set_download_naming(pattern)
+            .map_err(ApiError::from)
+    }
+
+    /// Persist the presentation style for one book's generated spine.
+    pub fn set_spine_style(&self, book_id: i64, style: SpineStyle) -> ApiResult<()> {
+        self.service
+            .set_spine_style(book_id, style)
             .map_err(ApiError::from)
     }
 

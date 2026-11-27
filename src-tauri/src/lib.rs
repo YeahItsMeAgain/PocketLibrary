@@ -29,6 +29,7 @@ use pocketlibrary_core::{
 #[cfg(target_os = "android")]
 mod saf;
 mod spine_assets;
+mod spine_queue;
 mod spine_service;
 mod updates;
 
@@ -539,7 +540,11 @@ fn choose_device_cover_response(
             "book {book_id}: staged {}×{} device image{}",
             preview.width,
             preview.height,
-            if preview.warning.is_some() { " (needs warning)" } else { "" }
+            if preview.warning.is_some() {
+                " (needs warning)"
+            } else {
+                ""
+            }
         ),
     );
     Ok(Some(preview))
@@ -937,10 +942,49 @@ async fn spine_generate(
     app: AppHandle,
     book_id: i64,
 ) -> Result<spine_service::SpineArtifact, ApiError> {
+    // An explicit generate leaves the automatic queue, so it runs next rather
+    // than waiting behind earlier pending books.
+    app.state::<spine_queue::SpineQueue>().remove(book_id);
     blocking(move || {
         let service = app.state::<spine_service::SpineService>();
         let api = app.state::<Api>();
         service.generate(book_id, api.inner())
+    })
+    .await
+}
+
+/// Queue books for automatic generation. Idempotent; cached books are dropped
+/// by the worker before inference.
+#[tauri::command]
+async fn spine_enqueue(app: AppHandle, book_ids: Vec<i64>) -> Result<(), ApiError> {
+    app.state::<spine_queue::SpineQueue>().enqueue(book_ids);
+    Ok(())
+}
+
+/// The full queue state, also pushed as `spine://queue`.
+#[tauri::command]
+fn spine_queue(app: AppHandle) -> Result<spine_queue::SpineQueueState, ApiError> {
+    Ok(app.state::<spine_queue::SpineQueue>().snapshot())
+}
+
+/// Pause automatic jobs while the reader is open. An explicit generate still
+/// runs.
+#[tauri::command]
+fn spine_pause(app: AppHandle, paused: bool) -> Result<(), ApiError> {
+    app.state::<spine_queue::SpineQueue>().set_paused(paused);
+    Ok(())
+}
+
+/// Persist the presentation style for one book's generated spine.
+#[tauri::command]
+async fn spine_set_style(
+    app: AppHandle,
+    book_id: i64,
+    style: pocketlibrary_core::SpineStyle,
+) -> Result<(), ApiError> {
+    blocking(move || {
+        let api = app.state::<Api>();
+        api.set_spine_style(book_id, style)
     })
     .await
 }
@@ -962,11 +1006,18 @@ async fn spine_artifact(
 /// Whether the model bundle is available. Resolves the models once per app run.
 #[tauri::command]
 async fn spine_status(app: AppHandle) -> Result<spine_service::SpineStatus, ApiError> {
-    blocking(move || {
-        let service = app.state::<spine_service::SpineService>();
-        Ok(service.status())
+    let status = blocking({
+        let app = app.clone();
+        move || {
+            let service = app.state::<spine_service::SpineService>();
+            Ok(service.status())
+        }
     })
-    .await
+    .await?;
+    // `status` resolves the bundled models. If jobs were waiting for them,
+    // this is the moment they can start.
+    app.state::<spine_queue::SpineQueue>().kick();
+    Ok(status)
 }
 
 #[tauri::command]
@@ -1026,6 +1077,9 @@ async fn share_diagnostics(app: AppHandle) -> Result<Option<SharedDiagnostics>, 
 fn delete_book_response(app: &AppHandle, book_id: i64, delete_file: bool) -> Result<(), ApiError> {
     let api = app.state::<Api>();
     let path = api.book_path(book_id)?;
+    app.state::<spine_queue::SpineQueue>().remove(book_id);
+    app.state::<spine_service::SpineService>()
+        .remove_cache(book_id);
     if delete_file {
         let token = api.library_folder()?.ok_or_else(|| {
             api_error(
@@ -1042,15 +1096,13 @@ fn delete_book_response(app: &AppHandle, book_id: i64, delete_file: bool) -> Res
         }
         let source = SafSource::new(app.android_fs(), uri);
         if let Some(file_uri) = source.uri_for_path(&path)? {
-            app.android_fs()
-                .remove_file(&file_uri)
-                .map_err(|error| {
-                    logged_error(
-                        "delete_book",
-                        "The book file could not be deleted. It is still in your library.",
-                        error,
-                    )
-                })?;
+            app.android_fs().remove_file(&file_uri).map_err(|error| {
+                logged_error(
+                    "delete_book",
+                    "The book file could not be deleted. It is still in your library.",
+                    error,
+                )
+            })?;
         }
     }
     api.delete_book(book_id)?;
@@ -1066,6 +1118,9 @@ fn delete_book_response(app: &AppHandle, book_id: i64, delete_file: bool) -> Res
 #[cfg(not(target_os = "android"))]
 fn delete_book_response(app: &AppHandle, book_id: i64, _delete_file: bool) -> Result<(), ApiError> {
     let api = app.state::<Api>();
+    app.state::<spine_queue::SpineQueue>().remove(book_id);
+    app.state::<spine_service::SpineService>()
+        .remove_cache(book_id);
     api.delete_book(book_id)?;
     log_diag(
         app,
@@ -1077,7 +1132,8 @@ fn delete_book_response(app: &AppHandle, book_id: i64, _delete_file: bool) -> Re
 }
 
 #[cfg(target_os = "android")]
-fn open_book_externally_response(app: &AppHandle, book_id: i64) -> Result<(), ApiError> {    let api = app.state::<Api>();
+fn open_book_externally_response(app: &AppHandle, book_id: i64) -> Result<(), ApiError> {
+    let api = app.state::<Api>();
     let token = api.library_folder()?.ok_or_else(|| {
         api_error(
             "library_unavailable",
@@ -1285,10 +1341,7 @@ fn reset_cover(api: tauri::State<'_, Api>, book_id: i64) -> Result<(), ApiError>
 }
 
 #[tauri::command]
-fn enrichment_targets(
-    api: tauri::State<'_, Api>,
-    limit: usize,
-) -> Result<Vec<Book>, ApiError> {
+fn enrichment_targets(api: tauri::State<'_, Api>, limit: usize) -> Result<Vec<Book>, ApiError> {
     api.enrichment_targets(limit)
 }
 
@@ -1357,11 +1410,7 @@ fn move_book(
 }
 
 #[tauri::command]
-async fn delete_book(
-    app: AppHandle,
-    book_id: i64,
-    delete_file: bool,
-) -> Result<(), ApiError> {
+async fn delete_book(app: AppHandle, book_id: i64, delete_file: bool) -> Result<(), ApiError> {
     blocking(move || delete_book_response(&app, book_id, delete_file)).await
 }
 
@@ -1565,11 +1614,15 @@ pub fn run() {
             );
             app.manage(api);
             app.manage(spine_service::SpineService::new(data_dir.clone()));
+            let spine_queue = spine_queue::SpineQueue::new(data_dir.clone(), app.handle().clone());
+            app.manage(spine_queue);
             let updates_state = updates::UpdatesState::from_config(app.config());
             app.manage(updates_state);
             app.manage(BackupExchange::default());
             app.manage(PendingExternal::default());
             spawn_download_worker(app.handle().clone());
+            // Re-queue unfinished automatic jobs from the previous process.
+            app.state::<spine_queue::SpineQueue>().kick();
             Ok(())
         });
 
@@ -1650,7 +1703,11 @@ pub fn run() {
             share_diagnostics,
             spine_generate,
             spine_artifact,
-            spine_status
+            spine_status,
+            spine_enqueue,
+            spine_queue,
+            spine_pause,
+            spine_set_style
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

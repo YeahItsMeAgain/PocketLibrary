@@ -146,6 +146,48 @@ impl FromSql for CoverSource {
     }
 }
 
+/// How a generated spine is presented on the shelf and in detail.
+///
+/// The database stores the wire spelling (`wrap`, `full-bleed`, `cloth`); a
+/// NULL column reads back as the `Wrap` default.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum SpineStyle {
+    #[default]
+    Wrap,
+    FullBleed,
+    Cloth,
+}
+
+impl SpineStyle {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Wrap => "wrap",
+            Self::FullBleed => "full-bleed",
+            Self::Cloth => "cloth",
+        }
+    }
+}
+
+impl ToSql for SpineStyle {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.as_str()))
+    }
+}
+
+impl FromSql for SpineStyle {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        match value.as_str()? {
+            "wrap" => Ok(Self::Wrap),
+            "full-bleed" => Ok(Self::FullBleed),
+            "cloth" => Ok(Self::Cloth),
+            other => Err(FromSqlError::Other(
+                format!("unknown spine style: {other}").into(),
+            )),
+        }
+    }
+}
+
 /// How eagerly PocketLibrary looks up online details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -367,6 +409,9 @@ pub struct Book {
     pub identifier: Option<String>,
     /// Page count, read from a PDF; EPUBs are reflowable and have none.
     pub page_count: Option<i64>,
+    /// How this book's generated spine is presented. Defaults to Wrap.
+    #[serde(default)]
+    pub spine_style: SpineStyle,
     /// Cached cover path. Never serialised to the UI.
     #[serde(skip)]
     pub cover_path: Option<String>,

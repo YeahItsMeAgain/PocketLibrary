@@ -253,6 +253,14 @@ CREATE TABLE field_provenance (
 );
 "#;
 
+/// M6 adds the per-book spine presentation style. The column is nullable so a
+/// database written before this migration keeps working; readers treat NULL as
+/// the `wrap` default.
+const MIGRATE_V5_TO_V6: &str = r#"
+ALTER TABLE books ADD COLUMN spine_style TEXT
+    CHECK (spine_style IS NULL OR spine_style IN ('wrap', 'full-bleed', 'cloth'));
+"#;
+
 /// Bring the database up to [`SCHEMA_VERSION`], or fail if it is newer.
 ///
 /// The migration runs in one transaction, so a failed fresh install leaves no
@@ -312,10 +320,56 @@ pub fn migrate(conn: &mut Connection) -> Result<()> {
     if version < 5 {
         tx.execute_batch(MIGRATE_V4_TO_V5)?;
     }
+    if version < 6 {
+        tx.execute_batch(MIGRATE_V5_TO_V6)?;
+    }
     tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     tx.commit()?;
     if rebuild_books {
         conn.pragma_update(None, "foreign_keys", "ON")?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_five_gains_a_nullable_spine_style() {
+        let mut conn = Connection::open_in_memory().expect("in-memory database");
+        conn.execute_batch(SCHEMA_V2).expect("version-two schema");
+        conn.pragma_update(None, "user_version", 5)
+            .expect("mark as version five");
+
+        migrate(&mut conn).expect("migrate to version six");
+
+        let version: i64 = conn
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .expect("read version");
+        assert_eq!(version, SCHEMA_VERSION);
+        assert_eq!(version, 6);
+
+        conn.execute(
+            "INSERT INTO books (content_hash, path, format, title, authors, added_at)
+             VALUES ('hash', 'book.epub', 'epub', 'A Book', '[]', 1)",
+            [],
+        )
+        .expect("insert book");
+        let style: Option<String> = conn
+            .query_row("SELECT spine_style FROM books", [], |row| row.get(0))
+            .expect("read style");
+        assert_eq!(style, None, "NULL means the wrap default");
+
+        conn.execute(
+            "UPDATE books SET spine_style = 'full-bleed' WHERE content_hash = 'hash'",
+            [],
+        )
+        .expect("set style");
+        conn.execute(
+            "UPDATE books SET spine_style = 'hybrid' WHERE content_hash = 'hash'",
+            [],
+        )
+        .expect_err("unknown styles are rejected");
+    }
 }

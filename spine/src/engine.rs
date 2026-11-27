@@ -6,7 +6,7 @@
 //! the prototype's flat-ring fill when it is not.
 
 use anyhow::{Context, Result};
-use image::{imageops::FilterType, GrayImage, RgbImage};
+use image::{GrayImage, RgbImage, imageops::FilterType};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::path::{Path, PathBuf};
@@ -108,6 +108,18 @@ pub struct Timings {
     pub total: f64,
 }
 
+/// Coarse, honest pipeline stages reported to the queue. The engine never
+/// reports fake per-pixel progress.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Stage {
+    /// Cover decode, text detection and mask construction.
+    Art,
+    /// MI-GAN or flat-ring text removal.
+    Text,
+    /// Crop search and residual-text QA.
+    Check,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SpineReport {
     pub route: Route,
@@ -160,6 +172,17 @@ impl Engine {
 
     /// Run the pipeline and write the seven contract files into `out_dir`.
     pub fn generate(&self, input: &BookInput, out_dir: &Path) -> Result<SpineReport> {
+        self.generate_with_progress(input, out_dir, &mut |_| {})
+    }
+
+    /// Run the pipeline, calling `progress` as each real stage begins. The
+    /// callback is synchronous and runs on the generating thread.
+    pub fn generate_with_progress(
+        &self,
+        input: &BookInput,
+        out_dir: &Path,
+        progress: &mut dyn FnMut(Stage),
+    ) -> Result<SpineReport> {
         if !input.cover.is_file() {
             anyhow::bail!(
                 "cover not found: {} (no spine job was started)",
@@ -172,7 +195,7 @@ impl Engine {
             .inner
             .lock()
             .map_err(|_| anyhow::anyhow!("spine engine lock poisoned"))?;
-        inner.run(input, out_dir)
+        inner.run(input, out_dir, progress)
     }
 
     pub fn models(&self) -> &Models {
@@ -181,7 +204,12 @@ impl Engine {
 }
 
 impl Inner {
-    fn run(&mut self, input: &BookInput, out_dir: &Path) -> Result<SpineReport> {
+    fn run(
+        &mut self,
+        input: &BookInput,
+        out_dir: &Path,
+        progress: &mut dyn FnMut(Stage),
+    ) -> Result<SpineReport> {
         let t_all = Instant::now();
         let src = image::open(&input.cover)
             .with_context(|| format!("open cover {}", input.cover.display()))?
@@ -189,6 +217,7 @@ impl Inner {
         let (src_w, src_h) = src.dimensions();
 
         // --- detection + mask ------------------------------------------------
+        progress(Stage::Art);
         let t0 = Instant::now();
         let (mask_full, boxes, det_s) = mask::build_mask(&mut self.det, &src)?;
         let mask_s = t0.elapsed().as_secs_f64();
@@ -242,6 +271,7 @@ impl Inner {
         let mut art_crop_img_opt = None;
 
         if crop_dec.verdict != "pass" {
+            progress(Stage::Text);
             let InpaintResult {
                 art: filled_art,
                 flat_s: fs,
@@ -275,6 +305,7 @@ impl Inner {
         }
         let qa_s = qa_start.elapsed().as_secs_f64();
 
+        progress(Stage::Check);
         // --- choose the route exactly as v8 does -----------------------------
         let rank = |v: &str| match v {
             "pass" => 2,
@@ -507,11 +538,7 @@ fn slugify(title: &str) -> String {
     while out.ends_with('-') {
         out.pop();
     }
-    if out.is_empty() {
-        "book".into()
-    } else {
-        out
-    }
+    if out.is_empty() { "book".into() } else { out }
 }
 
 pub fn save_jpg(path: &Path, img: &RgbImage, quality: u8) -> Result<()> {

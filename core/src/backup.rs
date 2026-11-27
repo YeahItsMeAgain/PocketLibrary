@@ -21,7 +21,7 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 use crate::cover;
 use crate::error::{Error, Result};
-use crate::models::{BookFormat, CoverSource, DownloadState, ReadingStatus};
+use crate::models::{BookFormat, CoverSource, DownloadState, ReadingStatus, SpineStyle};
 
 /// Marker stored in `manifest.json` so another zip cannot be mistaken for one.
 pub const BACKUP_KIND: &str = "pocketlibrary-backup";
@@ -111,6 +111,9 @@ struct ManifestBook {
     published_date: Option<String>,
     identifier: Option<String>,
     page_count: Option<i64>,
+    /// NULL means the Wrap default; older archives simply omit the field.
+    #[serde(default)]
+    spine_style: Option<SpineStyle>,
     /// Zip entry name under `covers/`, absent when no cover was cached.
     cover_file: Option<String>,
     cover_source: Option<CoverSource>,
@@ -340,7 +343,7 @@ fn build_manifest(conn: &Connection) -> Result<BackupManifest> {
             "SELECT b.content_hash, b.format, b.title, b.authors, b.series,
                     b.language, b.description, b.publisher, b.published_date, b.identifier,
                     b.page_count, b.cover_path, b.cover_source, b.added_at, s.ordinal,
-                    b.slot_index, b.file_cover_path, b.file_cover_source
+                    b.slot_index, b.file_cover_path, b.file_cover_source, b.spine_style
              FROM books b LEFT JOIN shelves s ON s.id = b.shelf_id
              ORDER BY b.shelf_id IS NULL, b.shelf_id, b.slot_index, b.id",
         )?;
@@ -368,6 +371,7 @@ fn build_manifest(conn: &Connection) -> Result<BackupManifest> {
                 published_date: row.get(8)?,
                 identifier: row.get(9)?,
                 page_count: row.get(10)?,
+                spine_style: row.get(18)?,
                 cover_source: row.get(12)?,
                 file_cover_file,
                 file_cover_source: row.get(17)?,
@@ -755,6 +759,12 @@ fn merge(
                     params![path, book.cover_source, id],
                 )?;
             }
+            if book.spine_style.is_some() {
+                tx.execute(
+                    "UPDATE books SET spine_style = ?1 WHERE id = ?2",
+                    params![book.spine_style, id],
+                )?;
+            }
             install_provenance(tx, id, book)?;
             continue;
         }
@@ -1130,8 +1140,8 @@ fn insert_book(
              content_hash, quick_key, path, format, title, authors, series, language,
              description, publisher, published_date, identifier, page_count, cover_path,
              cover_source, added_at, shelf_id, slot_index,
-             file_cover_path, file_cover_source, file_description
-         ) VALUES (?1, NULL, '', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+             file_cover_path, file_cover_source, file_description, spine_style
+         ) VALUES (?1, NULL, '', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
         params![
             book.content_hash,
             book.format,
@@ -1152,6 +1162,7 @@ fn insert_book(
             file_cover_path,
             book.file_cover_source.or(book.cover_source),
             book.description,
+            book.spine_style,
         ],
     )?;
     Ok(())

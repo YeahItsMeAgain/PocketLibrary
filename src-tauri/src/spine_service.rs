@@ -23,8 +23,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+use pocketlibrary_core::spine_cache::{CACHE_LIMIT_BYTES, trim_cache};
 use pocketlibrary_core::{Api, ApiError, Book};
-use pocketlibrary_spine::{BookInput, Engine, Models, SPINE_H, SPINE_W};
+use pocketlibrary_spine::{BookInput, Engine, Models, SPINE_H, SPINE_W, Stage};
 
 use crate::spine_assets::{self, SpineModelPaths};
 
@@ -32,6 +33,8 @@ use crate::spine_assets::{self, SpineModelPaths};
 pub const BUNDLE_ID: &str = "spine-v1";
 /// Cache file written last; its presence means a complete entry.
 const ARTIFACT_FILE: &str = "artifact.json";
+/// Page estimate used when a book has no reliable page count.
+const ESTIMATED_PAGES: u32 = 320;
 
 /// The wire shape shared with the frontend. Kept camelCase by serde.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -50,6 +53,9 @@ pub struct SpineArtifact {
     pub spine_data_url: String,
     /// `data:image/jpeg;base64,...`
     pub fallback_data_url: String,
+    /// True when the page count used for geometry was an estimate.
+    #[serde(default)]
+    pub pages_approximate: bool,
     pub run_json: Value,
     pub qa_json: Value,
 }
@@ -100,6 +106,16 @@ impl SpineService {
 
     /// Generate or reuse one book's spine. Call from a blocking thread.
     pub fn generate(&self, book_id: i64, api: &Api) -> Result<SpineArtifact, ApiError> {
+        self.generate_with_progress(book_id, api, |_| {})
+    }
+
+    /// Generate with a coarse stage callback for the queue's progress events.
+    pub fn generate_with_progress(
+        &self,
+        book_id: i64,
+        api: &Api,
+        mut progress: impl FnMut(Stage),
+    ) -> Result<SpineArtifact, ApiError> {
         let book = find_book(api, book_id)?;
         let prepared = self.prepare(book_id, &book)?;
 
@@ -138,18 +154,27 @@ impl SpineService {
             })?;
         }
 
-        engine.generate(&prepared.input, &staged).map_err(|error| {
-            eprintln!("pocketlibrary spine {book_id}: {error:#}");
-            let _ = fs::remove_dir_all(&staged);
-            api_error(
-                "spine_failed",
-                "The spine could not be generated for this book. Please try again.",
-            )
-        })?;
+        engine
+            .generate_with_progress(&prepared.input, &staged, &mut progress)
+            .map_err(|error| {
+                eprintln!("pocketlibrary spine {book_id}: {error:#}");
+                let _ = fs::remove_dir_all(&staged);
+                api_error(
+                    "spine_failed",
+                    "The spine could not be generated for this book. Please try again.",
+                )
+            })?;
 
-        let artifact = match artifact_from_dir(&staged, book_id)
-            .and_then(|artifact| write_artifact(&staged, &artifact).map(|_| artifact))
-        {
+        // The cache keeps only runtime files. Working copies are not needed by
+        // any renderer and would otherwise count against the LRU budget.
+        for working in ["source.jpg", "mask.png"] {
+            let _ = fs::remove_file(staged.join(working));
+        }
+
+        let artifact = match artifact_from_dir(&staged, book_id).and_then(|mut artifact| {
+            artifact.pages_approximate = prepared.pages_approximate;
+            write_artifact(&staged, &artifact).map(|_| artifact)
+        }) {
             Ok(artifact) => artifact,
             Err(error) => {
                 let _ = fs::remove_dir_all(&staged);
@@ -157,7 +182,55 @@ impl SpineService {
             }
         };
         install_dir(&staged, &prepared.dir)?;
+        trim_cache(&self.books_dir(), CACHE_LIMIT_BYTES, Some(&prepared.dir));
         Ok(artifact)
+    }
+
+    /// Drop a deleted book's cache entries. The artifact records the book id,
+    /// so this still works after the cover file has gone.
+    pub fn remove_cache(&self, book_id: i64) {
+        let Ok(entries) = fs::read_dir(self.books_dir()) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let belongs = read_cached(&path).is_some_and(|artifact| artifact.book_id == book_id);
+            if !belongs {
+                continue;
+            }
+            if let Err(error) = fs::remove_dir_all(&path) {
+                eprintln!(
+                    "pocketlibrary spine: remove cache {}: {error}",
+                    path.display()
+                );
+            }
+        }
+    }
+
+    /// True when this book already has a complete cache entry.
+    pub fn is_cached(&self, book_id: i64, api: &Api) -> bool {
+        let Ok(book) = find_book(api, book_id) else {
+            return false;
+        };
+        let Ok(prepared) = self.prepare(book_id, &book) else {
+            return false;
+        };
+        read_cached(&prepared.dir).is_some()
+    }
+
+    /// Resolve the bundled models once. Never builds an ONNX session.
+    pub fn models_ready(&self) -> bool {
+        let mut slot = match self.models.lock() {
+            Ok(slot) => slot,
+            Err(_) => return false,
+        };
+        if slot.is_none() {
+            *slot = Some(spine_assets::ensure_models(&self.app_data_dir));
+        }
+        matches!(slot.as_ref(), Some(Ok(_)))
     }
 
     /// Read a cached artifact without running inference. Call from a blocking
@@ -212,6 +285,7 @@ impl SpineService {
 
     fn prepare(&self, book_id: i64, book: &Book) -> Result<Prepared, ApiError> {
         let cover = require_cover(book_id, book.cover_path.as_deref().map(Path::new))?;
+        let (pages, pages_approximate) = pages_of(book);
         let cover_bytes = fs::read(&cover).map_err(|error| {
             eprintln!(
                 "pocketlibrary spine {book_id}: read cover {}: {error}",
@@ -223,7 +297,6 @@ impl SpineService {
             )
         })?;
         let cover_hash = sha256_hex(&cover_bytes);
-        let pages = pages_of(book);
         let key = cache_key(&book.content_hash, &cover_hash, pages, BUNDLE_ID);
         let dir = self.books_dir().join(&key);
 
@@ -235,6 +308,7 @@ impl SpineService {
                 pages,
             },
             dir,
+            pages_approximate,
         })
     }
 
@@ -306,6 +380,7 @@ impl SpineService {
 struct Prepared {
     input: BookInput,
     dir: PathBuf,
+    pages_approximate: bool,
 }
 
 struct InFlight<'a> {
@@ -331,8 +406,13 @@ fn key_name(dir: &Path) -> String {
         .to_owned()
 }
 
-fn pages_of(book: &Book) -> u32 {
-    book.page_count.unwrap_or(0).clamp(0, i64::from(u32::MAX)) as u32
+/// A real positive page count, or a clamped estimate with a flag for the
+/// artifact. EPUBs are reflowable and commonly have no page count.
+fn pages_of(book: &Book) -> (u32, bool) {
+    match book.page_count {
+        Some(pages) if pages > 0 => (pages.clamp(1, i64::from(u32::MAX)) as u32, false),
+        _ => (ESTIMATED_PAGES, true),
+    }
 }
 
 fn author_line(authors: &[String]) -> String {
@@ -441,6 +521,7 @@ pub fn artifact_from_dir(dir: &Path, book_id: i64) -> Result<SpineArtifact, ApiE
         art_data_url: jpeg_data_url(&dir.join("art.jpg"))?,
         spine_data_url: spine_data_url(&dir.join("spine-2x.jpg"))?,
         fallback_data_url: jpeg_data_url(&dir.join("fallback-spine.jpg"))?,
+        pages_approximate: false,
         run_json: run,
         qa_json: qa,
     })
@@ -623,6 +704,42 @@ mod tests {
         assert!(text.contains("\"bookId\""));
         assert!(text.contains("\"artDataUrl\""));
         assert!(text.contains("\"runJson\""));
+    }
+
+    #[test]
+    fn unknown_page_counts_use_a_clamped_estimate() {
+        let mut book = Book {
+            id: 1,
+            content_hash: "hash".to_owned(),
+            quick_key: None,
+            path: "book.epub".to_owned(),
+            format: pocketlibrary_core::BookFormat::Epub,
+            title: "A Book".to_owned(),
+            authors: Vec::new(),
+            series: None,
+            language: None,
+            description: None,
+            publisher: None,
+            published_date: None,
+            identifier: None,
+            page_count: None,
+            spine_style: pocketlibrary_core::SpineStyle::Wrap,
+            cover_path: None,
+            cover_source: None,
+            file_cover_path: None,
+            file_cover_source: None,
+            file_description: None,
+            added_at: 0,
+            shelf_id: None,
+            slot_index: None,
+            reading_status: pocketlibrary_core::ReadingStatus::Unread,
+            labels: Vec::new(),
+        };
+        assert_eq!(pages_of(&book), (ESTIMATED_PAGES, true));
+        book.page_count = Some(0);
+        assert_eq!(pages_of(&book), (ESTIMATED_PAGES, true));
+        book.page_count = Some(412);
+        assert_eq!(pages_of(&book), (412, false));
     }
 
     #[test]

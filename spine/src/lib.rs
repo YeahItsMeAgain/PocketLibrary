@@ -44,6 +44,6 @@ pub mod qa;
 
 pub use crop::{SPINE_ASPECT, SPINE_H, SPINE_W};
 pub use engine::{
-    save_jpg, save_png, BookInput, Engine, Models, Route, SpineReport, Timings, Verdict, DET_LIMIT,
-    MAX_SIDE,
+    BookInput, DET_LIMIT, Engine, MAX_SIDE, Models, Route, SpineReport, Stage, Timings, Verdict,
+    save_jpg, save_png,
 };
