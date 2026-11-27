@@ -76,7 +76,7 @@ interface SpineStyle {
   ornament: string;
 }
 
-export function spineStyle(book: Book): SpineStyle {
+export function shelfSpineStyle(book: Book): SpineStyle {
   const seed =
     hashString(book.contentHash || `${book.title}|${book.authors.join("|")}`) +
     (book.slotIndex ?? 0) * 2654435761;

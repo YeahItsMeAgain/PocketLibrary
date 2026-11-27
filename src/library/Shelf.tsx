@@ -10,8 +10,8 @@ import {
   SPINE_INK,
   STATUS_LABELS,
   shelfMark,
+  shelfSpineStyle,
   spineLabelAbbr,
-  spineStyle,
   surname,
 } from "./spine";
 import type { SpineBookState } from "./spineActivity";
@@ -107,7 +107,7 @@ export const Spine = memo(function Spine({
   onPress,
 }: SpineProps) {
   const statusLabel = STATUS_LABELS[book.readingStatus];
-  const style = useMemo(() => spineStyle(book), [book]);
+  const style = useMemo(() => shelfSpineStyle(book), [book]);
   // Wrap and Full-bleed paint the generated strip; Cloth is the typographic
   // spine rendered below. A rejected fallback never reaches here with a strip.
   const showGenerated = Boolean(generatedSpine) && book.spineStyle !== "cloth";

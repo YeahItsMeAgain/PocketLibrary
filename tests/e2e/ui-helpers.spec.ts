@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import type { Book, Download } from "../../src/platform";
 import { downloadPercent, downloadStatusText } from "../../src/downloads/format";
-import { shelfMark, spineStyle } from "../../src/library/spine";
+import { shelfMark, shelfSpineStyle } from "../../src/library/spine";
 
 function book(id: number, overrides: Partial<Book> = {}): Book {
   return {
@@ -57,11 +57,11 @@ test("shelfMark uses Roman numerals and falls back past twelve", () => {
   expect(shelfMark(12)).toBe("13");
 });
 
-test("spineStyle is deterministic and only depends on the book", () => {
+test("shelfSpineStyle is deterministic and only depends on the book", () => {
   const first = book(1);
-  expect(spineStyle(first)).toEqual(spineStyle({ ...first }));
-  expect(spineStyle(book(2, { contentHash: "other" }))).not.toEqual(
-    spineStyle(first),
+  expect(shelfSpineStyle(first)).toEqual(shelfSpineStyle({ ...first }));
+  expect(shelfSpineStyle(book(2, { contentHash: "other" }))).not.toEqual(
+    shelfSpineStyle(first),
   );
 });
 

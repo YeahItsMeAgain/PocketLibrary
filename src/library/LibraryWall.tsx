@@ -25,7 +25,7 @@ import { FilterStrip } from "../labels/FilterStrip";
 import { matchingBookIds } from "./filter";
 import { LibrarySkeleton } from "./LibrarySkeleton";
 import { ShelfCase, SpineFace } from "./Shelf";
-import { SPINE_GOLD, SPINE_INK, shelfMark, spineStyle } from "./spine";
+import { SPINE_GOLD, SPINE_INK, shelfMark, shelfSpineStyle } from "./spine";
 import { useSpineActivity } from "./spineActivity";
 import {
   HINT_KEY,
@@ -623,12 +623,12 @@ export function LibraryWall({
                 height: lift.height,
                 "--w": `${lift.width}px`,
                 "--h": `${lift.height}px`,
-                "--c1": spineStyle(lift.book).c1,
-                "--c2": spineStyle(lift.book).c2,
+                "--c1": shelfSpineStyle(lift.book).c1,
+                "--c2": shelfSpineStyle(lift.book).c2,
                 "--gold": SPINE_GOLD,
                 "--ink": SPINE_INK,
                 "--lean": "0deg",
-                "--fs": spineStyle(lift.book).fontSize,
+                "--fs": shelfSpineStyle(lift.book).fontSize,
                 transform: lift.returning
                   ? `translate3d(${lift.dx}px, ${lift.dy}px, 0) scale(1)`
                   : undefined,
