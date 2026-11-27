@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary 0.1.13 — spine engine test APK</title>
+<title>PocketLibrary 0.1.14 — spine engine test APK</title>
 <style>
   :root {
     --bg: #0b0709;
@@ -123,30 +123,30 @@
 <main>
   <div class="wordmark"><i aria-hidden="true"></i> PocketLibrary · spine engine test build</div>
 
-  <p class="kicker">Signed arm64 release · version 0.1.13 (1013)</p>
+  <p class="kicker">Signed arm64 release · version 0.1.14 (1014)</p>
   <h1>The spine engine,<br><em>on the phone.</em></h1>
-  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. It finds the cover text, removes it, and renders <b>Wrap, Full-bleed and Cloth</b> without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test. This release fixes the reason art spines could stay invisible: <b>the queue called a book done when an artifact file existed, while the wall only paints a decodable strip that passed the quality gate.</b> A fallback or an unreadable artifact therefore finished forever — queue empty, no error, cloth shelf. Settings now shows Artifact, Shelf strip and Verdict separately, and Edit no longer jumps when you switch styles.</p>
+  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. It finds the cover text, removes it, and renders <b>Wrap, Full-bleed and Cloth</b> without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test. This release turns the rejected Rock Paper Scissors spine into art: a large but clean reconstruction is now a <b>review</b> (painted) instead of a <b>fallback</b> (cloth), while fallback stays reserved for readable leftover text or a structureless result. The “spines need attention” banner and shelf badge are gone, and Settings → Spine engine is a calm status card instead of a diagnostics wall.</p>
 
   <div class="card">
     <div class="download">
       <div>
-        <h2>PocketLibrary 0.1.13 · spine arm64</h2>
-        <p>APK · 68,116,849 bytes (64.96 MiB) · release-signed · arm64-v8a only</p>
+        <h2>PocketLibrary 0.1.14 · spine arm64</h2>
+        <p>APK · 68,123,753 bytes (64.97 MiB) · release-signed · arm64-v8a only</p>
       </div>
-      <a class="button" href="pocketlibrary-0.1.13-spine-arm64.apk" download>Download APK</a>
+      <a class="button" href="pocketlibrary-0.1.14-spine-arm64.apk" download>Download APK</a>
     </div>
 
     <dl>
       <dt>File</dt>
-      <dd class="mono">pocketlibrary-0.1.13-spine-arm64.apk</dd>
+      <dd class="mono">pocketlibrary-0.1.14-spine-arm64.apk</dd>
       <dt>Size</dt>
-      <dd>68,116,849 bytes · 64.96 MiB</dd>
+      <dd>68,123,753 bytes · 64.97 MiB</dd>
       <dt>SHA-256</dt>
-      <dd><code class="hash">ea6f10cac304edb1c83c80be386d1258f50449a03b6db9a1161f04cc1dffd429</code></dd>
+      <dd><code class="hash">692db881b23e00f01ff86f421bd63520bc01bd12fcbbfac3e8aa7ee7d85d156f</code></dd>
       <dt>Package</dt>
       <dd class="mono">app.pocketlibrary</dd>
       <dt>Version</dt>
-      <dd>0.1.13 · versionCode 1013</dd>
+      <dd>0.1.14 · versionCode 1014</dd>
       <dt>SDK</dt>
       <dd>min 24 · target 36 · compile 36 (Android 16)</dd>
       <dt>ABI</dt>
@@ -162,39 +162,40 @@
   </div>
 
   <h2 class="section">Install</h2>
-  <p class="section-lede">Sideload it over 0.1.12, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
+  <p class="section-lede">Sideload it over 0.1.13, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
   <ol>
     <li>Download the APK on the phone (or copy it over).</li>
     <li>Open the file. If Android blocks it, allow <b>Install unknown apps</b> for the browser or file manager you used.</li>
-    <li>If 0.1.12 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 6</b>.</li>
+    <li>If 0.1.13 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 6</b>.</li>
     <li>A <b>debug build or a build signed with another key must be uninstalled first</b>; Android will refuse the update otherwise.</li>
     <li>Open PocketLibrary. Spines start preparing automatically; on an existing library the backfill runs once at low priority, so the wall stays usable.</li>
   </ol>
 
-  <h2 class="section">What changed in 0.1.13</h2>
+  <h2 class="section">What changed in 0.1.14</h2>
   <div class="grid">
     <div class="note">
-      <h3>“Queue empty but cloth shelf” is fixed</h3>
+      <h3>The rejected spine now reaches the wall</h3>
       <ul>
-        <li>0.1.12 counted a book as done when <code>artifact.json</code> existed, while the wall only paints a <b>decodable strip with verdict pass or review</b>. A fallback, or an artifact that could not project, was therefore finished forever: the queue was empty, nothing failed, and the shelf stayed cloth.</li>
-        <li>Now there is one definition of done: <b>a shelf-eligible projected strip</b>. Anything else is regenerated on launch.</li>
-        <li>A <code>fallback</code> is retried automatically up to three attempts, then stays visible as <b>needs attention</b> in the chip, the shelf marker and Settings.</li>
+        <li>The engine produced a good inpainted spine for <b>Rock Paper Scissors</b>, but QA rejected it for <b>mask coverage over 55%</b> and the wall kept cloth.</li>
+        <li>Coverage and seam outliers are now <b>review</b>, not <b>fallback</b>. Fallback is reserved for <b>readable leftover text</b> or a spine with too little structure.</li>
+        <li>When a book is still rejected, the reason is specific: <i>“The quality check rejected this spine: residual text is readable in the 52×236 spine.”</i></li>
+        <li>A changed QA policy gives previously failed books their automatic attempts back once, so this book retries on launch instead of waiting for a manual Retry.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>Settings tells you which layer failed</h3>
+      <h3>No more “needs attention” nag</h3>
       <ul>
-        <li><b>Artifact</b>, <b>Shelf strip</b> and <b>Verdict</b> are separate columns, with a summary of how many books can actually paint art.</li>
-        <li><b>Retry all</b> re-queues books without a shelf strip; <b>Refresh</b> re-reads the report.</li>
-        <li>Engine failures now carry the real on-device error into the attention row and <code>spine.log</code>, instead of “try again”.</li>
+        <li>The global <b>“N spines need attention · Retry”</b> banner is removed. The chip only shows while spines are being prepared.</li>
+        <li>The <b>!</b> badge on shelf spines is removed; its tooltip now just says “cloth spine”.</li>
+        <li>Problems live per book: Edit → Spine and Settings → Spine engine, not over the library.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>Settings is centred, and Edit no longer jumps</h3>
+      <h3>Settings reads like a status card</h3>
       <ul>
-        <li>The settings card was sized by the widest table cell, so it sat right of centre at 390 and was clipped at 320. It now fits the viewport, long paths wrap, and the table stacks below 520 px. Verified at 320 / 390 / 412.</li>
-        <li>Choosing Wrap / Full-bleed / Cloth re-ran the studio load and changed the stage height by 70–112 px. The stage is now stable across all three styles, with no scroll movement.</li>
-        <li>A fallback no longer persists <code>Cloth</code> onto the book, which used to hide later successful art permanently.</li>
+        <li>One line of status, a queue line only when there is work, and <b>only problem books</b> with a reason and a Retry.</li>
+        <li><b>All books · details</b> and <b>What these checks mean</b> are collapsed by default; the full Artifact / Shelf strip / Verdict table is one tap away.</li>
+        <li>Measured −72% height when healthy and −53% with a fallback, still exactly centred at 320 and 390 with no horizontal overflow.</li>
       </ul>
     </div>
   </div>
@@ -226,9 +227,9 @@
     <div class="note limits" style="border:0;background:transparent;padding:0">
       <h3>This is a test build</h3>
       <ul>
-        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.13.</li>
+        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.14.</li>
         <li><b>arm64 only.</b> It will not install on 32-bit, x86, or an emulator without arm64 translation.</li>
-        <li><b>~64.96 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
+        <li><b>~64.97 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
         <li>Generation runs fully on the device. On a phone it is slower than the host timings in the evidence; the inpaint route can take noticeably longer than the crop route.</li>
         <li>Release-signed, so it will not install over a debug build. Uninstall the old app first.</li>
       </ul>
@@ -237,8 +238,8 @@
 
   <footer>
     Built from the payload- and typography-fix release at <span class="mono">HEAD 694c152</span> on 2026-11-27.
-    Version 0.1.13 (1013), 68,116,849 bytes, SHA-256
-    <span class="mono">ea6f10cac304edb1c83c80be386d1258f50449a03b6db9a1161f04cc1dffd429</span>.
+    Version 0.1.14 (1014), 68,123,753 bytes, SHA-256
+    <span class="mono">692db881b23e00f01ff86f421bd63520bc01bd12fcbbfac3e8aa7ee7d85d156f</span>.
     Verification: <span class="mono">apksigner</span> v2 signature valid,
     <span class="mono">zipalign -c -P 16 -v 4</span> passed, packaged manifest has <span class="mono">android:extractNativeLibs="true"</span> so
     <span class="mono">nativeLibraryDir/libonnxruntime.so</span> exists after install.
