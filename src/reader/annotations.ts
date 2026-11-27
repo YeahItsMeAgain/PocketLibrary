@@ -20,8 +20,6 @@ export const ANNOTATION_COLOURS: ReadonlyArray<{
 ];
 
 export const DEFAULT_ANNOTATION_COLOUR = ANNOTATION_COLOURS[0].colour;
-export const HIGHLIGHT_OPACITY = 0.38;
-
 export interface TextQuoteSelector {
   type: "TextQuoteSelector";
   exact: string;

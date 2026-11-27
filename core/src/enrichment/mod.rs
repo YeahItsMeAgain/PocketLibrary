@@ -703,8 +703,3 @@ fn snapshot(conn: &Connection, book_id: i64) -> Result<BookSnapshot> {
         .ok_or(Error::BookNotFound { id: book_id })?;
     Ok(row)
 }
-
-// Keep serde available for future cache rows without a second import site.
-#[allow(dead_code)]
-#[derive(Debug, Serialize, Deserialize)]
-struct Unused;

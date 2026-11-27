@@ -26,15 +26,3 @@ export function matchingBookIds(
   return matching;
 }
 
-export function matchesBook(
-  book: Book,
-  selected: number[],
-  status: ReadingStatus | null,
-): boolean {
-  if (selected.length === 0 && status === null) return true;
-  const worn = book.labels ?? [];
-  return (
-    selected.every((labelId) => worn.some((label) => label.id === labelId)) &&
-    (status === null || book.readingStatus === status)
-  );
-}
