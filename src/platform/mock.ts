@@ -67,7 +67,7 @@ import type {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.14",
+  appVersion: "0.1.15",
   schemaVersion: 6,
 };
 
@@ -415,6 +415,7 @@ const MOCK_BOOKMARKS_KEY = "pocketlibrary.mock.bookmarks";
 const MOCK_ANNOTATIONS_KEY = "pocketlibrary.mock.annotations";
 const MOCK_DOWNLOAD_NAMING_KEY = "pocketlibrary.mock.downloadNaming";
 const MOCK_ENRICHMENT_KEY = "pocketlibrary.mock.enrichmentMode";
+const MOCK_SPINE_STYLES_KEY = "pocketlibrary.mock.spineStyles";
 const MOCK_DIAGNOSTICS_KEY = "pocketlibrary.mock.diagnostics";
 const MOCK_SAMPLE_EPUB = "/test-assets/sample.epub";
 const MOCK_SAMPLE_PDF = "/test-assets/sample.pdf";
@@ -900,11 +901,14 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
    * `list_books`. A fallback verdict is not shelf art, so it stays absent.
    */
   const withCachedSpine = (book: Book): Book => {
-    const artifact = spineArtifacts.get(book.id);
-    if (!artifact || artifact.verdict === "fallback") return book;
-    return book.spineDataUrl === artifact.spineDataUrl
-      ? book
-      : { ...book, spineDataUrl: artifact.spineDataUrl };
+    const style = spineStyles.get(book.id) ?? book.spineStyle ?? "wrap";
+    const styled =
+      book.spineStyle === style ? book : { ...book, spineStyle: style };
+    const artifact = spineArtifacts.get(styled.id);
+    if (!artifact || artifact.verdict === "fallback") return styled;
+    return styled.spineDataUrl === artifact.spineDataUrl
+      ? styled
+      : { ...styled, spineDataUrl: artifact.spineDataUrl };
   };
   let spineGenerateCalls = 0;
   const noteSpineGenerate = () => {
@@ -964,10 +968,10 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
   const queuedIds = new Set<number>();
   const failedQueueIds = new Set<number>();
   const spineStyles = new Map<number, SpineStyle>(
-    Object.entries(spineConfig.styles ?? {}).map(([id, style]) => [
-      Number(id),
-      style,
-    ]),
+    Object.entries({
+      ...(spineConfig.styles ?? {}),
+      ...readStored<Record<number, SpineStyle>>(MOCK_SPINE_STYLES_KEY, {}),
+    }).map(([id, style]) => [Number(id), style]),
   );
   const queueStep = spineConfig.queueStepMs ?? 45;
   let queueTimer: number | null = null;
@@ -992,6 +996,9 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     scope.__POCKETLIBRARY_SPINE_ARTIFACT_IDS__ = [...spineArtifacts.keys()];
     scope.__POCKETLIBRARY_SPINE_STYLES__ = Object.fromEntries(spineStyles);
   };
+  // Publish the persisted styles immediately so a style restored from storage
+  // is observable before the first write.
+  exposeMockSpine();
   const queueSnapshot = (): SpineQueueState => ({
     ...queue,
     attention: queue.attention.map((failure) => ({ ...failure })),
@@ -1689,6 +1696,7 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
       const state = ensureEnrichment(book);
       return {
         ...book,
+        spineStyle: spineStyles.get(id) ?? book.spineStyle ?? "wrap",
         coverDataUrl: coverDataByBook.get(id) ?? MOCK_COVER,
         enrichment: { ...state, hasGap: hasGap(book, state) },
       };
@@ -2546,6 +2554,10 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     },
     spineSetStyle: async (bookId, style) => {
       spineStyles.set(bookId, style);
+      writeStored(
+        MOCK_SPINE_STYLES_KEY,
+        Object.fromEntries(spineStyles),
+      );
       const book = books.find((candidate) => candidate.id === bookId);
       if (book) {
         book.spineStyle = style;

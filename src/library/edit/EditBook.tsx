@@ -46,9 +46,10 @@ export function EditBook({
   detailRef.current = detail;
   const [externalNotice, setExternalNotice] = useState<string | null>(null);
   const [coverOpen, setCoverOpen] = useState(false);
-  const [spineStyle, setSpineStyle] = useState<SpineStyle>(
-    initialDetail.spineStyle ?? "wrap",
-  );
+  // The detail is the one record for the chosen style. A second state copy can
+  // drift from what gets stored and sent to the wall (and from Undo), so the
+  // picker, preview, packed detail and shelf all read this value.
+  const spineStyle = detail.spineStyle ?? "wrap";
   const [enrichmentBusy, setEnrichmentBusy] = useState(false);
   const [enrichmentNotice, setEnrichmentNotice] = useState<string | null>(null);
   const [review, setReview] = useState<Extract<
@@ -109,7 +110,6 @@ export function EditBook({
 
   const handleSpineStyle = useCallback(
     (next: SpineStyle, previous: SpineStyle) => {
-      setSpineStyle(next);
       const patched = { ...detailRef.current, spineStyle: next };
       applyDetail(patched);
       onBookChanged({ id: bookId, spineStyle: next });
@@ -126,7 +126,6 @@ export function EditBook({
             : "Cloth";
       showUndo(`Spine style set to ${label}.`, async () => {
         await platform.spineSetStyle(bookId, previous);
-        setSpineStyle(previous);
         const restored = { ...detailRef.current, spineStyle: previous };
         applyDetail(restored);
         onBookChanged({ id: bookId, spineStyle: previous });
