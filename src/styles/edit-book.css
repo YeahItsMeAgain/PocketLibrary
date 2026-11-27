@@ -303,6 +303,57 @@
   margin: 0;
 }
 
+/* Provenance used to inherit the browser's default paragraph/link styling in
+   the Edit layer (its old rules were scoped to the read sheet). Present the
+   sentence quietly and make the external record a real brass action. */
+.edit-provenance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.edit-provenance-line {
+  margin: 0;
+  color: #bca77d;
+  font-family: var(--serif);
+  font-size: 11px;
+  line-height: 1.55;
+  letter-spacing: 0.03em;
+  text-align: left;
+}
+
+.edit-source-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(201, 168, 106, 0.38);
+  background: rgba(201, 168, 106, 0.06);
+  color: #e7c983;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.edit-source-link span {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.edit-source-link:hover,
+.edit-source-link:focus-visible {
+  border-color: rgba(232, 207, 155, 0.72);
+  background: rgba(201, 168, 106, 0.12);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .edit-online-reader {
   margin-top: 14px;
   padding-top: 12px;

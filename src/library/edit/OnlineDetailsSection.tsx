@@ -65,26 +65,33 @@ export function OnlineDetailsSection({
         ) : null}
       </div>
       {detail.enrichment.attribution ? (
-        <p className="detail-attribution" data-testid="edit-attribution">
-          {detail.enrichment.attribution.label} supplied{" "}
-          {detail.enrichment.attribution.fields
-            .map((field) =>
-              field === "description" ? "the blurb" : "the cover",
-            )
-            .join(" and ")}
-          .{" "}
+        <div className="edit-provenance" data-testid="edit-attribution">
+          <p className="edit-provenance-line">
+            {detail.enrichment.attribution.label} supplied{" "}
+            {detail.enrichment.attribution.fields
+              .map((field) =>
+                field === "description" ? "the blurb" : "the cover",
+              )
+              .join(" and ")}
+            .
+          </p>
           <a
+            className="edit-source-link"
             href={detail.enrichment.attribution.url}
             target="_blank"
             rel="noreferrer"
           >
-            View the source record
+            View source record
+            <span aria-hidden="true">↗</span>
           </a>
-        </p>
+        </div>
       ) : null}
       {detail.enrichment.descriptionSource === "manual" ||
       detail.enrichment.coverManual ? (
-        <p className="detail-attribution" data-testid="edit-manual-provenance">
+        <p
+          className="edit-provenance-line"
+          data-testid="edit-manual-provenance"
+        >
           {detail.enrichment.descriptionSource === "manual"
             ? "Blurb edited by you."
             : null}
