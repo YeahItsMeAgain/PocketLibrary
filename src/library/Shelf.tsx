@@ -1,7 +1,11 @@
 import type { Book, Shelf } from "../platform";
 import {
   memo,
+  useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
+  useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -27,26 +31,579 @@ interface ShelfCaseProps {
   onPress: (book: Book, event: ReactPointerEvent<HTMLLIElement>) => void;
 }
 
+const TYPOGRAPHY = "typography" as const;
+type SpineStyleName = "art" | "cloth" | typeof TYPOGRAPHY;
+
+/**
+ * A missing or unknown style is the Art default.
+ */
+export function spineStyleName(book: Book): SpineStyleName {
+  const value = book.spineStyle as string | undefined;
+  return value === "cloth" || value === TYPOGRAPHY ? value : "art";
+}
+
+export function paintsArt(spineStyle: SpineStyleName): boolean {
+  return spineStyle === "art";
+}
+
+/** Art's bottom band exists when there is anything to put in it. */
+export function hasBottomBand(book: Book): boolean {
+  return Boolean(book.authors[0]) || book.labels.length > 0;
+}
+
+/** Non-band faces need to know what sits below the title block. */
+export function spineFurnitureClass(book: Book): string {
+  return `${book.labels.length > 0 ? " has-labels" : ""}${
+    book.readingStatus === "finished" ? " has-seal" : ""
+  }`;
+}
+
+export function spineFurnitureVars(book: Book): CSSProperties {
+  const chips =
+    Math.min(book.labels.length, 2) + (book.labels.length > 2 ? 1 : 0);
+  return { "--label-count": chips } as CSSProperties;
+}
+
+/**
+ * Split an author into two balanced lines for the Art foot band. A one-word
+ * name stays on one line; otherwise the split mirrors the reading order, with
+ * the first line taking the extra word when the count is odd.
+ */
+export function authorLines(author: string): string[] {
+  const words = author.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return [author.trim()];
+  const mid = Math.ceil(words.length / 2);
+  return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+}
+
+/** Fixed band percentages; a missing author/labels collapses the foot. */
+export function spineBandVars(book: Book): CSSProperties {
+  // Non-band faces reserve the space actually occupied by chips/seal, so the
+  // title+author group can centre in what is left instead of a guessed 50px.
+  const chips =
+    Math.min(book.labels.length, 2) + (book.labels.length > 2 ? 1 : 0);
+  const labelReserve = chips
+    ? 8 + chips * 13 + (chips - 1) * 2 + 2
+    : 0;
+  const sealReserve = book.readingStatus === "finished" ? 64 : 0;
+  const lowerReserve =
+    labelReserve > 0 || sealReserve > 0
+      ? Math.max(labelReserve, sealReserve)
+      : 26;
+  return {
+    "--lower-reserve": `${lowerReserve}px`,
+    ...(spineStyleName(book) === "art"
+      ? {
+          // No cap band: the art runs to the top edge. The foot gets the
+          // extra height the cap used to take, so the author can sit on two
+          // lines above the label chips.
+          "--band-top": "0%",
+          "--band-bottom": hasBottomBand(book) ? "27%" : "0%",
+        }
+      : null),
+  } as CSSProperties;
+}
+
+interface SpineInk {
+  ink: string;
+  halo: string;
+  shadow: string;
+}
+
+// Cream is the safe default: the strip itself is dark more often than not, and
+// the sample lands within a frame of the image load.
+const DEFAULT_SPINE_INK: SpineInk = {
+  ink: "#f4e6c4",
+  halo: "#160d09",
+  shadow: "rgba(8, 4, 2, 0.72)",
+};
+const DARK_INK: SpineInk = {
+  ink: "#2a1a10",
+  halo: "#fffaf0",
+  shadow: "rgba(255, 250, 238, 0.7)",
+};
+const inkCache = new Map<string, SpineInk>();
+const inkPending = new Map<string, Promise<SpineInk>>();
+
+/**
+ * Read the strip's title band once per URL and choose a hairline ink pairing.
+ * The strip is the only reliable evidence of what sits behind the type; the
+ * book's palette is not.
+ */
+function loadSpineInk(url: string): Promise<SpineInk> {
+  const cached = inkCache.get(url);
+  if (cached) return Promise.resolve(cached);
+  const pending = inkPending.get(url);
+  if (pending) return pending;
+  const promise = new Promise<SpineInk>((resolve) => {
+    const finish = (ink: SpineInk) => {
+      inkCache.set(url, ink);
+      inkPending.delete(url);
+      resolve(ink);
+    };
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 16;
+        canvas.height = 64;
+        const context = canvas.getContext("2d", {
+          willReadFrequently: true,
+        });
+        if (!context) {
+          finish(DEFAULT_SPINE_INK);
+          return;
+        }
+        context.drawImage(image, 0, 0, 16, 64);
+        const pixels = context.getImageData(0, 0, 16, 64).data;
+        const luminance: number[] = [];
+        // The title run occupies the middle of the spine, away from its caps.
+        for (let y = 8; y < 56; y += 1) {
+          for (let x = 2; x < 14; x += 1) {
+            const offset = (y * 16 + x) * 4;
+            luminance.push(
+              (0.2126 * pixels[offset] +
+                0.7152 * pixels[offset + 1] +
+                0.0722 * pixels[offset + 2]) /
+                255,
+            );
+          }
+        }
+        luminance.sort((left, right) => left - right);
+        const median = luminance[Math.floor(luminance.length / 2)] ?? 0.5;
+        finish(median > 0.22 ? DARK_INK : DEFAULT_SPINE_INK);
+      } catch {
+        finish(DEFAULT_SPINE_INK);
+      }
+    };
+    image.onerror = () => finish(DEFAULT_SPINE_INK);
+    image.src = url;
+  });
+  inkPending.set(url, promise);
+  return promise;
+}
+
+function useSpineInk(url: string | undefined): SpineInk {
+  const [sample, setSample] = useState<SpineInk>(
+    () => (url ? inkCache.get(url) : undefined) ?? DEFAULT_SPINE_INK,
+  );
+  useEffect(() => {
+    if (!url) return;
+    let alive = true;
+    void loadSpineInk(url).then((next) => {
+      if (alive) setSample(next);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [url]);
+  return sample;
+}
+
+/** The ink and board variables shared by a shelf spine and its drag ghost. */
+export function spinePaletteVars(book: Book): CSSProperties {
+  const style = shelfSpineStyle(book);
+  const spineStyle = spineStyleName(book);
+  const foil = "#ecd7a4";
+  // The backdrop standardises the art, so the ink is chosen against the smoked
+  // window rather than the raw pixels. Cloth has no window; its foil is fixed
+  // and tested against the board colour. Typography keeps the original cream
+  // board lettering.
+  const ink =
+    spineStyle === "cloth"
+      ? foil
+      : spineStyle === TYPOGRAPHY
+        ? SPINE_INK
+        : readableInk(mix(style.c1, "#0b0908", 0.78));
+  const inkDim = spineStyle === "cloth" ? "#cbb78c" : "#dccba4";
+  return {
+    "--c1": style.c1,
+    "--c2": style.c2,
+    "--gold": SPINE_GOLD,
+    "--ink": SPINE_INK,
+    "--fs": style.fontSize,
+    "--spine-ink": ink,
+    "--spine-ink-dim": inkDim,
+    "--foil": foil,
+  } as CSSProperties;
+}
+
+const MIN_TITLE_FONT = 2.8;
+// Below this the type stops reading as a title. A single column is preferred
+// all the way down to the floor; only a title that cannot fit one column at
+// this size is split across two.
+const READABLE_FONT = 6.4;
+
+interface TitleColumn {
+  text: string;
+  tracking: number;
+}
+
+interface TitleLayout {
+  size: number;
+  tracking: number;
+  columns: TitleColumn[] | null;
+}
+
+function titleChars(title: string): number {
+  return Math.max(1, Array.from(title.replace(/\s+/g, " ").trim()).length);
+}
+
+function sameLayout(left: TitleLayout | null, right: TitleLayout): boolean {
+  if (!left) return false;
+  if (left.size !== right.size || left.tracking !== right.tracking) {
+    return false;
+  }
+  if (!left.columns !== !right.columns) return false;
+  if (!left.columns || !right.columns) return true;
+  return left.columns.every(
+    (column, index) =>
+      column.text === right.columns?.[index]?.text &&
+      column.tracking === right.columns?.[index]?.tracking,
+  );
+}
+
+/** Split at a word boundary so both columns carry the same amount of type. */
+function splitBalanced(
+  title: string,
+  measure: (text: string) => number,
+): { left: string; right: string } | null {
+  const words = title.trim().split(/\s+/);
+  if (words.length < 2) return null;
+  let best: { left: string; right: string; difference: number } | null = null;
+  for (let index = 1; index < words.length; index += 1) {
+    const left = words.slice(0, index).join(" ");
+    const right = words.slice(index).join(" ");
+    const difference = Math.abs(measure(left) - measure(right));
+    if (!best || difference < best.difference) {
+      best = { left, right, difference };
+    }
+  }
+  return best ? { left: best.left, right: best.right } : null;
+}
+
+/**
+ * Prefer one column. A title that fits the run at the readable floor keeps the
+ * full glyph size and is tracked out to fill it. Only when one column would
+ * need unreadably small type does the title split into two balanced columns,
+ * each tracked to the same run so neither ends halfway down the spine.
+ */
+function fitSpineTitle(
+  element: HTMLSpanElement,
+  title: string,
+): TitleLayout | null {
+  const spine = element.closest<HTMLElement>(".spine");
+  if (!spine) return null;
+  const available = element.clientHeight;
+  if (available < 24) return null;
+  const width = spine.clientWidth || 30;
+  const maxFont = Math.min(11.8, Math.max(7, width * 0.34));
+  // Leave a little more room in one-column mode so a final word does not
+  // spill into an unbalanced second column; two-column mode keeps the fuller
+  // run.
+  const target = available * 0.92;
+  const columnTarget = available * 0.94;
+  const chars = titleChars(title);
+  const style = getComputedStyle(element);
+
+  // A detached probe measures the unwrapped run at any candidate size without
+  // disturbing the rendered title (and works before the columns exist).
+  const probe = document.createElement("span");
+  probe.setAttribute("aria-hidden", "true");
+  probe.style.position = "absolute";
+  probe.style.top = "0";
+  probe.style.left = "-9999px";
+  probe.style.visibility = "hidden";
+  probe.style.pointerEvents = "none";
+  probe.style.writingMode = "vertical-rl";
+  probe.style.textOrientation = "mixed";
+  probe.style.whiteSpace = "nowrap";
+  probe.style.fontFamily = style.fontFamily;
+  probe.style.fontWeight = style.fontWeight;
+  probe.style.fontStyle = style.fontStyle;
+  probe.style.letterSpacing = "0px";
+  document.body.appendChild(probe);
+  const measure = (text: string, size: number) => {
+    probe.style.fontSize = `${size}px`;
+    probe.textContent = text;
+    const range = document.createRange();
+    range.selectNodeContents(probe);
+    return range.getBoundingClientRect().height;
+  };
+
+  try {
+    const naturalMax = measure(title, maxFont);
+    if (naturalMax <= target) {
+      return {
+        size: maxFont,
+        tracking: (target - naturalMax) / chars,
+        columns: null,
+      };
+    }
+
+    // One column, shrunk just enough for the run to fit at the readable floor.
+    const needed = maxFont * (target / naturalMax);
+    if (needed >= READABLE_FONT) {
+      let size = Math.min(maxFont, needed);
+      let natural = measure(title, size);
+      for (let attempt = 0; attempt < 3 && natural > target; attempt += 1) {
+        size *= target / natural;
+        natural = measure(title, size);
+      }
+      return {
+        size,
+        tracking: Math.max(0, (target - natural) / chars),
+        columns: null,
+      };
+    }
+
+    // Two columns: shrink until the whole run is two columns long, then split
+    // at the word boundary that balances the two halves.
+    let size = maxFont;
+    let natural = naturalMax;
+    const twoColumnLimit = columnTarget * 2;
+    for (let attempt = 0; attempt < 4 && natural > twoColumnLimit; attempt += 1) {
+      size = Math.max(
+        MIN_TITLE_FONT,
+        size * (twoColumnLimit / natural) * 0.98,
+      );
+      natural = measure(title, size);
+    }
+    let parts = splitBalanced(title, (text) => measure(text, size));
+    if (!parts) {
+      return { size, tracking: 0, columns: null };
+    }
+    // A short word at the split can make one half longer than the run; shrink
+    // and rebalance until both halves fit.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const longest = Math.max(
+        measure(parts.left, size),
+        measure(parts.right, size),
+      );
+      if (longest <= target) break;
+      size = Math.max(MIN_TITLE_FONT, size * (target / longest) * 0.99);
+      const next = splitBalanced(title, (text) => measure(text, size));
+      if (!next) break;
+      parts = next;
+    }
+    const leftLength = measure(`${parts.left} `, size);
+    const rightLength = measure(parts.right, size);
+    return {
+      size,
+      tracking: 0,
+      columns: [
+        {
+          // The trailing space keeps the title's text content intact across
+          // the column break; it is invisible in the rendered run.
+          text: `${parts.left} `,
+          // Each column is tracked independently to the same run, so the
+          // shorter half does not leave a dark gap below its words.
+          tracking: Math.max(
+            0,
+            (columnTarget - leftLength) / titleChars(`${parts.left} `),
+          ),
+        },
+        {
+          text: parts.right,
+          tracking: Math.max(
+            0,
+            (columnTarget - rightLength) / titleChars(parts.right),
+          ),
+        },
+      ],
+    };
+  } finally {
+    probe.remove();
+  }
+}
+
 export function SpineFace({
   book,
-  spineStyle = "wrap",
-  showScrim = false,
+  spineStyle = "art",
+  generatedSpine,
 }: {
   book: Book;
-  spineStyle?: "wrap" | "full-bleed" | "cloth";
-  showScrim?: boolean;
+  spineStyle?: SpineStyleName;
+  generatedSpine?: string;
 }) {
   const bands = book.labels.slice(0, 2);
   const hiddenLabels = book.labels.length - bands.length;
   const author = book.authors[0];
+  const titleRef = useRef<HTMLSpanElement>(null);
+  const authorRef = useRef<HTMLSpanElement>(null);
+  const [layout, setLayout] = useState<TitleLayout | null>(null);
+  const strip = generatedSpine || book.spineDataUrl || undefined;
+  const showGenerated = Boolean(strip) && paintsArt(spineStyle);
+  const adaptiveInk = useSpineInk(showGenerated ? strip : undefined);
+  const inkStyle = showGenerated
+    ? ({
+        "--spine-ink": adaptiveInk.ink,
+        "--spine-halo": adaptiveInk.halo,
+        "--spine-halo-shadow": adaptiveInk.shadow,
+      } as CSSProperties)
+    : undefined;
+
+  useLayoutEffect(() => {
+    const title = titleRef.current;
+    if (!title) return;
+    const fit = () => {
+      const next = fitSpineTitle(title, book.title);
+      if (next) {
+        setLayout((current) => (sameLayout(current, next) ? current : next));
+      }
+    };
+    fit();
+    const spine = title.closest<HTMLElement>(".spine");
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fit);
+    observer?.observe(title);
+    if (spine) observer?.observe(spine);
+    // Webfonts change the advance width, and therefore the run, after mount.
+    let alive = true;
+    void document.fonts?.ready.then(() => {
+      if (alive) fit();
+    });
+    return () => {
+      alive = false;
+      observer?.disconnect();
+    };
+  }, [book.title, book.spineStyle]);
+
+  const isArt = spineStyle === "art";
+
+  // The Art author gets the full two-line name at a fixed starting size. Shrink
+  // only when a long name would spill out of the foot band; the floor keeps it
+  // legible on the narrowest spine.
+  useLayoutEffect(() => {
+    if (!isArt || !author) return;
+    const node = authorRef.current;
+    const band = node?.closest<HTMLElement>(".spine-band-bottom");
+    if (!node || !band) return;
+    const fit = () => {
+      let size = 6.8;
+      node.style.fontSize = `${size}px`;
+      while (
+        size > 4.2 &&
+        (band.scrollHeight > band.clientHeight + 1 ||
+          node.scrollWidth > node.clientWidth + 1)
+      ) {
+        size = Math.round((size - 0.2) * 10) / 10;
+        node.style.fontSize = `${size}px`;
+      }
+    };
+    fit();
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fit);
+    observer?.observe(band);
+    let alive = true;
+    void document.fonts?.ready.then(() => {
+      if (alive) fit();
+    });
+    return () => {
+      alive = false;
+      observer?.disconnect();
+    };
+  }, [author, book.spineStyle, book.labels.length, isArt]);
+
+  const labelBands =
+    book.labels.length > 0 ? (
+      <span className="bands">
+        {bands.map((label) => (
+          <span
+            key={label.id}
+            className="lb"
+            data-testid="spine-label-band"
+            data-short={isArt ? "" : spineLabelAbbr(label.name)}
+            style={
+              {
+                "--lc": label.colour,
+                "--li": "#f8edd6",
+                backgroundColor: label.colour,
+              } as CSSProperties
+            }
+            title={label.name}
+          >
+            {isArt ? (
+              <span className="lb-name">{label.name}</span>
+            ) : (
+              <span className="visually-hidden">{label.name}</span>
+            )}
+          </span>
+        ))}
+        {hiddenLabels > 0 ? (
+          <span className="lb more" data-testid="spine-label-more">
+            +{hiddenLabels}
+          </span>
+        ) : null}
+      </span>
+    ) : null;
+
   return (
     <>
-      {showScrim && spineStyle !== "cloth" ? (
-        <span className="spine-scrim" aria-hidden="true" />
+      {showGenerated && strip ? (
+        <img
+          className="spine-generated"
+          data-testid="spine-generated"
+          src={strip}
+          alt=""
+          draggable={false}
+        />
       ) : null}
-      <span className="spine-text">
-        <span className="st">{book.title}</span>
-        {author ? <span className="sa">{surname(author)}</span> : null}
+      {isArt && hasBottomBand(book) ? (
+        <span
+          className="spine-band spine-band-bottom"
+          data-testid="spine-bottom-band"
+        >
+          {author ? (
+            <span className="sa" ref={authorRef}>
+              {authorLines(author).map((line, index, lines) => (
+                // The trailing space keeps the full name intact for assistive
+                // technology across the two visual lines.
+                <span key={index}>
+                  {index < lines.length - 1 ? `${line} ` : line}
+                </span>
+              ))}
+            </span>
+          ) : null}
+          {labelBands}
+        </span>
+      ) : null}
+      <span className={`spine-text${isArt ? " is-band-layout" : ""}`}>
+        <span
+          className={`st${layout?.columns ? " has-columns" : ""}${
+            showGenerated ? " is-adaptive" : ""
+          }`}
+          ref={titleRef}
+          style={
+            {
+              ...(layout
+                ? {
+                    fontSize: `${Math.round(layout.size * 100) / 100}px`,
+                    letterSpacing: `${Math.round(layout.tracking * 100) / 100}px`,
+                  }
+                : null),
+              ...inkStyle,
+            } as CSSProperties
+          }
+        >
+          {layout?.columns
+            ? layout.columns.map((column, index) => (
+                <span
+                  key={index}
+                  className="st-col"
+                  style={{
+                    letterSpacing: `${Math.round(column.tracking * 100) / 100}px`,
+                  }}
+                >
+                  {column.text}
+                </span>
+              ))
+            : book.title}
+        </span>
+        {!isArt && author ? (
+          <span className="sa">{surname(author)}</span>
+        ) : null}
       </span>
       {book.readingStatus === "finished" ? (
         <span
@@ -57,33 +614,7 @@ export function SpineFace({
           ✦
         </span>
       ) : null}
-      {book.labels.length > 0 ? (
-        <span className="bands">
-          {bands.map((label) => (
-            <span
-              key={label.id}
-              className="lb"
-              data-testid="spine-label-band"
-              data-short={spineLabelAbbr(label.name)}
-              style={
-                {
-                  "--lc": label.colour,
-                  "--li": "#f8edd6",
-                  backgroundColor: label.colour,
-                } as CSSProperties
-              }
-              title={label.name}
-            >
-              <span className="visually-hidden">{label.name}</span>
-            </span>
-          ))}
-          {hiddenLabels > 0 ? (
-            <span className="lb more" data-testid="spine-label-more">
-              +{hiddenLabels}
-            </span>
-          ) : null}
-        </span>
-      ) : null}
+      {!isArt ? labelBands : null}
       {book.readingStatus === "reading" ? (
         <span
           className="ribbon"
@@ -105,25 +636,6 @@ interface SpineProps {
 }
 
 /**
- * The shelf title has to fit a narrow spine without clipping mid-word. A
- * vertical run can use at most two columns, so a long title shrinks just
- * enough that two columns hold it; ordinary titles keep the shelf's chosen
- * size and wrap at a word boundary.
- */
-function shelfTitleFont(
-  title: string,
-  style: { height: number; fontSize: string },
-): string {
-  const base = Number.parseFloat(style.fontSize) || 10;
-  // Top/bottom insets and the author run leave this much inline length.
-  const available = Math.max(48, style.height - 16 - 50 - 16);
-  const chars = Math.max(1, String(title).trim().length);
-  const twoColumnLimit = (2 * available) / (0.62 * chars);
-  const size = Math.min(base, Math.max(6.4, twoColumnLimit));
-  return `${Math.floor(size * 10) / 10}px`;
-}
-
-/**
  * One spine. Filtering and slot recycling must not reconcile the other
  * twenty-odd spines on a shelf, so each book is its own memoised leaf.
  * Callbacks are intentionally excluded: their behaviour is ref-stable and
@@ -139,28 +651,15 @@ export const Spine = memo(function Spine({
 }: SpineProps) {
   const statusLabel = STATUS_LABELS[book.readingStatus];
   const style = useMemo(() => shelfSpineStyle(book), [book]);
-  // Missing/undefined is the documented Wrap default; only an explicit
-  // Cloth choice suppresses generated art.
-  const spineStyle = book.spineStyle ?? "wrap";
-  const titleFont = useMemo(
-    () => shelfTitleFont(book.title, style),
-    [book.title, style],
-  );
-  // The backdrop standardises the art, so the ink is chosen against the smoked
-  // window rather than the raw pixels. Cloth has no window; its foil is fixed
-  // and tested against the board colour.
-  const foil = "#ecd7a4";
-  const ink =
-    spineStyle === "cloth"
-      ? foil
-      : readableInk(mix(style.c1, "#0b0908", 0.78));
-  const inkDim = spineStyle === "cloth" ? "#cbb78c" : "#dccba4";
-  // Wrap and Full-bleed paint the generated strip; Cloth is the typographic
-  // spine rendered below. A rejected fallback never reaches here with a strip.
-  // The list payload carries the cached strip; the activity map only supplies
-  // live updates from the queue or a manual generation.
+  // Missing/undefined is the documented Art default; only Cloth and
+  // Typography suppress generated art.
+  const spineStyle = spineStyleName(book);
+  // Art paints the generated strip; Cloth and Typography are
+  // the typographic spines rendered below. A rejected fallback never reaches
+  // here with a strip. The list payload carries the cached strip; the activity
+  // map only supplies live updates from the queue or a manual generation.
   const generatedStrip = generatedSpine || book.spineDataUrl || undefined;
-  const showGenerated = Boolean(generatedStrip) && spineStyle !== "cloth";
+  const showGenerated = Boolean(generatedStrip) && paintsArt(spineStyle);
   const spineNote =
     spineState?.state === "working"
       ? `spine preparing, ${spineState.stage} stage`
@@ -173,7 +672,7 @@ export const Spine = memo(function Spine({
     <li
       className={`spine book${dragging ? " is-dragging-source" : ""}${
         showGenerated ? " has-generated" : ""
-      }`}
+      }${spineFurnitureClass(book)}`}
       data-testid="spine"
       data-book-id={book.id}
       data-slot={book.slotIndex ?? undefined}
@@ -188,18 +687,12 @@ export const Spine = memo(function Spine({
       tabIndex={0}
       style={
         {
+          ...spinePaletteVars(book),
+          ...spineBandVars(book),
+          ...spineFurnitureVars(book),
           "--w": `${style.width}px`,
           "--h": `${style.height}px`,
-          "--c1": style.c1,
-          "--c2": style.c2,
-          "--gold": SPINE_GOLD,
-          "--ink": SPINE_INK,
           "--lean": `${style.lean}deg`,
-          "--fs": style.fontSize,
-          "--title-fs": titleFont,
-          "--spine-ink": ink,
-          "--spine-ink-dim": inkDim,
-          "--foil": foil,
         } as CSSProperties
       }
       onPointerDown={(event) => onPress(book, event)}
@@ -211,19 +704,10 @@ export const Spine = memo(function Spine({
         }
       }}
     >
-      {showGenerated && generatedStrip ? (
-        <img
-          className="spine-generated"
-          data-testid="spine-generated"
-          src={generatedStrip}
-          alt=""
-          draggable={false}
-        />
-      ) : null}
       <SpineFace
         book={book}
         spineStyle={spineStyle}
-        showScrim={showGenerated}
+        generatedSpine={generatedStrip}
       />
     </li>
   );

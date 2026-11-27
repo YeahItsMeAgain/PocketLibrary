@@ -341,7 +341,7 @@ test("a cover change queues the book again", async ({ page }) => {
     .toBeGreaterThanOrEqual(2);
 });
 
-test("Wrap and Full-bleed fill the spine run with the title and put the author below", async ({
+test("Art fills the art spine with the title and puts the author in the bottom band", async ({
   page,
 }) => {
   await boot(page, {
@@ -354,60 +354,83 @@ test("Wrap and Full-bleed fill the spine run with the title and put the author b
   const edit = page.getByTestId("edit-book");
   await expect(edit.getByTestId("spine-result")).toBeVisible();
   const canvas = page.getByTestId("spine-preview-canvas");
+  await expect(canvas).toHaveAttribute("data-style", "art");
 
-  const readMeta = () =>
-    canvas.evaluate((element) => {
-      const canvas = element as HTMLCanvasElement;
-      const data = canvas.dataset;
-      return {
-        run: data.textRun,
-        cx: Number(data.blockCx),
-        titleCy: Number(data.titleCy),
-        titleWidth: Number(data.titleWidth),
-        titleHeight: Number(data.titleHeight),
-        titleLines: Number(data.titleLines),
-        authorCy: Number(data.authorCy),
-        authorHeight: Number(data.authorHeight),
-        authorLines: Number(data.authorLines),
-        colophonY: Number(data.colophonY),
-        contrast: Number(data.contrast),
-      };
-    });
+  const meta = await canvas.evaluate((element) => {
+    const data = (element as HTMLCanvasElement).dataset;
+    return {
+      run: data.textRun,
+      cx: Number(data.blockCx),
+      titleCy: Number(data.titleCy),
+      titleWidth: Number(data.titleWidth),
+      titleHeight: Number(data.titleHeight),
+      titleLines: Number(data.titleLines),
+      authorCy: Number(data.authorCy),
+      authorHeight: Number(data.authorHeight),
+      authorLines: Number(data.authorLines),
+      colophonY: Number(data.colophonY),
+      contrast: Number(data.contrast),
+      scrim: data.scrim,
+    };
+  });
 
-  for (const style of ["full-bleed", "wrap"]) {
-    await page.getByTestId(`spine-style-${style}`).click();
-    await expect(canvas).toHaveAttribute("data-style", style);
-    const meta = await readMeta();
-    expect(meta.run).toBe("vertical");
-    // Both styles centre the run on the spine: Full-bleed on the 52 px strip
-    // (26) and Wrap on the 18 px case spine (9). Only the art treatment differs.
-    expect(meta.cx).toBeCloseTo(style === "full-bleed" ? 26 : 9, 0);
-    // The title now occupies the majority of the 236 px run, not a third.
-    expect(meta.titleHeight).toBeGreaterThan(236 / 2);
-    expect(meta.titleHeight).toBeGreaterThan(meta.authorHeight * 2);
-    expect(meta.titleCy - meta.titleHeight / 2).toBeGreaterThan(0);
-    // The author sits below the title, above the base mark.
-    expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
-      meta.authorCy - meta.authorHeight / 2,
-    );
-    expect(meta.authorCy).toBeGreaterThan(meta.titleCy);
-    expect(meta.authorCy + meta.authorHeight / 2).toBeLessThan(
-      meta.colophonY,
-    );
-    // The run is taller than it is wide, so it reads down the spine.
-    expect(meta.titleHeight).toBeGreaterThan(meta.titleWidth);
-    expect(meta.titleLines).toBeLessThanOrEqual(2);
-    expect(meta.authorLines).toBe(1);
-    expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
-  }
+  expect(meta.run).toBe("vertical");
+  // Art is a 52 px art spine now, centred like every other style.
+  expect(meta.cx).toBeCloseTo(26, 0);
+  expect(meta.titleHeight).toBeGreaterThan(90);
+  expect(meta.titleLines).toBeLessThanOrEqual(2);
+  // There is no cap mark; the author sits in the taller foot band.
+  expect(meta.colophonY).toBe(0);
+  expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
+    meta.authorCy - meta.authorHeight / 2,
+  );
+  expect(meta.authorCy).toBeGreaterThan(236 * 0.78);
+  expect(meta.titleHeight).toBeGreaterThan(meta.titleWidth);
+  expect(meta.authorLines).toBeLessThanOrEqual(2);
+  expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
+  expect(meta.scrim).toBe("false");
 
-  await expect(canvas).toHaveAttribute("data-scrim", "true");
   await expectNoHorizontalOverflow(page);
   await page.setViewportSize({ width: 320, height: 844 });
   await expectNoHorizontalOverflow(page);
-  await expect(canvas).toHaveAttribute("data-scrim", "true");
-  await expect(canvas).toHaveAttribute("data-style", "wrap");
+  await expect(canvas).toHaveAttribute("data-scrim", "false");
 });
+
+for (const [label, colour] of [
+  ["light", "#f4f4f4"],
+  ["dark", "#0d0d0d"],
+] as const) {
+  test(`Art keeps ${label} art readable without a scrim`, async ({
+    page,
+  }) => {
+    await boot(page, {
+      books: [book(1, { title: "The War of the Worlds" })],
+      spine: {
+        artifacts: { 1: artifact({ artDataUrl: svgArt(colour, colour) }) },
+      },
+    });
+
+    await page.getByTestId("spine").first().click();
+    await openEdit(page);
+    await expect(
+      page.getByTestId("edit-book").getByTestId("spine-result"),
+    ).toBeVisible();
+    const canvas = page.getByTestId("spine-preview-canvas");
+    await expect(canvas).toHaveAttribute("data-style", "art");
+    const meta = await canvas.evaluate((element) => {
+      const data = (element as HTMLCanvasElement).dataset;
+      return {
+        scrim: data.scrim,
+        scrimAlpha: Number(data.scrimAlpha),
+        contrast: Number(data.contrast),
+      };
+    });
+    expect(meta.scrim, "Art paints no fill").toBe("false");
+    expect(meta.scrimAlpha).toBe(0);
+    // Adaptive ink against the actual art, not a fixed colour.
+    expect(meta.contrast, `Art on ${label} art`).toBeGreaterThanOrEqual(4.5);
+  });
+}
 
 test("a long title settles into at most two lines inside the title band", async ({
   page,
@@ -427,7 +450,6 @@ test("a long title settles into at most two lines inside the title band", async 
   await expect(
     page.getByTestId("edit-book").getByTestId("spine-result"),
   ).toBeVisible();
-  await page.getByTestId("spine-style-full-bleed").click();
   const meta = await page
     .getByTestId("spine-preview-canvas")
     .evaluate((element) => {
@@ -441,8 +463,8 @@ test("a long title settles into at most two lines inside the title band", async 
     });
   expect(meta.lines).toBeLessThanOrEqual(2);
   expect(meta.fs).toBeGreaterThan(1);
-  // The run is the whole span above the author, not a 62 px third.
-  expect(meta.height).toBeLessThanOrEqual(236 - 54 - 8);
+  // The run is the whole span between the Art bands, not a 62 px third.
+  expect(meta.height).toBeLessThanOrEqual(236 - 21 - 52 - 8);
   expect(meta.height).toBeGreaterThan(90);
   expect(meta.width).toBeLessThan(52 - 8);
 });
@@ -456,7 +478,7 @@ test("choosing a style persists it through spineSetStyle", async ({ page }) => {
   await expect(
     page.getByTestId("edit-book").getByTestId("spine-result"),
   ).toBeVisible();
-  await page.getByTestId("spine-style-full-bleed").click();
+  await page.getByTestId("spine-style-cloth").click();
   await expect
     .poll(async () =>
       page.evaluate(
@@ -468,7 +490,7 @@ test("choosing a style persists it through spineSetStyle", async ({ page }) => {
           ).__POCKETLIBRARY_SPINE_STYLES__?.[1],
       ),
     )
-    .toBe("full-bleed");
+    .toBe("cloth");
 });
 
 test("a Hebrew title sets canvas direction without mirroring the glyphs", async ({
@@ -490,7 +512,6 @@ test("a Hebrew title sets canvas direction without mirroring the glyphs", async 
   await expect(
     page.getByTestId("edit-book").getByTestId("spine-result"),
   ).toBeVisible();
-  await page.getByTestId("spine-style-full-bleed").click();
   const canvas = page.getByTestId("spine-preview-canvas");
   await expect(canvas).toHaveAttribute("data-direction", "rtl");
   await expect(canvas).toHaveAttribute("dir", "rtl");
@@ -514,9 +535,7 @@ test("a Hebrew title sets canvas direction without mirroring the glyphs", async 
   expect(hebrewMeta.titleCy + hebrewMeta.titleHeight / 2).toBeLessThan(
     hebrewMeta.authorCy - hebrewMeta.authorHeight / 2,
   );
-  expect(hebrewMeta.authorCy + hebrewMeta.authorHeight / 2).toBeLessThan(
-    hebrewMeta.colophonY,
-  );
+  expect(hebrewMeta.colophonY).toBe(0);
   await expect(page.getByTestId("detail-title")).toHaveText(
     "המלחמה של העולמות",
   );
@@ -730,13 +749,13 @@ test("a NULL or unknown style never suppresses generated art", async ({
   await expect(spines.nth(1).getByTestId("spine-generated")).toBeVisible();
 });
 
-test("the shelf shows the generated strip only for Wrap and Full-bleed", async ({
+test("the shelf shows the generated strip only for Art", async ({
   page,
 }) => {
   await boot(page, {
     books: [
-      book(1, { spineStyle: "wrap" }),
-      book(2, { spineStyle: "full-bleed" }),
+      book(1, { spineStyle: "art" }),
+      book(2, { spineStyle: "typography" }),
       book(3, { spineStyle: "cloth" }),
     ],
     spine: {
@@ -750,29 +769,31 @@ test("the shelf shows the generated strip only for Wrap and Full-bleed", async (
   });
 
   const wrap = page.locator('[data-testid="spine"][data-book-id="1"]');
-  const fullBleed = page.locator('[data-testid="spine"][data-book-id="2"]');
+  const typography = page.locator('[data-testid="spine"][data-book-id="2"]');
   const cloth = page.locator('[data-testid="spine"][data-book-id="3"]');
 
   await expect(wrap.getByTestId("spine-generated")).toBeVisible({
     timeout: 8_000,
   });
-  await expect(fullBleed.getByTestId("spine-generated")).toBeVisible();
+  await expect(typography.getByTestId("spine-generated")).toHaveCount(0);
   await expect(cloth.getByTestId("spine-generated")).toHaveCount(0);
+  await expect(typography).not.toHaveClass(/has-generated/);
   await expect(cloth).not.toHaveClass(/has-generated/);
+  await expect(typography.locator(".spine-text")).toBeVisible();
   await expect(cloth.locator(".spine-text")).toBeVisible();
 
-  await expect(wrap).toHaveAttribute("data-style", "wrap");
-  await expect(fullBleed).toHaveAttribute("data-style", "full-bleed");
+  await expect(wrap).toHaveAttribute("data-style", "art");
+  await expect(typography).toHaveAttribute("data-style", "typography");
   await expect(cloth).toHaveAttribute("data-style", "cloth");
-  // Wrap keeps a defined inset window; full-bleed leaves the art at the edges.
-  await expect(wrap.locator(".spine-scrim")).toBeVisible();
-  await expect(fullBleed.locator(".spine-scrim")).toBeVisible();
+  // Art has no dark fill; Cloth/Typography are typographic boards.
+  await expect(wrap.locator(".spine-scrim")).toHaveCount(0);
+  await expect(typography.locator(".spine-scrim")).toHaveCount(0);
   await expect(cloth.locator(".spine-scrim")).toHaveCount(0);
 
-  const presentation = async (style: "wrap" | "full-bleed" | "cloth") =>
+  const presentation = async (style: "art" | "cloth" | "typography") =>
     page
       .locator(`[data-testid="spine"][data-book-id="${
-        style === "wrap" ? 1 : style === "full-bleed" ? 2 : 3
+        style === "art" ? 1 : style === "typography" ? 2 : 3
       }"]`)
       .evaluate((spine) => {
         const title = spine.querySelector<HTMLElement>(".st")!;
@@ -802,7 +823,7 @@ test("the shelf shows the generated strip only for Wrap and Full-bleed", async (
         };
       });
 
-  for (const style of ["wrap", "full-bleed", "cloth"] as const) {
+  for (const style of ["art", "cloth", "typography"] as const) {
     const meta = await presentation(style);
     expect(Math.abs(meta.titleCentre - meta.centre)).toBeLessThanOrEqual(2);
     expect(Math.abs(meta.authorCentre - meta.centre)).toBeLessThanOrEqual(2);
@@ -810,12 +831,8 @@ test("the shelf shows the generated strip only for Wrap and Full-bleed", async (
     expect(meta.titleScrollHeight).toBeLessThanOrEqual(
       meta.titleClientHeight + 2,
     );
-    if (style === "cloth") {
-      expect(meta.scrimAlpha).toBe(0);
-    } else {
-      // A real smoked backdrop, not just a text shadow.
-      expect(meta.scrimAlpha).toBeGreaterThanOrEqual(0.6);
-    }
+    // No dark fill sits behind the type on any art style.
+    expect(meta.scrimAlpha).toBe(0);
   }
 });
 
@@ -914,13 +931,13 @@ test("a warm cache with a missing strip enqueues that book automatically", async
   ).toBeVisible({ timeout: 8_000 });
 });
 
-test("Wrap and Full-bleed show generated art while Cloth keeps the face", async ({
+test("Art shows generated art while Cloth and Typography keep the face", async ({
   page,
 }) => {
   await boot(page, {
     books: [
-      book(1, { spineStyle: "wrap" }),
-      book(2, { spineStyle: "full-bleed" }),
+      book(1, { spineStyle: "art" }),
+      book(2, { spineStyle: "typography" }),
       book(3, { spineStyle: "cloth" }),
     ],
     spine: {
@@ -935,9 +952,36 @@ test("Wrap and Full-bleed show generated art while Cloth keeps the face", async 
 
   const spines = page.getByTestId("spine");
   await expect(spines.nth(0).getByTestId("spine-generated")).toBeVisible();
-  await expect(spines.nth(1).getByTestId("spine-generated")).toBeVisible();
+  await expect(spines.nth(1).getByTestId("spine-generated")).toHaveCount(0);
   await expect(spines.nth(2).getByTestId("spine-generated")).toHaveCount(0);
+  await expect(spines.nth(1).locator(".spine-text")).toBeVisible();
   await expect(spines.nth(2).locator(".spine-text")).toBeVisible();
+
+  // Art is the merged cover-derived spine: the art runs to the top edge above
+  // an opaque foot band that carries the full author and label chips.
+  const wrap = spines.nth(0);
+  await expect(wrap.getByTestId("spine-top-band")).toHaveCount(0);
+  await expect(wrap.getByTestId("spine-bottom-band")).toHaveCount(1);
+  await expect(wrap.locator(".spine-scrim")).toHaveCount(0);
+  const bandGeometry = await wrap.evaluate((spine) => {
+    const bottom = spine.querySelector<HTMLElement>(".spine-band-bottom")!;
+    const image = spine.querySelector<HTMLElement>("img.spine-generated")!;
+    const author = spine.querySelector<HTMLElement>(".spine-band-bottom .sa")!;
+    const height = (spine as HTMLElement).offsetHeight;
+    return {
+      bottomRatio: bottom.offsetHeight / height,
+      artTop: image.offsetTop,
+      artBottom: image.offsetTop + image.offsetHeight,
+      bottomTop: bottom.offsetTop,
+      authorInBand: bottom.contains(author),
+    };
+  });
+  expect(bandGeometry.bottomRatio).toBeCloseTo(0.27, 2);
+  expect(bandGeometry.artTop).toBe(0);
+  expect(bandGeometry.artBottom).toBeLessThanOrEqual(
+    bandGeometry.bottomTop + 2,
+  );
+  expect(bandGeometry.authorInBand).toBe(true);
 });
 
 test("the generated strip stays visible at 390 and 320 wide", async ({

@@ -27,11 +27,23 @@ use crate::spine_cache::{ARTIFACT_FILE, SpineCache};
 pub const STRIP_W: u32 = 52;
 pub const STRIP_H: u32 = 236;
 
+/// Version of the spine pipeline whose output the cache accepts.
+///
+/// Bump this whenever a crop/mask change makes previously generated strips
+/// wrong on screen (for example the cover-edge crop fix). Artifacts written by
+/// an older pipeline stay on disk but are ignored, so the launch backfill
+/// queues the book again and regenerates it once.
+pub const SPINE_PIPELINE_VERSION: u32 = 2;
+
 /// The wire shape shared with the frontend. Kept camelCase by serde.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpineArtifact {
     pub book_id: i64,
+    /// Pipeline that produced this artifact. Missing in old entries, which
+    /// deserialize as 0 and are treated as stale.
+    #[serde(default)]
+    pub pipeline_version: u32,
     /// "crop" | "inpaint" | "fallback"
     pub route: String,
     /// "pass" | "review" | "fallback"
@@ -276,9 +288,13 @@ pub fn shelf_strip(dir: &Path) -> Option<String> {
     projected_strip(dir, &artifact)
 }
 
-fn read_artifact(dir: &Path) -> Option<SpineArtifact> {
+/// Read a current artifact. Missing, corrupt and older-pipeline entries all
+/// return `None`, so callers count the book as unfinished work. The files are
+/// left in place for the regenerating job to replace.
+pub fn read_artifact(dir: &Path) -> Option<SpineArtifact> {
     let text = fs::read_to_string(dir.join(ARTIFACT_FILE)).ok()?;
-    serde_json::from_str(&text).ok()
+    let artifact: SpineArtifact = serde_json::from_str(&text).ok()?;
+    (artifact.pipeline_version >= SPINE_PIPELINE_VERSION).then_some(artifact)
 }
 
 /// Build the wire artifact from the engine's runtime files in `dir`.
@@ -315,6 +331,7 @@ pub fn artifact_from_dir(dir: &Path, book_id: i64) -> Result<SpineArtifact, Stri
 
     Ok(SpineArtifact {
         book_id,
+        pipeline_version: SPINE_PIPELINE_VERSION,
         route: route_wire(route).to_owned(),
         verdict: verdict_wire(verdict).to_owned(),
         mask_percent,
@@ -434,6 +451,7 @@ mod tests {
         .expect("spine file");
         let artifact = SpineArtifact {
             book_id,
+            pipeline_version: SPINE_PIPELINE_VERSION,
             route: "crop".to_owned(),
             verdict: "pass".to_owned(),
             mask_percent: 1.0,
@@ -493,6 +511,53 @@ mod tests {
         assert_eq!(report.skipped, 1);
         assert_eq!(report.strips.len(), 1);
         assert_eq!(report.strips[0].book_id, 1);
+    }
+
+    #[test]
+    fn older_pipeline_artifacts_are_stale_until_regenerated() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let dir = fake_entry(temp.path(), "one", 7, b"x");
+        let mut artifact = read_artifact(&dir).expect("current artifact");
+        assert_eq!(artifact.pipeline_version, SPINE_PIPELINE_VERSION);
+
+        artifact.pipeline_version = SPINE_PIPELINE_VERSION - 1;
+        fs::write(
+            dir.join(ARTIFACT_FILE),
+            serde_json::to_string(&artifact).expect("artifact json"),
+        )
+        .expect("write stale artifact");
+
+        assert!(read_artifact(&dir).is_none());
+        let report = cached_strips(temp.path());
+        assert_eq!(report.scanned, 1);
+        assert_eq!(report.projected, 0, "stale strip must not reach the wall");
+        assert_eq!(report.skipped, 1, "stale entries are work to redo");
+        assert!(report.strips.is_empty());
+        assert!(artifact_book_ids(temp.path()).is_empty());
+        assert!(shelf_book_ids(temp.path()).is_empty());
+        assert!(shelf_strip(&dir).is_none());
+
+        // An artifact from before the field existed also defaults to stale.
+        let mut legacy: Value =
+            serde_json::from_str(&fs::read_to_string(dir.join(ARTIFACT_FILE)).unwrap()).unwrap();
+        legacy.as_object_mut().unwrap().remove("pipelineVersion");
+        fs::write(
+            dir.join(ARTIFACT_FILE),
+            serde_json::to_string(&legacy).unwrap(),
+        )
+        .expect("write legacy artifact");
+        assert!(read_artifact(&dir).is_none());
+
+        // Writing the current version makes it usable again.
+        artifact.pipeline_version = SPINE_PIPELINE_VERSION;
+        fs::write(
+            dir.join(ARTIFACT_FILE),
+            serde_json::to_string(&artifact).expect("artifact json"),
+        )
+        .expect("write current artifact");
+        assert!(read_artifact(&dir).is_some());
+        assert_eq!(cached_strips(temp.path()).projected, 1);
+        assert_eq!(artifact_book_ids(temp.path()), HashSet::from([7]));
     }
 
     #[test]

@@ -368,8 +368,11 @@ export function useShelfDrag({
       book: gesture.book,
       left: rect.left,
       top: rect.top,
-      width: rect.width,
-      height: rect.height,
+      // The source may be leaning; its transformed bounding box is wider than
+      // the spine. The ghost must keep the spine's own box so its fitted title
+      // and panels match the shelf exactly.
+      width: gesture.element.offsetWidth,
+      height: gesture.element.offsetHeight,
       returning: false,
       dx: 0,
       dy: 0,

@@ -67,8 +67,8 @@ import type {
 
 export const MOCK_APP_INFO: AppInfo = {
   name: "PocketLibrary",
-  appVersion: "0.1.15",
-  schemaVersion: 6,
+  appVersion: "0.1.16",
+  schemaVersion: 7,
 };
 
 const MOCK_COVER =
@@ -226,6 +226,7 @@ async function buildMockSpineArtifact(
 
   return {
     bookId: book.id,
+    pipelineVersion: 2,
     route,
     verdict,
     maskPercent,
@@ -901,7 +902,9 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
    * `list_books`. A fallback verdict is not shelf art, so it stays absent.
    */
   const withCachedSpine = (book: Book): Book => {
-    const style = spineStyles.get(book.id) ?? book.spineStyle ?? "wrap";
+    const style = normaliseSpineStyle(
+      spineStyles.get(book.id) ?? book.spineStyle ?? "art",
+    );
     const styled =
       book.spineStyle === style ? book : { ...book, spineStyle: style };
     const artifact = spineArtifacts.get(styled.id);
@@ -967,11 +970,20 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
   const queueJobs: number[] = [];
   const queuedIds = new Set<number>();
   const failedQueueIds = new Set<number>();
+  const SPINE_STYLE_NAMES: readonly SpineStyle[] = [
+    "art",
+    "cloth",
+    "typography",
+  ];
+  const normaliseSpineStyle = (value: unknown): SpineStyle =>
+    SPINE_STYLE_NAMES.includes(value as SpineStyle)
+      ? (value as SpineStyle)
+      : "art";
   const spineStyles = new Map<number, SpineStyle>(
     Object.entries({
       ...(spineConfig.styles ?? {}),
       ...readStored<Record<number, SpineStyle>>(MOCK_SPINE_STYLES_KEY, {}),
-    }).map(([id, style]) => [Number(id), style]),
+    }).map(([id, style]) => [Number(id), normaliseSpineStyle(style)]),
   );
   const queueStep = spineConfig.queueStepMs ?? 45;
   let queueTimer: number | null = null;
@@ -1698,7 +1710,9 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
       const state = ensureEnrichment(book);
       return {
         ...book,
-        spineStyle: spineStyles.get(id) ?? book.spineStyle ?? "wrap",
+        spineStyle: normaliseSpineStyle(
+          spineStyles.get(id) ?? book.spineStyle ?? "art",
+        ),
         coverDataUrl: coverDataByBook.get(id) ?? MOCK_COVER,
         enrichment: { ...state, hasGap: hasGap(book, state) },
       };
@@ -2510,8 +2524,10 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
         const artifact = spineArtifacts.get(book.id);
         const shelfStripPresent =
           artifact !== undefined && artifact.verdict !== "fallback";
-        const spineStyle = spineStyles.get(book.id) ?? book.spineStyle ?? "wrap";
-        const paintsArt = shelfStripPresent && spineStyle !== "cloth";
+        const spineStyle = normaliseSpineStyle(
+          spineStyles.get(book.id) ?? book.spineStyle ?? "art",
+        );
+        const paintsArt = shelfStripPresent && spineStyle === "art";
         const failure = queue.attention.find(
           (candidate) => candidate.bookId === book.id,
         );
@@ -2555,14 +2571,15 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
       setQueuePaused(paused);
     },
     spineSetStyle: async (bookId, style) => {
-      spineStyles.set(bookId, style);
+      const next = normaliseSpineStyle(style);
+      spineStyles.set(bookId, next);
       writeStored(
         MOCK_SPINE_STYLES_KEY,
         Object.fromEntries(spineStyles),
       );
       const book = books.find((candidate) => candidate.id === bookId);
       if (book) {
-        book.spineStyle = style;
+        book.spineStyle = next;
         books = [...books];
       }
       exposeMockSpine();

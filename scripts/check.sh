@@ -66,11 +66,12 @@ run_stage() {
 }
 
 # Playwright's config starts both the dev server and the production-preview
-# server. --workers=1 keeps the smoke/spine/reader subset serial.
+# server. The subset runs in parallel; set PLAYWRIGHT_WORKERS to override.
 PLAYWRIGHT_FAST_SPECS=(
   tests/e2e/smoke.spec.ts
   tests/e2e/spine-queue.spec.ts
   tests/e2e/spine-renderer.spec.ts
+  tests/e2e/spine-presentation.spec.ts
   tests/e2e/spine-studio.spec.ts
   tests/e2e/pdf-reader.spec.ts
   tests/e2e/reader.spec.ts
@@ -79,7 +80,7 @@ PLAYWRIGHT_FAST_SPECS=(
 )
 
 playwright_fast() {
-  npx playwright test --workers=1 "${PLAYWRIGHT_FAST_SPECS[@]}"
+  npx playwright test --workers="${PLAYWRIGHT_WORKERS:-4}" "${PLAYWRIGHT_FAST_SPECS[@]}"
 }
 
 playwright_full() {

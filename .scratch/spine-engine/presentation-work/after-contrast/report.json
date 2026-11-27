@@ -1,0 +1,105 @@
+{
+  "phase": "after",
+  "widths": {
+    "320": {
+      "rps": {
+        "title": "Rock Paper Scissors",
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "authorInk": "rgb(42, 26, 16)",
+        "fillVsHalo": {
+          "pixels": 2087,
+          "min": 5.5,
+          "p10": 8.64,
+          "median": 14.66
+        },
+        "haloVsArt": {
+          "pixels": 160,
+          "min": 2.11,
+          "p10": 2.19,
+          "median": 2.48
+        },
+        "rawInkVsArt": {
+          "pixels": 1887,
+          "min": 5.1,
+          "p10": 8.15,
+          "median": 11.53
+        }
+      },
+      "dorian": {
+        "title": "The Picture of Dorian Gray",
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "authorInk": "rgb(42, 26, 16)",
+        "fillVsHalo": {
+          "pixels": 1635,
+          "min": 5.5,
+          "p10": 6.84,
+          "median": 15.98
+        },
+        "haloVsArt": {
+          "pixels": 4389,
+          "min": 1.53,
+          "p10": 2.16,
+          "median": 7.08
+        },
+        "rawInkVsArt": {
+          "pixels": 1570,
+          "min": 2.45,
+          "p10": 4.56,
+          "median": 8.26
+        }
+      }
+    },
+    "390": {
+      "rps": {
+        "title": "Rock Paper Scissors",
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "authorInk": "rgb(42, 26, 16)",
+        "fillVsHalo": {
+          "pixels": 2087,
+          "min": 5.5,
+          "p10": 8.64,
+          "median": 14.66
+        },
+        "haloVsArt": {
+          "pixels": 160,
+          "min": 2.11,
+          "p10": 2.19,
+          "median": 2.48
+        },
+        "rawInkVsArt": {
+          "pixels": 1887,
+          "min": 5.1,
+          "p10": 8.15,
+          "median": 11.53
+        }
+      },
+      "dorian": {
+        "title": "The Picture of Dorian Gray",
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "authorInk": "rgb(42, 26, 16)",
+        "fillVsHalo": {
+          "pixels": 1635,
+          "min": 5.5,
+          "p10": 6.84,
+          "median": 15.98
+        },
+        "haloVsArt": {
+          "pixels": 4389,
+          "min": 1.53,
+          "p10": 2.16,
+          "median": 7.08
+        },
+        "rawInkVsArt": {
+          "pixels": 1570,
+          "min": 2.45,
+          "p10": 4.56,
+          "median": 8.26
+        }
+      }
+    }
+  }
+}

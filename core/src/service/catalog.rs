@@ -22,7 +22,7 @@ const BOOK_COLUMNS: &str =
      b.series, b.language, b.description, b.publisher, b.published_date, b.identifier,
      b.page_count, b.cover_path, b.cover_source, b.file_cover_path, b.file_cover_source,
      b.file_description, b.added_at, b.shelf_id, b.slot_index,
-     COALESCE(r.status, 'unread'), COALESCE(b.spine_style, 'wrap')";
+     COALESCE(r.status, 'unread'), COALESCE(b.spine_style, 'art')";
 
 const BOOK_SOURCE: &str = "FROM books b LEFT JOIN reading_state r ON r.book_id = b.id";
 

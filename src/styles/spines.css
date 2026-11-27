@@ -76,57 +76,161 @@
 
 /* --------------------------------------------------------- style faces */
 
-/* Wrap keeps the generated art inset inside a fine board edge: a defined
-   title window over a framed spine. Full-bleed runs the art to every edge. */
-.spine[data-style="wrap"] .spine-generated {
-  inset: 3px;
-  width: calc(100% - 6px);
-  height: calc(100% - 6px);
-  border-radius: 1px;
-  box-shadow: inset 0 0 0 1px rgba(240, 226, 196, 0.24);
+/* ------------------------------------------------- Art: top edge and foot */
+
+/* Art is the v2 cover-derived spine: the art runs to the top edge and an
+   opaque foot band carries the full author on two lines plus the label chips.
+   No rail or fill sits behind the title. */
+.spine[data-style="art"] {
+  --band-top: 0%;
+  --band-bottom: 27%;
 }
 
-/* The smoked window is a real backdrop, not a text shadow: it standardises the
-   pixels behind the type so the ink keeps its contrast on any cover. */
-.spine .spine-scrim {
+.spine[data-style="art"] .spine-generated {
+  top: 0;
+  right: 0;
+  bottom: var(--band-bottom, 27%);
+  left: 0;
+  width: 100%;
+  height: calc(100% - var(--band-bottom, 27%));
+  border-radius: 0;
+  /* Show the whole cached 52x236 strip; cover would crop its side edges
+     differently at every spine width. */
+  object-fit: fill;
+  object-position: 50% 50%;
+  box-shadow: none;
+}
+
+.spine-band {
   position: absolute;
+  right: 0;
+  left: 0;
   z-index: 3;
-  border-radius: 1px;
-  background-color: rgba(8, 6, 4, 0.78);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.05),
-    transparent 22%,
-    transparent 78%,
-    rgba(0, 0, 0, 0.22)
-  );
-  box-shadow: inset 0 0 0 1px rgba(240, 226, 196, 0.18);
+  background: linear-gradient(180deg, #1b140e 0%, #090604 100%);
   pointer-events: none;
 }
 
-.spine[data-style="wrap"] .spine-scrim {
-  inset: 14px 3px 44px;
+.spine-band-bottom {
+  bottom: 0;
+  display: flex;
+  height: var(--band-bottom, 27%);
+  flex-direction: column;
+  gap: 9px;
+  align-items: stretch;
+  /* The author and chips read as one group centred in the taller foot. */
+  justify-content: center;
+  padding: 4px 1px 6px;
+  border-top: 1px solid rgba(216, 185, 118, 0.78);
+  box-shadow:
+    0 -1px 0 rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 244, 214, 0.05);
 }
 
-.spine[data-style="full-bleed"] .spine-scrim {
-  inset: 14px 6px 44px;
-  border-radius: 4px;
-  background-color: rgba(8, 6, 4, 0.84);
-  box-shadow: none;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent 0,
-    #000 12%,
-    #000 88%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0,
-    #000 12%,
-    #000 88%,
-    transparent 100%
-  );
+.spine .spine-band-bottom .sa {
+  flex: 0 0 auto;
+  max-height: 10px;
+  overflow: hidden;
+  color: #e8d4a6;
+  font-family: var(--display);
+  font-size: 6px;
+  font-variant-caps: small-caps;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 9px;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+}
+
+/* Art shows the whole author name, balanced over two lines. The shelf script
+   shrinks it toward a 4.2px floor when a name still will not fit. */
+.spine[data-style="art"] .spine-band-bottom .sa {
+  display: block;
+  /* Use the band's 1px side padding too, so a two-line name has the widest
+     possible measure at the 4.2px floor. */
+  width: calc(100% + 2px);
+  max-width: none;
+  margin-inline: -1px;
+  max-height: none;
+  overflow: visible;
+  font-size: 6.8px;
+  letter-spacing: 0.02em;
+  line-height: 1.02;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.spine[data-style="art"] .spine-band-bottom .sa span {
+  display: block;
+  white-space: nowrap;
+}
+
+.spine .spine-band-bottom .bands {
+  position: static;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: auto;
+  width: 100%;
+  gap: 1px;
+}
+
+.spine .spine-band-bottom .lb {
+  height: 10px;
+  font-size: 4px;
+  line-height: 8px;
+  letter-spacing: -0.04em;
+}
+
+.spine .spine-band-bottom .lb::before {
+  content: none;
+}
+
+.spine .spine-band-bottom .lb-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The title occupies only the dead centre between the two opaque bands. */
+.spine .spine-text.is-band-layout {
+  top: calc(var(--band-top, 0%) + 3px);
+  right: 1px;
+  bottom: calc(var(--band-bottom, 27%) + 3px);
+  left: 1px;
+  gap: 0;
+}
+
+.spine[data-style="art"] .seal {
+  bottom: calc(var(--band-bottom, 27%) + 8px);
+}
+
+/* Typography is the original pre-engine spine: a flat two-tone board in the
+   book's palette, no art and no woven texture, with cream board lettering. */
+.spine[data-style="typography"] {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.62) 0%,
+      rgba(0, 0, 0, 0.16) 9%,
+      rgba(255, 255, 255, 0.14) 27%,
+      rgba(255, 255, 255, 0.02) 45%,
+      rgba(0, 0, 0, 0.14) 72%,
+      rgba(0, 0, 0, 0.58) 96%,
+      rgba(0, 0, 0, 0.75) 100%
+    ),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+}
+
+.spine[data-style="typography"] .st {
+  color: var(--spine-ink, #f4e6c4);
+}
+
+.spine[data-style="typography"] .sa {
+  color: var(--spine-ink-dim, #dccba4);
 }
 
 /* Cloth is the typographic spine: no art, a woven board in the book's palette,
@@ -201,9 +305,9 @@
 
 .spine .spine-text {
   position: absolute;
-  top: 16px;
+  top: 24px;
   right: 1px;
-  bottom: 50px;
+  bottom: var(--lower-reserve, 26px);
   left: 1px;
   z-index: 4;
   display: flex;
@@ -240,6 +344,22 @@
   text-shadow:
     0 1px 1px rgba(0, 0, 0, 0.9),
     0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+/* The fit may split a long title into two measured columns. In vertical
+   writing, block children stack right-to-left, one column each. */
+.spine .st .st-col {
+  display: block;
+  max-height: 100%;
+  white-space: nowrap;
+}
+
+/* Adaptive ink: the sample sets the fill and halo; the hairline is a paint
+   stroke, not a backdrop, so the art stays visible between the glyphs. */
+.spine .st.is-adaptive {
+  -webkit-text-stroke: 1px var(--spine-halo, #160d09);
+  paint-order: stroke fill;
+  text-shadow: 0 1px 1px var(--spine-halo-shadow, rgba(8, 4, 2, 0.72));
 }
 
 .spine .sa {

@@ -227,6 +227,42 @@ fn crop_search_finds_in_bounds_windows() {
 }
 
 #[test]
+fn crop_search_excludes_flat_red_edge_band() {
+    let (w, h) = (200u32, 400u32);
+    let band_x = w - (w as f32 * crop::EDGE_MARGIN_FRAC).round() as u32;
+    let mut img = RgbImage::new(w, h);
+    for (x, y, p) in img.enumerate_pixels_mut() {
+        *p = if x >= band_x {
+            // A printed red publisher band, like the RPS cover edge.
+            image::Rgb([230, 31, 28])
+        } else {
+            // Structured front-cover artwork.
+            image::Rgb([
+                ((x * 5 + y * 3) % 200) as u8,
+                ((x * 2 + y * 7) % 180) as u8,
+                ((x * 9 + y) % 160) as u8,
+            ])
+        };
+    }
+    let mask = GrayImage::new(w, h);
+    let cands = crop::find_crops(&img, Some(&mask), 0.55);
+    assert!(!cands.is_empty());
+    for c in &cands {
+        assert!(
+            c.box_[0] + c.box_[2] <= band_x,
+            "crop {:?} includes the red edge band (band starts at {band_x})",
+            c.box_
+        );
+    }
+    let chosen = &cands[0];
+    assert!(
+        chosen.box_[0] + chosen.box_[2] <= band_x,
+        "chosen crop {:?} includes the red edge band",
+        chosen.box_
+    );
+}
+
+#[test]
 fn missing_model_is_an_error() {
     let missing = std::env::temp_dir().join("definitely-not-a-spine-model.onnx");
     let err = Engine::new(Models {

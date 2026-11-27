@@ -1,19 +1,10 @@
 /**
- * Type measurement, fitting and the real-book type block: the vertical title
- * and author runs, the ink guard that samples the art under the type, the
- * colophon and the RTL-aware run direction.
+ * Type measurement, fitting and the vertical/horizontal run primitives: the
+ * ink guard that samples the art under the type and the RTL-aware run
+ * direction.
  */
 
-import type { RenderBook, SpineTypeStyle } from "./geometry";
-import {
-  clamp,
-  luminance,
-  SPINE_RAIL,
-  spineScrimRect,
-  spineTypeBands,
-  spineTypeZones,
-} from "./geometry";
-import { drawProvenance } from "./draw";
+import { clamp, luminance } from "./geometry";
 
 export const SERIF = '"Iowan Old Style", Palatino, "Book Antiqua", Georgia, serif';
 export const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
@@ -37,7 +28,7 @@ const CREAM_LUMA = luminance(CREAM_INK);
 const DARK_LUMA = luminance(DARK_INK);
 const MIN_CONTRAST = 4.5;
 
-interface RegionStats {
+export interface RegionStats {
   min: number;
   max: number;
   avg: number;
@@ -47,7 +38,7 @@ function contrastLuma(a: number, b: number): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-function samplePixels(
+export function samplePixels(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -103,15 +94,17 @@ function samplePixels(
 }
 
 /**
- * Choose ink that clears 4.5:1 against every sampled pixel. When no single ink
- * can (the War of the Worlds bright-sky case), lay a soft gradient scrim sized
- * to the type block and use cream on top.
+ * Choose ink and a hairline halo from the pixels behind the type. The ink is
+ * whichever of cream or dark clears the better worst-case contrast; when the
+ * art is mid-tone and no raw ink clears 4.5:1, the opposite extreme becomes a
+ * thin halo around the glyphs. Nothing is filled behind the type.
  */
-function guardInk(
-  ctx: CanvasRenderingContext2D,
-  stats: RegionStats,
-  scrim: { x: number; y: number; width: number; height: number },
-): { ink: string; contrast: number; usedScrim: boolean } {
+export function guardInk(stats: RegionStats): {
+  ink: string;
+  halo: string;
+  contrast: number;
+  usedHalo: boolean;
+} {
   const creamWorst = Math.min(
     contrastLuma(CREAM_LUMA, stats.max),
     contrastLuma(CREAM_LUMA, stats.min),
@@ -122,43 +115,17 @@ function guardInk(
   );
   const useCream = creamWorst >= darkWorst;
   const best = Math.max(creamWorst, darkWorst);
-  if (best >= MIN_CONTRAST) {
-    return {
-      ink: useCream ? CREAM_INK : DARK_INK,
-      contrast: best,
-      usedScrim: false,
-    };
-  }
-  // A scrim standardises the backdrop. Dark scrim under cream ink is the
-  // house look; a light scrim only happens when the type sits on dark art.
-  const darkScrim = stats.avg < 0.5;
-  const solid = darkScrim ? "rgba(8,6,4,0.82)" : "rgba(244,236,218,0.88)";
-  const clear = darkScrim ? "rgba(8,6,4,0)" : "rgba(244,236,218,0)";
-  const gradient = ctx.createLinearGradient(
-    scrim.x,
-    scrim.y,
-    scrim.x,
-    scrim.y + scrim.height,
-  );
-  // Feather only just past the type: the bands above and below are sized so
-  // the title, author and colophon all sit on the solid part of the scrim.
-  gradient.addColorStop(0, clear);
-  gradient.addColorStop(0.08, solid);
-  gradient.addColorStop(0.92, solid);
-  gradient.addColorStop(1, clear);
-  ctx.save();
-  ctx.fillStyle = gradient;
-  ctx.fillRect(scrim.x, scrim.y, scrim.width, scrim.height);
-  ctx.restore();
-  const ink = darkScrim ? CREAM_INK : DARK_INK;
-  const inkLuma = darkScrim ? CREAM_LUMA : DARK_LUMA;
-  const scrimLuma = darkScrim
-    ? luminance("#080604")
-    : luminance("#f4ecda");
+  const inkLuma = useCream ? CREAM_LUMA : DARK_LUMA;
+  const haloLuma = useCream ? DARK_LUMA : CREAM_LUMA;
+  const haloContrast = contrastLuma(inkLuma, haloLuma);
+  // A mid-tone backdrop cannot give either raw ink 4.5:1, so the halo carries
+  // the contrast. Light and dark art still report their measured raw contrast.
+  const usedHalo = best < MIN_CONTRAST;
   return {
-    ink,
-    contrast: contrastLuma(inkLuma, scrimLuma),
-    usedScrim: true,
+    ink: useCream ? CREAM_INK : DARK_INK,
+    halo: useCream ? DARK_INK : CREAM_INK,
+    contrast: usedHalo ? haloContrast : best,
+    usedHalo,
   };
 }
 
@@ -196,6 +163,18 @@ export interface RenderMeta {
   colophon: { x: number; y: number; width: number; height: number };
   /** True when the title and author run down the spine. */
   vertical: boolean;
+  /**
+   * The opaque Art cap and foot band heights, in spine pixels. Only the Art
+   * renderer reports these; the art fills the space between them.
+   */
+  bands?: { top: number; bottom: number };
+  /**
+   * Which way the glyphs face down the spine. Typography uses the shelf face
+   * (`top-down`); the older cloth treatment reads `bottom-up`.
+   */
+  textOrientation?: "top-down" | "bottom-up";
+  /** The exact text painted in the Art label chips, in paint order. */
+  labelChips?: string[];
 }
 
 let measureContext: CanvasRenderingContext2D | null = null;
@@ -361,7 +340,7 @@ export function drawVertical(
  * without reversing the glyphs. Both keep the run centred on the spine's
  * width; `centerY` centres the measured run in its band.
  */
-function drawVerticalRun(
+export function drawVerticalRun(
   ctx: CanvasRenderingContext2D,
   fit: VerticalFit,
   cx: number,
@@ -373,6 +352,8 @@ function drawVerticalRun(
     track: number;
     direction: "ltr" | "rtl";
     lineGap?: number;
+    /** A hairline outline drawn under the fill, never a block. */
+    halo?: { color: string; width: number };
   },
 ) {
   const lineGap = options.lineGap ?? 1.08;
@@ -396,6 +377,15 @@ function drawVerticalRun(
     ctx.save();
     ctx.translate(cx - offset, centerY - length / 2);
     ctx.rotate(rtl ? -Math.PI / 2 : Math.PI / 2);
+    if (options.halo) {
+      ctx.save();
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.lineWidth = options.halo.width;
+      ctx.strokeStyle = options.halo.color;
+      ctx.strokeText(line, 0, 0);
+      ctx.restore();
+    }
     ctx.fillText(line, 0, 0);
     ctx.restore();
   });
@@ -474,330 +464,4 @@ export function drawHorizontal(
     ctx.fillText(line, x, y + index * fit.fs * gap),
   );
   ctx.restore();
-}
-
-/* ------------------------------------------------ real-book type block -- */
-
-interface SpineTypeLayout {
-  title: VerticalFit;
-  author: VerticalFit | null;
-  titleCenter: number;
-  authorCenter: number;
-  titleBlock: SpineBlock;
-  authorBlock: SpineBlock | null;
-  block: { x: number; y: number; width: number; height: number };
-  /** The scrim band behind the title; inside the rail for Full-bleed. */
-  titleBand: { x: number; y: number; width: number; height: number };
-  /** The scrim band behind the author and the base mark. */
-  authorBand: { x: number; y: number; width: number; height: number };
-}
-
-/**
- * The prototype voice: a tracked sans title on both styles, with the author in
- * a lighter sans below it. Full-bleed gets the slightly wider track of the
- * smoked rail; Wrap is a touch tighter.
- */
-function typeVoice(style: SpineTypeStyle) {
-  return style === "full-bleed"
-    ? {
-        title: { family: SANS, weight: 600, track: 0.06 },
-        author: { family: SANS, weight: 500, track: 0.1 },
-      }
-    : {
-        title: { family: SANS, weight: 600, track: 0.05 },
-        author: { family: SANS, weight: 500, track: 0.12 },
-      };
-}
-
-function layoutSpineType(
-  book: RenderBook,
-  width: number,
-  style: SpineTypeStyle,
-): SpineTypeLayout {
-  const voice = typeVoice(style);
-  const fullBleed = style === "full-bleed";
-  const spec = fullBleed
-    ? spineTypeZones().fullBleed
-    : spineTypeZones().wrap;
-  // Both styles centre the type on the spine: the difference is the art
-  // treatment, not where the text sits. Full-bleed used to own the fore-edge
-  // rail, which pushed the run off-centre.
-  const cx = width / 2;
-  const window = spineScrimRect(style, width);
-  const titleThick = Math.max(6, window.width - 6);
-  const authorThick = Math.max(6, window.width - 8);
-
-  const authorText = String(book.author || "").trim();
-  const author = authorText
-    ? fitVertical(authorText, {
-        family: voice.author.family,
-        weight: voice.author.weight,
-        track: voice.author.track,
-        thick: authorThick,
-        length: 48,
-        maxSize: spec.authorMaxSize,
-        minSize: spec.authorMinSize,
-        stack: false,
-      })
-    : null;
-  const authorLength =
-    (author
-      ? Math.max(
-          ...author.lines.map(
-            (line) =>
-              metrics(
-                line,
-                voice.author.family,
-                voice.author.weight,
-                voice.author.track,
-              ).adv,
-          ),
-        ) * author.fs
-      : 0);
-
-  // The title takes every pixel the author does not need (prototype:
-  // H - 50 - authorLen - 14 for Wrap; H - 54 - authorLen - 8 for Full-bleed).
-  const bands = spineTypeBands(style, authorLength);
-  const title = fitVertical(
-    String(book.title || "Untitled").toUpperCase(),
-    {
-      family: voice.title.family,
-      weight: voice.title.weight,
-      track: voice.title.track,
-      thick: titleThick,
-      length: bands.titleLength,
-      maxSize: spec.titleMaxSize,
-      minSize: spec.titleMinSize,
-    },
-  );
-
-  const titleBlock: SpineBlock = {
-    x: cx,
-    y: bands.titleCenter,
-    width: title.thickness,
-    height: title.length,
-    fs: title.fs,
-    lines: title.lines.length,
-  };
-  const authorBlock: SpineBlock | null = author
-    ? {
-        x: cx,
-        y: bands.authorCenter,
-        width: author.thickness,
-        height: authorLength,
-        fs: author.fs,
-        lines: author.lines.length,
-      }
-    : null;
-  const top = titleBlock.y - titleBlock.height / 2;
-  const bottom = authorBlock
-    ? authorBlock.y + authorBlock.height / 2
-    : titleBlock.y + titleBlock.height / 2;
-  const bandX = window.x;
-  const bandWidth = window.width;
-  const bandTop = window.y;
-  const bandBottom = window.y + window.height;
-  const titleRunTop = bands.titleCenter - title.length / 2;
-  const titleBandTop = Math.max(bandTop + 1, titleRunTop - 2);
-  const titleBandBottom = Math.min(
-    bandBottom - 1,
-    titleRunTop + title.length + 2,
-  );
-  const authorBandTop = Math.max(bandTop + 1, bands.authorTop - 2);
-  const authorBandBottom = fullBleed
-    ? bandBottom - 1
-    : Math.min(bandBottom - 1, spineTypeZones().colophonBaseY + 8);
-  return {
-    title,
-    author,
-    titleCenter: bands.titleCenter,
-    authorCenter: bands.authorCenter,
-    titleBlock,
-    authorBlock,
-    block: {
-      x: cx,
-      y: (top + bottom) / 2,
-      width: Math.max(titleBlock.width, authorBlock?.width ?? 0),
-      height: bottom - top,
-    },
-    titleBand: {
-      x: bandX,
-      y: titleBandTop,
-      width: bandWidth,
-      height: titleBandBottom - titleBandTop,
-    },
-    authorBand: {
-      x: bandX,
-      y: authorBandTop,
-      width: bandWidth,
-      height: authorBandBottom - authorBandTop,
-    },
-  };
-}
-
-function drawColophon(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  ink: string,
-  direction: "ltr" | "rtl",
-  style: SpineTypeStyle,
-  kind: "original" | "reconstructed" | "fallback",
-) {
-  const zones = spineTypeZones();
-  if (style === "full-bleed") {
-    // A centred rule under the head and a provenance diamond at the base. Both
-    // sit on the spine centre, matching the type; there is no side rail.
-    const cx = width / 2;
-    ctx.save();
-    ctx.direction = direction;
-    ctx.fillStyle = ink;
-    ctx.globalAlpha = 0.55;
-    const ruleWidth = Math.min(20, Math.max(6, width - 16));
-    ctx.fillRect(cx - ruleWidth / 2, SPINE_RAIL.ruleY, ruleWidth, 0.7);
-    ctx.restore();
-    drawProvenance(ctx, cx, zones.provenanceY, kind);
-    return;
-  }
-  const cx = width / 2;
-  const ruleWidth = Math.min(24, Math.max(5, width - 14));
-  ctx.save();
-  ctx.direction = direction;
-  ctx.strokeStyle = ink;
-  ctx.fillStyle = ink;
-  ctx.globalAlpha = 0.55;
-  ctx.lineWidth = 0.7;
-  ctx.beginPath();
-  ctx.moveTo(cx - ruleWidth / 2, zones.colophonRuleY);
-  ctx.lineTo(cx + ruleWidth / 2, zones.colophonRuleY);
-  ctx.stroke();
-  ctx.globalAlpha = 0.85;
-  ctx.beginPath();
-  ctx.moveTo(cx, zones.colophonRuleY + 3.4);
-  ctx.lineTo(cx + 1.8, zones.colophonRuleY + 5.2);
-  ctx.lineTo(cx, zones.colophonRuleY + 7);
-  ctx.lineTo(cx - 1.8, zones.colophonRuleY + 5.2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalAlpha = 0.9;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = `600 3.4px ${SANS}`;
-  setTracking(ctx, "0.16em");
-  ctx.fillText("PL", cx, zones.colophonBaseY);
-  ctx.restore();
-}
-
-/**
- * Draw the real-book type for Wrap and Full-bleed. The art and its crop are
- * untouched; only the measured ink and the scrim behind it are added. The
- * Full-bleed rail must already be painted by the style so the guard samples
- * the rail composite rather than the uncovered art.
- */
-export function drawSpineType(
-  ctx: CanvasRenderingContext2D,
-  book: RenderBook,
-  width: number,
-  offsetX: number,
-  style: SpineTypeStyle = "wrap",
-): RenderMeta {
-  const layout = layoutSpineType(book, width, style);
-  const voice = typeVoice(style);
-  type Band = { x: number; y: number; width: number; height: number };
-  const sample = (band: Band) =>
-    samplePixels(
-      ctx,
-      offsetX + band.x,
-      band.y,
-      band.width,
-      band.height,
-    );
-  const scrim = (band: Band) => ({
-    x: offsetX + band.x,
-    y: band.y,
-    width: band.width,
-    height: band.height,
-  });
-  // Two local guards: one band carries the title, the other the author and the
-  // base mark. On Full-bleed both bands sit inside the smoked rail, so a scrim
-  // only ever darkens the rail and never the art.
-  const titleGuard = guardInk(
-    ctx,
-    sample(layout.titleBand),
-    scrim(layout.titleBand),
-  );
-  drawVerticalRun(
-    ctx,
-    layout.title,
-    layout.block.x + offsetX,
-    layout.titleCenter,
-    titleGuard.ink,
-    {
-      family: voice.title.family,
-      weight: voice.title.weight,
-      track: voice.title.track,
-      direction: book.direction,
-    },
-  );
-  const authorGuard = guardInk(
-    ctx,
-    sample(layout.authorBand),
-    scrim(layout.authorBand),
-  );
-  if (layout.author && layout.authorBlock) {
-    ctx.save();
-    ctx.globalAlpha = 0.9;
-    drawVerticalRun(
-      ctx,
-      layout.author,
-      layout.authorBlock.x + offsetX,
-      layout.authorCenter,
-      authorGuard.ink,
-      {
-        family: voice.author.family,
-        weight: voice.author.weight,
-        track: voice.author.track,
-        direction: book.direction,
-      },
-    );
-    ctx.restore();
-  }
-  ctx.save();
-  ctx.translate(offsetX, 0);
-  drawColophon(
-    ctx,
-    width,
-    authorGuard.ink,
-    book.direction,
-    style,
-    book.verdict === "fallback"
-      ? "fallback"
-      : book.route === "inpaint"
-        ? "reconstructed"
-        : "original",
-  );
-  ctx.restore();
-  const zones = spineTypeZones();
-  return {
-    direction: book.direction,
-    scrim: titleGuard.usedScrim || authorGuard.usedScrim,
-    scrimAlpha:
-      titleGuard.usedScrim || authorGuard.usedScrim ? 0.85 : 0,
-    contrast: Math.min(titleGuard.contrast, authorGuard.contrast),
-    block: layout.block,
-    title: layout.titleBlock,
-    author: layout.authorBlock,
-    colophon: {
-      x: width / 2,
-      y: style === "full-bleed" ? zones.provenanceY : zones.colophonRuleY,
-      width:
-        style === "full-bleed"
-          ? 4.4
-          : Math.min(24, Math.max(5, width - 14)),
-      height:
-        style === "full-bleed"
-          ? 4.4
-          : zones.colophonBaseY - zones.colophonRuleY + 4,
-    },
-    vertical: true,
-  };
 }

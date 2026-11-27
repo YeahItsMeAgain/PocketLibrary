@@ -26,6 +26,10 @@ export function SpineSection({
         pages={detail.pageCount}
         coverDataUrl={detail.coverDataUrl}
         initialStyle={detail.spineStyle}
+        contentHash={detail.contentHash}
+        slotIndex={detail.slotIndex}
+        format={detail.format}
+        labels={detail.labels}
         style={spineStyle}
         onStyleChange={onStyleChange}
       />

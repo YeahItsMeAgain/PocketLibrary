@@ -129,13 +129,13 @@ async function expectWallStyle(
   expectStoredStyle = true,
 ) {
   const spine = page.locator('[data-testid="spine"][data-book-id="1"]');
-  // The shelf exposes the style it actually rendered; Cloth is also proven
-  // by the art being suppressed rather than just by the attribute.
+  // The shelf exposes the style it actually rendered; Cloth and Typography are
+  // also proven by the art being suppressed rather than just by the attribute.
   await expect(spine).toHaveAttribute("data-style", style);
   if (expectStoredStyle) {
     await expect.poll(() => mockStyle(page, 1)).toBe(style);
   }
-  if (style === "cloth") {
+  if (style === "cloth" || style === "typography") {
     await expect(spine.getByTestId("spine-generated")).toHaveCount(0);
     await expect(spine).not.toHaveClass(/has-generated/);
     await expect(spine.locator(".spine-text")).toBeVisible();
@@ -155,11 +155,15 @@ async function chooseStyle(page: Page, style: SpineStyle) {
     "data-style",
     style,
   );
+  await expect(page.getByTestId("spine-preview-canvas")).toHaveAttribute(
+    "data-style",
+    style,
+  );
   await expect.poll(() => mockStyle(page, 1)).toBe(style);
 }
 
 for (const width of [390, 320]) {
-  for (const style of ["wrap", "full-bleed", "cloth"] as const) {
+  for (const style of ["art", "cloth", "typography"] as const) {
     test(`choosing ${style} reaches the wall at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await boot(page, { spine: { artifacts: { 1: artifact() } } });
@@ -167,12 +171,17 @@ for (const width of [390, 320]) {
       await openEdit(page);
       await expectResult(page);
 
-      if (style === "wrap") {
-        // Default Wrap is not written until it differs from the stored style;
-        // move away first so this exercises the Wrap transition itself.
-        await chooseStyle(page, "full-bleed");
+      if (style === "art") {
+        // Default Art is not written until it differs from the stored style;
+        // move away first so this exercises the Art transition itself.
+        await chooseStyle(page, "cloth");
       }
       await chooseStyle(page, style);
+      if (style === "art") {
+        await expect(page.getByTestId("edit-undo-toast")).toContainText(
+          "Spine style set to Art",
+        );
+      }
       await page.getByTestId("edit-book-close").tap();
       await expect(page.getByTestId("book-detail")).toBeVisible();
       await expectWallStyle(page, style);
@@ -204,10 +213,10 @@ for (const width of [390, 320]) {
 
     // No waits between the choice and the close: the platform write must not
     // be tied to the layer staying mounted.
-    await page.getByTestId("spine-style-full-bleed").tap();
+    await page.getByTestId("spine-style-typography").tap();
     await page.getByTestId("edit-book-close").tap();
     await expect(page.getByTestId("book-detail")).toBeVisible();
-    await expectWallStyle(page, "full-bleed");
+    await expectWallStyle(page, "typography");
 
     await openEdit(page);
     await expectResult(page);
@@ -225,30 +234,30 @@ test("undo restores the previous style in the picker, the wall and storage", asy
   await openDetail(page);
   await openEdit(page);
   await expectResult(page);
-  await expect(page.getByTestId("spine-style-wrap")).toHaveAttribute(
+  await expect(page.getByTestId("spine-style-art")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
 
-  await chooseStyle(page, "full-bleed");
+  await chooseStyle(page, "cloth");
   await page.getByTestId("edit-undo").tap();
-  await expect(page.getByTestId("spine-style-wrap")).toHaveAttribute(
+  await expect(page.getByTestId("spine-style-art")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
   await expect(page.getByTestId("spine-preview")).toHaveAttribute(
     "data-style",
-    "wrap",
+    "art",
   );
-  await expect.poll(() => mockStyle(page, 1)).toBe("wrap");
+  await expect.poll(() => mockStyle(page, 1)).toBe("art");
   await expect(page.getByTestId("edit-undo-toast")).toHaveText("");
 
   await page.getByTestId("edit-book-close").tap();
-  await expectWallStyle(page, "wrap");
+  await expectWallStyle(page, "art");
 
   await openEdit(page);
   await expectResult(page);
-  await expect(page.getByTestId("spine-style-wrap")).toHaveAttribute(
+  await expect(page.getByTestId("spine-style-art")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -285,20 +294,20 @@ test("the mock's styles config is the same record list_books and Edit read", asy
   await page.setViewportSize({ width: 320, height: 844 });
   // `styles` models a style already stored in SQLite when the app launches.
   await boot(page, {
-    spine: { artifacts: { 1: artifact() }, styles: { 1: "full-bleed" } },
+    spine: { artifacts: { 1: artifact() }, styles: { 1: "typography" } },
   });
-  await expectWallStyle(page, "full-bleed");
+  await expectWallStyle(page, "typography");
 
   await openDetail(page);
   await openEdit(page);
   await expectResult(page);
-  await expect(page.getByTestId("spine-style-full-bleed")).toHaveAttribute(
+  await expect(page.getByTestId("spine-style-typography")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
   await expect(page.getByTestId("spine-preview")).toHaveAttribute(
     "data-style",
-    "full-bleed",
+    "typography",
   );
 });
 
@@ -329,6 +338,52 @@ test("a chosen style survives a reload", async ({ page }) => {
   );
 });
 
+test("Typography persists through close, reopen and reload with no shelf art", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await boot(page, { spine: { artifacts: { 1: artifact() } } });
+  await openDetail(page);
+  await openEdit(page);
+  await expectResult(page);
+
+  await chooseStyle(page, "typography");
+  const canvas = page.getByTestId("spine-preview-canvas");
+  await expect(canvas).toHaveAttribute("data-style", "typography");
+
+  await page.getByTestId("edit-book-close").tap();
+  await expect(page.getByTestId("book-detail")).toBeVisible();
+  await expectWallStyle(page, "typography");
+
+  await openEdit(page);
+  await expectResult(page);
+  await expect(page.getByTestId("spine-style-typography")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByTestId("spine-preview-canvas")).toHaveAttribute(
+    "data-style",
+    "typography",
+  );
+  await page.getByTestId("edit-book-close").tap();
+
+  await page.reload();
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+  await expectWallStyle(page, "typography");
+
+  await openDetail(page);
+  await openEdit(page);
+  await expectResult(page);
+  await expect(page.getByTestId("spine-style-typography")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByTestId("spine-preview")).toHaveAttribute(
+    "data-style",
+    "typography",
+  );
+});
+
 test("touch taps on the style row are not swallowed by the undo toast", async ({
   page,
 }) => {
@@ -338,9 +393,9 @@ test("touch taps on the style row are not swallowed by the undo toast", async ({
   await openEdit(page);
   await expectResult(page);
 
-  await page.getByTestId("spine-style-full-bleed").tap();
+  await page.getByTestId("spine-style-typography").tap();
   await expect(page.getByTestId("edit-undo-toast")).toContainText(
-    "Spine style set to Full-bleed",
+    "Spine style set to Typography",
   );
 
   // Scroll the style row under the fixed toast. A real finger has no

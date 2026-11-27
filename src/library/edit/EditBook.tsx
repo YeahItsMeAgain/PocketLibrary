@@ -49,7 +49,7 @@ export function EditBook({
   // The detail is the one record for the chosen style. A second state copy can
   // drift from what gets stored and sent to the wall (and from Undo), so the
   // picker, preview, packed detail and shelf all read this value.
-  const spineStyle = detail.spineStyle ?? "wrap";
+  const spineStyle = detail.spineStyle ?? "art";
   const [enrichmentBusy, setEnrichmentBusy] = useState(false);
   const [enrichmentNotice, setEnrichmentNotice] = useState<string | null>(null);
   const [review, setReview] = useState<Extract<
@@ -119,10 +119,10 @@ export function EditBook({
         );
       });
       const label =
-        next === "wrap"
-          ? "Wrap"
-          : next === "full-bleed"
-            ? "Full-bleed"
+        next === "art"
+          ? "Art"
+          : next === "typography"
+            ? "Typography"
             : "Cloth";
       showUndo(`Spine style set to ${label}.`, async () => {
         await platform.spineSetStyle(bookId, previous);

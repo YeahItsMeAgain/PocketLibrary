@@ -50,7 +50,7 @@ pub use service::DEFAULT_DOWNLOAD_NAMING;
 pub use source::{FileSource, QuickBytes, SourceEntry, SourceKind};
 
 /// The schema version this build knows how to create and read.
-pub const SCHEMA_VERSION: i64 = 6;
+pub const SCHEMA_VERSION: i64 = 7;
 
 /// User-facing application name.
 pub const APP_NAME: &str = "PocketLibrary";

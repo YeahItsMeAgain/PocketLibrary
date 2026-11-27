@@ -111,7 +111,7 @@ struct ManifestBook {
     published_date: Option<String>,
     identifier: Option<String>,
     page_count: Option<i64>,
-    /// NULL means the Wrap default; older archives simply omit the field.
+    /// NULL means the Art default; older archives simply omit the field.
     #[serde(default)]
     spine_style: Option<SpineStyle>,
     /// Zip entry name under `covers/`, absent when no cover was cached.

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PocketLibrary — spine styles, pre-APK review</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; padding:24px; background:#0b0710; color:#e8dcc2; font:16px/1.5 Georgia,serif; }
+  h1 { font-size:26px; letter-spacing:.14em; text-transform:uppercase; color:#e8cf9b; margin:0 0 6px; }
+  h2 { font-size:18px; color:#e8cf9b; margin:0 0 2px; letter-spacing:.08em; }
+  p { margin:0 0 14px; color:#b9a37c; }
+  .lede { max-width:760px; margin-bottom:22px; }
+  .card { border:1px solid rgba(201,168,106,.28); background:rgba(255,255,255,.02); padding:18px; margin:0 0 18px; }
+  .row { display:flex; gap:18px; overflow-x:auto; align-items:flex-start; }
+  figure { margin:0; flex:0 0 auto; }
+  figure img { height:420px; width:auto; display:block; border:1px solid rgba(201,168,106,.18); background:#120b18; }
+  figcaption { font:11px/1.4 system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#8f7c5b; margin-top:6px; }
+  .shelves { display:flex; gap:18px; flex-wrap:wrap; margin-bottom:22px; }
+  .shelves img { width:100%; max-width:390px; border:1px solid rgba(201,168,106,.18); }
+  .note { border-left:2px solid #8a6f3a; padding-left:12px; color:#b9a37c; max-width:760px; }
+  code, a { color:#e8cf9b; }
+  a { text-underline-offset: 2px; }
+</style></head>
+<body>
+  <h1>Spine styles — pre-APK review</h1>
+  <p class="lede">Rendered from the real app UI with real engine art. Nothing here is a mockup. The first four spines use the same cover so you can compare the treatments directly.</p>
+  <div class="shelves">
+    <figure><img src="shots/shelf-390.png" alt=""><figcaption>Wall at 390px</figcaption></figure>
+    <figure><img src="shots/shelf-320.png" alt=""><figcaption>Wall at 320px</figcaption></figure>
+  </div>
+  
+    <section class="card">
+      <h2>Art</h2>
+      <p>Generated art cropped between a cap band and a foot band for the author and labels.</p>
+      <div class="row">
+        <figure><img src="shots/spine-art-390.png" alt=""><figcaption>Spine at 390px shelf</figcaption></figure>
+        <figure><img src="shots/spine-art-320.png" alt=""><figcaption>Spine at 320px shelf</figcaption></figure>
+        <figure><img src="shots/preview-art-390.png" alt=""><figcaption>Edit preview</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Cloth</h2>
+      <p>No art. Woven cloth board with foil type.</p>
+      <div class="row">
+        <figure><img src="shots/spine-cloth-390.png" alt=""><figcaption>Spine at 390px shelf</figcaption></figure>
+        <figure><img src="shots/spine-cloth-320.png" alt=""><figcaption>Spine at 320px shelf</figcaption></figure>
+        <figure><img src="shots/preview-cloth-390.png" alt=""><figcaption>Edit preview</figcaption></figure>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Typography</h2>
+      <p>No art. The original flat board and typographic face.</p>
+      <div class="row">
+        <figure><img src="shots/spine-typography-390.png" alt=""><figcaption>Spine at 390px shelf</figcaption></figure>
+        <figure><img src="shots/spine-typography-320.png" alt=""><figcaption>Spine at 320px shelf</figcaption></figure>
+        <figure><img src="shots/preview-typography-390.png" alt=""><figcaption>Edit preview</figcaption></figure>
+      </div>
+    </section>
+  <p class="note">Compare against the original studies: <a href="/spine-cover-art-prototype/">the prototype index</a> (v4-wrap, v4-generative, v8-auto, app-renderers). These are the reference for the original look, not the current app.</p>
+  <p class="note">If any of these are wrong, say which style and what you want changed — this page is the approval gate before the APK.</p>
+</body></html>

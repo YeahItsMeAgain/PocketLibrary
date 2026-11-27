@@ -26,8 +26,17 @@ import { FilterStrip } from "../labels/FilterStrip";
 import { matchingBookIds } from "./filter";
 import type { DetailPanelProps } from "./DetailPanel";
 import { LibrarySkeleton } from "./LibrarySkeleton";
-import { ShelfCase, SpineFace } from "./Shelf";
-import { SPINE_GOLD, SPINE_INK, shelfMark, shelfSpineStyle } from "./spine";
+import {
+  ShelfCase,
+  SpineFace,
+  paintsArt,
+  spineBandVars,
+  spineFurnitureClass,
+  spineFurnitureVars,
+  spinePaletteVars,
+  spineStyleName,
+} from "./Shelf";
+import { shelfMark } from "./spine";
 import { useSpineActivity } from "./spineActivity";
 import {
   HINT_KEY,
@@ -188,11 +197,11 @@ export function LibraryWall({
       const next = await platform.listBooks();
       // The platform may return the same objects it mutated (the mock does);
       // memoised shelves need fresh references to pick up reader progress.
-      // A missing style is the documented Wrap default.
+      // A missing style is the documented Art default.
       setBooks(
         next.map((book) => ({
           ...book,
-          spineStyle: book.spineStyle ?? "wrap",
+          spineStyle: book.spineStyle ?? "art",
         })),
       );
     } catch {
@@ -273,7 +282,7 @@ export function LibraryWall({
         setBooks(
           nextBooks.map((book) => ({
             ...book,
-            spineStyle: book.spineStyle ?? "wrap",
+            spineStyle: book.spineStyle ?? "art",
           })),
         );
         window.requestAnimationFrame(() => {
@@ -691,28 +700,40 @@ export function LibraryWall({
         <div className="book-drag-layer" aria-hidden="true">
           <div
             ref={ghostRef}
-            className={`spine book drag-ghost${lift.returning ? " is-returning" : ""}`}
+            className={`spine book drag-ghost${
+              lift.returning ? " is-returning" : ""
+            }${
+              paintsArt(spineStyleName(lift.book)) &&
+              (generatedSpines[lift.book.id] || lift.book.spineDataUrl)
+                ? " has-generated"
+                : ""
+            }${spineFurnitureClass(lift.book)}`}
+            data-testid="spine-drag-ghost"
+            data-book-id={lift.book.id}
+            data-style={spineStyleName(lift.book)}
             style={
               {
+                ...spinePaletteVars(lift.book),
+                ...spineBandVars(lift.book),
+                ...spineFurnitureVars(lift.book),
                 left: lift.left,
                 top: lift.top,
                 width: lift.width,
                 height: lift.height,
                 "--w": `${lift.width}px`,
                 "--h": `${lift.height}px`,
-                "--c1": shelfSpineStyle(lift.book).c1,
-                "--c2": shelfSpineStyle(lift.book).c2,
-                "--gold": SPINE_GOLD,
-                "--ink": SPINE_INK,
                 "--lean": "0deg",
-                "--fs": shelfSpineStyle(lift.book).fontSize,
                 transform: lift.returning
                   ? `translate3d(${lift.dx}px, ${lift.dy}px, 0) scale(1)`
                   : undefined,
               } as CSSProperties
             }
           >
-            <SpineFace book={lift.book} />
+            <SpineFace
+              book={lift.book}
+              spineStyle={spineStyleName(lift.book)}
+              generatedSpine={generatedSpines[lift.book.id]}
+            />
           </div>
         </div>
       ) : null}

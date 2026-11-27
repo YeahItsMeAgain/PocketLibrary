@@ -104,7 +104,7 @@ impl SpineService {
         // `fallback` verdict or an entry whose strip cannot decode must go
         // through the engine again; otherwise a failed book looks "done"
         // forever while the wall keeps the cloth spine.
-        if let Some(artifact) = self.cache.read(&prepared.dir)
+        if let Some(artifact) = spine_strip::read_artifact(&prepared.dir)
             && spine_strip::shelf_strip(&prepared.dir).is_some()
         {
             return Ok(artifact);
@@ -113,7 +113,7 @@ impl SpineService {
         if !self.begin(book_id) {
             // The first call may have completed between the cache check and the
             // guard; prefer its result over an "in progress" error.
-            if let Some(artifact) = self.cache.read(&prepared.dir) {
+            if let Some(artifact) = spine_strip::read_artifact(&prepared.dir) {
                 return Ok(artifact);
             }
             return Err(api_error(
@@ -217,7 +217,7 @@ impl SpineService {
         let Ok(prepared) = self.prepare(book_id, &book) else {
             return Ok(None);
         };
-        Ok(self.cache.read(&prepared.dir))
+        Ok(spine_strip::read_artifact(&prepared.dir))
     }
 
     /// Project every complete cache entry into a strip. The result includes
@@ -716,6 +716,7 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         let artifact = SpineArtifact {
             book_id: 2,
+            pipeline_version: spine_strip::SPINE_PIPELINE_VERSION,
             route: "inpaint".to_owned(),
             verdict: "fallback".to_owned(),
             mask_percent: 57.2,
@@ -767,6 +768,11 @@ mod tests {
 
         let artifact = artifact_from_dir(temp.path(), 7).expect("artifact");
         assert_eq!(artifact.book_id, 7);
+        assert_eq!(
+            artifact.pipeline_version,
+            spine_strip::SPINE_PIPELINE_VERSION,
+            "the shell stamps the current pipeline version"
+        );
         assert_eq!(artifact.route, "crop");
         assert_eq!(artifact.verdict, "pass");
         assert_eq!(artifact.mask_percent, 12.5);
@@ -812,6 +818,7 @@ mod tests {
         )
         .expect("read text");
         assert!(text.contains("\"bookId\""));
+        assert!(text.contains("\"pipelineVersion\""));
         assert!(text.contains("\"artDataUrl\""));
         assert!(text.contains("\"runJson\""));
     }
@@ -833,7 +840,7 @@ mod tests {
             published_date: None,
             identifier: None,
             page_count: None,
-            spine_style: pocketlibrary_core::SpineStyle::Wrap,
+            spine_style: pocketlibrary_core::SpineStyle::Art,
             spine_data_url: None,
             cover_path: None,
             cover_source: None,
@@ -1230,8 +1237,8 @@ mod tests {
         assert!(shelf_url.starts_with("data:image/jpeg;base64,"));
         assert_eq!(
             merged_book.spine_style,
-            pocketlibrary_core::SpineStyle::Wrap,
-            "a book with no stored style defaults to Wrap"
+            pocketlibrary_core::SpineStyle::Art,
+            "a book with no stored style defaults to Art"
         );
 
         let shelf_bytes = STANDARD

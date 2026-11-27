@@ -148,23 +148,26 @@ impl FromSql for CoverSource {
 
 /// How a generated spine is presented on the shelf and in detail.
 ///
-/// The database stores the wire spelling (`wrap`, `full-bleed`, `cloth`); a
-/// NULL column reads back as the `Wrap` default.
+/// The database stores the wire spelling (`art`, `cloth`, `typography`); a
+/// NULL column reads back as the `Art` default.
+///
+/// `Cloth` is a textured woven board; `Typography` is the original flat,
+/// untextured two-tone board with type only. Only `Art` paints generated art.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SpineStyle {
     #[default]
-    Wrap,
-    FullBleed,
+    Art,
     Cloth,
+    Typography,
 }
 
 impl SpineStyle {
     pub fn as_str(self) -> &'static str {
         match self {
-            Self::Wrap => "wrap",
-            Self::FullBleed => "full-bleed",
+            Self::Art => "art",
             Self::Cloth => "cloth",
+            Self::Typography => "typography",
         }
     }
 }
@@ -178,9 +181,9 @@ impl ToSql for SpineStyle {
 impl FromSql for SpineStyle {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         match value.as_str()? {
-            "wrap" => Ok(Self::Wrap),
-            "full-bleed" => Ok(Self::FullBleed),
+            "art" => Ok(Self::Art),
             "cloth" => Ok(Self::Cloth),
+            "typography" => Ok(Self::Typography),
             other => Err(FromSqlError::Other(
                 format!("unknown spine style: {other}").into(),
             )),
@@ -409,7 +412,7 @@ pub struct Book {
     pub identifier: Option<String>,
     /// Page count, read from a PDF; EPUBs are reflowable and have none.
     pub page_count: Option<i64>,
-    /// How this book's generated spine is presented. Defaults to Wrap.
+    /// How this book's generated spine is presented. Defaults to Art.
     #[serde(default)]
     pub spine_style: SpineStyle,
     /// The cached 52 x 236 strip for this book, when one exists.

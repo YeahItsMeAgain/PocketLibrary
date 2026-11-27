@@ -65,7 +65,7 @@ The cached result for one book: the art, spine and fallback images plus route, v
 _Avoid_: output, image, cache file
 
 **Spine style**:
-How a generated spine is presented: `wrap`, `full-bleed` or `cloth`. This is the per-book `Book.spineStyle` value (optional on the wire; absent means `wrap`). It is not the generation route or the QA verdict.
+How a generated spine is presented: `art`, `cloth` or `typography`. This is the per-book `Book.spineStyle` value (optional on the wire; absent means `art`, shown in the UI as **Art**). Art is the generated art spine that runs to the top edge with a foot band holding the full author over two lines and the label chips; `cloth` is a textured woven board; `typography` is the original flat, untextured two-tone board. Only `art` paints generated art. It is not the generation route or the QA verdict.
 _Avoid_: route, verdict, layout, theme
 
 **Backfill**:

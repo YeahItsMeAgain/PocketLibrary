@@ -278,7 +278,9 @@ export function SpineStatusPanel() {
                         : book.shelfStripPresent
                           ? book.spineStyle === "cloth"
                             ? "Suppressed by Cloth style · change in Edit → Spine"
-                            : "Suppressed by Cloth style"
+                            : book.spineStyle === "typography"
+                              ? "Suppressed by Typography style · change in Edit → Spine"
+                              : "Suppressed by style"
                           : (book.shelfReason ?? "Missing")}
                     </td>
                     <td>{book.verdict ?? "—"}</td>

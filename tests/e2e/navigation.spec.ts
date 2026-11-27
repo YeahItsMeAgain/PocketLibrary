@@ -397,7 +397,7 @@ test("the wall carries no debug version text and Settings carries About", async 
     "aria-hidden",
     "true",
   );
-  await expect(page.getByTestId("settings-version")).toContainText("v0.1.15");
+  await expect(page.getByTestId("settings-version")).toContainText("v0.1.16");
   await expect(page.getByTestId("settings-schema")).toContainText("6");
   await expect(page.getByTestId("settings-view")).toContainText(
     "SIL Open Font License",

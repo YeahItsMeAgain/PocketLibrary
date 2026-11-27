@@ -1,0 +1,167 @@
+{
+  "phase": "after",
+  "widths": {
+    "320": [
+      {
+        "style": "wrap",
+        "hasArt": true,
+        "naturalWidth": 104,
+        "spineW": 28,
+        "imgInset": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "scrimInset": {
+          "left": 5,
+          "right": 5,
+          "top": 16,
+          "bottom": 42
+        },
+        "scrimW": 18,
+        "scrimBorder": "rgba(240, 226, 196, 0.62) 0px 0px 0px 1px inset, rgba(18, 10, 6, 0.32) 0px 0px 0px 1px",
+        "scrimBg": "rgba(0, 0, 0, 0)",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "boardImage": "flat"
+      },
+      {
+        "style": "full-bleed",
+        "hasArt": true,
+        "naturalWidth": 104,
+        "spineW": 28,
+        "imgInset": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "scrimInset": null,
+        "scrimW": 0,
+        "scrimBorder": "none",
+        "scrimBg": "none",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "boardImage": "flat"
+      },
+      {
+        "style": "cloth",
+        "hasArt": false,
+        "naturalWidth": 0,
+        "spineW": 28,
+        "imgInset": null,
+        "scrimInset": null,
+        "scrimW": 0,
+        "scrimBorder": "none",
+        "scrimBg": "none",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(236, 215, 164)",
+        "stroke": "0px rgb(236, 215, 164)",
+        "boardImage": "woven"
+      },
+      {
+        "style": "typography",
+        "hasArt": false,
+        "naturalWidth": 0,
+        "spineW": 28,
+        "imgInset": null,
+        "scrimInset": null,
+        "scrimW": 0,
+        "scrimBorder": "none",
+        "scrimBg": "none",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(244, 230, 196)",
+        "stroke": "0px rgb(244, 230, 196)",
+        "boardImage": "flat"
+      }
+    ],
+    "390": [
+      {
+        "style": "wrap",
+        "hasArt": true,
+        "naturalWidth": 104,
+        "spineW": 28,
+        "imgInset": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "scrimInset": {
+          "left": 5,
+          "right": 5,
+          "top": 16,
+          "bottom": 42
+        },
+        "scrimW": 18,
+        "scrimBorder": "rgba(240, 226, 196, 0.62) 0px 0px 0px 1px inset, rgba(18, 10, 6, 0.32) 0px 0px 0px 1px",
+        "scrimBg": "rgba(0, 0, 0, 0)",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "boardImage": "flat"
+      },
+      {
+        "style": "full-bleed",
+        "hasArt": true,
+        "naturalWidth": 104,
+        "spineW": 28,
+        "imgInset": {
+          "left": 0,
+          "right": 0,
+          "top": 0,
+          "bottom": 0
+        },
+        "scrimInset": null,
+        "scrimW": 0,
+        "scrimBorder": "none",
+        "scrimBg": "none",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(42, 26, 16)",
+        "stroke": "1px rgb(255, 250, 240)",
+        "boardImage": "flat"
+      },
+      {
+        "style": "cloth",
+        "hasArt": false,
+        "naturalWidth": 0,
+        "spineW": 28,
+        "imgInset": null,
+        "scrimInset": null,
+        "scrimW": 0,
+        "scrimBorder": "none",
+        "scrimBg": "none",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(236, 215, 164)",
+        "stroke": "0px rgb(236, 215, 164)",
+        "boardImage": "woven"
+      },
+      {
+        "style": "typography",
+        "hasArt": false,
+        "naturalWidth": 0,
+        "spineW": 28,
+        "imgInset": null,
+        "scrimInset": null,
+        "scrimW": 0,
+        "scrimBorder": "none",
+        "scrimBg": "none",
+        "scrimImage": "none",
+        "font": 9.52,
+        "ink": "rgb(244, 230, 196)",
+        "stroke": "0px rgb(244, 230, 196)",
+        "boardImage": "flat"
+      }
+    ]
+  }
+}

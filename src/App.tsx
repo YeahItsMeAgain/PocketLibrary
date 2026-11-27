@@ -347,7 +347,7 @@ function AppShell() {
       // Launch repair: a warm install has `backfillPending: false`, so the
       // shell's one-shot backfill is already done. Any book without a cached
       // strip is still queued (deduped by the shell queue) so spines generate
-      // automatically in the default Wrap style. When the bulk projection
+      // automatically in the default Art style. When the bulk projection
       // failed we cannot tell which books are cached, so enqueue all; the
       // worker skips complete entries.
       void platform

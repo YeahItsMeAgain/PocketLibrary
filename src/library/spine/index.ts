@@ -8,15 +8,9 @@
 
 import type { SpineStyle } from "../../platform";
 import type { RenderBook } from "./geometry";
-import {
-  paletteFor,
-  SPINE_H,
-  SPINE_W,
-  wrapGeometry,
-} from "./geometry";
-import { drawArt, spineEdges } from "./draw";
-import { drawSpineType, type RenderMeta } from "./text";
-import { drawCloth, drawFullBleed, drawSpineWindow, drawWrap } from "./styles";
+import { paletteFor, SPINE_H, SPINE_W } from "./geometry";
+import { type RenderMeta } from "./text";
+import { drawArtSpine, drawCloth, drawTypography } from "./styles";
 
 export {
   artCropRect,
@@ -24,15 +18,9 @@ export {
   fallbackCrop,
   mix,
   readableInk,
-  SPINE_RAIL,
   SPINE_STRIP_SIZE,
-  SPINE_TYPE_LAYOUT,
-  spineScrimRect,
-  spineTypeBands,
-  spineTypeZones,
-  wrapGeometry,
 } from "./geometry";
-export type { Palette, RenderBook, SpineTypeStyle } from "./geometry";
+export type { Palette, RenderBook } from "./geometry";
 export { textDirection } from "./text";
 export type { RenderMeta, SpineBlock } from "./text";
 
@@ -48,42 +36,25 @@ export function renderSpineStyle(
   style: SpineStyle,
 ): RenderMeta {
   switch (style) {
-    case "wrap":
-      return drawWrap(ctx, book);
-    case "full-bleed":
-      return drawFullBleed(ctx, book);
+    case "art":
+      return drawArtSpine(ctx, book);
     case "cloth":
       return drawCloth(ctx, book);
+    case "typography":
+      return drawTypography(ctx, book);
   }
 }
 
-/** The logical canvas size for a studio preview. */
-export function spineStyleSize(style: SpineStyle, book: RenderBook) {
-  if (style === "wrap") {
-    const geometry = wrapGeometry(book.pages || 320);
-    return { width: geometry.totalW, height: geometry.height };
-  }
+/** The logical canvas size for a studio preview: a 52 x 236 spine. */
+export function spineStyleSize(_style: SpineStyle, _book: RenderBook) {
   return { width: SPINE_W, height: SPINE_H };
 }
 
-/** The shelf strip shows the 52 x 236 spine, cropped from the wrap case. */
+/** The shelf strip is the same 52 x 236 spine the studio previews. */
 export function renderSpineStrip(
   ctx: CanvasRenderingContext2D,
   book: RenderBook,
   style: SpineStyle,
 ): RenderMeta {
-  if (style !== "wrap") {
-    return renderSpineStyle(ctx, book, style);
-  }
-  // The shelf strip is the wrap's spine at 52 x 236, not a scaled crop of the
-  // whole case: the case spine is only ~18 px wide, so cropping it up would
-  // magnify the type far past what a shelf shows.
-  ctx.direction = book.direction;
-  drawArt(ctx, book, 0, 0, SPINE_W, SPINE_H);
-  ctx.fillStyle = "rgba(0,0,0,.16)";
-  ctx.fillRect(0, 0, SPINE_W, SPINE_H);
-  spineEdges(ctx, SPINE_W, SPINE_H);
-  drawSpineWindow(ctx, 0, SPINE_W, "wrap");
-  const meta = drawSpineType(ctx, book, SPINE_W, 0, "wrap");
-  return { ...meta, scrim: true, scrimAlpha: 0.78 };
+  return renderSpineStyle(ctx, book, style);
 }

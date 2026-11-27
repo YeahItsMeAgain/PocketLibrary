@@ -93,7 +93,7 @@ export interface Book {
   slotIndex: number | null;
   readingStatus: ReadingStatus;
   labels: Label[];
-  /** Persisted renderer style; absent means the default, Wrap. */
+  /** Persisted renderer style; absent means the default, Art. */
   spineStyle?: SpineStyle;
   /**
    * Cached 52 x 236 strip delivered with the list payload, when one exists.
@@ -138,6 +138,8 @@ export interface SpineCropBox {
 /** Mirrors the shell's `SpineArtifact` (camelCase on the wire). */
 export interface SpineArtifact {
   bookId: number;
+  /** Pipeline that produced this artifact; 0 means an old/stale entry. */
+  pipelineVersion: number;
   route: SpineRoute;
   verdict: SpineVerdict;
   maskPercent: number;
@@ -193,7 +195,7 @@ export interface SpineBookDiagnostic {
   shelfStripPresent: boolean;
   /** The book's stored presentation style. */
   spineStyle: SpineStyle;
-  /** True only when a usable strip exists and the style does not hide it. */
+  /** True only when a usable strip exists and the style paints art. */
   paintsArt: boolean;
   /** The artifact's verdict, when readable. */
   verdict: SpineVerdict | null;
@@ -208,7 +210,7 @@ export interface SpineDiagnostics {
   queue: SpineQueueState;
   /** Books whose projected strip can paint on the wall. */
   shelfReady: number;
-  /** Books that actually paint: strip present and style is not Cloth. */
+  /** Books that actually paint: strip present and the style paints art. */
   paintable: number;
   /** Books with a readable artifact on disk. */
   artifactsPresent: number;
@@ -218,7 +220,7 @@ export interface SpineDiagnostics {
 /* ------------------------------------------------------- automatic queue */
 
 /** The three renderer styles. Persisted per book in `books.spine_style`. */
-export type SpineStyle = "wrap" | "full-bleed" | "cloth";
+export type SpineStyle = "art" | "cloth" | "typography";
 
 /** A pipeline stage the queue reports while a book is being prepared. */
 export type SpineStage = "art" | "text" | "check";

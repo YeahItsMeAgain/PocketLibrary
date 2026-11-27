@@ -618,6 +618,7 @@ mod tests {
     fn qa_artifact(verdict: &str, mask: f64, reasons: &[&str]) -> SpineArtifact {
         SpineArtifact {
             book_id: 2,
+            pipeline_version: pocketlibrary_core::spine_strip::SPINE_PIPELINE_VERSION,
             route: "inpaint".to_owned(),
             verdict: verdict.to_owned(),
             mask_percent: mask,

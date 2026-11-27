@@ -111,7 +111,7 @@ spineSetStyle(bookId: number, style: SpineStyle): Promise<void>
 ```
 
 ```ts
-type SpineStyle = "wrap" | "full-bleed" | "cloth";
+type SpineStyle = "art" | "cloth" | "typography";
 
 interface SpineQueueState {
   running: boolean;
@@ -138,7 +138,8 @@ interface SpineQueueState {
   on next launch. The engine-ready state queues jobs as "waiting" rather than
   dropping them.
 - Per-book style persists in `books.spine_style` (migration 6), default
-  `wrap`. Deleting a book deletes the row and its cache.
+  `art` (the UI label is **Art**). Deleting a book deletes the row and its
+  cache.
 - Cache keeps only runtime files: `art.jpg`, `spine-2x.jpg`,
   `fallback-spine.jpg`, `run.json`, `qa.json`, `artifact.json`. Do not store
   `source.jpg` or `mask.png` in the app cache. Trim to **200 MB** by LRU
@@ -147,12 +148,16 @@ interface SpineQueueState {
 
 ## Frontend
 
-- Renderer styles: **Wrap, Full-bleed, Cloth** only. Delete the Hybrid,
-  Textless and Editorial implementations.
-- Wrap and Full-bleed draw from `artDataUrl` + `cropBox`; Cloth is
-  typographic. Default style: **Wrap**.
-- Full-bleed: title and author centred on both axes as one block, with a soft
-  gradient scrim. Two lines max, shrink to fit, never truncate mid-word.
+- Renderer styles: **Art, Cloth, Typography** only. Delete the Hybrid,
+  Textless, Editorial and Full-bleed implementations. The wire/DB value is
+  `art`.
+- Art draws from `artDataUrl` + `cropBox` to the top edge, with a 27% foot
+  band carrying the full author over two lines above the label chips; Cloth is
+  a textured woven board with foil type; Typography is the original flat
+  two-tone title-hash board with type only. Only Art paints art. Default style:
+  **Art** (`art`).
+- Art: the title is centred vertically on the cropped art, with adaptive ink
+  and a hairline halo. Two lines max, shrink to fit, never truncate mid-word.
 - RTL: detect the first strong character, set canvas `direction`, mirror
   alignment, and cover it with a Hebrew fixture.
 - Activity chip: global "Preparing spines · n of m", plus a per-book state.

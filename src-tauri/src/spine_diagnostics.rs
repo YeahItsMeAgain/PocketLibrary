@@ -135,7 +135,7 @@ pub struct SpineBookDiagnostic {
     pub shelf_strip_present: bool,
     /// The book's stored presentation style.
     pub spine_style: String,
-    /// True only when a usable strip exists and the style does not hide it.
+    /// True only when a usable strip exists and the style is Art.
     pub paints_art: bool,
     /// The artifact's wire verdict, when it is readable.
     pub verdict: Option<String>,
@@ -152,7 +152,7 @@ pub struct SpineDiagnostics {
     pub queue: SpineQueueState,
     /// Books whose projected strip can paint on the wall.
     pub shelf_ready: usize,
-    /// Books that actually paint: strip present and the style is not Cloth.
+    /// Books that actually paint: strip present and the style is Art.
     pub paintable: usize,
     /// Books with a readable artifact on disk.
     pub artifacts_present: usize,
@@ -192,8 +192,8 @@ pub async fn spine_diagnostics(app: AppHandle) -> Result<SpineDiagnostics, ApiEr
             .map(|book| {
                 let strip = strips.get(&book.id);
                 let shelf_strip_present = strip.is_some_and(|strip| strip.is_shelf_eligible());
-                let paints_art = shelf_strip_present
-                    && book.spine_style != pocketlibrary_core::SpineStyle::Cloth;
+                let paints_art =
+                    shelf_strip_present && book.spine_style == pocketlibrary_core::SpineStyle::Art;
                 let spine_style = book.spine_style.as_str().to_owned();
                 let shelf_reason = match strip {
                     Some(strip) if strip.verdict == "fallback" => {
@@ -252,6 +252,7 @@ mod tests {
     fn artifact(verdict: &str, mask_percent: f64, reasons: &[&str]) -> SpineArtifact {
         SpineArtifact {
             book_id: 2,
+            pipeline_version: pocketlibrary_core::spine_strip::SPINE_PIPELINE_VERSION,
             route: "inpaint".to_owned(),
             verdict: verdict.to_owned(),
             mask_percent,

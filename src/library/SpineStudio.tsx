@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   isApiError,
   platform,
+  type BookFormat,
   type SpineArtifact,
   type SpineStatus,
   type SpineStyle,
@@ -31,19 +32,19 @@ export const SPINE_STYLES: ReadonlyArray<{
   note: string;
 }> = [
   {
-    id: "wrap",
-    label: "Wrap",
-    note: "Page-count spine width. Type runs down the spine over the text-free art.",
-  },
-  {
-    id: "full-bleed",
-    label: "Full-bleed",
-    note: "The crop edge to edge, with the title and author down the spine over a soft scrim.",
+    id: "art",
+    label: "Art",
+    note: "Generated art with a cap band, a cropped art window and a foot band for the author and labels.",
   },
   {
     id: "cloth",
     label: "Cloth",
     note: "Cloth colour sampled from the art, foil type, no art window.",
+  },
+  {
+    id: "typography",
+    label: "Typography",
+    note: "The original typographic spine: flat boards, type only.",
   },
 ];
 
@@ -86,6 +87,8 @@ export function SpineCanvas({
     canvas.dataset.blockWidth = meta.block.width.toFixed(2);
     canvas.dataset.blockHeight = meta.block.height.toFixed(2);
     canvas.dataset.textRun = meta.vertical ? "vertical" : "horizontal";
+    canvas.dataset.textOrientation = meta.textOrientation ?? "";
+    canvas.dataset.labelChips = (meta.labelChips ?? []).join("|");
     canvas.dataset.titleCy = meta.title.y.toFixed(2);
     canvas.dataset.titleWidth = meta.title.width.toFixed(2);
     canvas.dataset.titleHeight = meta.title.height.toFixed(2);
@@ -97,6 +100,12 @@ export function SpineCanvas({
     canvas.dataset.authorFontSize = meta.author?.fs.toFixed(2) ?? "";
     canvas.dataset.authorLines = meta.author ? String(meta.author.lines) : "";
     canvas.dataset.colophonY = meta.colophon.y.toFixed(2);
+    canvas.dataset.bandTop = meta.bands ? meta.bands.top.toFixed(2) : "";
+    canvas.dataset.bandBottom = meta.bands ? meta.bands.bottom.toFixed(2) : "";
+    canvas.dataset.artTop = meta.bands ? meta.bands.top.toFixed(2) : "";
+    canvas.dataset.artBottom = meta.bands
+      ? (size.height - meta.bands.bottom).toFixed(2)
+      : "";
     canvas.setAttribute("dir", meta.direction);
   }, [book, style, strip]);
   return <canvas ref={ref} data-testid={testId} />;
@@ -109,10 +118,16 @@ interface StudioProps {
   title: string;
   author: string;
   pages: number | null;
-  /** The published cover, used for the wrap front; art alone if absent. */
+  /** The published cover, used for the case front; art alone if absent. */
   coverDataUrl?: string | null;
-  /** Persisted style from `books.spine_style`; default Wrap. */
+  /** Persisted style from `books.spine_style`; default Art. */
   initialStyle?: SpineStyle;
+  /** Catalogue identity for the Typography title-hash palette. */
+  contentHash?: string;
+  slotIndex?: number | null;
+  format?: BookFormat;
+  /** Labels worn by the book, shown as chips in the Art bottom band. */
+  labels?: ReadonlyArray<{ name: string; colour: string }>;
   /**
    * The read view's compact summary: a single static preview and verdict,
    * with no Generate, style tiles, Use Cloth or persistence controls.
@@ -213,6 +228,10 @@ export function SpineStudio({
   pages,
   coverDataUrl,
   initialStyle,
+  contentHash,
+  slotIndex,
+  format,
+  labels,
   readOnly = false,
   onFixSpine,
   style: controlledStyle,
@@ -223,7 +242,7 @@ export function SpineStudio({
   const [state, setState] = useState<StudioState>({ kind: "loading" });
   const [status, setStatus] = useState<SpineStatus | null>(null);
   const [internalStyle, setInternalStyle] = useState<SpineStyle>(
-    initialStyle ?? "wrap",
+    initialStyle ?? "art",
   );
   // A fallback result previews as Cloth, because that is the honest output of
   // the engine. It must not be persisted as the book's style: pinning Cloth
@@ -262,7 +281,7 @@ export function SpineStudio({
     let alive = true;
     setState({ kind: "loading" });
     setPrepared(null);
-    setInternalStyle(initialStyleRef.current ?? "wrap");
+    setInternalStyle(initialStyleRef.current ?? "art");
     setAutoCloth(false);
     setStatus(null);
     // Opening a book must do zero engine work: only read the cache. Model
@@ -351,6 +370,10 @@ export function SpineStudio({
         route: artifact.route,
         palette: null,
         direction: textDirection(`${title} ${author}`),
+        contentHash,
+        slotIndex: slotIndex ?? undefined,
+        format,
+        labels,
       };
       prepareSpinePalette(book);
       setPrepared(book);
@@ -358,7 +381,7 @@ export function SpineStudio({
     return () => {
       alive = false;
     };
-  }, [state, title, author, pages, coverDataUrl]);
+  }, [state, title, author, pages, coverDataUrl, contentHash, slotIndex, format, labels]);
 
   const generate = useCallback(async () => {
     if (busy) return;
@@ -575,7 +598,7 @@ export function SpineStudio({
                   : "spine-approximate-note"
               }
             >
-              Approximate spine width — no page count, so the wrap uses a
+              Approximate spine width — no page count, so Art uses a
               ~320-page estimate.
             </p>
           ) : null}
@@ -600,7 +623,7 @@ export function SpineStudio({
               {prepared ? (
                 <div
                   className={`spine-preview spine-preview--static${
-                    style === "wrap" ? " is-wrap" : ""
+                    style === "art" ? " is-art" : ""
                   }`}
                   data-testid="spine-static-preview"
                   data-style={style}
@@ -614,7 +637,7 @@ export function SpineStudio({
               ) : (
                 <div
                   className={`spine-preview spine-preview--static${
-                    style === "wrap" ? " is-wrap" : ""
+                    style === "art" ? " is-art" : ""
                   }`}
                   data-testid="spine-static-preview"
                   data-style={style}
@@ -651,7 +674,7 @@ export function SpineStudio({
                 <>
                   <div
                     className={`spine-preview${
-                      style === "wrap" ? " is-wrap" : ""
+                      style === "art" ? " is-art" : ""
                     }`}
                     data-testid="spine-preview"
                     data-style={style}
@@ -715,7 +738,7 @@ export function SpineStudio({
               ) : (
                 <div
                   className={`spine-preview${
-                    style === "wrap" ? " is-wrap" : ""
+                    style === "art" ? " is-art" : ""
                   }`}
                   data-testid="spine-preview"
                   data-style={style}

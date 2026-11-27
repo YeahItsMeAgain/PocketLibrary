@@ -193,7 +193,7 @@ test("undo restores the previous spine style", async ({ page }) => {
   await expect(
     page.getByTestId("edit-book").getByTestId("spine-verdict"),
   ).toBeVisible();
-  await expect(page.getByTestId("spine-style-wrap")).toHaveAttribute(
+  await expect(page.getByTestId("spine-style-art")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -207,7 +207,7 @@ test("undo restores the previous spine style", async ({ page }) => {
     "Spine style set to Cloth",
   );
   await page.getByTestId("edit-undo").click();
-  await expect(page.getByTestId("spine-style-wrap")).toHaveAttribute(
+  await expect(page.getByTestId("spine-style-art")).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -360,11 +360,11 @@ for (const width of [390, 320]) {
       page.getByTestId("spine-style-grid").locator("canvas"),
     ).toHaveCount(3);
 
-    // Put the whole stage and the style row in view so a click never needs to
+    // Put the whole style grid (both rows) in view so a click never needs to
     // scroll anything into view first.
     await page
-      .getByTestId("spine-preview")
-      .evaluate((element) => element.scrollIntoView({ block: "start" }));
+      .getByTestId("spine-style-grid")
+      .evaluate((element) => element.scrollIntoView({ block: "end" }));
     await page.waitForTimeout(150);
 
     const read = () =>
@@ -404,10 +404,10 @@ for (const width of [390, 320]) {
     expect(baseline.stage).not.toBeNull();
     expect(baseline.heading).not.toBeNull();
     expect(baseline.grid).not.toBeNull();
-    // Wrap, Full-bleed and Cloth stay on one row.
+    // The three styles stay on one readable row at this width.
     expect(new Set(baseline.chipTops).size).toBe(1);
 
-    for (const style of ["full-bleed", "cloth", "wrap"]) {
+    for (const style of ["cloth", "typography", "art"]) {
       // Sample every frame: the old regression collapsed the whole studio to
       // its loading placeholder for a few frames after each choice, which a
       // settled-state assertion would miss.

@@ -82,6 +82,60 @@ fn the_skip_path_reads_one_book_and_skips_cached_entries() {
 }
 
 #[test]
+fn spine_styles_round_trip_every_wire_spelling() {
+    use rusqlite::Connection;
+
+    for (style, wire) in [
+        (SpineStyle::Art, "art"),
+        (SpineStyle::Cloth, "cloth"),
+        (SpineStyle::Typography, "typography"),
+    ] {
+        assert_eq!(style.as_str(), wire);
+        assert_eq!(
+            serde_json::to_string(&style).expect("serialise style"),
+            format!("\"{wire}\"")
+        );
+        assert_eq!(
+            serde_json::from_str::<SpineStyle>(&format!("\"{wire}\"")).expect("deserialise style"),
+            style
+        );
+
+        let conn = Connection::open_in_memory().expect("in-memory database");
+        let stored: SpineStyle = conn
+            .query_row("SELECT ?1", [style], |row| row.get(0))
+            .expect("read style back from SQLite");
+        assert_eq!(stored, style);
+    }
+
+    assert!(
+        serde_json::from_str::<SpineStyle>("\"hybrid\"").is_err(),
+        "unknown wire spellings are rejected"
+    );
+    assert!(
+        serde_json::from_str::<SpineStyle>("\"full-bleed\"").is_err(),
+        "the removed art style is rejected"
+    );
+}
+
+#[test]
+fn typography_persists_through_set_and_reload() {
+    let (_dir, api) = database();
+    let source = FakeDir::new().file("one.epub");
+    api.scan(&source).expect("scan books");
+    let book = api.list_books().expect("list books").remove(0);
+
+    api.set_spine_style(book.id, SpineStyle::Typography)
+        .expect("persist typography");
+    assert_eq!(
+        api.book(book.id).expect("reload").spine_style,
+        SpineStyle::Typography
+    );
+
+    let listed = api.list_books().expect("list books").remove(0);
+    assert_eq!(listed.spine_style, SpineStyle::Typography);
+}
+
+#[test]
 fn a_new_book_defaults_to_the_wrap_spine_style() {
     let (_dir, api) = database();
     let source = FakeDir::new().file("one.epub");
@@ -90,11 +144,11 @@ fn a_new_book_defaults_to_the_wrap_spine_style() {
     let book = api.list_books().expect("list books").remove(0);
     assert_eq!(
         book.spine_style,
-        SpineStyle::Wrap,
-        "a scanned book's insert default is Wrap, not NULL"
+        SpineStyle::Art,
+        "a scanned book's insert default is Art, not NULL"
     );
     assert_eq!(
         api.book(book.id).expect("reload").spine_style,
-        SpineStyle::Wrap
+        SpineStyle::Art
     );
 }

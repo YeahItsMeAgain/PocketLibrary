@@ -158,7 +158,7 @@ pub(super) fn insert_book(conn: &Connection, book: NewBook<'_>) -> Result<()> {
              description, publisher, published_date, identifier, page_count, cover_path,
              cover_source, added_at, shelf_id, slot_index,
              file_cover_path, file_cover_source, file_description, spine_style
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, 'wrap')",
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, 'art')",
         params![
             content_hash,
             quick_key,

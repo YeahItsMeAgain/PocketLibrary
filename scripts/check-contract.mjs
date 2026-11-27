@@ -294,6 +294,76 @@ if (expectedCode === null) {
 const typesFile = "src/platform/types.ts";
 const types = read(typesFile);
 
+/* ---------------------------------------------------- spine style spellings */
+
+const modelsFile = "core/src/models.rs";
+const models = read(modelsFile);
+const migrationsFile = "core/src/migrations.rs";
+const migrations = read(migrationsFile);
+
+function quoted(matchText) {
+  return [...matchText.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+}
+
+function sqlQuoted(matchText) {
+  return [...matchText.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+}
+
+const tsStyleMatch = types.match(/export\s+type\s+SpineStyle\s*=\s*([^;]+);/);
+const tsStyles = tsStyleMatch ? quoted(tsStyleMatch[1]) : [];
+if (tsStyles.length === 0) {
+  fail(`${typesFile}: missing the SpineStyle union`);
+}
+
+const rustStyleBlock = models.match(/impl\s+SpineStyle\s*\{([\s\S]*?)\n\}/);
+const rustStyles = rustStyleBlock
+  ? [...rustStyleBlock[1].matchAll(/Self::\w+\s*=>\s*"([^"]+)"/g)].map(
+      (match) => match[1],
+    )
+  : [];
+if (rustStyles.length === 0) {
+  fail(`${modelsFile}: missing SpineStyle::as_str spellings`);
+}
+
+// The migration is the write-side CHECK. Pick the newest one (v8) so the
+// contract check proves the database accepts exactly the wire spellings.
+const migrationChecks = [
+  ...migrations.matchAll(/spine_style\s+IS\s+NULL\s+OR\s+spine_style\s+IN\s*\(([^)]*)\)/g),
+];
+const migrationStyles = migrationChecks.length
+  ? sqlQuoted(migrationChecks[migrationChecks.length - 1][1])
+  : [];
+if (migrationStyles.length === 0) {
+  fail(`${migrationsFile}: missing the spine_style CHECK`);
+}
+
+if (!tsStyles.includes("typography")) {
+  fail(`${typesFile}: SpineStyle is missing "typography"`);
+}
+for (const [label, list] of [
+  [typesFile, tsStyles],
+  [modelsFile, rustStyles],
+  [migrationsFile, migrationStyles],
+]) {
+  if (list.includes("wrap") || list.includes("full-bleed")) {
+    fail(`${label}: "wrap" and "full-bleed" must not be allowed spine styles`);
+  }
+}
+same(
+  "spine style spellings (TypeScript vs Rust as_str)",
+  typesFile,
+  tsStyles.join(","),
+  modelsFile,
+  rustStyles.join(","),
+);
+same(
+  "spine style spellings (Rust as_str vs migration CHECK)",
+  modelsFile,
+  rustStyles.join(","),
+  migrationsFile,
+  migrationStyles.join(","),
+);
+
 sameFields(
   "SpineArtifact contract",
   "SpineArtifact",
@@ -334,6 +404,6 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "contract check passed: spine constants, schema/version, Android versionCode " +
-    "and spine wire fields agree.",
+  "contract check passed: spine constants, schema/version, Android versionCode, " +
+    "spine style spellings and spine wire fields agree.",
 );

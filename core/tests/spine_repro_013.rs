@@ -134,7 +134,7 @@ fn real_engine_output_projects_through_the_production_cache() {
             published_date: None,
             identifier: None,
             page_count: None,
-            spine_style: pocketlibrary_core::SpineStyle::Wrap,
+            spine_style: pocketlibrary_core::SpineStyle::Art,
             spine_data_url: None,
             cover_path: None,
             cover_source: None,

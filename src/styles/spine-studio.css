@@ -216,9 +216,9 @@
   justify-content: center;
   /* One stage for every style. Its tallest state is the 52 x 236 portrait
      canvas capped at 300px plus the 10px padding and 1px border (322px), so
-     Wrap's wide case and the portrait spines reserve exactly the same box and
-     switching never reflows the page. Below ~358px the stage scales down with
-     the column; at wider columns max-height holds it at 322px. */
+     every style reserves the same box and switching never reflows the page.
+     Below ~358px the stage scales down with the column; at wider columns
+     max-height holds it at 322px. */
   aspect-ratio: 358 / 322;
   max-height: 322px;
   margin-top: 10px;
@@ -238,12 +238,6 @@
   max-height: 100%;
 }
 
-.spine-preview.is-wrap canvas {
-  width: 100%;
-  max-height: 100%;
-  height: auto;
-}
-
 .spine-preview .spine-fine {
   margin: 0;
   text-align: center;
@@ -261,6 +255,7 @@
 
 .spine-style-grid {
   display: grid;
+  /* Three choices on one row; each stays a readable 44 px target at 320 px. */
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
   margin-top: 10px;
@@ -272,6 +267,7 @@
   align-items: center;
   gap: 5px;
   min-width: 0;
+  min-height: 44px;
   padding: 7px 5px 6px;
   border: 1px solid rgba(201, 168, 106, 0.24);
   border-radius: 2px;

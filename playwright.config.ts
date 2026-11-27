@@ -17,7 +17,10 @@ export default defineConfig({
     isMobile: true,
     hasTouch: true,
     trace: "on-first-retry",
-    screenshot: "only-on-failure",
+    // Playwright's "only-on-failure" still captures a throwaway DPR-3
+    // screenshot after every passing test in this version (~3s/test). Tests
+    // that need a screenshot take one explicitly; failures keep the trace.
+    screenshot: "off",
   },
   projects: [{ name: "chromium" }],
   webServer: [

@@ -11,136 +11,8 @@ import type { SpineRoute, SpineVerdict } from "../../platform";
 export const SPINE_W = 52;
 export const SPINE_H = 236;
 
-/** The 52 x 236 shelf strip, independent of the wrap case size. */
+/** The 52 x 236 shelf strip; every style previews and shelves at this size. */
 export const SPINE_STRIP_SIZE = { width: SPINE_W, height: SPINE_H } as const;
-
-/**
- * The original app-renderer prototype geometry, restored.
- *
- * The title is not confined to a third: it gets the whole run between the head
- * and the author, and shrinks only to fit. The author sits below it and the
- * provenance/colophon mark closes the base. Both Wrap and Full-bleed centre the
- * type on the spine; Full-bleed's old fore-edge rail is retained only as a
- * reference for the rule/provenance positions.
- */
-export const SPINE_RAIL = {
-  width: 20,
-  inset: 2,
-  head: 27,
-  tail: 27,
-  ruleY: 20,
-  borderWidth: 0.6,
-} as const;
-
-export const SPINE_TYPE_LAYOUT = {
-  wrap: {
-    head: 25,
-    tail: 25,
-    /** Extra space between the title run and the author run. */
-    gap: 14,
-    titleMaxSize: 7.8,
-    titleMinSize: 2.6,
-    authorMaxSize: 3.6,
-    authorMinSize: 2.4,
-  },
-  fullBleed: {
-    head: 27,
-    tail: 27,
-    gap: 8,
-    titleMaxSize: 9.4,
-    titleMinSize: 2.8,
-    authorMaxSize: 4.2,
-    authorMinSize: 2.8,
-  },
-} as const;
-
-export type SpineTypeStyle = "wrap" | "full-bleed";
-
-/**
- * The smoked type window each style paints before the type. Wrap is a hard
- * inset label (a defined title window over a framed art spine); Full-bleed is a
- * narrower, soft-edged scrim that leaves the art visible edge to edge. Both
- * cover the whole title/author run so the type never sits on raw art.
- */
-export function spineScrimRect(style: SpineTypeStyle, width: number) {
-  if (style === "wrap") {
-    return {
-      x: 2,
-      y: 10,
-      width: Math.max(6, width - 4),
-      height: SPINE_H - 20,
-    };
-  }
-  const scrimWidth = Math.max(12, Math.min(width - 8, 34));
-  return {
-    x: (width - scrimWidth) / 2,
-    y: 10,
-    width: scrimWidth,
-    height: SPINE_H - 20,
-  };
-}
-
-/**
- * The dynamic title and author bands for one spine. `authorLength` is the
- * measured author run, because the title takes every pixel the author does not
- * need. Callers should use this rather than hard-coded thirds.
- */
-export function spineTypeBands(style: SpineTypeStyle, authorLength: number) {
-  const spec =
-    style === "wrap"
-      ? SPINE_TYPE_LAYOUT.wrap
-      : SPINE_TYPE_LAYOUT.fullBleed;
-  const titleLength = Math.max(
-    0,
-    SPINE_H - spec.head - spec.tail - authorLength - spec.gap,
-  );
-  return {
-    ...spec,
-    titleTop: spec.head,
-    titleLength,
-    titleBottom: spec.head + titleLength,
-    titleCenter: spec.head + titleLength / 2,
-    authorBottom: SPINE_H - spec.tail,
-    authorTop: SPINE_H - spec.tail - authorLength,
-    authorCenter: SPINE_H - spec.tail - authorLength / 2,
-  };
-}
-
-/**
- * The static prototype table, for tests and callers that need the reserved
- * spans without a book. `titleSpan` is the whole run available before the
- * author is measured.
- */
-export function spineTypeZones() {
-  const railX = SPINE_W - SPINE_RAIL.width - SPINE_RAIL.inset;
-  const wrap = SPINE_TYPE_LAYOUT.wrap;
-  const fullBleed = SPINE_TYPE_LAYOUT.fullBleed;
-  return {
-    height: SPINE_H,
-    width: SPINE_W,
-    rail: {
-      ...SPINE_RAIL,
-      x: railX,
-      centerX: railX + SPINE_RAIL.width / 2,
-      length: SPINE_H - SPINE_RAIL.head - SPINE_RAIL.tail,
-    },
-    wrap: {
-      ...wrap,
-      titleSpan: SPINE_H - wrap.head - wrap.tail - wrap.gap,
-      authorSpan: SPINE_H - wrap.tail,
-    },
-    fullBleed: {
-      ...fullBleed,
-      titleSpan: SPINE_H - fullBleed.head - fullBleed.tail - fullBleed.gap,
-      authorSpan: SPINE_H - fullBleed.tail,
-    },
-    /** The Wrap colophon rule and "PL" line at the base. */
-    colophonRuleY: 217,
-    colophonBaseY: 227,
-    /** The Full-bleed provenance diamond (prototype: SPINE_H - 16). */
-    provenanceY: SPINE_H - 16,
-  };
-}
 
 export interface Palette {
   avg: string;
@@ -159,6 +31,13 @@ export interface RenderBook {
   route: SpineRoute;
   palette: Palette | null;
   direction: "ltr" | "rtl";
+  /** Book identity for the title-hash palette. Optional: the preview can fall
+   * back to the title and author when a caller has no catalogue row. */
+  contentHash?: string;
+  slotIndex?: number;
+  format?: "epub" | "pdf";
+  /** Labels worn by the book, for the Art bottom band chips. */
+  labels?: ReadonlyArray<{ name: string; colour: string }>;
 }
 
 export const clamp = (value: number, min: number, max: number) =>
@@ -314,24 +193,4 @@ export function panelCrop(book: RenderBook): [number, number, number, number] {
   const sx = clamp(focusX - sw / 2, 0, img.naturalWidth - sw);
   const sy = clamp(y + height / 2 - sh / 2, 0, img.naturalHeight - sh);
   return [sx, sy, sw, sh];
-}
-
-/* ------------------------------------------------------- wrap engine --- */
-
-export function wrapGeometry(pages: number) {
-  const caliper = 0.1;
-  const coverAllowance = 1.2;
-  const spineMm = (Math.max(0, pages) / 2) * caliper + coverAllowance;
-  const height = SPINE_H;
-  const frontW = height * (6 / 9);
-  const spineW = clamp(Math.round(height * (spineMm / 228.6)), 10, 40);
-  const bleed = 6;
-  return {
-    height,
-    frontW,
-    spineW,
-    bleed,
-    totalW: Math.round(bleed * 2 + frontW * 2 + spineW),
-    spineMm,
-  };
 }

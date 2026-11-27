@@ -80,8 +80,8 @@ fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
     let book = api.list_books().expect("list books").remove(0);
     assert_eq!(
         book.spine_style,
-        SpineStyle::Wrap,
-        "a book with no stored style defaults to Wrap"
+        SpineStyle::Art,
+        "a book with no stored style defaults to Art"
     );
     let cover = PathBuf::from(
         book.cover_path
@@ -139,7 +139,7 @@ fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
     let mut books = vec![book];
     apply_cached_strips(&mut books, &report.strips);
     let merged = &books[0];
-    assert_eq!(merged.spine_style, SpineStyle::Wrap);
+    assert_eq!(merged.spine_style, SpineStyle::Art);
     let shelf_url = merged
         .spine_data_url
         .as_deref()

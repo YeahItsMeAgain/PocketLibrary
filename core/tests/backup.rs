@@ -493,12 +493,12 @@ fn spine_style_round_trips_through_export_and_replace_import() {
     let (_dir, api) = database();
     api.scan(&source(&["alpha", "beta"])).expect("scan");
     let alpha = book(&api, "alpha");
-    api.set_spine_style(alpha.id, SpineStyle::FullBleed)
-        .expect("set full bleed");
+    api.set_spine_style(alpha.id, SpineStyle::Cloth)
+        .expect("set cloth");
     let beta = book(&api, "beta");
     assert_eq!(
         beta.spine_style,
-        SpineStyle::Wrap,
+        SpineStyle::Art,
         "a never-set style reads as the wrap default"
     );
 
@@ -512,7 +512,7 @@ fn spine_style_round_trips_through_export_and_replace_import() {
         .collect::<Vec<_>>();
     assert!(
         styles.iter().any(|(title, style)| {
-            *title == "alpha" && *style == &Value::String("full-bleed".to_owned())
+            *title == "alpha" && *style == &Value::String("cloth".to_owned())
         }),
         "the explicit style is exported: {styles:?}"
     );
@@ -521,8 +521,8 @@ fn spine_style_round_trips_through_export_and_replace_import() {
     restored
         .import_backup(&bytes, ImportMode::Replace)
         .expect("replace import");
-    assert_eq!(book(&restored, "alpha").spine_style, SpineStyle::FullBleed);
-    assert_eq!(book(&restored, "beta").spine_style, SpineStyle::Wrap);
+    assert_eq!(book(&restored, "alpha").spine_style, SpineStyle::Cloth);
+    assert_eq!(book(&restored, "beta").spine_style, SpineStyle::Art);
 }
 
 #[test]
