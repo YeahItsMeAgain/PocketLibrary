@@ -1,0 +1,216 @@
+{
+  "book": {
+    "author": "Lewis Carroll",
+    "cover": ".scratch/spine-cover-art-prototype/v2/covers/source/alice.jpg",
+    "pages": 192,
+    "title": "Alice's Adventures in Wonderland"
+  },
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        269,
+        0,
+        126,
+        570
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.37965747714042664,
+      "luma_std": 45.07951354980469,
+      "non_dark": 0.965469241142273,
+      "salience": 19.48285484313965,
+      "score": 3.277083396911621
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          269,
+          0,
+          126,
+          570
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.37965747714042664,
+        "luma_std": 45.07951354980469,
+        "non_dark": 0.965469241142273,
+        "salience": 19.48285484313965,
+        "score": 3.277083396911621
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          262.6395263671875,
+          1704.2020263671875
+        ],
+        [
+          1135.1729736328125,
+          1704.2020263671875
+        ],
+        [
+          1135.1729736328125,
+          1784.8604736328125
+        ],
+        [
+          262.6395263671875,
+          1784.8604736328125
+        ]
+      ],
+      "conf": 0.96319580078125,
+      "text": "ALICE'S ADVENTURES"
+    },
+    {
+      "box_": [
+        [
+          345.7060852050781,
+          1789.4560546875
+        ],
+        [
+          1052.1064453125,
+          1789.4560546875
+        ],
+        [
+          1052.1064453125,
+          1863.6689453125
+        ],
+        [
+          345.7060852050781,
+          1863.6689453125
+        ]
+      ],
+      "conf": 0.9515360593795776,
+      "text": "IN WONDERLAND"
+    },
+    {
+      "box_": [
+        [
+          459.59954833984375,
+          1901.162109375
+        ],
+        [
+          933.8379516601562,
+          1901.162109375
+        ],
+        [
+          933.8379516601562,
+          1968.525390625
+        ],
+        [
+          459.59954833984375,
+          1968.525390625
+        ]
+      ],
+      "conf": 0.9112345576286316,
+      "text": "LEWIS CARROLL"
+    }
+  ],
+  "engine": "rust/ort/pocketlibrary-spine",
+  "final": {
+    "crop_box_work": [
+      269,
+      0,
+      126,
+      570
+    ],
+    "fallback_spine": "fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "spine-2x.jpg",
+    "spine_2x": "spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795788799,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 2,
+    "coverage_pct": 6.31,
+    "detection_boxes": 3,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "MI-GAN ready (crop route; no fill needed)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 6.694444179534912,
+      "palette_corr": 0.8928871750831604,
+      "score": 3.277083396911621,
+      "seam": {
+        "boundary_px": 2280,
+        "inside_ring_std_ratio": 11.397299766540527,
+        "inside_vs_ring_delta_e": 69.20420837402344,
+        "seam_ratio": 0.9393660426139832
+      },
+      "spine": {
+        "edge_density": 0.3889341652393341,
+        "height_px": 236,
+        "laplacian_var": 1365.1322021484375,
+        "luma_p5": 46.0,
+        "luma_p95": 191.0,
+        "luma_std": 43.02876663208008,
+        "non_dark_pct": 96.72425079345703,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 6.694444179534912,
+      "palette_corr": 0.8928871750831604,
+      "score": 3.277083396911621,
+      "seam": {
+        "boundary_px": 2280,
+        "inside_ring_std_ratio": 11.397299766540527,
+        "inside_vs_ring_delta_e": 69.20420837402344,
+        "seam_ratio": 0.9393660426139832
+      },
+      "spine": {
+        "edge_density": 0.3889341652393341,
+        "height_px": 236,
+        "laplacian_var": 1365.1322021484375,
+        "luma_p5": 46.0,
+        "luma_p95": 191.0,
+        "luma_std": 43.02876663208008,
+        "non_dark_pct": 96.72425079345703,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.17,
+    "detection": 2.08,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "inpaint_migan": 0.0,
+    "mask_total": 2.57,
+    "qa": 0.27,
+    "total": 4.1
+  },
+  "slug": "alice-s-adventures-in-wonderland",
+  "source": {
+    "height": 2100,
+    "width": 1400
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 720,
+    "scale": 0.34,
+    "width": 480
+  }
+}

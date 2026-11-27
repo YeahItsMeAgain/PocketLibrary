@@ -1,0 +1,216 @@
+{
+  "book": {
+    "author": "Oscar Wilde",
+    "cover": ".scratch/spine-cover-art-prototype/v2/covers/source/dorian-gray.jpg",
+    "pages": 254,
+    "title": "The Picture of Dorian Gray"
+  },
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        340,
+        0,
+        126,
+        570
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.14004455506801605,
+      "luma_std": 49.81792068481445,
+      "non_dark": 0.9702868461608887,
+      "salience": 12.785338401794434,
+      "score": 3.146716833114624
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          340,
+          0,
+          126,
+          570
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.14004455506801605,
+        "luma_std": 49.81792068481445,
+        "non_dark": 0.9702868461608887,
+        "salience": 12.785338401794434,
+        "score": 3.146716833114624
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          357.91021728515625,
+          1685.72265625
+        ],
+        [
+          1037.71484375,
+          1685.72265625
+        ],
+        [
+          1037.71484375,
+          1783.65234375
+        ],
+        [
+          357.91021728515625,
+          1783.65234375
+        ]
+      ],
+      "conf": 0.9752504229545593,
+      "text": "THE PICTURE"
+    },
+    {
+      "box_": [
+        [
+          230.5319061279297,
+          1785.844482421875
+        ],
+        [
+          1167.2806396484375,
+          1785.844482421875
+        ],
+        [
+          1167.2806396484375,
+          1884.780517578125
+        ],
+        [
+          230.5319061279297,
+          1884.780517578125
+        ]
+      ],
+      "conf": 0.9178547859191895,
+      "text": "OF DORIAN GRAY"
+    },
+    {
+      "box_": [
+        [
+          496.99078369140625,
+          1921.0533447265625
+        ],
+        [
+          905.1966552734375,
+          1921.0533447265625
+        ],
+        [
+          905.1966552734375,
+          1988.0091552734375
+        ],
+        [
+          496.99078369140625,
+          1988.0091552734375
+        ]
+      ],
+      "conf": 0.8844742178916931,
+      "text": "OSCAR WILDE"
+    }
+  ],
+  "engine": "rust/ort/pocketlibrary-spine",
+  "final": {
+    "crop_box_work": [
+      340,
+      0,
+      126,
+      570
+    ],
+    "fallback_spine": "fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "spine-2x.jpg",
+    "spine_2x": "spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795788708,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 2,
+    "coverage_pct": 8.52,
+    "detection_boxes": 3,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "MI-GAN ready (crop route; no fill needed)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.84375,
+      "palette_corr": 0.818467378616333,
+      "score": 3.146716833114624,
+      "seam": {
+        "boundary_px": 1820,
+        "inside_ring_std_ratio": 10.423711776733398,
+        "inside_vs_ring_delta_e": 66.56432342529297,
+        "seam_ratio": 1.080374836921692
+      },
+      "spine": {
+        "edge_density": 0.2732236087322235,
+        "height_px": 236,
+        "laplacian_var": 427.0747375488281,
+        "luma_p5": 46.0,
+        "luma_p95": 193.0,
+        "luma_std": 49.589908599853516,
+        "non_dark_pct": 97.13983154296875,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 8.84375,
+      "palette_corr": 0.818467378616333,
+      "score": 3.146716833114624,
+      "seam": {
+        "boundary_px": 1820,
+        "inside_ring_std_ratio": 10.423711776733398,
+        "inside_vs_ring_delta_e": 66.56432342529297,
+        "seam_ratio": 1.080374836921692
+      },
+      "spine": {
+        "edge_density": 0.2732236087322235,
+        "height_px": 236,
+        "laplacian_var": 427.0747375488281,
+        "luma_p5": 46.0,
+        "luma_p95": 193.0,
+        "luma_std": 49.589908599853516,
+        "non_dark_pct": 97.13983154296875,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.19,
+    "detection": 2.13,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "inpaint_migan": 0.0,
+    "mask_total": 2.55,
+    "qa": 0.41,
+    "total": 4.0
+  },
+  "slug": "the-picture-of-dorian-gray",
+  "source": {
+    "height": 2100,
+    "width": 1400
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 720,
+    "scale": 0.34,
+    "width": 480
+  }
+}

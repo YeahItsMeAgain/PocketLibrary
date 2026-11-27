@@ -1,0 +1,70 @@
+[
+  {
+    "bookId": "1",
+    "classes": "spine book has-generated",
+    "spineState": "ready",
+    "bookSpineStyle": null,
+    "hasImage": true,
+    "srcPrefix": "data:image/jpeg;base64,/9j/4AAQS",
+    "complete": true,
+    "naturalWidth": 52,
+    "zIndex": "2",
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "rect": {
+      "x": 19,
+      "y": 320,
+      "width": 27,
+      "height": 233
+    }
+  },
+  {
+    "bookId": "2",
+    "classes": "spine book has-generated",
+    "spineState": "ready",
+    "bookSpineStyle": null,
+    "hasImage": true,
+    "srcPrefix": "data:image/jpeg;base64,/9j/4AAQS",
+    "complete": true,
+    "naturalWidth": 52,
+    "zIndex": "2",
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "rect": {
+      "x": 47.00373077392578,
+      "y": 348.7235412597656,
+      "width": 33.620750427246094,
+      "height": 204.60543823242188
+    }
+  },
+  {
+    "bookId": "3",
+    "classes": "spine book has-generated",
+    "spineState": "ready",
+    "bookSpineStyle": null,
+    "hasImage": true,
+    "srcPrefix": "data:image/jpeg;base64,/9j/4AAQS",
+    "complete": true,
+    "naturalWidth": 52,
+    "zIndex": "2",
+    "display": "block",
+    "visibility": "visible",
+    "opacity": "1",
+    "rect": {
+      "x": 68.10397338867188,
+      "y": 320.65277099609375,
+      "width": 35.886077880859375,
+      "height": 232.865478515625
+    }
+  }
+]
+{
+  "settingsSummary": "1 of 3 books can paint spine art · 2 artifacts on disk",
+  "settingsRows": [
+    "The Test Book\nPresent\nPresent\nPaints art\npass\n—",
+    "The Picture of Dorian Gray\nPresent\nPresent\nquality gate returned fallback\nfallback\n—",
+    "Alice's Adventures in Wonderland\nPresent\nMissing\nMissing\n—\n—"
+  ]
+}

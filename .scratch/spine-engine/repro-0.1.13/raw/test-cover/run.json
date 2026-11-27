@@ -1,0 +1,216 @@
+{
+  "book": {
+    "author": "Test Author",
+    "cover": "test-assets/cover.jpg",
+    "pages": 320,
+    "title": "The Test Book"
+  },
+  "crop_options": {
+    "inpaint_visual": null,
+    "text_free": {
+      "box_": [
+        283,
+        0,
+        126,
+        570
+      ],
+      "coverage": 0.0,
+      "edge_density": 0.3316485583782196,
+      "luma_std": 45.55217361450195,
+      "non_dark": 0.9692564606666565,
+      "salience": 18.442398071289062,
+      "score": 3.277083396911621
+    },
+    "text_free_ocr_checks": [
+      {
+        "box_": [
+          283,
+          0,
+          126,
+          570
+        ],
+        "coverage": 0.0,
+        "edge_density": 0.3316485583782196,
+        "luma_std": 45.55217361450195,
+        "non_dark": 0.9692564606666565,
+        "salience": 18.442398071289062,
+        "score": 3.277083396911621
+      }
+    ]
+  },
+  "decision_reasons": [
+    "zero mask coverage, no residual OCR, structure at spine scale"
+  ],
+  "detected_text": [
+    {
+      "box_": [
+        [
+          90.74148559570312,
+          589.1669921875
+        ],
+        [
+          392.20025634765625,
+          589.1669921875
+        ],
+        [
+          392.20025634765625,
+          617.0517578125
+        ],
+        [
+          90.74148559570312,
+          617.0517578125
+        ]
+      ],
+      "conf": 0.9301734566688538,
+      "text": "ALICE'SADVENTURES"
+    },
+    {
+      "box_": [
+        [
+          119.44082641601562,
+          618.6405029296875
+        ],
+        [
+          363.5008850097656,
+          618.6405029296875
+        ],
+        [
+          363.5008850097656,
+          644.2969970703125
+        ],
+        [
+          119.44082641601562,
+          644.2969970703125
+        ]
+      ],
+      "conf": 0.9288850426673889,
+      "text": "IN WONDERLAND"
+    },
+    {
+      "box_": [
+        [
+          159.54861450195312,
+          657.2608642578125
+        ],
+        [
+          322.6373291015625,
+          657.2608642578125
+        ],
+        [
+          322.6373291015625,
+          680.5453491210938
+        ],
+        [
+          159.54861450195312,
+          680.5453491210938
+        ]
+      ],
+      "conf": 0.9174718856811523,
+      "text": "LEWIS CARROLL"
+    }
+  ],
+  "engine": "rust/ort/pocketlibrary-spine",
+  "final": {
+    "crop_box_work": [
+      283,
+      0,
+      126,
+      570
+    ],
+    "fallback_spine": "fallback-spine.jpg",
+    "mask_coverage_in_crop_pct": 0.0,
+    "route": "text-free crop",
+    "spine": "spine-2x.jpg",
+    "spine_2x": "spine-2x.jpg",
+    "verdict": "pass"
+  },
+  "generated_epoch": 1795788704,
+  "manual_intervention": 0,
+  "mask": {
+    "components": 2,
+    "coverage_pct": 6.68,
+    "detection_boxes": 3,
+    "flat_fill_pct": 0.0
+  },
+  "model": {
+    "crop_search": "integral-image spine-aspect scan + residual OCR",
+    "ocr_qa": "PP-OCRv3 recogniser (rec.onnx)",
+    "text_detector": "PP-OCRv3 DBNet (det.onnx, ONNX Runtime)",
+    "text_remover": "MI-GAN ready (crop route; no fill needed)"
+  },
+  "qa": {
+    "chosen": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 7.018807411193848,
+      "palette_corr": 0.8900402188301086,
+      "score": 3.277083396911621,
+      "seam": {
+        "boundary_px": 2312,
+        "inside_ring_std_ratio": 11.56297779083252,
+        "inside_vs_ring_delta_e": 66.37987518310547,
+        "seam_ratio": 1.0822327136993408
+      },
+      "spine": {
+        "edge_density": 0.4005052149295807,
+        "height_px": 236,
+        "laplacian_var": 1214.7117919921875,
+        "luma_p5": 47.0,
+        "luma_p95": 193.0,
+        "luma_std": 44.3599967956543,
+        "non_dark_pct": 97.0501937866211,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    },
+    "inpaint": null,
+    "text_free": {
+      "art_residual_ocr": [],
+      "crop_mask_coverage_pct": 0.0,
+      "crop_residual_ocr": [],
+      "mask_coverage_pct": 7.018807411193848,
+      "palette_corr": 0.8900402188301086,
+      "score": 3.277083396911621,
+      "seam": {
+        "boundary_px": 2312,
+        "inside_ring_std_ratio": 11.56297779083252,
+        "inside_vs_ring_delta_e": 66.37987518310547,
+        "seam_ratio": 1.0822327136993408
+      },
+      "spine": {
+        "edge_density": 0.4005052149295807,
+        "height_px": 236,
+        "laplacian_var": 1214.7117919921875,
+        "luma_p5": 47.0,
+        "luma_p95": 193.0,
+        "luma_std": 44.3599967956543,
+        "non_dark_pct": 97.0501937866211,
+        "width_px": 52
+      },
+      "spine_residual_ocr": []
+    }
+  },
+  "route": "text-free crop",
+  "runtime_s": {
+    "crop_search": 0.15,
+    "detection": 0.83,
+    "inpaint_flat": 0.0,
+    "inpaint_lama": 0.0,
+    "inpaint_migan": 0.0,
+    "mask_total": 0.85,
+    "qa": 0.26,
+    "total": 2.25
+  },
+  "slug": "the-test-book",
+  "source": {
+    "height": 726,
+    "width": 484
+  },
+  "verdict": "pass",
+  "working": {
+    "height": 720,
+    "scale": 0.99,
+    "width": 480
+  }
+}
