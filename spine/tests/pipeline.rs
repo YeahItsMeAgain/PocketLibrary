@@ -28,18 +28,29 @@ fn migan_model() -> PathBuf {
     )
 }
 
+const ORT_CANDIDATES: [&str; 3] = [
+    "/tmp/opencode/venv/lib/python3.13/site-packages/onnxruntime/capi/libonnxruntime.so.1.32.0",
+    "/tmp/opencode/ortlib/libonnxruntime.so",
+    "/usr/lib/libonnxruntime.so",
+];
+
+/// The `ort` crate aborts on load when the dynamic library is missing, so a
+/// clean checkout (with the models but without ONNX Runtime) must skip before
+/// constructing an engine.
+fn ort_available() -> bool {
+    if let Some(path) = std::env::var_os("ORT_DYLIB_PATH") {
+        return Path::new(&path).is_file();
+    }
+    ORT_CANDIDATES.iter().any(|path| Path::new(path).is_file())
+}
+
 fn set_ort() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
         if std::env::var_os("ORT_DYLIB_PATH").is_some() {
             return;
         }
-        let candidates = [
-            "/tmp/opencode/venv/lib/python3.13/site-packages/onnxruntime/capi/libonnxruntime.so.1.32.0",
-            "/tmp/opencode/ortlib/libonnxruntime.so",
-            "/usr/lib/libonnxruntime.so",
-        ];
-        if let Some(p) = candidates.iter().find(|p| Path::new(p).is_file()) {
+        if let Some(p) = ORT_CANDIDATES.iter().find(|p| Path::new(p).is_file()) {
             std::env::set_var("ORT_DYLIB_PATH", p);
         }
     });
@@ -52,6 +63,10 @@ fn host_engine(with_migan: bool) -> Option<Engine> {
         || !models.join("keys.txt").is_file()
     {
         eprintln!("models missing; skipping host route test");
+        return None;
+    }
+    if !ort_available() {
+        eprintln!("ONNX Runtime missing; skipping host route test");
         return None;
     }
     set_ort();

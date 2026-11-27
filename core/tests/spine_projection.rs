@@ -42,18 +42,29 @@ fn migan_model() -> Option<PathBuf> {
     path.is_file().then_some(path)
 }
 
+const ORT_CANDIDATES: [&str; 3] = [
+    "/tmp/opencode/venv/lib/python3.13/site-packages/onnxruntime/capi/libonnxruntime.so.1.32.0",
+    "/tmp/opencode/ortlib/libonnxruntime.so",
+    "/usr/lib/libonnxruntime.so",
+];
+
+/// The `ort` crate aborts on load when the dynamic library is missing, so a
+/// clean checkout (with the models but without ONNX Runtime) must skip before
+/// constructing an engine.
+fn ort_available() -> bool {
+    if let Some(path) = std::env::var_os("ORT_DYLIB_PATH") {
+        return Path::new(&path).is_file();
+    }
+    ORT_CANDIDATES.iter().any(|path| Path::new(path).is_file())
+}
+
 fn set_ort() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
         if std::env::var_os("ORT_DYLIB_PATH").is_some() {
             return;
         }
-        let candidates = [
-            "/tmp/opencode/venv/lib/python3.13/site-packages/onnxruntime/capi/libonnxruntime.so.1.32.0",
-            "/tmp/opencode/ortlib/libonnxruntime.so",
-            "/usr/lib/libonnxruntime.so",
-        ];
-        if let Some(found) = candidates.iter().find(|path| Path::new(path).is_file()) {
+        if let Some(found) = ORT_CANDIDATES.iter().find(|path| Path::new(path).is_file()) {
             // Test-only, before any engine is built in this process.
             unsafe { std::env::set_var("ORT_DYLIB_PATH", found) };
         }
@@ -66,6 +77,10 @@ fn a_real_generation_projects_a_52x236_strip_from_the_app_data_root() {
         eprintln!("spine models missing; skipping real generation test");
         return;
     };
+    if !ort_available() {
+        eprintln!("ONNX Runtime missing; skipping real generation test");
+        return;
+    }
     set_ort();
 
     let temp = tempfile::tempdir().expect("tempdir");
