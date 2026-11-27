@@ -81,7 +81,7 @@ test("settings shows log details, sends, copies and clears", async ({
   const copied = await page.evaluate(
     () => (window as unknown as { __copied?: string }).__copied,
   );
-  expect(copied).toContain("PocketLibrary v0.1.16");
+  expect(copied).toContain("PocketLibrary v0.1.17");
   expect(copied).toContain("1 error, 1 warning");
   expect(copied).toContain("Book One");
 
@@ -126,7 +126,7 @@ test("copy logs writes the full report including spine.log", async ({ page }) =>
   const copied = await page.evaluate(
     () => (window as unknown as { __copied?: string }).__copied,
   );
-  expect(copied).toContain("PocketLibrary v0.1.16");
+  expect(copied).toContain("PocketLibrary v0.1.17");
   expect(copied).toContain("===== spine.log =====");
   expect(copied).toContain("ensure_models: start");
   expect(copied).toContain("Book One: mirror_failed");
