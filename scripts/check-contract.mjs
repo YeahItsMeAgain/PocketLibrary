@@ -300,8 +300,8 @@ sameFields(
   typesFile,
   tsInterface(types, "SpineArtifact", typesFile),
   "SpineArtifact",
-  serviceFile,
-  rustStruct(service, "SpineArtifact", serviceFile),
+  "core/src/spine_strip.rs",
+  rustStruct(read("core/src/spine_strip.rs"), "SpineArtifact", "core/src/spine_strip.rs"),
 );
 
 const coreQueueFile = "core/src/spine_queue.rs";
