@@ -1,0 +1,24 @@
+{
+  "320": {
+    "height": 1039.3,
+    "visibleTextLines": 51,
+    "visibleCharacters": 764,
+    "buttons": 2,
+    "overflowX": 0,
+    "bodyOverflowX": 0,
+    "cardCenter": 160,
+    "viewportCenter": 160,
+    "tableOpen": false
+  },
+  "390": {
+    "height": 883.2,
+    "visibleTextLines": 41,
+    "visibleCharacters": 764,
+    "buttons": 2,
+    "overflowX": 0,
+    "bodyOverflowX": 0,
+    "cardCenter": 195,
+    "viewportCenter": 195,
+    "tableOpen": false
+  }
+}

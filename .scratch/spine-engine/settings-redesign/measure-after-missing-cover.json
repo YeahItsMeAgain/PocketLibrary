@@ -1,0 +1,46 @@
+{
+  "320": {
+    "height": 485.7,
+    "visibleTextLines": 25,
+    "visibleCharacters": 352,
+    "buttons": 3,
+    "overflowX": 0,
+    "bodyOverflowX": 0,
+    "cardCenter": 160,
+    "viewportCenter": 160,
+    "tableOpen": false
+  },
+  "390": {
+    "height": 414.2,
+    "visibleTextLines": 17,
+    "visibleCharacters": 352,
+    "buttons": 3,
+    "overflowX": 0,
+    "bodyOverflowX": 0,
+    "cardCenter": 195,
+    "viewportCenter": 195,
+    "tableOpen": false
+  },
+  "320-expanded": {
+    "height": 1108.7,
+    "visibleTextLines": 59,
+    "visibleCharacters": 692,
+    "buttons": 3,
+    "overflowX": 0,
+    "bodyOverflowX": 0,
+    "cardCenter": 160,
+    "viewportCenter": 160,
+    "tableOpen": true
+  },
+  "390-expanded": {
+    "height": 857.2,
+    "visibleTextLines": 39,
+    "visibleCharacters": 692,
+    "buttons": 3,
+    "overflowX": 0,
+    "bodyOverflowX": 0,
+    "cardCenter": 195,
+    "viewportCenter": 195,
+    "tableOpen": true
+  }
+}

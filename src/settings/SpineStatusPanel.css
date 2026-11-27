@@ -1,3 +1,274 @@
+/*
+ * Settings → Spine engine is a calm status card, not a diagnostics dump.
+ * The card leads with one sentence (engine + books that can paint), lists only
+ * books that need attention, and keeps the full per-book report and the
+ * explanation behind collapsed disclosures.
+ */
+
+.settings-section.spine-status {
+  box-sizing: border-box;
+  min-width: 0;
+  margin-top: 20px;
+  padding: 15px 13px 12px;
+  border: 1px solid rgba(201, 168, 106, 0.24);
+  background:
+    linear-gradient(180deg, rgba(201, 168, 106, 0.06), transparent 55%),
+    rgba(9, 5, 13, 0.42);
+  box-shadow: inset 0 1px 0 rgba(226, 201, 140, 0.06);
+}
+
+.spine-status > * {
+  min-width: 0;
+}
+
+.spine-status[data-state="attention"] {
+  border-color: rgba(201, 168, 106, 0.34);
+}
+
+.spine-status-lead {
+  margin: 10px 0 0;
+  color: #e6d2ab;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.spine-status-engine {
+  color: #c8ab77;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.spine-status-sep {
+  color: #7c6a4f;
+}
+
+.spine-status-count {
+  color: #d9c49a;
+}
+
+.spine-status-queue {
+  margin: 5px 0 0;
+  color: #c8ab77;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------- attention books */
+
+.spine-attention {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spine-attention-item {
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border-left: 2px solid rgba(201, 168, 106, 0.55);
+  background: linear-gradient(
+    90deg,
+    rgba(201, 168, 106, 0.08),
+    rgba(9, 5, 13, 0.16) 78%
+  );
+}
+
+.spine-attention-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.spine-attention-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: #ecd9b0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.spine-attention-retry {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -5px -4px -5px 0;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: #d0b17b;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.spine-attention-retry:active,
+.spine-attention-retry:focus-visible {
+  color: #f0dcaa;
+}
+
+.spine-attention-retry:disabled {
+  opacity: 0.55;
+}
+
+.spine-attention-reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 2px 0 0;
+  color: #af9770;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------- actions */
+
+.spine-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.spine-status-actions .spine-retry-all {
+  flex: 1 1 140px;
+  min-height: 44px;
+  margin-top: 0;
+}
+
+.spine-refresh {
+  flex: 0 0 auto;
+  min-height: 44px;
+  margin: 0 0 0 auto;
+  padding: 0 8px;
+  color: #c8ab77;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.spine-refresh:disabled {
+  color: #7c6a4f;
+}
+
+.spine-status-notice {
+  margin-top: 10px !important;
+}
+
+/* --------------------------------------------------------- disclosures */
+
+.spine-disclosure {
+  margin-top: 4px;
+  border-top: 1px solid rgba(201, 168, 106, 0.14);
+}
+
+.spine-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  list-style: none;
+  cursor: pointer;
+  color: #b99c6b;
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.spine-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.spine-disclosure > summary::before {
+  content: "+";
+  flex: 0 0 auto;
+  width: 10px;
+  color: #9c825d;
+  font-size: 13px;
+  text-align: center;
+}
+
+.spine-disclosure[open] > summary::before {
+  content: "−";
+}
+
+.spine-disclosure > summary:focus-visible {
+  outline: 1px solid rgba(226, 201, 140, 0.5);
+  outline-offset: 2px;
+}
+
+.spine-disclosure > summary > span:first-of-type {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.spine-disclosure-count {
+  flex: 0 0 auto;
+  color: #8f7956;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.spine-disclosure-body {
+  padding: 0 2px 6px;
+}
+
+.spine-disclosure-body .settings-note {
+  margin: 0 0 8px !important;
+}
+
+.spine-status-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 8px 0 2px;
+  padding: 0;
+}
+
+.spine-status-meta > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.spine-status-meta dt {
+  flex: 0 0 66px;
+  color: #9c825d;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.spine-status-meta dd {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: #cbb48a;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* -------------------------------------------------------- per-book table */
+
 .spine-status-present {
   color: var(--muted, #8a8174);
   font-size: 0.88em;
@@ -7,11 +278,11 @@
   box-sizing: border-box;
   max-width: 100%;
   min-width: 0;
-  margin-top: 0.9rem;
+  margin: 0 0 4px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  border: 1px solid rgba(120, 96, 58, 0.28);
-  background: rgba(9, 5, 13, 0.38);
+  border-top: 1px solid rgba(120, 96, 58, 0.22);
+  background: rgba(9, 5, 13, 0.3);
 }
 
 .spine-status-table {
@@ -39,7 +310,7 @@
 }
 
 /*
- * Phone widths: four columns can never fit a 340px card without clipping.
+ * Phone widths: six columns can never fit a 340px card without clipping.
  * The table becomes a stacked definition list: each cell is a label/value
  * row, so long titles and error paths wrap instead of forcing the whole
  * Settings page wider than the viewport. The markup stays a table for
@@ -73,7 +344,7 @@
   }
 
   .spine-status-table tr {
-    padding: 9px 11px;
+    padding: 9px 9px;
     border-bottom: 1px solid rgba(120, 96, 58, 0.25);
   }
 
