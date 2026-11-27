@@ -94,24 +94,6 @@
   );
 }
 
-.spine-attention {
-  position: absolute;
-  top: 6px;
-  right: 4px;
-  z-index: 4;
-  display: grid;
-  width: 12px;
-  height: 12px;
-  border: 1px solid rgba(240, 190, 160, 0.8);
-  border-radius: 50%;
-  background: rgba(96, 34, 24, 0.92);
-  color: #f4d2b8;
-  font-size: 8px;
-  line-height: 1;
-  place-items: center;
-  pointer-events: none;
-}
-
 @media (max-width: 340px) {
   .spine-activity {
     bottom: 68px;

@@ -117,14 +117,13 @@ export const Spine = memo(function Spine({
   // live updates from the queue or a manual generation.
   const generatedStrip = generatedSpine || book.spineDataUrl || undefined;
   const showGenerated = Boolean(generatedStrip) && spineStyle !== "cloth";
-  const attention = spineState?.state === "needs-attention";
   const spineNote =
     spineState?.state === "working"
       ? `spine preparing, ${spineState.stage} stage`
       : spineState?.state === "ready"
         ? "spine ready"
-        : attention
-          ? "spine needs attention"
+        : spineState?.state === "needs-attention"
+          ? "cloth spine"
           : "spine waiting";
   return (
     <li
@@ -173,16 +172,6 @@ export const Spine = memo(function Spine({
         />
       ) : null}
       <SpineFace book={book} />
-      {attention ? (
-        <span
-          className="spine-attention"
-          data-testid="spine-failed-marker"
-          aria-label="Spine needs attention"
-          title="Spine needs attention"
-        >
-          !
-        </span>
-      ) : null}
     </li>
   );
 }, areSpineEqual);
