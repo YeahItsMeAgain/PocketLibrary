@@ -16,7 +16,7 @@ use pocketlibrary_core::{Api, ApiError};
 use pocketlibrary_spine::Stage;
 
 use crate::spine_assets;
-use crate::spine_service::{BUNDLE_ID, SpineService};
+use crate::spine_service::{BUNDLE_ID, SpineArtifact, SpineService};
 
 pub const QUEUE_EVENT: &str = "spine://queue";
 pub const PROGRESS_EVENT: &str = "spine://progress";
@@ -43,6 +43,38 @@ fn log_queue_event(
     // being closed and is the line a user can send us later.
     eprintln!("pocketlibrary spine {line}");
     spine_assets::log(app_data_dir, &line);
+}
+
+/// The attention row / Settings message for a `fallback` artifact.
+///
+/// A generic "the quality check rejected this spine" wastes the one fact the
+/// gate already computed. The QA reasons are short and user-readable, so name
+/// them (up to two) while keeping the whole message inside a shelf
+/// notification (~200 characters). Empty reasons keep a sensible fallback.
+fn fallback_message(artifact: &SpineArtifact) -> String {
+    const PREFIX: &str = "The quality check rejected this spine:";
+    const SUFFIX: &str = " The cloth spine is still shown.";
+    const MAX_CHARS: usize = 200;
+
+    let reasons = artifact.decision_reasons();
+    if reasons.is_empty() {
+        return format!("{PREFIX} the QA gate returned fallback.{SUFFIX}");
+    }
+    let detail = reasons
+        .iter()
+        .take(2)
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join("; ");
+    let full = format!("{PREFIX} {detail}.{SUFFIX}");
+    if full.chars().count() <= MAX_CHARS {
+        return full;
+    }
+    // Keep room for the prefix, the ellipsis and the suffix.
+    let budget = MAX_CHARS.saturating_sub(PREFIX.chars().count() + 1 + 1 + SUFFIX.chars().count());
+    let shortened: String = detail.chars().take(budget).collect();
+    let shortened = shortened.trim_end();
+    format!("{PREFIX} {shortened}…{SUFFIX}")
 }
 
 fn book_title(api: &Api, book_id: i64) -> String {
@@ -533,14 +565,10 @@ fn run_worker(app: AppHandle) {
         match result {
             Ok(artifact) if artifact.verdict == "fallback" => {
                 // The engine completed, but its QA gate rejected the art. That
-                // is not a success: count it as an automatic failure so the
-                // chip, marker and Settings explain why cloth is still shown.
-                queue.finish_job(
-                    false,
-                    "spine_fallback",
-                    "The quality check rejected this spine, so the cloth spine is still shown. Retry to try again.",
-                    &title,
-                );
+                // is not a success: count it as an automatic failure so Edit
+                // and Settings can name the actual reason cloth is still shown.
+                let message = fallback_message(&artifact);
+                queue.finish_job(false, "spine_fallback", &message, &title);
             }
             Ok(_) => queue.finish_job(true, "ok", "", &title),
             Err(error) => {
@@ -585,6 +613,52 @@ mod tests {
         assert!(log.contains("title=\"The Book & Its Title\""));
         assert!(log.contains("code=cover_missing"));
         assert!(log.contains("This book has no cover"));
+    }
+
+    fn qa_artifact(verdict: &str, mask: f64, reasons: &[&str]) -> SpineArtifact {
+        SpineArtifact {
+            book_id: 2,
+            route: "inpaint".to_owned(),
+            verdict: verdict.to_owned(),
+            mask_percent: mask,
+            crop_box: None,
+            art_data_url: String::new(),
+            spine_data_url: String::new(),
+            fallback_data_url: String::new(),
+            pages_approximate: false,
+            run_json: serde_json::json!({ "final": { "route": "inpaint", "verdict": verdict } }),
+            qa_json: serde_json::json!({ "decision": { "verdict": verdict, "reasons": reasons } }),
+        }
+    }
+
+    #[test]
+    fn the_fallback_message_names_the_qa_reason() {
+        let message = fallback_message(&qa_artifact(
+            "fallback",
+            57.2,
+            &["residual text is readable in the 52x236 spine"],
+        ));
+        assert!(
+            message.contains("residual text is readable in the 52x236 spine"),
+            "{message}"
+        );
+        assert!(message.contains("cloth spine is still shown"), "{message}");
+    }
+
+    #[test]
+    fn the_fallback_message_is_bounded_and_generic_without_reasons() {
+        let long = "x".repeat(400);
+        let message = fallback_message(&qa_artifact("fallback", 57.2, &[&long]));
+        assert!(message.chars().count() <= 200, "{message}");
+        assert!(message.starts_with("The quality check rejected this spine:"));
+        assert!(message.ends_with("The cloth spine is still shown."));
+
+        let generic = fallback_message(&qa_artifact("fallback", 57.2, &[]));
+        assert!(
+            generic.contains("the QA gate returned fallback"),
+            "{generic}"
+        );
+        assert!(generic.contains("cloth spine is still shown"), "{generic}");
     }
 
     #[test]

@@ -656,7 +656,7 @@ test("the shelf swaps to the generated spine when ready", async ({ page }) => {
   await expect(spine).toHaveAttribute("data-spine-state", "ready");
 });
 
-test("a fallback verdict stays on the cloth spine and asks for attention", async ({
+test("a fallback verdict stays on the cloth spine without a nag", async ({
   page,
 }) => {
   await boot(page, {
@@ -677,10 +677,9 @@ test("a fallback verdict stays on the cloth spine and asks for attention", async
   });
   await expect(spine.getByTestId("spine-generated")).toHaveCount(0);
   await expect(spine).not.toHaveClass(/has-generated/);
-  await expect(spine.getByTestId("spine-failed-marker")).toBeVisible();
-  await expect(page.getByTestId("spine-activity")).toContainText(
-    "1 spine needs attention",
-  );
+  // No shelf badge and no banner: the per-book fact lives in Edit/Settings.
+  await expect(spine.locator(".spine-attention")).toHaveCount(0);
+  await expect(page.getByTestId("spine-activity")).toHaveCount(0);
 
   // The fallback artifact was not treated as done: the shelf repair queued it.
   expect(await queuedIds(page)).toContain(1);
@@ -703,7 +702,7 @@ test("a cached fallback artifact is regenerated and paints when QA passes", asyn
     timeout: 8_000,
   });
   await expect(spine).toHaveAttribute("data-spine-state", "ready");
-  await expect(spine.getByTestId("spine-failed-marker")).toHaveCount(0);
+  await expect(spine.locator(".spine-attention")).toHaveCount(0);
   expect(await queuedIds(page)).toContain(1);
 });
 
@@ -763,15 +762,16 @@ test("the shelf shows the generated strip only for Wrap and Full-bleed", async (
   await expect(cloth.locator(".spine-text")).toBeVisible();
 });
 
-test("a failed job shows a marker until a manual generation succeeds", async ({
+test("a failed job is reported in Edit until a manual generation succeeds", async ({
   page,
 }) => {
   await boot(page, { spine: { queueStepMs: 25, failIds: [1] } });
 
   const spine = page.getByTestId("spine").first();
-  await expect(spine.getByTestId("spine-failed-marker")).toBeVisible({
+  await expect(spine).toHaveAttribute("data-spine-state", "needs-attention", {
     timeout: 8_000,
   });
+  await expect(spine.locator(".spine-attention")).toHaveCount(0);
 
   await spine.click();
   await expect(page.getByTestId("book-detail")).toBeVisible();
@@ -786,9 +786,6 @@ test("a failed job shows a marker until a manual generation succeeds", async ({
   await page.getByTestId("edit-book-close").click();
   await page.getByTestId("detail-back").click();
 
-  await expect(
-    page.getByTestId("spine").first().getByTestId("spine-failed-marker"),
-  ).toHaveCount(0);
   await expect(
     page.getByTestId("spine").first().getByTestId("spine-generated"),
   ).toBeVisible();
@@ -926,18 +923,27 @@ test("Settings reports a Cloth-style book as suppressed even with usable art", a
   await expect(cloth).toContainText("pass");
 });
 
-test("a failed job stays in the snapshot, chip and shelf marker until retried", async ({
+test("a failed job stays in the snapshot and Settings without nagging the shelf", async ({
   page,
 }) => {
   await boot(page, { spine: { queueStepMs: 15, failIds: [1] } });
 
-  const chip = page.getByTestId("spine-activity");
-  await expect(chip).toBeVisible({ timeout: 8_000 });
-  await expect(chip).toContainText("1 spine needs attention");
-  await expect(chip.getByTestId("spine-retry-all")).toBeVisible();
+  // The attention state is not promoted to a banner or a shelf badge.
+  await expect
+    .poll(
+      async () =>
+        (await queueEvents(page)).some(
+          (entry) =>
+            entry.event === "queue" &&
+            (entry.payload as { failed?: number }).failed === 1,
+        ),
+      { timeout: 8_000 },
+    )
+    .toBe(true);
+  await expect(page.getByTestId("spine-activity")).toHaveCount(0);
   await expect(
-    page.getByTestId("spine").first().getByTestId("spine-failed-marker"),
-  ).toBeVisible({ timeout: 8_000 });
+    page.getByTestId("spine").first().locator(".spine-attention"),
+  ).toHaveCount(0);
 
   const events = await queueEvents(page);
   const snapshots = events
@@ -963,7 +969,8 @@ test("a failed job stays in the snapshot, chip and shelf marker until retried", 
   expect(failedSnapshot?.attention[0].attempts).toBe(1);
 
   const before = (await queuedIds(page)).filter((id) => id === 1).length;
-  await chip.getByTestId("spine-retry-all").click();
+  await openSettings(page);
+  await page.getByTestId("settings-spine-retry-all").click();
   await expect
     .poll(async () => (await queuedIds(page)).filter((id) => id === 1).length)
     .toBeGreaterThan(before);
@@ -980,9 +987,17 @@ test("the Settings spine panel renders and Retry all enqueues failures", async (
       missingCoverIds: [1],
     },
   });
-  await expect(
-    page.getByTestId("spine").first().getByTestId("spine-failed-marker"),
-  ).toBeVisible({ timeout: 8_000 });
+  await expect
+    .poll(
+      async () =>
+        (await queueEvents(page)).some(
+          (entry) =>
+            entry.event === "queue" &&
+            (entry.payload as { failed?: number }).failed === 1,
+        ),
+      { timeout: 8_000 },
+    )
+    .toBe(true);
 
   await openSettings(page);
   await expect(page.getByTestId("settings-spine-status")).toBeVisible();

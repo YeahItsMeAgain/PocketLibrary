@@ -337,11 +337,14 @@ pub fn decide(route: &str, m: &QaMetrics) -> Decision {
         reasons.push("spine structure is marginal".into());
     }
 
-    let fallback = reasons.iter().any(|r| {
-        r.contains("residual text")
-            || r.contains("more than 55%")
-            || r.contains("too little structure")
-    });
+    // A large reconstructed area is a quality flag, not a failed
+    // reconstruction: the residual-OCR guard above already rejects readable
+    // text, and seam/palette outliers stay visible as review reasons. Only
+    // readable text in the 52x236 spine or a spine with no usable structure
+    // (edge density/luma below the floor) makes the route genuinely fail.
+    let fallback = reasons
+        .iter()
+        .any(|r| r.contains("residual text") || r.contains("too little structure"));
     if fallback {
         Decision {
             verdict: "fallback".into(),
@@ -357,5 +360,91 @@ pub fn decide(route: &str, m: &QaMetrics) -> Decision {
             verdict: "pass".into(),
             reasons: vec!["no residual OCR, controlled mask, adequate spine structure".into()],
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn metrics(coverage: f32, spine_ocr: bool, luma_std: f32, edge_density: f32) -> QaMetrics {
+        QaMetrics {
+            mask_coverage_pct: coverage,
+            crop_mask_coverage_pct: coverage,
+            art_residual_ocr: Vec::new(),
+            crop_residual_ocr: Vec::new(),
+            spine_residual_ocr: if spine_ocr {
+                vec![OcrHit {
+                    text: "FEENEY".into(),
+                    conf: 0.91,
+                    box_: [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+                }]
+            } else {
+                Vec::new()
+            },
+            spine: ImageStats {
+                luma_std,
+                luma_p5: 10.0,
+                luma_p95: 220.0,
+                non_dark_pct: 90.0,
+                edge_density,
+                laplacian_var: 500.0,
+                width_px: 52,
+                height_px: 236,
+            },
+            palette_corr: 0.93,
+            seam: SeamMetrics {
+                seam_ratio: 1.2,
+                inside_vs_ring_delta_e: 8.0,
+                inside_ring_std_ratio: 0.9,
+                boundary_px: 300,
+            },
+            score: 0.0,
+        }
+    }
+
+    #[test]
+    fn a_large_reconstruction_with_a_clean_spine_is_review_not_fallback() {
+        // Mi-GAN rebuilt most of the cover, but there is no readable text and
+        // the spine still has structure. That is a quality flag for review,
+        // not a failed reconstruction.
+        let decision = decide("inpaint", &metrics(62.0, false, 40.0, 0.05));
+        assert_eq!(decision.verdict, "review", "{:?}", decision.reasons);
+        assert!(
+            decision
+                .reasons
+                .iter()
+                .any(|reason| reason.contains("more than 55%")),
+            "the large mask stays visible as a review reason: {:?}",
+            decision.reasons
+        );
+    }
+
+    #[test]
+    fn readable_residual_text_is_still_a_fallback() {
+        let decision = decide("inpaint", &metrics(62.0, true, 40.0, 0.05));
+        assert_eq!(decision.verdict, "fallback", "{:?}", decision.reasons);
+        assert!(
+            decision
+                .reasons
+                .iter()
+                .any(|reason| reason.contains("residual text")),
+            "{:?}",
+            decision.reasons
+        );
+    }
+
+    #[test]
+    fn a_structureless_spine_is_still_a_fallback() {
+        let decision = decide("inpaint", &metrics(44.0, false, 6.0, 0.002));
+        assert_eq!(decision.verdict, "fallback", "{:?}", decision.reasons);
+        assert!(
+            decision
+                .reasons
+                .iter()
+                .any(|reason| reason.contains("too little structure")),
+            "{:?}",
+            decision.reasons
+        );
     }
 }

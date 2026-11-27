@@ -1074,9 +1074,10 @@ fn diagnostics_summary(diag: tauri::State<'_, Arc<Diagnostics>>) -> DiagnosticsS
 
 /// One plain-text report for the Copy logs button.
 ///
-/// Queue state is a cheap mutex read. Model status is only reported as a path
-/// presence check; resolving the bundle would extract assets and is too heavy
-/// for a clipboard action.
+/// Queue state is a cheap mutex read. Verdict rows read the cached artifacts
+/// for attention books only. Model status is only a path-presence check;
+/// resolving the bundle would extract assets and is too heavy for a clipboard
+/// action.
 #[tauri::command]
 async fn diagnostics_text(app: AppHandle) -> Result<String, ApiError> {
     blocking(move || {
@@ -1112,11 +1113,21 @@ async fn diagnostics_text(app: AppHandle) -> Result<String, ApiError> {
             spine_service::BUNDLE_ID,
             models_present
         );
+        // One line per attention book: route, verdict, mask and QA reasons.
+        // Copy logs alone then explains why the cloth spine is still shown.
+        let verdicts = spine_diagnostics::verdicts_section(
+            &spine_diagnostics::attention_verdicts(
+                app.state::<Api>().inner(),
+                app.state::<spine_service::SpineService>().inner(),
+                &queue,
+            ),
+        );
         Ok(diagnostics_of(&app).export_text(
             &environment,
             &[
                 ("spine queue", queue_section),
                 ("spine models", model_section),
+                ("spine verdicts", verdicts),
             ],
         ))
     })

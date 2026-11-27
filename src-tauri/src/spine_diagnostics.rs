@@ -10,10 +10,117 @@ use std::path::Path;
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
+use pocketlibrary_core::spine_queue::QueueFailure;
 use pocketlibrary_core::{Api, ApiError};
 
 use crate::spine_queue::{SpineQueue, SpineQueueState};
-use crate::spine_service::{SpineService, SpineStatus};
+use crate::spine_service::{SpineArtifact, SpineService, SpineStatus};
+
+/// A bounded number of attention rows and reason characters in the export.
+const MAX_VERDICT_ROWS: usize = 40;
+const MAX_REASON_CHARS: usize = 160;
+
+/// One book's route/verdict line for the copyable diagnostics export.
+///
+/// `spine/spine.log` already carries `spine result:` lines for every
+/// generation; this section repeats the essential facts for books that still
+/// need attention so Copy logs alone explains what QA decided without another
+/// device build.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SpineVerdictRow {
+    pub book_id: i64,
+    pub title: String,
+    pub route: String,
+    pub verdict: String,
+    pub mask_percent: f64,
+    pub reasons: Vec<String>,
+    /// Set when no readable artifact exists; the row then names the queue error.
+    pub error: Option<String>,
+}
+
+impl SpineVerdictRow {
+    fn from_artifact(book_id: i64, title: String, artifact: &SpineArtifact) -> Self {
+        let reasons = artifact
+            .decision_reasons()
+            .into_iter()
+            .map(|reason| reason.chars().take(MAX_REASON_CHARS).collect())
+            .collect();
+        Self {
+            book_id,
+            title,
+            route: artifact.route.clone(),
+            verdict: artifact.verdict.clone(),
+            mask_percent: artifact.mask_percent,
+            reasons,
+            error: None,
+        }
+    }
+
+    fn missing(book_id: i64, title: String, failure: &QueueFailure) -> Self {
+        Self {
+            book_id,
+            title,
+            route: "unknown".to_owned(),
+            verdict: "unknown".to_owned(),
+            mask_percent: 0.0,
+            reasons: Vec::new(),
+            error: Some(format!("{}: {}", failure.code, failure.error)),
+        }
+    }
+
+    pub fn line(&self) -> String {
+        if let Some(error) = &self.error {
+            return format!(
+                "book {} {:?} artifact=missing last={error:?}",
+                self.book_id, self.title
+            );
+        }
+        format!(
+            "book {} {:?} route={} verdict={} mask={:.1} reasons={:?}",
+            self.book_id, self.title, self.route, self.verdict, self.mask_percent, self.reasons
+        )
+    }
+}
+
+/// The `===== spine verdicts =====` body: one line per attention book.
+pub fn verdicts_section(rows: &[SpineVerdictRow]) -> String {
+    if rows.is_empty() {
+        return "none".to_owned();
+    }
+    let mut lines: Vec<String> = rows
+        .iter()
+        .take(MAX_VERDICT_ROWS)
+        .map(SpineVerdictRow::line)
+        .collect();
+    if rows.len() > MAX_VERDICT_ROWS {
+        lines.push(format!("… {} more", rows.len() - MAX_VERDICT_ROWS));
+    }
+    lines.join("\n")
+}
+
+/// Collect the verdict rows for books currently in `attention`.
+pub fn attention_verdicts(
+    api: &Api,
+    service: &SpineService,
+    queue: &SpineQueueState,
+) -> Vec<SpineVerdictRow> {
+    queue
+        .attention
+        .iter()
+        .map(|failure| {
+            let title = api
+                .book(failure.book_id)
+                .map(|book| book.title)
+                .unwrap_or_else(|_| "unknown title".to_owned());
+            match service.artifact(failure.book_id, api) {
+                Ok(Some(artifact)) => {
+                    SpineVerdictRow::from_artifact(failure.book_id, title, &artifact)
+                }
+                _ => SpineVerdictRow::missing(failure.book_id, title, failure),
+            }
+        })
+        .collect()
+}
 
 /// One book's local spine state.
 #[derive(Clone, Debug, Serialize)]
@@ -134,4 +241,79 @@ pub async fn spine_diagnostics(app: AppHandle) -> Result<SpineDiagnostics, ApiEr
     // Reading status may have resolved the models; let any waiting jobs run.
     app_for_kick.state::<SpineQueue>().kick();
     Ok(diagnostics)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use std::collections::BTreeMap;
+
+    fn artifact(verdict: &str, mask_percent: f64, reasons: &[&str]) -> SpineArtifact {
+        SpineArtifact {
+            book_id: 2,
+            route: "inpaint".to_owned(),
+            verdict: verdict.to_owned(),
+            mask_percent,
+            crop_box: None,
+            art_data_url: String::new(),
+            spine_data_url: String::new(),
+            fallback_data_url: String::new(),
+            pages_approximate: false,
+            run_json: json!({ "final": { "route": "inpaint", "verdict": verdict } }),
+            qa_json: json!({ "decision": { "verdict": verdict, "reasons": reasons } }),
+        }
+    }
+
+    #[test]
+    fn a_verdict_row_names_route_verdict_mask_and_reasons() {
+        let row = SpineVerdictRow::from_artifact(
+            2,
+            "Rock Paper Scissors".to_owned(),
+            &artifact(
+                "fallback",
+                57.2,
+                &["more than 55% of the cover was reconstructed"],
+            ),
+        );
+        let line = row.line();
+        assert_eq!(
+            line,
+            "book 2 \"Rock Paper Scissors\" route=inpaint verdict=fallback mask=57.2 \
+             reasons=[\"more than 55% of the cover was reconstructed\"]"
+        );
+    }
+
+    #[test]
+    fn the_copyable_export_has_a_bounded_spine_verdicts_section() {
+        let row = SpineVerdictRow::from_artifact(
+            2,
+            "Rock Paper Scissors".to_owned(),
+            &artifact(
+                "fallback",
+                57.2,
+                &["residual text is readable in the 52x236 spine"],
+            ),
+        );
+        let section = verdicts_section(&[row]);
+        assert!(section.contains("route=inpaint"));
+        assert!(section.contains("verdict=fallback"));
+        assert!(section.contains("mask=57.2"));
+        assert!(section.contains("residual text is readable"));
+
+        let temp = tempfile::tempdir().expect("tempdir");
+        let diagnostics =
+            pocketlibrary_core::diagnostics::Diagnostics::new(temp.path().join("diagnostics.log"));
+        let environment = pocketlibrary_core::diagnostics::DiagnosticsEnvironment {
+            app_name: "PocketLibrary".to_owned(),
+            app_version: "0.1.13".to_owned(),
+            schema_version: 4,
+            android: "14".to_owned(),
+            device: "Pixel 8".to_owned(),
+            counts: BTreeMap::new(),
+        };
+        let text = diagnostics.export_text(&environment, &[("spine verdicts", section)]);
+        assert!(text.contains("===== spine verdicts ====="));
+        assert!(text.contains("book 2 \"Rock Paper Scissors\""));
+    }
 }

@@ -91,10 +91,19 @@ pub struct QueueProgress {
     pub total: u64,
 }
 
+/// Bump when a QA change should give books their automatic attempts back.
+///
+/// A persisted attention row carries the attempts it already spent. Without
+/// this, a book rejected by an older, stricter gate would wait forever after
+/// an upgrade even though the new gate would accept it.
+pub const SPINE_POLICY_VERSION: u32 = 2;
+
 /// The queue payload written across process restarts.
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PersistedQueue {
+    #[serde(default)]
+    policy: u32,
     #[serde(default)]
     pending: Vec<i64>,
     #[serde(default)]
@@ -423,9 +432,18 @@ pub fn load_queue(path: &Path) -> (Vec<i64>, Vec<QueueFailure>) {
     let Ok(text) = fs::read_to_string(path) else {
         return (Vec::new(), Vec::new());
     };
-    serde_json::from_str::<PersistedQueue>(&text)
-        .map(|queue| (queue.pending, queue.attention))
-        .unwrap_or_default()
+    let Some(queue) = serde_json::from_str::<PersistedQueue>(&text).ok() else {
+        return (Vec::new(), Vec::new());
+    };
+    if queue.policy == SPINE_POLICY_VERSION {
+        return (queue.pending, queue.attention);
+    }
+    // A changed QA policy invalidates the old verdicts. Give attention rows a
+    // fresh budget by dropping them; the launch backfill re-queues the books.
+    // Persist the reset so this happens once, not on every launch.
+    let attention = Vec::new();
+    let _ = save_queue(path, &queue.pending, &attention);
+    (queue.pending, attention)
 }
 
 pub fn load_pending(path: &Path) -> Vec<i64> {
@@ -439,6 +457,7 @@ pub fn save_queue(path: &Path, ids: &[i64], attention: &[QueueFailure]) -> std::
         fs::create_dir_all(parent)?;
     }
     let text = serde_json::to_string_pretty(&PersistedQueue {
+        policy: SPINE_POLICY_VERSION,
         pending: ids.to_vec(),
         attention: attention.to_vec(),
     })
@@ -646,6 +665,33 @@ mod tests {
         assert_eq!(core.snapshot().failed, 1);
         assert!(core.clear_failure(9));
         assert!(core.automatic_attempt_due(9));
+    }
+
+    #[test]
+    fn a_new_qa_policy_clears_old_attention_once() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("spine").join(QUEUE_FILE);
+        std::fs::create_dir_all(path.parent().unwrap()).expect("dir");
+        // A queue written by the older, stricter gate.
+        std::fs::write(
+            &path,
+            r#"{"policy": 1, "pending": [7], "attention": [{"bookId": 7, "state": "needs-attention", "code": "spine_fallback", "error": "old", "attempts": 3}]}"#,
+        )
+        .expect("write old queue");
+
+        let (pending, attention) = load_queue(&path);
+        assert_eq!(pending, vec![7], "pending work survives an upgrade");
+        assert!(
+            attention.is_empty(),
+            "old attempts must not block the new policy"
+        );
+
+        // The reset is written back, so the next load keeps the empty state
+        // instead of resetting on every launch.
+        let text = std::fs::read_to_string(&path).expect("read queue");
+        assert!(text.contains(&format!("\"policy\": {SPINE_POLICY_VERSION}")));
+        let (_, attention) = load_queue(&path);
+        assert!(attention.is_empty());
     }
 
     #[test]

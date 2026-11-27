@@ -173,6 +173,7 @@ impl SpineService {
             .install(&staged, &prepared.key)
             .map_err(|error| cache_error(error.to_string()))?;
         self.cache.trim(Some(&prepared.dir));
+        log_spine_result(&self.app_data_dir, book_id, &artifact);
         Ok(artifact)
     }
 
@@ -580,6 +581,34 @@ pub fn artifact_from_dir(dir: &Path, book_id: i64) -> Result<SpineArtifact, ApiE
     spine_strip::artifact_from_dir(dir, book_id).map_err(cache_error)
 }
 
+/// How long a single spine log line may carry QA reasons before trimming.
+const MAX_RESULT_REASONS_CHARS: usize = 320;
+
+/// Write the book's route and QA verdict to `spine/spine.log`.
+///
+/// One line per generation, whether it came from the automatic worker or an
+/// explicit Generate. The values come from the artifact built from the staged
+/// `run.json` / `qa.json`, so they match what was actually installed. This is
+/// the line that answers "what did QA decide for book N?" without a rebuild.
+fn log_spine_result(app_data_dir: &Path, book_id: i64, artifact: &SpineArtifact) {
+    let reasons = artifact.decision_reasons();
+    let mut rendered = format!("{reasons:?}");
+    if rendered.chars().count() > MAX_RESULT_REASONS_CHARS {
+        let first = reasons.first().cloned().unwrap_or_default();
+        let short: String = first
+            .chars()
+            .take(MAX_RESULT_REASONS_CHARS.saturating_sub(4))
+            .collect();
+        rendered = format!("{:?}", vec![short]);
+    }
+    let line = format!(
+        "spine result: book {book_id} route={} verdict={} mask={:.1} reasons={rendered}",
+        artifact.route, artifact.verdict, artifact.mask_percent
+    );
+    eprintln!("pocketlibrary spine {line}");
+    spine_assets::log(app_data_dir, &line);
+}
+
 fn bundle_bytes(paths: &SpineModelPaths) -> u64 {
     [&paths.det, &paths.rec, &paths.keys, &paths.migan]
         .into_iter()
@@ -680,6 +709,42 @@ mod tests {
             serde_json::to_string_pretty(&qa).expect("qa json"),
         )
         .expect("write qa");
+    }
+
+    #[test]
+    fn a_spine_result_line_records_route_verdict_mask_and_reasons() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let artifact = SpineArtifact {
+            book_id: 2,
+            route: "inpaint".to_owned(),
+            verdict: "fallback".to_owned(),
+            mask_percent: 57.2,
+            crop_box: None,
+            art_data_url: String::new(),
+            spine_data_url: String::new(),
+            fallback_data_url: String::new(),
+            pages_approximate: false,
+            run_json: serde_json::json!({
+                "final": { "route": "inpaint", "verdict": "fallback" }
+            }),
+            qa_json: serde_json::json!({
+                "decision": {
+                    "verdict": "fallback",
+                    "reasons": ["more than 55% of the cover was reconstructed"]
+                }
+            }),
+        };
+        log_spine_result(temp.path(), 2, &artifact);
+        let log =
+            fs::read_to_string(spine_assets::log_path(temp.path())).expect("spine.log written");
+        assert_eq!(log.lines().count(), 1);
+        assert!(
+            log.contains(
+                "spine result: book 2 route=inpaint verdict=fallback mask=57.2 \
+                 reasons=[\"more than 55% of the cover was reconstructed\"]"
+            ),
+            "{log}"
+        );
     }
 
     #[test]

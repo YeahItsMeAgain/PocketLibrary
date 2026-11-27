@@ -59,6 +59,29 @@ pub struct SpineArtifact {
     pub qa_json: Value,
 }
 
+impl SpineArtifact {
+    /// The QA gate's reasons, read from the `qa.json` payload the engine wrote.
+    ///
+    /// These are the user-facing explanation for a `fallback` (or `review`)
+    /// verdict, so both the queue message and the diagnostics export use the
+    /// same source.
+    pub fn decision_reasons(&self) -> Vec<String> {
+        self.qa_json
+            .pointer("/decision/reasons")
+            .and_then(Value::as_array)
+            .map(|reasons| {
+                reasons
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(str::trim)
+                    .filter(|reason| !reason.is_empty())
+                    .map(str::to_owned)
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+}
+
 /// Which verdicts are allowed on the shelf wall.
 ///
 /// `review` still paints: the QA gate flagged it, but the strip is real art.
@@ -428,6 +451,32 @@ mod tests {
         )
         .expect("artifact");
         dir
+    }
+
+    #[test]
+    fn decision_reasons_come_from_the_qa_payload() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let dir = fake_entry(temp.path(), "one", 7, b"x");
+        let mut artifact = read_artifact(&dir).expect("artifact");
+        artifact.qa_json = serde_json::json!({
+            "decision": {
+                "verdict": "fallback",
+                "reasons": [
+                    "residual text is readable in the 52x236 spine",
+                    "  ",
+                    "spine has too little structure"
+                ]
+            }
+        });
+        assert_eq!(
+            artifact.decision_reasons(),
+            vec![
+                "residual text is readable in the 52x236 spine",
+                "spine has too little structure",
+            ]
+        );
+        artifact.qa_json = serde_json::json!({});
+        assert!(artifact.decision_reasons().is_empty());
     }
 
     #[test]
