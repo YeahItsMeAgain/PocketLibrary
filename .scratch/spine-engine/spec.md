@@ -29,15 +29,96 @@ These seven decisions are fixed. Treat them as constraints, not options.
    slower and weaker on display type.
    The feature does not work without them.
 3. **Production delivery is automatic download plus cache**, visible and cancellable. The test APK
-   may bundle the same files as assets. Either way inference is fully on-device.
+   may bundle the same files as assets. Either way inference is fully on-device. For the 0.1.8 build
+   the models ship **bundled**; the first-run downloader is a separate release ticket (Settled §12).
 4. **MI-GAN is required** — it is the inpaint route. **LaMa is excluded entirely. rec INT8 is
    excluded** (it returned no text, which breaks the QA gate).
-5. **Wrap is the default style.** Hybrid is the alternate. Cloth is the automatic fallback for
-   review and fallback verdicts.
+5. **Wrap is the default style.** Full-bleed is the alternate. Cloth is the automatic fallback for
+   review and fallback verdicts. Hybrid, Textless and Editorial are **deleted** (Settled §4).
 6. **Curated packs are bonus only.** Remote generative art is out of scope. `bookcover-js` is a
    design reference only.
 7. **Quality gate:** `pass` → apply; `review` → show the spine plus **Use Cloth**; `fallback` →
    Cloth automatically.
+
+## Settled — automatic flow
+
+The latest grilling round settled the automatic flow. This section is binding. Where it disagrees
+with manual-only or six-style wording later in this file, **this section wins** and the older text is
+marked superseded. [CONTRACT.md](CONTRACT.md) carries the same seam.
+
+### 1. Every path generates
+
+A spine job is queued for **every path that yields a cover and a page count**: downloads, imports,
+scans, manual edits, metadata enrichment and a manual cover pick. The user never has to open a studio
+to get a spine. The book appears immediately in Cloth and swaps to the generated spine when it is
+ready. "On demand only" is no longer an option; **Generate** remains as a manual override, not the
+entry path.
+
+### 2. Progress is quiet and honest
+
+- One global activity chip reads **"Preparing spines · n of m"**, backed by a per-book state.
+- Stage labels are real work: **preparing art · removing text · checking**. No fake percentage.
+- The chip is hidden while the reader is open.
+- One **"Stop preparing"** control pauses the queue. It is a pause, not a per-book Cancel. A manual
+  **Generate** jumps the queue.
+
+### 3. Failure
+
+One automatic retry, then the book settles on **Cloth** with a small persistent marker and a detail
+note explaining what happened. A `review` verdict keeps the generated spine and offers **Cloth** as
+the alternative.
+
+### 4. Styles
+
+Only **Wrap**, **Full-bleed** and **Cloth** remain. **Hybrid, Textless and Editorial are deleted, not
+hidden** — code, copy and tests go with them. Wrap is the default. Per-book style persists in a new
+`books.spine_style` column (**migration 6**), default `wrap`.
+
+### 5. Full-bleed and contrast
+
+Full-bleed places title and author centred on both axes as **one block** over a soft gradient scrim.
+Two lines maximum, shrink to fit, **never truncate**. Wrap rail type uses the same contrast guard.
+
+### 6. Cover changes
+
+Changing the cover cancels and replaces that book's job; regeneration is automatic. No stale art
+survives a cover edit.
+
+### 7. Queue
+
+One FIFO worker. Automatic jobs run one at a time. **Generate** jumps the queue. The queue survives
+process death: unfinished book ids are persisted and re-queued on next launch. When models are
+missing the queue **waits** for them instead of dropping jobs.
+
+### 8. Cache
+
+200 MB LRU budget. Only runtime files are app cache: `art.jpg`, `spine-2x.jpg`,
+`fallback-spine.jpg`, `run.json`, `qa.json`, `artifact.json`. `source.jpg` and `mask.png` are pipeline
+scratch, not app cache. Trim by LRU mtime after each completed job.
+
+### 9. Backfill
+
+The existing library is backfilled **once**, at low priority behind new jobs.
+
+### 10. Reader pause
+
+Automatic jobs pause while the reader is open and resume on close. Manual **Generate** still runs.
+
+### 11. RTL
+
+Hebrew and other RTL titles are handled now: first-strong-character direction detection, mirrored
+alignment, and a Hebrew fixture in the renderer tests.
+
+### 12. Build 0.1.8
+
+Version **0.1.8** / versionCode **1008**. Models stay **bundled** for this build; the first-run
+downloader moves to a separate release ticket. The engine, queue, progress and reduced styles ship on
+the bundled path.
+
+### 13. Unknown page count
+
+A book with no page count still generates, using a clamped **~320-page estimate** and an
+`approximate` label on the spine.
 
 ## Solution
 
@@ -109,17 +190,25 @@ Rules:
     spine-v1.tmp/        partial install, deleted on failure
   books/
     <cache-key>/
-      run.json  qa.json  art.jpg  spine-2x.jpg  wrap.json  wrap.png
+      art.jpg  spine-2x.jpg  fallback-spine.jpg  run.json  qa.json  artifact.json
 ```
+
+> **Superseded by Settled §8.** The cache holds only runtime files and is trimmed to 200 MB by LRU.
+> `source.jpg` and `mask.png` are pipeline scratch and must not be written into the app cache;
+> `wrap.json`/`wrap.png` are renderer output, not cache.
 
 `cache-key = sha256(content hash | cover hash | page count | design version | bundle id)`.
 A page-count edit only re-runs the cheap wrap composition; changing the cover, the book file, the
-design version or the bundle id invalidates the whole entry. Deleting a book deletes its entry.
+design version or the bundle id invalidates the whole entry. A style switch never invalidates the
+entry (style is per-book state, not part of the key). Deleting a book deletes its entry.
 A version bump garbage-collects `models/spine-v0` at next launch.
 
 ## End-to-end flow on the phone
 
 ### First run
+
+For 0.1.8 the models are bundled, so there is no first-run download. The downloader flow below is
+retained for the separate release ticket that replaces the bundled assets (Settled §12).
 
 1. Shelf paints immediately from the existing database. Nothing waits on models.
 2. A quiet row in Settings → Spine reads **"Spine engine — downloading 12% of 41.2 MB"**.
@@ -131,33 +220,41 @@ A version bump garbage-collects `models/spine-v0` at next launch.
 
 Entry points, all feeding the same job:
 
+- **Download** from the metadata/cover flow.
 - **Import** an EPUB/PDF.
 - **Scan** a barcode.
 - **Manual** entry, then pick or photograph a cover.
+- **Metadata enrichment** that later fills in a cover, and a **manual cover pick**, both queue a job.
 
 Cover order stays keyless: embedded cover → Open Library / metadata enrichment → user picker →
-camera photo of the physical book → typographic plate.
+camera photo of the physical book → typographic plate. Every path that ends with a cover and a page
+count queues automatically (Settled §1).
 
 ### Generating
 
 1. The job is queued the moment the book has a cover and a page count.
 2. A worker (one at a time, FIFO) runs:
    `cover → page/frame detection → DBNet → CIELAB mask → route (crop | inpaint | fallback) → 52 × 236 QA`.
-3. Progress is coarse and honest: **Finding cover text · Removing text · Checking result**. No fake
-   per-pixel percentage.
-4. The shelf shows the plain cloth spine while the job runs, then swaps to the wrap spine when it
-   lands. It never shows an empty slot or a spinner on the shelf.
+3. Progress is coarse and honest: **preparing art · removing text · checking**. No fake per-pixel
+   percentage. A single global chip reads **"Preparing spines · n of m"**, with per-book state; the
+   chip is hidden in the reader.
+4. The shelf shows the plain cloth spine while the job runs, then swaps to the generated spine when
+   it lands. It never shows an empty slot or a spinner on the shelf.
 5. Host reference: 2.6–13.8 s per book, 450–500 MB peak, MI-GAN 1.9–2.3 s. Phone numbers are
    unmeasured; the UI is designed for **5–20 s**, not 3 s.
-6. Leaving the detail screen does not cancel the job; an explicit **Cancel** does. Cancel discards
-   partial output and leaves the cloth spine.
+6. Leaving the detail screen does not cancel the job. The only queue control is **Stop preparing**,
+   which pauses automatic work; manual **Generate** jumps the queue (Settled §2, §7).
 
 ### Presenting
 
 - **Shelf:** the 33 px wrap spine. This is the default and the only style the shelf draws.
-- **Detail:** a flat wrap preview by default, with a **Spine** section offering Wrap · Hybrid ·
-  Full-bleed · Textless · Cloth · Editorial. Switching styles is a render from cached `art.jpg` and
-  `run.json`, not a pipeline re-run, so it is instant.
+- **Detail:** a flat wrap preview by default, with a **Spine** section offering **Wrap · Full-bleed ·
+  Cloth** only. Hybrid, Textless and Editorial are deleted (Settled §4). Switching styles is a render
+  from cached `art.jpg` and `run.json`, not a pipeline re-run, so it is instant.
+- **Full-bleed:** title and author centred on both axes as one block over a soft gradient scrim; two
+  lines max, shrink to fit, never truncate. Wrap rail type uses the same contrast guard.
+- **RTL:** Hebrew and other RTL titles use detected direction, mirrored alignment, and a Hebrew
+  fixture (Settled §11).
 - **Export:** 300 dpi wrap PNG (and PDF if cheap). The print geometry needs the real caliper; the
   app uses the same representative paper values as the prototype and labels the export as an
   approximation until the printer's figures are entered.
@@ -188,20 +285,23 @@ Scissors* (44% mask) are the reference review cases.
 
 | Situation | Behaviour |
 |---|---|
-| Models absent, offline | Shelf works; Spine section offers **Download engine**; no art spines |
-| Download cancelled | `.part` retained; row offers **Resume** |
-| Hash mismatch | Temp deleted, one automatic retry, then **"Download failed — Retry"** |
-| Model fails to load | Bundle marked unverified, redownload once, then disable art spines with a clear message |
+| Models absent, offline | Shelf works in Cloth; jobs wait in the queue rather than dropping; no art spines |
+| Download cancelled | `.part` retained; row offers **Resume** (downloader release ticket) |
+| Hash mismatch | Temp deleted, one automatic retry, then **"Download failed — Retry"** (downloader release ticket) |
+| Model fails to load | Bundle marked unverified, retried once, then art spines disabled with a clear message; Cloth stays |
 | Out of storage | Download refuses to start with a storage message; existing cache untouched |
-| Pipeline panics/hangs | Job fails after timeout (60 s), cloth spine stays, **Retry** in detail |
+| Pipeline panics/hangs | One automatic retry, then Cloth stays with a small persistent marker and a detail note; no dead end |
+| Cover changed mid-job | The book's job is cancelled and replaced; regeneration is automatic |
 | Cover missing | No spine job; typographic plate, as today |
-| Page count unknown | Wrap uses a clamped estimate and labels the spine width as approximate |
+| Page count unknown | ~320-page clamped estimate, spine labelled `approximate` |
+| Reader open | Automatic jobs pause; manual **Generate** still runs |
 
 ## Privacy / offline contract
 
 - Inference is 100% local. No image, title, author or ISBN is sent for spine generation.
 - Network use is limited to the model download and the existing opt-in metadata/cover lookup.
-- Once `verified.json` exists, the engine runs with the radio off. This is an acceptance test.
+- Once `verified.json` exists (downloader builds) or the bundled models are extracted, the engine runs
+  with the radio off. This is an acceptance test.
 
 ## Out of scope
 
@@ -213,38 +313,47 @@ Scissors* (44% mask) are the reference review cases.
 
 ## Implementation slices
 
-1. **Model delivery** — manifest, resumable download, hash verify, atomic install, status row,
-   cancel/retry, storage guard.
+1. **Model delivery** — for 0.1.8, bundled assets + extraction; downloader deferred to a separate
+   release ticket.
 2. **Engine service** — port `v8-app` into `core`; `spine_generate`, `spine_cancel`, `spine_status`;
-   job queue; 60 s timeout; per-book cache keys.
-3. **Wrap renderer** — port `v4-wrap` geometry + canvases into the app renderer; consume `run.json`
-   and `art.jpg`; style switch.
-4. **Shelf integration** — wrap spine at 33 px, cloth fallback, swap-on-completion without layout
-   shift.
-5. **Detail integration** — wrap preview, style switch, QA note, **Use Cloth**, export.
-6. **Device pass** — random books, cold start, warm run, 20-book batch, low-RAM and 16 KB-page
+   queue; 60 s timeout; per-book cache keys.
+3. **Renderers** — port `v4-wrap` geometry; **Wrap, Full-bleed, Cloth only**; delete the other three;
+   full-bleed scrim, contrast guard, RTL.
+4. **Shelf integration** — generated spine at 33 px, Cloth fallback, swap-on-completion without
+   layout shift.
+5. **Detail integration** — preview, three-style switch, QA note, **Use Cloth**, export.
+6. **Automatic flow** — enqueue from every cover/page-count path; global chip; pause; retry; backfill;
+   `books.spine_style` migration 6; 200 MB LRU.
+7. **Device pass** — random books, cold start, warm run, 20-book batch, low-RAM and 16 KB-page
    devices, airplane-mode run, corrupt-bundle recovery.
 
 ## Open decisions
 
-- **Auto-generate on import versus on demand only.** The flow above assumes auto with a visible
-  queue; on-demand is still on the table.
 - **Export formats** for v1 — PNG only, or PNG + PDF.
 
+Resolved by "Settled — automatic flow": auto-generate versus on-demand (automatic), styles (three),
+failure behaviour, cache files/size, per-book style storage, and the 0.1.8 bundled-models scope.
 Everything else is locked under "Chosen route (locked)".
 
 ## Acceptance criteria
 
-1. Fresh install, online: the 41.2 MB bundle downloads, verifies and enables art spines without any
-   user action beyond leaving the app open; progress is visible and cancellable.
-2. Fresh install, offline: every book still gets a cloth spine; the Spine section explains the
-   one-time download and offers Retry.
-3. Kill the app mid-download, relaunch: the download resumes from the retained bytes.
-4. Corrupt one model byte: the app detects it, retries once, and reports failure without crashing.
-5. Import a random downloaded EPUB with a cover: a wrap spine appears on the shelf within the
-   measured phone budget, with a `run.json` route and QA verdict recorded.
-6. Run the same book in airplane mode after a warm cache: identical output, zero network requests.
-7. A review-verdict book shows the note and **Use Cloth**, and Cloth renders correctly.
-8. Editing page count re-composes the wrap without re-running detection.
-9. Switching style in detail completes without a pipeline run.
-10. Deleting a book removes its cache directory and frees its bytes.
+1. Fresh install, bundled models: art spines work with the radio off and zero network requests.
+2. A book added by any path — download, import, scan, manual edit, metadata enrichment, manual cover
+   pick — queues a spine automatically and shows Cloth immediately.
+3. Kill the app mid-queue, relaunch: unfinished jobs are re-queued and the queue resumes.
+4. Import a random downloaded EPUB with a cover: a spine appears within the measured phone budget,
+   with a `run.json` route and QA verdict recorded.
+5. The global chip reads **"Preparing spines · n of m"** with real stage labels and no percentage;
+   it is hidden while the reader is open.
+6. **Stop preparing** pauses automatic jobs; manual **Generate** jumps the queue.
+7. A failed job retries once, then leaves Cloth with a persistent marker and a detail note.
+8. A review-verdict book keeps the generated spine and offers **Use Cloth**; Cloth renders correctly.
+9. Only Wrap, Full-bleed and Cloth exist; Hybrid, Textless and Editorial are gone from code and UI.
+10. Full-bleed centres title and author as one block, two lines max, shrink to fit, never truncate.
+11. A Hebrew title renders right-to-left with mirrored alignment.
+12. Changing the cover cancels and replaces the job without stale art.
+13. Editing page count re-composes without re-running detection; a style switch never re-runs.
+14. Unknown page count uses the ~320-page estimate and shows `approximate`.
+15. Existing library backfills once at low priority; cache trims to 200 MB LRU and holds only the six
+    runtime files.
+16. Deleting a book removes its cache directory and its `spine_style` row.

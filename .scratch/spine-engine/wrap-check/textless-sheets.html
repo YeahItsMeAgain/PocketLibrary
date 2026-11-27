@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Textless wrap sheets — art.jpg on every panel</title>
+<link rel="stylesheet" href="harness.css">
+<style>
+  body { padding: 22px 26px 34px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 30px; margin-top: 18px; }
+  .card { margin: 0; }
+  .card h2 { margin: 0 0 2px; font: 400 22px/1.1 "EB Garamond", Georgia, serif; }
+  .card p { margin: 0 0 8px; color: #a99a80; font-size: 11px; }
+  .card canvas { display: block; width: 100%; height: auto; box-shadow: 0 0 0 1px rgba(255,255,255,.10), 0 10px 24px rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+<header class="head">
+  <p class="kicker">Textless wrap variant · all art panels from the engine's art.jpg</p>
+  <h1>Back / spine / front from <em>post-removal art</em></h1>
+</header>
+<main id="sheets" class="grid2"><p class="loading">Rendering…</p></main>
+<script src="renderer-export.js"></script>
+<script src="books.js"></script>
+<script src="harness.js"></script>
+<script src="textless-sheets.js"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+{
+  "summary": {
+    "wrapShipDefault": false,
+    "wrapShipReason": "Not as-is. Four of the six spines work: Gatsby's rule strip plus type identifies the book, Pride reads as a warm portrait, Hobbit is the best in the set, and Rock Paper Scissors is legible even though it is the review case. The blocker is that the wrap's ink is chosen from the **average** art colour, not the pixels under the letter: The War of the Worlds passes QA yet its last word (\"WORLDS\") sits on the bright sky at **1.01:1** and disappears at 33 px; Dune (2.05:1) and Pride (2.45:1) are also under 3:1 locally. Dune additionally keeps the giant DUNE letterforms inside the crop, so the spine competes with its own title. A contrast-aware ink or a soft scrim behind the spine type would make Wrap shippable; the fold seam and front-cover gutters are detail-view issues, not shelf blockers.",
+    "saferAlternates": "**Cloth** is the safest review fallback: a uniform sampled field with foil type (5.3–12.6:1), no crop dependence, no seams — it is the spec's fallback for a reason. **Hybrid** is the best-looking safe alternate: an art window plus a measured paper label (10.9–11.3:1 on every book), so it keeps cover-derived art while guaranteeing legible type. Full-bleed (13.4–15.9:1) and Editorial (15.5:1) are legibility-safe but their rail covers 38–44% of a 52 px spine, so they read as type panels, not art spines.",
+    "biggestProblem": "The wrap picks one ink colour from the **average** backdrop and then draws it across art with a huge luminance range. On The War of the Worlds the cream title crosses the bright sky at 1.01:1 — \"WORLDS\" is effectively invisible at 33 px on a book the pipeline passed. The renderer's own contrast figure (5.0:1 vs the average) hides this. The runner-up is the hard fold: the spine is a crop from elsewhere on the cover, so it does not continue into the published front (front-fold deltas 18–49) and non-2:3 covers get dark gutters inside the front panel (Dune, 13 px each side).",
+    "perBook": {
+      "the-great-gatsby": "Ship. The crop is a clean white rule strip; the cream title type is what identifies the book (11.7:1 local).",
+      "dune": "Do not ship as-is. Giant DUNE letterforms survive in the crop and dominate the 33 px title; local contrast 2.05:1. Cloth or Hybrid.",
+      "pride-and-prejudice": "Ship with a note. Portrait strip is lovely; the cream title crosses a bright shoulder at 2.45:1, still readable but marginal at 33 px.",
+      "rock-paper-scissors": "Review path. Dark ink on snow is legible (7.1:1) but the strip does not identify the book; keep the note and Use Cloth.",
+      "the-war-of-the-worlds": "Do not ship as-is despite the pass. \"WORLDS\" is cream on the bright sky at 1.01:1 and vanishes at 33 px.",
+      "the-hobbit": "Ship. Black stripes, red sun, cream type at 10.5:1; the strongest wrap in the set."
+    },
+    "screenshots": "- `shot-390.png` — full page at 390 px: six tiles, each wrap sheet, 33 px shelf strip.\n- `shot-320.png` — the same at 320 px; the tile grid wraps to four columns.\n- `large-wrap-sheet.png` — all six back/spine/front sheets at 4× render, 2100 px wide.\n\nWhat they show: the wrap sheets have a hard front fold (the spine crop does not continue the published cover), the War of the Worlds spine title's top half washes out, Dune's decorative letterforms crowd the spine, and the backs are a consistent blurred field plus vellum card. The 52 px grid shows each style at the same size; the Wrap tile is the real page-count spine width (11–33 px) centred in the slot, not stretched.",
+    "broken": [
+      "**Text clipped: none.** Every style's title fit ratio is ≤ 0.97 at 52 px; the renderer's min-size clamp never overflows.",
+      "**Unreadable at 33 px: The War of the Worlds (pass).** \"WORLDS\" is drawn at 1.01:1 over the bright sky; it disappears. Dune (2.05:1) and Pride (2.45:1) are below the 3:1 line but still readable.",
+      "**Wrong crop: none.** The rendered art matches the pipeline's own spine-2x on all six (mean abs RGB diff 2.6–4.9).",
+      "**Blank spine: none.** The thinnest is Gatsby at 11 px, still 99% non-dark. Textless is type-free but not blank.",
+      "**Giant decorative type: Dune.** The pipeline crop keeps the large DUNE letterforms; at 33 px they are the spine's dominant mark and compete with the real title.",
+      "**Seam lines: yes, at the front fold.** The spine is a crop from elsewhere on the cover, so it does not continue the published front. Front-fold deltas: Hobbit 18.0 (subtle), RPS 19.3 (subtle), Gatsby 29.7, Pride 34.3 (visible), Dune 46.7, War of the Worlds 48.7 (strong). Back folds are strong on five books because the back is deliberately blurred.",
+      "**Front-cover gutters: Dune.** A 0.558-aspect source cannot fill the 2:3 front panel, so the compositor leaves dark blurred bars about 13 px wide on each side of the front cover."
+    ],
+    "followUp": {
+      "inputsConclusion": "Only the three **inpaint** books have a post-removal `art.jpg`. For the three **crop** books `art.jpg` is byte-identical to `source.jpg`: the crop route selects a text-free window but writes back the original cover, so the art still contains the printed cover text outside that window. The wrap's spine is drawn from the crop window, so the spine itself is text-free on all six; the front is not.",
+      "panelConclusion": "Shipped Wrap **already used `art.jpg` for the spine and the back**. Only the front is drawn from `source.jpg` (the published cover), which is also what the app spec requires (`spec.md:180`, front = the published cover, unchanged). So the spine — where the title-contrast failure lives — has always been the engine's post-removal image. The variant isolates the one panel that was not: the front.",
+      "wotw": "The **1.01:1 failure persists** in the textless variant. It is **renderer-drawn typography, not leftover cover text**. Proof: the spine panel is pixel-identical (Δ 0) between shipped Wrap and the variant; the cream title is set by `renderWrap` across the art's bright sky (band p90 231.8). QA finds no residual OCR in `art.jpg` apart from one low-confidence \"RA\" (0.61), and the printed title band was removed — the \"WORLDS\" that vanishes is the renderer's own type.",
+      "dune": "They are **leftover printed cover art, not renderer type**. Dune is a crop-route book: `art.jpg` is byte-identical to `source.jpg`, so no generative removal ever touched it. The letterforms survive inside the chosen crop window because the detector never boxed display type and the recogniser is blind to them. The variant is pixel-identical (Δ 0). The renderer's own \"DUNE\" title is 7.8 px; the giant letters are roughly 30 px wide and part of the bitmap.",
+      "verdict": "Using the post-removal art on every panel fixes **neither** problem. The War of the Worlds is a **typography/contrast** bug — it needs a scrim or contrast-aware ink (or Cloth/Hybrid). Dune is a **pipeline/detection** gap — it needs the crop moved off the display type, or Cloth; no ink change helps. The corrected ship answer is unchanged: Wrap is not shippable as-is for these six books, though four of six spines are fine. A fully textless front (the variant) also removes the cover title from the front of the three inpaint books, which is not the app's design."
+    }
+  },
+  "books": {
+    "the-great-gatsby": {
+      "wrapVerdict": "ship",
+      "wrapNote": "White rule strip; title type carries it. Local 11.7:1.",
+      "styles": {
+        "wrap": "Ship. Bland crop, but the type identifies the book and reads at 33 px.",
+        "hybrid": "Ship. Cream paper label, 11.3:1; cleanest of the safe options.",
+        "fullbleed": "Legible 13.4:1, but the rail covers 38% of a 52 px spine.",
+        "artonly": "A white strip with rules: no identity at all.",
+        "cloth": "Quiet charcoal cloth, 5.3:1; safe fallback.",
+        "editorial": "Dark rail plus art, 15.5:1; legible but generic."
+      }
+    },
+    "dune": {
+      "wrapVerdict": "do not ship as-is",
+      "wrapNote": "Decorative DUNE letterforms dominate; small title at 2.05:1 local.",
+      "styles": {
+        "wrap": "Giant DUNE letterforms fill the spine; the small title competes with them and reads 2.05:1 against the band.",
+        "hybrid": "Good: paper label keeps the title safe, art window keeps the orange.",
+        "fullbleed": "Bold and legible (14.6:1); the rail sits over the DUNE letterforms.",
+        "artonly": "Recognisable Dune art, no title; decorative letters still enormous.",
+        "cloth": "Brown cloth, 7.8:1; safe but unrelated to the cover.",
+        "editorial": "Legible, art + rail; the rail crops the letterforms."
+      }
+    },
+    "pride-and-prejudice": {
+      "wrapVerdict": "ship with note",
+      "wrapNote": "Lovely portrait strip; cream title crosses a bright shoulder (2.45:1).",
+      "styles": {
+        "wrap": "Ship with note: warm portrait, but the title crosses a bright shoulder at 2.45:1.",
+        "hybrid": "Best of the set: paper label, 11.1:1, art keeps the faces.",
+        "fullbleed": "Art plus rail, 15:1; the rail covers the second figure.",
+        "artonly": "Beautiful but anonymous at 52 px.",
+        "cloth": "Warm brown cloth, 9.4:1; safe.",
+        "editorial": "15.5:1, art + dark rail; loses the right-hand figure."
+      }
+    },
+    "rock-paper-scissors": {
+      "wrapVerdict": "review / Cloth safer",
+      "wrapNote": "Legible dark ink on snow (7.1:1) but the strip does not identify the book.",
+      "styles": {
+        "wrap": "Legible dark ink on snow (7.1:1), but it reads as a textured strip, not Rock Paper Scissors. Keep the review note and Use Cloth.",
+        "hybrid": "The art window is snow; the paper label identifies it. Safest good-looking option.",
+        "fullbleed": "Legible rail over snow; still anonymous.",
+        "artonly": "Snow texture with a red edge: no identity.",
+        "cloth": "Grey-brown cloth, 5.9:1; safe fallback.",
+        "editorial": "Rail at 15.5:1 over snow; legible, anonymous."
+      }
+    },
+    "the-war-of-the-worlds": {
+      "wrapVerdict": "do not ship as-is",
+      "wrapNote": "\"WORLDS\" is cream on the bright sky at 1.01:1 and vanishes at 33 px.",
+      "styles": {
+        "wrap": "The last word sits on the bright sky at 1.01:1 and disappears at 33 px. Pass verdict, unreadable title.",
+        "hybrid": "Paper label, 11.1:1; the safest alternate and keeps the burning city.",
+        "fullbleed": "15:1 rail; legible but the rail covers the right of the city.",
+        "artonly": "Strong art, no title; recognisable at 52 px.",
+        "cloth": "Warm brown cloth, 9.1:1; safe.",
+        "editorial": "15.5:1 over art; legible."
+      }
+    },
+    "the-hobbit": {
+      "wrapVerdict": "ship",
+      "wrapNote": "Best in the set: black stripes, red sun, cream type 10.5:1.",
+      "styles": {
+        "wrap": "Ship. Black stripes and red sun, cream type at 10.5:1; reads at 33 px.",
+        "hybrid": "Cream label plus black art, 10.9:1; very good.",
+        "fullbleed": "Art plus rail, 15.9:1; the rail hides the mountains.",
+        "artonly": "Recognisable art; no title.",
+        "cloth": "Very dark cloth, 12.6:1; nearly black, but legible.",
+        "editorial": "15.5:1; legible, but the dark rail merges with the black art."
+      }
+    }
+  }
+}

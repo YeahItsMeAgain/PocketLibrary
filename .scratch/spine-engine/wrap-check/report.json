@@ -1,0 +1,838 @@
+{
+  "generated": "2026-11-26T22:39:53.966Z",
+  "harness": {
+    "page": "index.html",
+    "sheetsPage": "wrap-sheets.html",
+    "tile": "52×236",
+    "dpr": 2,
+    "renderer": ".scratch/spine-cover-art-prototype/app-renderers/renderer/renderer.js (verbatim, internal export hook only)",
+    "inputs": ".scratch/spine-engine/evidence/<slug>/{art.jpg,source.jpg,spine-2x.jpg,run.json,qa.json}",
+    "screenshots": [
+      "shot-390.png",
+      "shot-320.png",
+      "large-wrap-sheet.png",
+      "textless-shot-390.png",
+      "textless-shot-320.png",
+      "textless-large-wrap-sheet.png"
+    ],
+    "consoleErrors": []
+  },
+  "followUp": {
+    "question": "Was the wrap tested after the generative model removed the text?",
+    "inputs": [
+      {
+        "slug": "the-great-gatsby",
+        "title": "The Great Gatsby",
+        "route": "text-free crop",
+        "verdict": "pass",
+        "artSha256": "5c0f4b343955a9ba00d6d98a725f7cc531170c7cb933587bd7a7ee283098f989",
+        "sourceSha256": "5c0f4b343955a9ba00d6d98a725f7cc531170c7cb933587bd7a7ee283098f989",
+        "artIsSource": true,
+        "qaJson": "pass · crop mask 0.0% · art OCR []",
+        "printedTextInArt": "yes — printed text remains outside the crop",
+        "removal": "none — crop route returns the original cover",
+        "frontPanelDiff": 0,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineLocalContrast": 11.73
+      },
+      {
+        "slug": "dune",
+        "title": "Dune",
+        "route": "text-free crop",
+        "verdict": "pass",
+        "artSha256": "79f0cdb0bdaa0063a028904c81ee54f9d807502fbbefe9b77772ac970cb3b291",
+        "sourceSha256": "79f0cdb0bdaa0063a028904c81ee54f9d807502fbbefe9b77772ac970cb3b291",
+        "artIsSource": true,
+        "qaJson": "pass · crop mask 0.0% · art OCR []",
+        "printedTextInArt": "yes — printed text remains outside the crop",
+        "removal": "none — crop route returns the original cover",
+        "frontPanelDiff": 0,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineLocalContrast": 2.08
+      },
+      {
+        "slug": "pride-and-prejudice",
+        "title": "Pride and Prejudice",
+        "route": "text-free crop",
+        "verdict": "pass",
+        "artSha256": "d756f85eb90bc4614c3c4a70695ef35096845a820c801a0cc587c1c21ebf55de",
+        "sourceSha256": "d756f85eb90bc4614c3c4a70695ef35096845a820c801a0cc587c1c21ebf55de",
+        "artIsSource": true,
+        "qaJson": "pass · crop mask 0.0% · art OCR []",
+        "printedTextInArt": "yes — printed text remains outside the crop",
+        "removal": "none — crop route returns the original cover",
+        "frontPanelDiff": 0,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineLocalContrast": 2.45
+      },
+      {
+        "slug": "rock-paper-scissors",
+        "title": "Rock Paper Scissors",
+        "route": "inpaint",
+        "verdict": "review",
+        "artSha256": "6311838ae8223b72caf1e4919052135dc1d9253c09149b7d6366227059d944f7",
+        "sourceSha256": "991e13d655f376cb90895e756f925f6ef05761a547d70a3db3985876e0b87a61",
+        "artIsSource": false,
+        "qaJson": "review · crop mask 57.0% · art OCR []",
+        "printedTextInArt": "no — removed by MI-GAN",
+        "removal": "MI-GAN inpaint output",
+        "frontPanelDiff": 22.2,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineLocalContrast": 7.09
+      },
+      {
+        "slug": "the-war-of-the-worlds",
+        "title": "The War of the Worlds",
+        "route": "inpaint",
+        "verdict": "pass",
+        "artSha256": "afe7379cf33861674cfedf027592c1cd22046d976649cdfca6fcc86c3e8ad8ef",
+        "sourceSha256": "139a2bdbcacbdbc3eccbcb56c53158c4411dc43f9d888f3e660e6e4a3ca0ea1b",
+        "artIsSource": false,
+        "qaJson": "pass · crop mask 6.2% · art OCR \"RA\" 0.61",
+        "printedTextInArt": "no — removed by MI-GAN",
+        "removal": "MI-GAN inpaint output",
+        "frontPanelDiff": 8.3,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineLocalContrast": 1.01
+      },
+      {
+        "slug": "the-hobbit",
+        "title": "The Hobbit",
+        "route": "inpaint",
+        "verdict": "pass",
+        "artSha256": "e0d1d9e7272fcd0be26e42bc4a31d4e426dc2624fc49ddb0f095fcceba018400",
+        "sourceSha256": "bd0868c0fb2fe6e7342246191e75ccc9dd8bbec1ad827ef65026ae867e16076a",
+        "artIsSource": false,
+        "qaJson": "pass · crop mask 22.6% · art OCR []",
+        "printedTextInArt": "no — removed by MI-GAN",
+        "removal": "MI-GAN inpaint output",
+        "frontPanelDiff": 8.7,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineLocalContrast": 10.49
+      }
+    ],
+    "panels": [
+      {
+        "panel": "Front",
+        "source": "source.jpg — the published cover",
+        "code": "renderer.js:569–586 · const simg = book._img.source || art",
+        "note": "The only panel drawn from the original cover. May still contain printed text; spec.md:180 requires it."
+      },
+      {
+        "panel": "Spine",
+        "source": "art.jpg at final.crop_box_work",
+        "code": "renderer.js:564 · drawArt() → artCropRect() → book._img.art",
+        "note": "Post-removal for inpaint; original cover for crop. Text-free on all six."
+      },
+      {
+        "panel": "Back",
+        "source": "art.jpg, blurred to 24×34",
+        "code": "renderer.js:549–561 · const art = book._img.art || book._img.source",
+        "note": "Post-removal for inpaint; original cover for crop. Deliberately blurred."
+      }
+    ],
+    "variant": {
+      "renderer": "renderWrapTextless(): book._img.source is swapped to book._img.art for the draw only; renderer code unchanged",
+      "screenshots": [
+        "textless-shot-390.png",
+        "textless-shot-320.png",
+        "textless-large-wrap-sheet.png"
+      ],
+      "measurement": "textless-measurements.json",
+      "books": [
+        {
+          "slug": "the-great-gatsby",
+          "frontPanelDiff": 0,
+          "spinePanelDiff": 0,
+          "backPanelDiff": 0,
+          "spineLocalContrast": 11.73
+        },
+        {
+          "slug": "dune",
+          "frontPanelDiff": 0,
+          "spinePanelDiff": 0,
+          "backPanelDiff": 0,
+          "spineLocalContrast": 2.08
+        },
+        {
+          "slug": "pride-and-prejudice",
+          "frontPanelDiff": 0,
+          "spinePanelDiff": 0,
+          "backPanelDiff": 0,
+          "spineLocalContrast": 2.45
+        },
+        {
+          "slug": "rock-paper-scissors",
+          "frontPanelDiff": 22.2,
+          "spinePanelDiff": 0,
+          "backPanelDiff": 0,
+          "spineLocalContrast": 7.09
+        },
+        {
+          "slug": "the-war-of-the-worlds",
+          "frontPanelDiff": 8.3,
+          "spinePanelDiff": 0,
+          "backPanelDiff": 0,
+          "spineLocalContrast": 1.01
+        },
+        {
+          "slug": "the-hobbit",
+          "frontPanelDiff": 8.7,
+          "spinePanelDiff": 0,
+          "backPanelDiff": 0,
+          "spineLocalContrast": 10.49
+        }
+      ]
+    },
+    "answers": {
+      "inputs": "Only the three **inpaint** books have a post-removal `art.jpg`. For the three **crop** books `art.jpg` is byte-identical to `source.jpg`: the crop route selects a text-free window but writes back the original cover, so the art still contains the printed cover text outside that window. The wrap's spine is drawn from the crop window, so the spine itself is text-free on all six; the front is not.",
+      "panels": "Shipped Wrap **already used `art.jpg` for the spine and the back**. Only the front is drawn from `source.jpg` (the published cover), which is also what the app spec requires (`spec.md:180`, front = the published cover, unchanged). So the spine — where the title-contrast failure lives — has always been the engine's post-removal image. The variant isolates the one panel that was not: the front.",
+      "warOfTheWorlds": "The **1.01:1 failure persists** in the textless variant. It is **renderer-drawn typography, not leftover cover text**. Proof: the spine panel is pixel-identical (Δ 0) between shipped Wrap and the variant; the cream title is set by `renderWrap` across the art's bright sky (band p90 231.8). QA finds no residual OCR in `art.jpg` apart from one low-confidence \"RA\" (0.61), and the printed title band was removed — the \"WORLDS\" that vanishes is the renderer's own type.",
+      "dune": "They are **leftover printed cover art, not renderer type**. Dune is a crop-route book: `art.jpg` is byte-identical to `source.jpg`, so no generative removal ever touched it. The letterforms survive inside the chosen crop window because the detector never boxed display type and the recogniser is blind to them. The variant is pixel-identical (Δ 0). The renderer's own \"DUNE\" title is 7.8 px; the giant letters are roughly 30 px wide and part of the bitmap.",
+      "verdict": "Using the post-removal art on every panel fixes **neither** problem. The War of the Worlds is a **typography/contrast** bug — it needs a scrim or contrast-aware ink (or Cloth/Hybrid). Dune is a **pipeline/detection** gap — it needs the crop moved off the display type, or Cloth; no ink change helps. The corrected ship answer is unchanged: Wrap is not shippable as-is for these six books, though four of six spines are fine. A fully textless front (the variant) also removes the cover title from the front of the three inpaint books, which is not the app's design."
+    }
+  },
+  "broken": [
+    "**Text clipped: none.** Every style's title fit ratio is ≤ 0.97 at 52 px; the renderer's min-size clamp never overflows.",
+    "**Unreadable at 33 px: The War of the Worlds (pass).** \"WORLDS\" is drawn at 1.01:1 over the bright sky; it disappears. Dune (2.05:1) and Pride (2.45:1) are below the 3:1 line but still readable.",
+    "**Wrong crop: none.** The rendered art matches the pipeline's own spine-2x on all six (mean abs RGB diff 2.6–4.9).",
+    "**Blank spine: none.** The thinnest is Gatsby at 11 px, still 99% non-dark. Textless is type-free but not blank.",
+    "**Giant decorative type: Dune.** The pipeline crop keeps the large DUNE letterforms; at 33 px they are the spine's dominant mark and compete with the real title.",
+    "**Seam lines: yes, at the front fold.** The spine is a crop from elsewhere on the cover, so it does not continue the published front. Front-fold deltas: Hobbit 18.0 (subtle), RPS 19.3 (subtle), Gatsby 29.7, Pride 34.3 (visible), Dune 46.7, War of the Worlds 48.7 (strong). Back folds are strong on five books because the back is deliberately blurred.",
+    "**Front-cover gutters: Dune.** A 0.558-aspect source cannot fill the 2:3 front panel, so the compositor leaves dark blurred bars about 13 px wide on each side of the front cover."
+  ],
+  "answers": {
+    "wrapShipDefault": false,
+    "wrapShipReason": "Not as-is. Four of the six spines work: Gatsby's rule strip plus type identifies the book, Pride reads as a warm portrait, Hobbit is the best in the set, and Rock Paper Scissors is legible even though it is the review case. The blocker is that the wrap's ink is chosen from the **average** art colour, not the pixels under the letter: The War of the Worlds passes QA yet its last word (\"WORLDS\") sits on the bright sky at **1.01:1** and disappears at 33 px; Dune (2.05:1) and Pride (2.45:1) are also under 3:1 locally. Dune additionally keeps the giant DUNE letterforms inside the crop, so the spine competes with its own title. A contrast-aware ink or a soft scrim behind the spine type would make Wrap shippable; the fold seam and front-cover gutters are detail-view issues, not shelf blockers.",
+    "saferAlternates": "**Cloth** is the safest review fallback: a uniform sampled field with foil type (5.3–12.6:1), no crop dependence, no seams — it is the spec's fallback for a reason. **Hybrid** is the best-looking safe alternate: an art window plus a measured paper label (10.9–11.3:1 on every book), so it keeps cover-derived art while guaranteeing legible type. Full-bleed (13.4–15.9:1) and Editorial (15.5:1) are legibility-safe but their rail covers 38–44% of a 52 px spine, so they read as type panels, not art spines.",
+    "biggestProblem": "The wrap picks one ink colour from the **average** backdrop and then draws it across art with a huge luminance range. On The War of the Worlds the cream title crosses the bright sky at 1.01:1 — \"WORLDS\" is effectively invisible at 33 px on a book the pipeline passed. The renderer's own contrast figure (5.0:1 vs the average) hides this. The runner-up is the hard fold: the spine is a crop from elsewhere on the cover, so it does not continue into the published front (front-fold deltas 18–49) and non-2:3 covers get dark gutters inside the front panel (Dune, 13 px each side).",
+    "perBook": {
+      "the-great-gatsby": "Ship. The crop is a clean white rule strip; the cream title type is what identifies the book (11.7:1 local).",
+      "dune": "Do not ship as-is. Giant DUNE letterforms survive in the crop and dominate the 33 px title; local contrast 2.05:1. Cloth or Hybrid.",
+      "pride-and-prejudice": "Ship with a note. Portrait strip is lovely; the cream title crosses a bright shoulder at 2.45:1, still readable but marginal at 33 px.",
+      "rock-paper-scissors": "Review path. Dark ink on snow is legible (7.1:1) but the strip does not identify the book; keep the note and Use Cloth.",
+      "the-war-of-the-worlds": "Do not ship as-is despite the pass. \"WORLDS\" is cream on the bright sky at 1.01:1 and vanishes at 33 px.",
+      "the-hobbit": "Ship. Black stripes, red sun, cream type at 10.5:1; the strongest wrap in the set."
+    }
+  },
+  "books": [
+    {
+      "slug": "the-great-gatsby",
+      "title": "The Great Gatsby",
+      "pages": 180,
+      "route": "text-free crop",
+      "pipelineVerdict": "pass",
+      "wrap": {
+        "spinePx": 11,
+        "spineMm": 10.2,
+        "sheetCss": "338x236",
+        "seam": {
+          "interiorDelta": 0,
+          "backFoldDelta": 110.3,
+          "frontFoldDelta": 29.7,
+          "backFold": "strong",
+          "frontFold": "visible"
+        },
+        "shipVerdict": "ship",
+        "note": "White rule strip; title type carries it. Local 11.7:1."
+      },
+      "styles": {
+        "wrap": {
+          "rendered": true,
+          "titlePx": 7.8,
+          "effectiveTitlePx33": 23.4,
+          "fitRatio": 0.741,
+          "contrast": 10.86,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Ship. Bland crop, but the type identifies the book and reads at 33 px.",
+          "lumaStd": 44.7,
+          "localContrast": 11.62,
+          "cropDelta": null
+        },
+        "hybrid": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.51,
+          "contrast": 11.3,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Ship. Cream paper label, 11.3:1; cleanest of the safe options.",
+          "lumaStd": 28.5,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "fullbleed": {
+          "rendered": true,
+          "titlePx": 9.4,
+          "effectiveTitlePx33": 5.97,
+          "fitRatio": 0.865,
+          "contrast": 13.36,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Legible 13.4:1, but the rail covers 38% of a 52 px spine.",
+          "lumaStd": 78.3,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "artonly": {
+          "rendered": true,
+          "titlePx": 0,
+          "effectiveTitlePx33": 0,
+          "fitRatio": 0,
+          "contrast": null,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "A white strip with rules: no identity at all.",
+          "lumaStd": 60.7,
+          "localContrast": null,
+          "cropDelta": 4.9
+        },
+        "cloth": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.554,
+          "contrast": 5.34,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Quiet charcoal cloth, 5.3:1; safe fallback.",
+          "lumaStd": 16.1,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "editorial": {
+          "rendered": true,
+          "titlePx": 9.2,
+          "effectiveTitlePx33": 5.84,
+          "fitRatio": 0.713,
+          "contrast": 15.53,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Dark rail plus art, 15.5:1; legible but generic.",
+          "lumaStd": 84.7,
+          "localContrast": null,
+          "cropDelta": null
+        }
+      }
+    },
+    {
+      "slug": "dune",
+      "title": "Dune",
+      "pages": 617,
+      "route": "text-free crop",
+      "pipelineVerdict": "pass",
+      "wrap": {
+        "spinePx": 33,
+        "spineMm": 32.1,
+        "sheetCss": "360x236",
+        "seam": {
+          "interiorDelta": 1,
+          "backFoldDelta": 51.3,
+          "frontFoldDelta": 46.7,
+          "backFold": "strong",
+          "frontFold": "strong"
+        },
+        "shipVerdict": "do not ship as-is",
+        "note": "Decorative DUNE letterforms dominate; small title at 2.05:1 local."
+      },
+      "styles": {
+        "wrap": {
+          "rendered": true,
+          "titlePx": 7.8,
+          "effectiveTitlePx33": 7.8,
+          "fitRatio": 0.195,
+          "contrast": 4.01,
+          "flags": [
+            "low-contrast"
+          ],
+          "measured": "Ink contrast under 3:1 against the actual pixels behind the type.",
+          "verdict": "Giant DUNE letterforms fill the spine; the small title competes with them and reads 2.05:1 against the band.",
+          "lumaStd": 54.4,
+          "localContrast": 2.08,
+          "cropDelta": null
+        },
+        "hybrid": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.34,
+          "contrast": 11.13,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Good: paper label keeps the title safe, art window keeps the orange.",
+          "lumaStd": 67.6,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "fullbleed": {
+          "rendered": true,
+          "titlePx": 9.4,
+          "effectiveTitlePx33": 5.97,
+          "fitRatio": 0.425,
+          "contrast": 14.62,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Bold and legible (14.6:1); the rail sits over the DUNE letterforms.",
+          "lumaStd": 50.5,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "artonly": {
+          "rendered": true,
+          "titlePx": 0,
+          "effectiveTitlePx33": 0,
+          "fitRatio": 0,
+          "contrast": null,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Recognisable Dune art, no title; decorative letters still enormous.",
+          "lumaStd": 61.5,
+          "localContrast": null,
+          "cropDelta": 3.8
+        },
+        "cloth": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.181,
+          "contrast": 7.75,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Brown cloth, 7.8:1; safe but unrelated to the cover.",
+          "lumaStd": 15.3,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "editorial": {
+          "rendered": true,
+          "titlePx": 9.2,
+          "effectiveTitlePx33": 5.84,
+          "fitRatio": 0.356,
+          "contrast": 15.53,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Legible, art + rail; the rail crops the letterforms.",
+          "lumaStd": 48.5,
+          "localContrast": null,
+          "cropDelta": null
+        }
+      }
+    },
+    {
+      "slug": "pride-and-prejudice",
+      "title": "Pride and Prejudice",
+      "pages": 432,
+      "route": "text-free crop",
+      "pipelineVerdict": "pass",
+      "wrap": {
+        "spinePx": 24,
+        "spineMm": 22.8,
+        "sheetCss": "351x236",
+        "seam": {
+          "interiorDelta": 7.3,
+          "backFoldDelta": 60.3,
+          "frontFoldDelta": 34.3,
+          "backFold": "strong",
+          "frontFold": "visible"
+        },
+        "shipVerdict": "ship with note",
+        "note": "Lovely portrait strip; cream title crosses a bright shoulder (2.45:1)."
+      },
+      "styles": {
+        "wrap": {
+          "rendered": true,
+          "titlePx": 7.8,
+          "effectiveTitlePx33": 10.73,
+          "fitRatio": 0.72,
+          "contrast": 5.4,
+          "flags": [
+            "low-contrast"
+          ],
+          "measured": "Ink contrast under 3:1 against the actual pixels behind the type.",
+          "verdict": "Ship with note: warm portrait, but the title crosses a bright shoulder at 2.45:1.",
+          "lumaStd": 51,
+          "localContrast": 2.45,
+          "cropDelta": null
+        },
+        "hybrid": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.519,
+          "contrast": 11.08,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Best of the set: paper label, 11.1:1, art keeps the faces.",
+          "lumaStd": 69.9,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "fullbleed": {
+          "rendered": true,
+          "titlePx": 9.4,
+          "effectiveTitlePx33": 5.97,
+          "fitRatio": 0.889,
+          "contrast": 14.99,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Art plus rail, 15:1; the rail covers the second figure.",
+          "lumaStd": 53,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "artonly": {
+          "rendered": true,
+          "titlePx": 0,
+          "effectiveTitlePx33": 0,
+          "fitRatio": 0,
+          "contrast": null,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Beautiful but anonymous at 52 px.",
+          "lumaStd": 47.6,
+          "localContrast": null,
+          "cropDelta": 3.3
+        },
+        "cloth": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.56,
+          "contrast": 9.36,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Warm brown cloth, 9.4:1; safe.",
+          "lumaStd": 20.8,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "editorial": {
+          "rendered": true,
+          "titlePx": 9.2,
+          "effectiveTitlePx33": 5.84,
+          "fitRatio": 0.718,
+          "contrast": 15.53,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "15.5:1, art + dark rail; loses the right-hand figure.",
+          "lumaStd": 53,
+          "localContrast": null,
+          "cropDelta": null
+        }
+      }
+    },
+    {
+      "slug": "rock-paper-scissors",
+      "title": "Rock Paper Scissors",
+      "pages": 320,
+      "route": "inpaint",
+      "pipelineVerdict": "review",
+      "wrap": {
+        "spinePx": 18,
+        "spineMm": 17.2,
+        "sheetCss": "345x236",
+        "seam": {
+          "interiorDelta": 10.3,
+          "backFoldDelta": 124.7,
+          "frontFoldDelta": 19.3,
+          "backFold": "strong",
+          "frontFold": "subtle"
+        },
+        "shipVerdict": "review / Cloth safer",
+        "note": "Legible dark ink on snow (7.1:1) but the strip does not identify the book."
+      },
+      "styles": {
+        "wrap": {
+          "rendered": true,
+          "titlePx": 7.8,
+          "effectiveTitlePx33": 14.3,
+          "fitRatio": 0.755,
+          "contrast": 8.9,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Legible dark ink on snow (7.1:1), but it reads as a textured strip, not Rock Paper Scissors. Keep the review note and Use Cloth.",
+          "lumaStd": 39,
+          "localContrast": 7.09,
+          "cropDelta": null
+        },
+        "hybrid": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.529,
+          "contrast": 11.3,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "The art window is snow; the paper label identifies it. Safest good-looking option.",
+          "lumaStd": 31.1,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "fullbleed": {
+          "rendered": true,
+          "titlePx": 9.4,
+          "effectiveTitlePx33": 5.97,
+          "fitRatio": 0.932,
+          "contrast": 13.61,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Legible rail over snow; still anonymous.",
+          "lumaStd": 71.6,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "artonly": {
+          "rendered": true,
+          "titlePx": 0,
+          "effectiveTitlePx33": 0,
+          "fitRatio": 0,
+          "contrast": null,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Snow texture with a red edge: no identity.",
+          "lumaStd": 55.7,
+          "localContrast": null,
+          "cropDelta": 4.9
+        },
+        "cloth": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.57,
+          "contrast": 5.86,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Grey-brown cloth, 5.9:1; safe fallback.",
+          "lumaStd": 17.4,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "editorial": {
+          "rendered": true,
+          "titlePx": 9.2,
+          "effectiveTitlePx33": 5.84,
+          "fitRatio": 0.743,
+          "contrast": 15.53,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Rail at 15.5:1 over snow; legible, anonymous.",
+          "lumaStd": 80.6,
+          "localContrast": null,
+          "cropDelta": null
+        }
+      }
+    },
+    {
+      "slug": "the-war-of-the-worlds",
+      "title": "The War of the Worlds",
+      "pages": 192,
+      "route": "inpaint",
+      "pipelineVerdict": "pass",
+      "wrap": {
+        "spinePx": 11,
+        "spineMm": 10.8,
+        "sheetCss": "338x236",
+        "seam": {
+          "interiorDelta": 4.7,
+          "backFoldDelta": 64.3,
+          "frontFoldDelta": 48.7,
+          "backFold": "strong",
+          "frontFold": "strong"
+        },
+        "shipVerdict": "do not ship as-is",
+        "note": "\"WORLDS\" is cream on the bright sky at 1.01:1 and vanishes at 33 px."
+      },
+      "styles": {
+        "wrap": {
+          "rendered": true,
+          "titlePx": 7.8,
+          "effectiveTitlePx33": 23.4,
+          "fitRatio": 0.839,
+          "contrast": 4.98,
+          "flags": [
+            "low-contrast"
+          ],
+          "measured": "Ink contrast under 3:1 against the actual pixels behind the type.",
+          "verdict": "The last word sits on the bright sky at 1.01:1 and disappears at 33 px. Pass verdict, unreadable title.",
+          "lumaStd": 67.6,
+          "localContrast": 1.01,
+          "cropDelta": null
+        },
+        "hybrid": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.602,
+          "contrast": 11.08,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Paper label, 11.1:1; the safest alternate and keeps the burning city.",
+          "lumaStd": 73.9,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "fullbleed": {
+          "rendered": true,
+          "titlePx": 8.8,
+          "effectiveTitlePx33": 5.58,
+          "fitRatio": 0.966,
+          "contrast": 15,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "15:1 rail; legible but the rail covers the right of the city.",
+          "lumaStd": 63,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "artonly": {
+          "rendered": true,
+          "titlePx": 0,
+          "effectiveTitlePx33": 0,
+          "fitRatio": 0,
+          "contrast": null,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Strong art, no title; recognisable at 52 px.",
+          "lumaStd": 64,
+          "localContrast": null,
+          "cropDelta": 3.8
+        },
+        "cloth": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.649,
+          "contrast": 9.05,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Warm brown cloth, 9.1:1; safe.",
+          "lumaStd": 21.5,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "editorial": {
+          "rendered": true,
+          "titlePx": 9.2,
+          "effectiveTitlePx33": 5.84,
+          "fitRatio": 0.803,
+          "contrast": 15.53,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "15.5:1 over art; legible.",
+          "lumaStd": 63.5,
+          "localContrast": null,
+          "cropDelta": null
+        }
+      }
+    },
+    {
+      "slug": "the-hobbit",
+      "title": "The Hobbit",
+      "pages": 310,
+      "route": "inpaint",
+      "pipelineVerdict": "pass",
+      "wrap": {
+        "spinePx": 17,
+        "spineMm": 16.7,
+        "sheetCss": "344x236",
+        "seam": {
+          "interiorDelta": 0,
+          "backFoldDelta": 18.3,
+          "frontFoldDelta": 18,
+          "backFold": "subtle",
+          "frontFold": "subtle"
+        },
+        "shipVerdict": "ship",
+        "note": "Best in the set: black stripes, red sun, cream type 10.5:1."
+      },
+      "styles": {
+        "wrap": {
+          "rendered": true,
+          "titlePx": 7.8,
+          "effectiveTitlePx33": 15.14,
+          "fitRatio": 0.423,
+          "contrast": 13.15,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Ship. Black stripes and red sun, cream type at 10.5:1; reads at 33 px.",
+          "lumaStd": 40.2,
+          "localContrast": 10.49,
+          "cropDelta": null
+        },
+        "hybrid": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.365,
+          "contrast": 10.9,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Cream label plus black art, 10.9:1; very good.",
+          "lumaStd": 93.1,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "fullbleed": {
+          "rendered": true,
+          "titlePx": 9.4,
+          "effectiveTitlePx33": 5.97,
+          "fitRatio": 0.492,
+          "contrast": 15.86,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Art plus rail, 15.9:1; the rail hides the mountains.",
+          "lumaStd": 33.4,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "artonly": {
+          "rendered": true,
+          "titlePx": 0,
+          "effectiveTitlePx33": 0,
+          "fitRatio": 0,
+          "contrast": null,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Recognisable art; no title.",
+          "lumaStd": 20.4,
+          "localContrast": null,
+          "cropDelta": 2.6
+        },
+        "cloth": {
+          "rendered": true,
+          "titlePx": 11.2,
+          "effectiveTitlePx33": 7.11,
+          "fitRatio": 0.362,
+          "contrast": 12.61,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "Very dark cloth, 12.6:1; nearly black, but legible.",
+          "lumaStd": 21.5,
+          "localContrast": null,
+          "cropDelta": null
+        },
+        "editorial": {
+          "rendered": true,
+          "titlePx": 9.2,
+          "effectiveTitlePx33": 5.84,
+          "fitRatio": 0.408,
+          "contrast": 15.53,
+          "flags": [],
+          "measured": "Legible, correctly cropped, no clipping.",
+          "verdict": "15.5:1; legible, but the dark rail merges with the black art.",
+          "lumaStd": 30.9,
+          "localContrast": null,
+          "cropDelta": null
+        }
+      }
+    }
+  ]
+}

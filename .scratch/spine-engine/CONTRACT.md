@@ -42,6 +42,9 @@ impl Engine {
 | `run.json` | existing v8-app schema, including `final.crop_box_work` |
 | `qa.json` | existing v8-app schema |
 
+`source.jpg` and `mask.png` are pipeline scratch. The app passes a scratch `out_dir` and promotes
+only the six runtime files into the book cache; see “Automatic queue” below.
+
 ## Tauri commands
 
 camelCase on the wire, like the rest of the app.
@@ -97,11 +100,58 @@ from `ApplicationInfo.nativeLibraryDir` (the proven `v8-android` path); Android
 to the native path before the first session. Production replaces the bundled
 copy with the auto-downloader; the extractor and cache layout stay.
 
+## Automatic queue
+
+```ts
+spineEnqueue(bookIds: number[]): Promise<void>   // idempotent; dedupes and skips cached
+spineQueue(): Promise<SpineQueueState>
+spinePause(paused: boolean): Promise<void>       // reader-open pause; manual generate still runs
+spineSetStyle(bookId: number, style: SpineStyle): Promise<void>
+```
+
+```ts
+type SpineStyle = "wrap" | "full-bleed" | "cloth";
+
+interface SpineQueueState {
+  running: boolean;
+  paused: boolean;
+  pending: number;
+  completed: number;
+  failed: number;
+  currentBookId: number | null;
+  stage: "art" | "text" | "check" | null;
+}
+```
+
+- The backend owns a single FIFO worker. Automatic jobs run one at a time;
+  `spine_generate` jumps the queue. Completed caches are skipped.
+- Events: `spine://queue` with `SpineQueueState` on every transition, and
+  `spine://progress` with `{ bookId, stage, index, total }` per stage.
+- Jobs survive process death: unfinished book ids are persisted and re-queued
+  on next launch. The engine-ready state queues jobs as "waiting" rather than
+  dropping them.
+- Per-book style persists in `books.spine_style` (migration 6), default
+  `wrap`. Deleting a book deletes the row and its cache.
+- Cache keeps only runtime files: `art.jpg`, `spine-2x.jpg`,
+  `fallback-spine.jpg`, `run.json`, `qa.json`, `artifact.json`. Do not store
+  `source.jpg` or `mask.png` in the app cache. Trim to **200 MB** by LRU
+  mtime after each completed job.
+- Pause while the reader is open. Resume on close.
+
 ## Frontend
 
-- Renderer styles (Wrap, Hybrid, Full-bleed, Textless, Cloth, Editorial) are
-  drawn in the WebView from `artDataUrl` + `cropBox`, ported from
-  `.scratch/spine-cover-art-prototype/app-renderers/`.
-- The shelf stays on the existing CSS spines for the test build. The Spine
-  Studio shows the wrap at large size and a 33 px spine strip.
-- Default style: **Wrap**.
+- Renderer styles: **Wrap, Full-bleed, Cloth** only. Delete the Hybrid,
+  Textless and Editorial implementations.
+- Wrap and Full-bleed draw from `artDataUrl` + `cropBox`; Cloth is
+  typographic. Default style: **Wrap**.
+- Full-bleed: title and author centred on both axes as one block, with a soft
+  gradient scrim. Two lines max, shrink to fit, never truncate mid-word.
+- RTL: detect the first strong character, set canvas `direction`, mirror
+  alignment, and cover it with a Hebrew fixture.
+- Activity chip: global "Preparing spines · n of m", plus a per-book state.
+  Hidden while the reader is open.
+- Automatic enqueue: after a download completes, after a scan adds books, on
+  first library-ready (backfill, low priority), and after any cover change
+  (cancel/replace the book's job).
+- The shelf stays on CSS spines until the generated spine is ready, then swaps.
+  A small marker shows a failed job until a later success.

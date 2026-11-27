@@ -1,0 +1,136 @@
+{
+  "captured": "2026-11-26T22:39:54.457Z",
+  "harness": "textless variant: art.jpg substituted for the front panel; renderer unchanged",
+  "errors": [],
+  "results": {
+    "captured": "2026-11-26T22:39:49.118Z",
+    "books": [
+      {
+        "slug": "the-great-gatsby",
+        "title": "The Great Gatsby",
+        "route": "text-free crop",
+        "verdict": "pass",
+        "artSha256": "5c0f4b343955a9ba00d6d98a725f7cc531170c7cb933587bd7a7ee283098f989",
+        "sourceSha256": "5c0f4b343955a9ba00d6d98a725f7cc531170c7cb933587bd7a7ee283098f989",
+        "artIsSource": true,
+        "frontPanelDiff": 0,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineContrast": {
+          "ink": "#241a12",
+          "palAvg": "#cfcece",
+          "p10": 213.9,
+          "p50": 229.9,
+          "p90": 232.1,
+          "avgContrast": 10.86,
+          "localContrast": 11.73
+        }
+      },
+      {
+        "slug": "dune",
+        "title": "Dune",
+        "route": "text-free crop",
+        "verdict": "pass",
+        "artSha256": "79f0cdb0bdaa0063a028904c81ee54f9d807502fbbefe9b77772ac970cb3b291",
+        "sourceSha256": "79f0cdb0bdaa0063a028904c81ee54f9d807502fbbefe9b77772ac970cb3b291",
+        "artIsSource": true,
+        "frontPanelDiff": 0,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineContrast": {
+          "ink": "#241a12",
+          "palAvg": "#bb6244",
+          "p10": 78.5,
+          "p50": 108.4,
+          "p90": 231.1,
+          "avgContrast": 4.01,
+          "localContrast": 2.08
+        }
+      },
+      {
+        "slug": "pride-and-prejudice",
+        "title": "Pride and Prejudice",
+        "route": "text-free crop",
+        "verdict": "pass",
+        "artSha256": "d756f85eb90bc4614c3c4a70695ef35096845a820c801a0cc587c1c21ebf55de",
+        "sourceSha256": "d756f85eb90bc4614c3c4a70695ef35096845a820c801a0cc587c1c21ebf55de",
+        "artIsSource": true,
+        "frontPanelDiff": 0,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineContrast": {
+          "ink": "#f2e6c9",
+          "palAvg": "#6e5842",
+          "p10": 23,
+          "p50": 117.4,
+          "p90": 147.9,
+          "avgContrast": 5.4,
+          "localContrast": 2.45
+        }
+      },
+      {
+        "slug": "rock-paper-scissors",
+        "title": "Rock Paper Scissors",
+        "route": "inpaint",
+        "verdict": "review",
+        "artSha256": "6311838ae8223b72caf1e4919052135dc1d9253c09149b7d6366227059d944f7",
+        "sourceSha256": "991e13d655f376cb90895e756f925f6ef05761a547d70a3db3985876e0b87a61",
+        "artIsSource": false,
+        "frontPanelDiff": 22.2,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineContrast": {
+          "ink": "#241a12",
+          "palAvg": "#d0b5b5",
+          "p10": 167,
+          "p50": 212.1,
+          "p90": 234,
+          "avgContrast": 8.9,
+          "localContrast": 7.09
+        }
+      },
+      {
+        "slug": "the-war-of-the-worlds",
+        "title": "The War of the Worlds",
+        "route": "inpaint",
+        "verdict": "pass",
+        "artSha256": "afe7379cf33861674cfedf027592c1cd22046d976649cdfca6fcc86c3e8ad8ef",
+        "sourceSha256": "139a2bdbcacbdbc3eccbcb56c53158c4411dc43f9d888f3e660e6e4a3ca0ea1b",
+        "artIsSource": false,
+        "frontPanelDiff": 8.3,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineContrast": {
+          "ink": "#f2e6c9",
+          "palAvg": "#745e37",
+          "p10": 37.8,
+          "p50": 76.1,
+          "p90": 231.8,
+          "avgContrast": 4.98,
+          "localContrast": 1.01
+        }
+      },
+      {
+        "slug": "the-hobbit",
+        "title": "The Hobbit",
+        "route": "inpaint",
+        "verdict": "pass",
+        "artSha256": "e0d1d9e7272fcd0be26e42bc4a31d4e426dc2624fc49ddb0f095fcceba018400",
+        "sourceSha256": "bd0868c0fb2fe6e7342246191e75ccc9dd8bbec1ad827ef65026ae867e16076a",
+        "artIsSource": false,
+        "frontPanelDiff": 8.7,
+        "spinePanelDiff": 0,
+        "backPanelDiff": 0,
+        "spineContrast": {
+          "ink": "#f2e6c9",
+          "palAvg": "#3e1012",
+          "p10": 0,
+          "p50": 37,
+          "p90": 49.1,
+          "avgContrast": 13.15,
+          "localContrast": 10.49
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Textless wrap variant — art.jpg on every art panel</title>
+<link rel="stylesheet" href="harness.css">
+<style>
+  .pair { display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; margin-top: 14px; }
+  .pane h3 { margin: 0 0 2px; color: #d8cab0; font: 400 16px/1.2 "EB Garamond", Georgia, serif; }
+  .pane p { margin: 0 0 8px; color: #a99a80; font-size: 10px; line-height: 1.35; }
+  .pane canvas { display: block; width: 100%; height: auto; background: #050403; box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
+  .pane .striprow { display: flex; gap: 10px; align-items: flex-end; margin-top: 8px; }
+  .pane .striprow .cap { color: #a99a80; font-size: 9px; line-height: 1.3; }
+  .facts2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 2px 14px; margin: 8px 0 0; font-size: 10px; }
+  .facts2 div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.06); padding: 2px 0; }
+  .facts2 dt { color: #a99a80; }
+  .facts2 dd { margin: 0; text-align: right; }
+  .hash { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; color: #bfae90; word-break: break-all; }
+  .tag { display: inline-block; padding: 1px 5px; border: 1px solid rgba(255,255,255,.18); border-radius: 3px; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+  .tag--ink { color: #e6c27a; border-color: rgba(230,194,122,.4); }
+  .tag--crop { color: #a9c4e2; border-color: rgba(169,196,226,.4); }
+  .verdictline { margin: 10px 0 0; padding: 8px 10px; border-left: 2px solid #c9a267; background: rgba(201,162,103,.07); font-size: 11px; line-height: 1.45; }
+  .verdictline.bad { border-color: #e08f7e; background: rgba(224,143,126,.08); }
+  .verdictline.warn { border-color: #e6c27a; background: rgba(230,194,122,.07); }
+  @media (min-width: 760px) { .pair { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+</style>
+</head>
+<body>
+<header class="head">
+  <p class="kicker">Variant test · post-removal art on every art panel</p>
+  <h1>Wrap with <em>art.jpg</em> on the front, spine and back</h1>
+  <p class="lede">The shipped Wrap draws the published cover on the front and the engine's
+    <code>art.jpg</code> on the spine and back. This page renders the same Wrap with
+    <code>art.jpg</code> substituted for the front art too (typography unchanged), which is the
+    closest match to "the generative model removed the text, then wrap". For the three
+    <b>crop</b> books <code>art.jpg</code> is byte-identical to <code>source.jpg</code>, so the
+    variant is the same picture; only the three <b>inpaint</b> books change.</p>
+  <dl class="facts">
+    <div><dt>Books</dt><dd>6</dd></div>
+    <div><dt>Crop route</dt><dd>3</dd></div>
+    <div><dt>Inpaint route</dt><dd>3</dd></div>
+    <div><dt>Panels from art</dt><dd>3 / 3</dd></div>
+  </dl>
+</header>
+<main id="books"><p class="loading">Rendering variant…</p></main>
+<footer class="foot">Input hashes are of the evidence <code>art.jpg</code> actually drawn. Renderer code unchanged; the front reference is swapped for the draw only.</footer>
+<script src="renderer-export.js"></script>
+<script src="books.js"></script>
+<script src="harness.js"></script>
+<script src="textless.js"></script>
+</body>
+</html>

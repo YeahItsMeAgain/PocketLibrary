@@ -24,7 +24,11 @@ Numbered in dependency order. Work the frontier: a ticket is ready when every bl
 | 06 | [Wrap composition and 33 px shelf spine](issues/06-wrap-composition-and-shelf.md) | 05 |
 | 07 | [Automatic generation, queue and cache](issues/07-auto-generate-queue.md) | 06 |
 | 08 | [Android device pass](issues/08-android-device-pass.md) | 07 |
-| 09 | [Release 0.1.8](issues/09-release-0-1-8.md) | 08 |
+| 09 | [Release with the model downloader](issues/09-release-0-1-8.md) — deferred | 08 |
+| 10 | [Automatic queue, progress and failure](issues/10-automatic-spine-queue.md) | 07 |
+| 11 | [Wrap, Full-bleed, Cloth, contrast and RTL](issues/11-reduced-styles-full-bleed-rtl.md) | 06 |
+| 12 | [Per-book style, 200 MB cache and backfill](issues/12-per-book-style-cache-backfill.md) | 10, 11 |
+| 13 | [Release 0.1.8 with the automatic queue](issues/13-release-0-1-8-automatic-queue.md) | 08, 12 |
 
 ## Decision record
 
@@ -43,5 +47,9 @@ production code:
 
 ## Open decisions
 
-- Auto-generate on import versus on demand only.
 - Export formats for v1: PNG only, or PNG + PDF.
+
+Settled in the latest grilling round (see “Settled — automatic flow” in [spec.md](spec.md)):
+automatic generation on every cover-producing path, three styles, the progress chip and pause,
+one-shot retry, per-book `spine_style`, a 200 MB runtime-only cache, the backfill, RTL, and 0.1.8
+shipping bundled models.
