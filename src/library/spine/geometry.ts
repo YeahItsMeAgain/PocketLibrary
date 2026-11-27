@@ -15,42 +15,105 @@ export const SPINE_H = 236;
 export const SPINE_STRIP_SIZE = { width: SPINE_W, height: SPINE_H } as const;
 
 /**
- * Where the type sits on a real-book spine. The same bands are used by Wrap
- * and Full-bleed, so switching styles moves the background only.
+ * The original app-renderer prototype geometry, restored.
  *
- * The title run is centred in the upper third, the author run in the lower
- * third, and a publisher mark closes the base. The middle third is left to the
- * art, which is what makes a shelf read as books rather than posters.
+ * The title is not confined to a third: it gets the whole run between the head
+ * and the author, and shrinks only to fit. The author sits below it and the
+ * provenance/colophon mark closes the base. Full-bleed additionally has the
+ * prototype's 20 px smoked rail, inset 2 px from the fore edge.
  */
-export const SPINE_TYPE_LAYOUT = {
-  titleTop: 16,
-  titleBottom: 78,
-  authorTop: 158,
-  authorBottom: 210,
-  colophonRuleY: 217,
-  colophonBaseY: 227,
+export const SPINE_RAIL = {
+  width: 20,
+  inset: 2,
+  head: 27,
+  tail: 27,
+  ruleY: 20,
+  borderWidth: 0.6,
 } as const;
 
-/** The measured bands, for tests and callers that do not want to guess. */
+export const SPINE_TYPE_LAYOUT = {
+  wrap: {
+    head: 25,
+    tail: 25,
+    /** Extra space between the title run and the author run. */
+    gap: 14,
+    titleMaxSize: 7.8,
+    titleMinSize: 2.6,
+    authorMaxSize: 3.6,
+    authorMinSize: 2.4,
+  },
+  fullBleed: {
+    head: 27,
+    tail: 27,
+    gap: 8,
+    titleMaxSize: 9.4,
+    titleMinSize: 2.8,
+    authorMaxSize: 4.2,
+    authorMinSize: 2.8,
+  },
+} as const;
+
+export type SpineTypeStyle = "wrap" | "full-bleed";
+
+/**
+ * The dynamic title and author bands for one spine. `authorLength` is the
+ * measured author run, because the title takes every pixel the author does not
+ * need. Callers should use this rather than hard-coded thirds.
+ */
+export function spineTypeBands(style: SpineTypeStyle, authorLength: number) {
+  const spec =
+    style === "wrap"
+      ? SPINE_TYPE_LAYOUT.wrap
+      : SPINE_TYPE_LAYOUT.fullBleed;
+  const titleLength = Math.max(
+    0,
+    SPINE_H - spec.head - spec.tail - authorLength - spec.gap,
+  );
+  return {
+    ...spec,
+    titleTop: spec.head,
+    titleLength,
+    titleBottom: spec.head + titleLength,
+    titleCenter: spec.head + titleLength / 2,
+    authorBottom: SPINE_H - spec.tail,
+    authorTop: SPINE_H - spec.tail - authorLength,
+    authorCenter: SPINE_H - spec.tail - authorLength / 2,
+  };
+}
+
+/**
+ * The static prototype table, for tests and callers that need the reserved
+ * spans without a book. `titleSpan` is the whole run available before the
+ * author is measured.
+ */
 export function spineTypeZones() {
-  const {
-    titleTop,
-    titleBottom,
-    authorTop,
-    authorBottom,
-    colophonRuleY,
-    colophonBaseY,
-  } = SPINE_TYPE_LAYOUT;
+  const railX = SPINE_W - SPINE_RAIL.width - SPINE_RAIL.inset;
+  const wrap = SPINE_TYPE_LAYOUT.wrap;
+  const fullBleed = SPINE_TYPE_LAYOUT.fullBleed;
   return {
     height: SPINE_H,
-    titleTop,
-    titleBottom,
-    titleCenter: (titleTop + titleBottom) / 2,
-    authorTop,
-    authorBottom,
-    authorCenter: (authorTop + authorBottom) / 2,
-    colophonRuleY,
-    colophonBaseY,
+    width: SPINE_W,
+    rail: {
+      ...SPINE_RAIL,
+      x: railX,
+      centerX: railX + SPINE_RAIL.width / 2,
+      length: SPINE_H - SPINE_RAIL.head - SPINE_RAIL.tail,
+    },
+    wrap: {
+      ...wrap,
+      titleSpan: SPINE_H - wrap.head - wrap.tail - wrap.gap,
+      authorSpan: SPINE_H - wrap.tail,
+    },
+    fullBleed: {
+      ...fullBleed,
+      titleSpan: SPINE_H - fullBleed.head - fullBleed.tail - fullBleed.gap,
+      authorSpan: SPINE_H - fullBleed.tail,
+    },
+    /** The Wrap colophon rule and "PL" line at the base. */
+    colophonRuleY: 217,
+    colophonBaseY: 227,
+    /** The Full-bleed provenance diamond (prototype: SPINE_H - 16). */
+    provenanceY: SPINE_H - 16,
   };
 }
 

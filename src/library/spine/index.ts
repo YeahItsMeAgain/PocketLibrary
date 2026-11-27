@@ -23,12 +23,14 @@ export {
   contrast,
   fallbackCrop,
   readableInk,
+  SPINE_RAIL,
   SPINE_STRIP_SIZE,
   SPINE_TYPE_LAYOUT,
+  spineTypeBands,
   spineTypeZones,
   wrapGeometry,
 } from "./geometry";
-export type { Palette, RenderBook } from "./geometry";
+export type { Palette, RenderBook, SpineTypeStyle } from "./geometry";
 export { textDirection } from "./text";
 export type { RenderMeta, SpineBlock } from "./text";
 
@@ -79,5 +81,5 @@ export function renderSpineStrip(
   ctx.fillStyle = "rgba(0,0,0,.16)";
   ctx.fillRect(0, 0, SPINE_W, SPINE_H);
   spineEdges(ctx, SPINE_W, SPINE_H);
-  return drawSpineType(ctx, book, SPINE_W, 0);
+  return drawSpineType(ctx, book, SPINE_W, 0, "wrap");
 }

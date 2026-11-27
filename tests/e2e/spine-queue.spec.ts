@@ -341,7 +341,7 @@ test("a cover change queues the book again", async ({ page }) => {
     .toBeGreaterThanOrEqual(2);
 });
 
-test("Wrap and Full-bleed run the type down the spine in the upper and lower thirds", async ({
+test("Wrap and Full-bleed fill the spine run with the title and put the author below", async ({
   page,
 }) => {
   await boot(page, {
@@ -379,26 +379,25 @@ test("Wrap and Full-bleed run the type down the spine in the upper and lower thi
     await expect(canvas).toHaveAttribute("data-style", style);
     const meta = await readMeta();
     expect(meta.run).toBe("vertical");
-    // Full-bleed is 52 px wide; the 320-page Wrap spine is 18 px.
-    expect(meta.cx).toBeCloseTo(style === "full-bleed" ? 26 : 9, 0);
-    // The whole title run sits in the upper third, the author in the lower.
+    // Full-bleed type centres on the 20 px rail; the 320-page Wrap spine is
+    // 18 px wide, so its type centres at 9.
+    expect(meta.cx).toBeCloseTo(style === "full-bleed" ? 40 : 9, 0);
+    // The title now occupies the majority of the 236 px run, not a third.
+    expect(meta.titleHeight).toBeGreaterThan(236 / 2);
+    expect(meta.titleHeight).toBeGreaterThan(meta.authorHeight * 2);
     expect(meta.titleCy - meta.titleHeight / 2).toBeGreaterThan(0);
-    expect(meta.titleCy + meta.titleHeight / 2).toBeLessThanOrEqual(236 / 3);
-    expect(meta.authorCy - meta.authorHeight / 2).toBeGreaterThanOrEqual(
-      (236 * 2) / 3,
+    // The author sits below the title, above the base mark.
+    expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
+      meta.authorCy - meta.authorHeight / 2,
     );
-    expect(meta.authorCy).toBeGreaterThan((236 * 2) / 3);
+    expect(meta.authorCy).toBeGreaterThan(meta.titleCy);
+    expect(meta.authorCy + meta.authorHeight / 2).toBeLessThan(
+      meta.colophonY,
+    );
     // The run is taller than it is wide, so it reads down the spine.
     expect(meta.titleHeight).toBeGreaterThan(meta.titleWidth);
     expect(meta.titleLines).toBeLessThanOrEqual(2);
     expect(meta.authorLines).toBe(1);
-    // Title and author do not collide, and neither reaches the colophon.
-    expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
-      meta.authorCy - meta.authorHeight / 2,
-    );
-    expect(meta.authorCy + meta.authorHeight / 2).toBeLessThan(
-      meta.colophonY,
-    );
     expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
   }
 
@@ -442,7 +441,9 @@ test("a long title settles into at most two lines inside the title band", async 
     });
   expect(meta.lines).toBeLessThanOrEqual(2);
   expect(meta.fs).toBeGreaterThan(1);
-  expect(meta.height).toBeLessThanOrEqual(78 - 16);
+  // The run is the whole span above the author, not a 62 px third.
+  expect(meta.height).toBeLessThanOrEqual(236 - 54 - 8);
+  expect(meta.height).toBeGreaterThan(90);
   expect(meta.width).toBeLessThan(52 - 8);
 });
 
@@ -500,13 +501,19 @@ test("a Hebrew title sets canvas direction without mirroring the glyphs", async 
     const data = (element as HTMLCanvasElement).dataset;
     return {
       titleCy: Number(data.titleCy),
+      titleHeight: Number(data.titleHeight),
       authorCy: Number(data.authorCy),
       authorHeight: Number(data.authorHeight),
       colophonY: Number(data.colophonY),
     };
   });
-  expect(hebrewMeta.titleCy).toBeLessThan(236 / 3);
-  expect(hebrewMeta.authorCy).toBeGreaterThan((236 * 2) / 3);
+  // Hebrew keeps the same long run down the spine; the title is not reversed
+  // and still owns most of the type block, with the author below it.
+  expect(hebrewMeta.titleHeight).toBeGreaterThan(hebrewMeta.authorHeight * 2);
+  expect(hebrewMeta.titleHeight).toBeGreaterThan(236 * 0.4);
+  expect(hebrewMeta.titleCy + hebrewMeta.titleHeight / 2).toBeLessThan(
+    hebrewMeta.authorCy - hebrewMeta.authorHeight / 2,
+  );
   expect(hebrewMeta.authorCy + hebrewMeta.authorHeight / 2).toBeLessThan(
     hebrewMeta.colophonY,
   );
@@ -538,6 +545,35 @@ test("a warm cache paints the wall without queueing or generating", async ({
   expect(await generateCalls(page)).toBe(0);
   expect(await queuedIds(page)).toEqual([]);
   expect(await cachedStripCalls(page)).toBe(1);
+});
+
+test("a cached strip in the book payload paints the wall without hydration events", async ({
+  page,
+}) => {
+  // The shell stamps `spineDataUrl` into `list_books`. With no artifact map and
+  // no completed queue event, only that payload can paint the strip.
+  const cached = spineStrip("#3b2233");
+  await boot(page, {
+    books: [book(1, { spineDataUrl: cached })],
+    spine: { backfillPending: false, queueStartPaused: true, artifacts: {} },
+  });
+
+  const spine = page.getByTestId("spine").first();
+  const image = spine.getByTestId("spine-generated");
+  await expect(image).toBeVisible();
+  await expect(image).toHaveAttribute("src", cached);
+  await expect(spine).toHaveAttribute("data-spine-state", "waiting");
+
+  const artifactIds = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __POCKETLIBRARY_SPINE_ARTIFACT_IDS__?: number[];
+        }
+      ).__POCKETLIBRARY_SPINE_ARTIFACT_IDS__ ?? [],
+  );
+  expect(artifactIds).toEqual([]);
+  expect(await generateCalls(page)).toBe(0);
 });
 
 test("mergeCachedStrips seeds state once and never enqueues", async ({

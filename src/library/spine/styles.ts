@@ -13,6 +13,7 @@ import {
   panelCrop,
   readableInk,
   SPINE_H,
+  SPINE_RAIL,
   SPINE_W,
   wrapGeometry,
 } from "./geometry";
@@ -42,6 +43,36 @@ function provenance(book: RenderBook): "original" | "reconstructed" | "fallback"
   return "original";
 }
 
+/**
+ * The prototype's smoked Full-bleed rail: 20 px wide, inset 2 px, a thin cream
+ * border, and a rule under the head. It is painted before the type so the
+ * contrast guard samples the rail composite; a local scrim can then raise the
+ * ink alpha without touching the art.
+ */
+function drawFullBleedRail(
+  ctx: CanvasRenderingContext2D,
+  book: RenderBook,
+) {
+  const palette = paletteFor(book);
+  const railX = SPINE_W - SPINE_RAIL.width - SPINE_RAIL.inset;
+  const railTop = SPINE_RAIL.head;
+  const railHeight = SPINE_H - SPINE_RAIL.head - SPINE_RAIL.tail;
+  ctx.save();
+  ctx.fillStyle = mix("#0c0d10", palette.avg, 0.1);
+  ctx.globalAlpha = 0.88;
+  ctx.fillRect(railX, railTop, SPINE_RAIL.width, railHeight);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "rgba(240,226,196,.24)";
+  ctx.lineWidth = SPINE_RAIL.borderWidth;
+  ctx.strokeRect(
+    railX + 0.3,
+    railTop + 0.3,
+    SPINE_RAIL.width - 0.6,
+    railHeight - 0.6,
+  );
+  ctx.restore();
+}
+
 export function drawFullBleed(
   ctx: CanvasRenderingContext2D,
   book: RenderBook,
@@ -50,7 +81,8 @@ export function drawFullBleed(
   vignette(ctx, SPINE_W, SPINE_H);
   spineEdges(ctx, SPINE_W, SPINE_H);
   ctx.direction = book.direction;
-  const meta = drawSpineType(ctx, book, SPINE_W, 0);
+  drawFullBleedRail(ctx, book);
+  const meta = drawSpineType(ctx, book, SPINE_W, 0, "full-bleed");
   grain(ctx, SPINE_W, SPINE_H, 0.03);
   return meta;
 }
@@ -291,10 +323,16 @@ export function drawWrap(
   );
   ctx.textAlign = "left";
 
-  // Wrap and Full-bleed share one type layout; only the art treatment around
-  // it differs. The ink is chosen from the pixels under the type, not the
-  // whole art average, and the scrim stays inside the spine.
-  const typeMeta = drawSpineType(ctx, book, geometry.spineW, spineX);
+  // Wrap and Full-bleed share one measured type block, but the Full-bleed
+  // layout owns the rail. The ink is chosen from the pixels under the type,
+  // and the scrim stays inside the spine (or inside the rail).
+  const typeMeta = drawSpineType(
+    ctx,
+    book,
+    geometry.spineW,
+    spineX,
+    "wrap",
+  );
 
   const cardX = geometry.bleed + geometry.frontW * 0.12;
   const cardY = geometry.height * 0.13;

@@ -169,6 +169,39 @@ test("generate shows honest progress, then a result with three style canvases", 
   await expect(page.getByTestId("spine-strip-canvas")).toBeVisible();
 });
 
+test("the restored prototype type fills the spine run in the studio", async ({
+  page,
+}) => {
+  await boot(page);
+  await generate(page);
+  await page.getByTestId("spine-style-full-bleed").click();
+  const canvas = page.getByTestId("spine-preview-canvas");
+  await expect(canvas).toHaveAttribute("data-style", "full-bleed");
+  const meta = await canvas.evaluate((element) => {
+    const data = (element as HTMLCanvasElement).dataset;
+    return {
+      cx: Number(data.blockCx),
+      titleCy: Number(data.titleCy),
+      titleHeight: Number(data.titleHeight),
+      titleLines: Number(data.titleLines),
+      authorCy: Number(data.authorCy),
+      authorHeight: Number(data.authorHeight),
+      colophonY: Number(data.colophonY),
+      contrast: Number(data.contrast),
+    };
+  });
+  // Full-bleed centres on the 20 px rail at x = 40 and the title owns most of
+  // the 236 px height, with the author below it.
+  expect(meta.cx).toBeCloseTo(40, 0);
+  expect(meta.titleHeight).toBeGreaterThan(236 / 2);
+  expect(meta.titleLines).toBe(1);
+  expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
+    meta.authorCy - meta.authorHeight / 2,
+  );
+  expect(meta.authorCy + meta.authorHeight / 2).toBeLessThan(meta.colophonY);
+  expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
+});
+
 test("switching Wrap and Cloth re-renders the preview without generating again", async ({
   page,
 }) => {

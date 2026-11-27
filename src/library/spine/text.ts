@@ -4,9 +4,16 @@
  * colophon and the RTL-aware run direction.
  */
 
-import type { RenderBook } from "./geometry";
-import { clamp, luminance, SPINE_H, spineTypeZones } from "./geometry";
-import { drawArt } from "./draw";
+import type { RenderBook, SpineTypeStyle } from "./geometry";
+import {
+  clamp,
+  luminance,
+  SPINE_H,
+  SPINE_RAIL,
+  spineTypeBands,
+  spineTypeZones,
+} from "./geometry";
+import { drawProvenance } from "./draw";
 
 export const SERIF = '"Iowan Old Style", Palatino, "Book Antiqua", Georgia, serif';
 export const SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
@@ -50,10 +57,25 @@ function samplePixels(
   const fallback: RegionStats = { min: 0.2, max: 0.2, avg: 0.2 };
   try {
     const canvas = ctx.canvas;
-    const sx = clamp(Math.floor(x), 0, Math.max(0, canvas.width - 1));
-    const sy = clamp(Math.floor(y), 0, Math.max(0, canvas.height - 1));
-    const sw = clamp(Math.ceil(width), 1, canvas.width - sx);
-    const sh = clamp(Math.ceil(height), 1, canvas.height - sy);
+    // CSS coordinates are transformed by the canvas DPR scale; getImageData
+    // wants the backing-store pixels.
+    const transform = ctx.getTransform();
+    const scaleX = Math.abs(transform.a) || 1;
+    const scaleY = Math.abs(transform.d) || 1;
+    const dx = transform.e;
+    const dy = transform.f;
+    const sx = clamp(
+      Math.floor(x * scaleX + dx),
+      0,
+      Math.max(0, canvas.width - 1),
+    );
+    const sy = clamp(
+      Math.floor(y * scaleY + dy),
+      0,
+      Math.max(0, canvas.height - 1),
+    );
+    const sw = clamp(Math.ceil(width * scaleX), 1, canvas.width - sx);
+    const sh = clamp(Math.ceil(height * scaleY), 1, canvas.height - sy);
     const data = ctx.getImageData(sx, sy, sw, sh).data;
     let min = 1;
     let max = 0;
@@ -78,31 +100,6 @@ function samplePixels(
   } catch {
     return fallback;
   }
-}
-
-/** Sample the art as it will appear in a `destW` x `destH` panel. */
-function sampleArtRegion(
-  book: RenderBook,
-  destW: number,
-  destH: number,
-  rx: number,
-  ry: number,
-  rw: number,
-  rh: number,
-): RegionStats {
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(destW));
-  canvas.height = Math.max(1, Math.round(destH));
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return { min: 0.2, max: 0.2, avg: 0.2 };
-  drawArt(ctx, book, 0, 0, canvas.width, canvas.height);
-  return samplePixels(
-    ctx,
-    rx * (canvas.width / destW),
-    ry * (canvas.height / destH),
-    rw * (canvas.width / destW),
-    rh * (canvas.height / destH),
-  );
 }
 
 /**
@@ -189,9 +186,9 @@ export interface RenderMeta {
   contrast: number;
   /** The union of the title and author runs. */
   block: { x: number; y: number; width: number; height: number };
-  /** The title run in the upper third. */
+  /** The title run filling the spine, from the head to the author. */
   title: SpineBlock;
-  /** The author run in the lower third, or null when the book has no author. */
+  /** The author run below the title, or null when the book has no author. */
   author: SpineBlock | null;
   /** The rule and initials at the base. */
   colophon: { x: number; y: number; width: number; height: number };
@@ -487,46 +484,91 @@ interface SpineTypeLayout {
   titleBlock: SpineBlock;
   authorBlock: SpineBlock | null;
   block: { x: number; y: number; width: number; height: number };
-  /** Local scrim bands, leaving the middle third to the art. */
+  /** The scrim band behind the title; inside the rail for Full-bleed. */
   titleBand: { x: number; y: number; width: number; height: number };
+  /** The scrim band behind the author and the base mark. */
   authorBand: { x: number; y: number; width: number; height: number };
+}
+
+/**
+ * The prototype voice: a tracked sans title on both styles, with the author in
+ * a lighter sans below it. Full-bleed gets the slightly wider track of the
+ * smoked rail; Wrap is a touch tighter.
+ */
+function typeVoice(style: SpineTypeStyle) {
+  return style === "full-bleed"
+    ? {
+        title: { family: SANS, weight: 600, track: 0.06 },
+        author: { family: SANS, weight: 500, track: 0.1 },
+      }
+    : {
+        title: { family: SANS, weight: 600, track: 0.05 },
+        author: { family: SANS, weight: 500, track: 0.12 },
+      };
 }
 
 function layoutSpineType(
   book: RenderBook,
   width: number,
+  style: SpineTypeStyle,
 ): SpineTypeLayout {
-  const zones = spineTypeZones();
-  const inner = Math.max(6, width - 8);
-  const title = fitVertical(String(book.title || "Untitled"), {
-    family: SERIF,
-    weight: 600,
-    track: 0.012,
-    thick: inner,
-    length: zones.titleBottom - zones.titleTop,
-    maxSize: 12.5,
-    minSize: 1.8,
-  });
+  const voice = typeVoice(style);
+  const fullBleed = style === "full-bleed";
+  const spec = fullBleed
+    ? spineTypeZones().fullBleed
+    : spineTypeZones().wrap;
+  // Full-bleed type owns the rail; Wrap type centres on the spine.
+  const cx = fullBleed ? spineTypeZones().rail.centerX : width / 2;
+  const titleThick = fullBleed ? SPINE_RAIL.width - 3.4 : width - 3;
+  const authorThick = fullBleed ? SPINE_RAIL.width - 4 : width - 3;
+
   const authorText = String(book.author || "").trim();
-  // Keep the hierarchy: on a narrow Wrap spine a long title can shrink below
-  // the author's cap, and the author must not come out larger than the title.
-  const authorMax = Math.min(5.6, Math.max(2.6, title.fs));
   const author = authorText
     ? fitVertical(authorText, {
-        family: SANS,
-        weight: 500,
-        track: 0.07,
-        thick: inner,
-        length: zones.authorBottom - zones.authorTop,
-        maxSize: authorMax,
-        minSize: 1.8,
+        family: voice.author.family,
+        weight: voice.author.weight,
+        track: voice.author.track,
+        thick: authorThick,
+        length: 48,
+        maxSize: spec.authorMaxSize,
+        minSize: spec.authorMinSize,
         stack: false,
       })
     : null;
-  const cx = width / 2;
+  const authorLength =
+    (author
+      ? Math.max(
+          ...author.lines.map(
+            (line) =>
+              metrics(
+                line,
+                voice.author.family,
+                voice.author.weight,
+                voice.author.track,
+              ).adv,
+          ),
+        ) * author.fs
+      : 0);
+
+  // The title takes every pixel the author does not need (prototype:
+  // H - 50 - authorLen - 14 for Wrap; H - 54 - authorLen - 8 for Full-bleed).
+  const bands = spineTypeBands(style, authorLength);
+  const title = fitVertical(
+    String(book.title || "Untitled").toUpperCase(),
+    {
+      family: voice.title.family,
+      weight: voice.title.weight,
+      track: voice.title.track,
+      thick: titleThick,
+      length: bands.titleLength,
+      maxSize: spec.titleMaxSize,
+      minSize: spec.titleMinSize,
+    },
+  );
+
   const titleBlock: SpineBlock = {
     x: cx,
-    y: zones.titleCenter,
+    y: bands.titleCenter,
     width: title.thickness,
     height: title.length,
     fs: title.fs,
@@ -535,9 +577,9 @@ function layoutSpineType(
   const authorBlock: SpineBlock | null = author
     ? {
         x: cx,
-        y: zones.authorCenter,
+        y: bands.authorCenter,
         width: author.thickness,
-        height: author.length,
+        height: authorLength,
         fs: author.fs,
         lines: author.lines.length,
       }
@@ -546,11 +588,25 @@ function layoutSpineType(
   const bottom = authorBlock
     ? authorBlock.y + authorBlock.height / 2
     : titleBlock.y + titleBlock.height / 2;
+  const bandX = fullBleed ? spineTypeZones().rail.x + 1 : 0;
+  const bandWidth = fullBleed ? SPINE_RAIL.width - 2 : width;
+  const railTop = SPINE_RAIL.head;
+  const railBottom = SPINE_H - SPINE_RAIL.tail;
+  const titleRunTop = bands.titleCenter - title.length / 2;
+  const titleBandTop = Math.max(fullBleed ? railTop + 1 : 0, titleRunTop - 2);
+  const titleBandBottom = Math.min(
+    fullBleed ? railBottom - 1 : SPINE_H,
+    titleRunTop + title.length + 2,
+  );
+  const authorBandTop = Math.max(fullBleed ? railTop + 1 : 0, bands.authorTop - 2);
+  const authorBandBottom = fullBleed
+    ? railBottom - 1
+    : spineTypeZones().colophonBaseY + 8;
   return {
     title,
     author,
-    titleCenter: zones.titleCenter,
-    authorCenter: zones.authorCenter,
+    titleCenter: bands.titleCenter,
+    authorCenter: bands.authorCenter,
     titleBlock,
     authorBlock,
     block: {
@@ -560,17 +616,16 @@ function layoutSpineType(
       height: bottom - top,
     },
     titleBand: {
-      x: 0,
-      y: Math.max(0, zones.titleTop - 10),
-      width,
-      height: zones.titleBottom + 10 - Math.max(0, zones.titleTop - 10),
+      x: bandX,
+      y: titleBandTop,
+      width: bandWidth,
+      height: titleBandBottom - titleBandTop,
     },
     authorBand: {
-      x: 0,
-      y: Math.max(0, zones.authorTop - 10),
-      width,
-      height:
-        zones.colophonBaseY + 8 - Math.max(0, zones.authorTop - 10),
+      x: bandX,
+      y: authorBandTop,
+      width: bandWidth,
+      height: authorBandBottom - authorBandTop,
     },
   };
 }
@@ -580,8 +635,22 @@ function drawColophon(
   width: number,
   ink: string,
   direction: "ltr" | "rtl",
+  style: SpineTypeStyle,
+  kind: "original" | "reconstructed" | "fallback",
 ) {
   const zones = spineTypeZones();
+  if (style === "full-bleed") {
+    // Prototype: a rule under the head and a provenance diamond at the base.
+    const railX = zones.rail.x;
+    ctx.save();
+    ctx.direction = direction;
+    ctx.fillStyle = ink;
+    ctx.globalAlpha = 0.55;
+    ctx.fillRect(railX + 4, SPINE_RAIL.ruleY, SPINE_RAIL.width - 8, 0.7);
+    ctx.restore();
+    drawProvenance(ctx, zones.rail.centerX, zones.provenanceY, kind);
+    return;
+  }
   const cx = width / 2;
   const ruleWidth = Math.min(24, Math.max(5, width - 14));
   ctx.save();
@@ -613,22 +682,24 @@ function drawColophon(
 
 /**
  * Draw the real-book type for Wrap and Full-bleed. The art and its crop are
- * untouched; only the measured ink and the scrim behind it are added.
+ * untouched; only the measured ink and the scrim behind it are added. The
+ * Full-bleed rail must already be painted by the style so the guard samples
+ * the rail composite rather than the uncovered art.
  */
 export function drawSpineType(
   ctx: CanvasRenderingContext2D,
   book: RenderBook,
   width: number,
   offsetX: number,
+  style: SpineTypeStyle = "wrap",
 ): RenderMeta {
-  const layout = layoutSpineType(book, width);
+  const layout = layoutSpineType(book, width, style);
+  const voice = typeVoice(style);
   type Band = { x: number; y: number; width: number; height: number };
   const sample = (band: Band) =>
-    sampleArtRegion(
-      book,
-      width,
-      SPINE_H,
-      band.x,
+    samplePixels(
+      ctx,
+      offsetX + band.x,
       band.y,
       band.width,
       band.height,
@@ -639,8 +710,9 @@ export function drawSpineType(
     width: band.width,
     height: band.height,
   });
-  // Two guards keep the middle third of the art visible: one band carries the
-  // title, the other the author and the publisher mark.
+  // Two local guards: one band carries the title, the other the author and the
+  // base mark. On Full-bleed both bands sit inside the smoked rail, so a scrim
+  // only ever darkens the rail and never the art.
   const titleGuard = guardInk(
     ctx,
     sample(layout.titleBand),
@@ -653,9 +725,9 @@ export function drawSpineType(
     layout.titleCenter,
     titleGuard.ink,
     {
-      family: SERIF,
-      weight: 600,
-      track: 0.012,
+      family: voice.title.family,
+      weight: voice.title.weight,
+      track: voice.title.track,
       direction: book.direction,
     },
   );
@@ -674,9 +746,9 @@ export function drawSpineType(
       layout.authorCenter,
       authorGuard.ink,
       {
-        family: SANS,
-        weight: 500,
-        track: 0.07,
+        family: voice.author.family,
+        weight: voice.author.weight,
+        track: voice.author.track,
         direction: book.direction,
       },
     );
@@ -684,9 +756,21 @@ export function drawSpineType(
   }
   ctx.save();
   ctx.translate(offsetX, 0);
-  drawColophon(ctx, width, authorGuard.ink, book.direction);
+  drawColophon(
+    ctx,
+    width,
+    authorGuard.ink,
+    book.direction,
+    style,
+    book.verdict === "fallback"
+      ? "fallback"
+      : book.route === "inpaint"
+        ? "reconstructed"
+        : "original",
+  );
   ctx.restore();
   const zones = spineTypeZones();
+  const fullBleed = style === "full-bleed";
   return {
     direction: book.direction,
     scrim: titleGuard.usedScrim || authorGuard.usedScrim,
@@ -694,12 +778,19 @@ export function drawSpineType(
     block: layout.block,
     title: layout.titleBlock,
     author: layout.authorBlock,
-    colophon: {
-      x: width / 2,
-      y: zones.colophonRuleY,
-      width: Math.min(24, Math.max(5, width - 14)),
-      height: zones.colophonBaseY - zones.colophonRuleY + 4,
-    },
+    colophon: fullBleed
+      ? {
+          x: zones.rail.centerX,
+          y: zones.provenanceY,
+          width: 4.4,
+          height: 4.4,
+        }
+      : {
+          x: width / 2,
+          y: zones.colophonRuleY,
+          width: Math.min(24, Math.max(5, width - 14)),
+          height: zones.colophonBaseY - zones.colophonRuleY + 4,
+        },
     vertical: true,
   };
 }

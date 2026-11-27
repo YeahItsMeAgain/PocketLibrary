@@ -71,17 +71,33 @@ test("wrapGeometry scales the spine with page count", () => {
   expect(wrapGeometry(2000).spineW).toBe(40);
 });
 
-test("the real-book bands put the title up top and the author low", () => {
+test("the restored prototype bands give the title the run, not a third", () => {
   const zones = spineTypeZones();
   const height = SPINE_STRIP_SIZE.height;
-  expect(zones.titleTop).toBeGreaterThan(0);
-  expect(zones.titleBottom).toBeLessThanOrEqual(height / 3);
-  expect(zones.titleCenter).toBeLessThan(height / 3);
-  expect(zones.authorTop).toBeGreaterThanOrEqual((height * 2) / 3);
-  expect(zones.authorCenter).toBeGreaterThan((height * 2) / 3);
-  expect(zones.titleBottom).toBeLessThan(zones.authorTop);
-  // The author never reaches the colophon rule at the base.
-  expect(zones.authorBottom).toBeLessThan(zones.colophonRuleY);
+  expect(height).toBe(236);
+  // Full-bleed keeps the original 20 px smoked rail, inset 2 px.
+  expect(zones.rail.width).toBe(20);
+  expect(zones.rail.inset).toBe(2);
+  expect(zones.rail.x).toBe(30);
+  expect(zones.rail.length).toBe(236 - 27 - 27);
+  // The prototype's exact margins and gaps.
+  expect(zones.wrap.head).toBe(25);
+  expect(zones.wrap.tail).toBe(25);
+  expect(zones.wrap.gap).toBe(14);
+  expect(zones.fullBleed.head).toBe(27);
+  expect(zones.fullBleed.tail).toBe(27);
+  expect(zones.fullBleed.gap).toBe(8);
+  expect(zones.wrap.titleMaxSize).toBe(7.8);
+  expect(zones.fullBleed.titleMaxSize).toBe(9.4);
+  // The title run is the whole span above the author, and it is most of the
+  // spine rather than a single third.
+  expect(zones.wrap.titleSpan).toBe(236 - 50 - 14);
+  expect(zones.fullBleed.titleSpan).toBe(236 - 54 - 8);
+  expect(zones.wrap.titleSpan).toBeGreaterThan(height / 2);
+  expect(zones.fullBleed.titleSpan).toBeGreaterThan(height / 2);
+  // The author sits below the title and never reaches the base mark.
+  expect(zones.wrap.authorSpan).toBeLessThan(zones.colophonRuleY);
+  expect(zones.fullBleed.authorSpan).toBeLessThan(zones.provenanceY);
   expect(zones.colophonRuleY).toBeLessThan(zones.colophonBaseY);
   expect(zones.colophonBaseY).toBeLessThan(height);
 });
