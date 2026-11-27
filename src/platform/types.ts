@@ -137,6 +137,14 @@ export interface SpineArtifact {
   qaJson: unknown;
 }
 
+/** One shelf-ready strip projected from the on-disk cache. */
+export interface SpineCachedStrip {
+  bookId: number;
+  verdict: SpineVerdict;
+  /** 52 x 236 strip; `data:image/jpeg;base64,...`. */
+  spineDataUrl: string;
+}
+
 /** Mirrors the shell's `SpineStatus`. */
 export interface SpineStatus {
   models: "ready" | "bundled" | "missing" | "error";
@@ -664,6 +672,11 @@ export interface Platform {
   spineGenerate(bookId: number): Promise<SpineArtifact>;
   /** Load an existing result without running the pipeline; `null` if none. */
   spineArtifact(bookId: number): Promise<SpineArtifact | null>;
+  /**
+   * Project every cached spine for the wall. Scans the cache only: never runs
+   * inference and never hashes a cover.
+   */
+  spineCachedStrips(): Promise<SpineCachedStrip[]>;
   /** Whether the required model bundle is installed and usable. */
   spineStatus(): Promise<SpineStatus>;
   /** Queue books for automatic preparation; dedupes and skips cached. */

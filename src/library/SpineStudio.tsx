@@ -220,6 +220,9 @@ export function SpineStudio({
         if (!alive) return;
         if (artifact) {
           setState({ kind: "result", artifact });
+          // Reading a cached result also repairs the wall: an entry loaded
+          // here is the same strip the shelf should show.
+          noteReady(bookId, artifact);
           if (artifact.verdict === "fallback") setStyle("cloth");
         } else {
           setState({ kind: "idle" });
@@ -237,7 +240,7 @@ export function SpineStudio({
     return () => {
       alive = false;
     };
-  }, [bookId, initialStyle]);
+  }, [bookId, initialStyle, noteReady]);
 
   useEffect(() => {
     // A queued job that finishes while the sheet is open should appear without

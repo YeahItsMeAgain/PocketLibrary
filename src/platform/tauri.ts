@@ -44,6 +44,7 @@ import type {
   SearchPage,
   Shelf,
   SpineArtifact,
+  SpineCachedStrip,
   SpineProgress,
   SpineQueueState,
   SpineStatus,
@@ -191,6 +192,8 @@ export function createTauriPlatform(call: Invoke): Platform {
       call<SpineArtifact>("spine_generate", { bookId }),
     spineArtifact: (bookId) =>
       call<SpineArtifact | null>("spine_artifact", { bookId }),
+    spineCachedStrips: () =>
+      call<SpineCachedStrip[]>("spine_cached_strips"),
     spineStatus: () => call<SpineStatus>("spine_status"),
     spineEnqueue: (bookIds) =>
       call<void>("spine_enqueue", { bookIds }),

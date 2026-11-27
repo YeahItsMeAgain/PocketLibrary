@@ -122,6 +122,28 @@ function pauseCalls(page: Page): Promise<boolean[]> {
   );
 }
 
+function generateCalls(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __POCKETLIBRARY_SPINE_GENERATE_CALLS__?: number;
+        }
+      ).__POCKETLIBRARY_SPINE_GENERATE_CALLS__ ?? 0,
+  );
+}
+
+function cachedStripCalls(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __POCKETLIBRARY_SPINE_CACHED_STRIP_CALLS__?: number;
+        }
+      ).__POCKETLIBRARY_SPINE_CACHED_STRIP_CALLS__ ?? 0,
+  );
+}
+
 function queueEvents(page: Page): Promise<
   Array<{ event: "queue" | "progress"; payload: unknown }>
 > {
@@ -382,6 +404,80 @@ test("a Hebrew title sets canvas direction without mirroring the glyphs", async 
     (element) => getComputedStyle(element).transform,
   );
   expect(transform).toBe("none");
+});
+
+test("a warm cache paints the wall without queueing or generating", async ({
+  page,
+}) => {
+  const cached = artifact({ bookId: 1 });
+  await boot(page, {
+    spine: {
+      backfillPending: false,
+      artifacts: { 1: cached },
+    },
+  });
+
+  const spine = page.getByTestId("spine").first();
+  const image = spine.getByTestId("spine-generated");
+  await expect(image).toBeVisible();
+  await expect(image).toHaveAttribute("src", cached.spineDataUrl);
+  await expect(spine).toHaveAttribute("data-spine-state", "ready");
+  expect(await generateCalls(page)).toBe(0);
+  expect(await queuedIds(page)).toEqual([]);
+  expect(await cachedStripCalls(page)).toBe(1);
+});
+
+test("mergeCachedStrips seeds state once and never enqueues", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const result = await page.evaluate(async () => {
+    const { mergeCachedStrips } = await import(
+      "/src/library/spineActivity.tsx"
+    );
+    const strips = [
+      {
+        bookId: 1,
+        verdict: "pass" as const,
+        spineDataUrl: "data:image/jpeg;base64,AA==",
+      },
+      {
+        bookId: 2,
+        verdict: "fallback" as const,
+        spineDataUrl: "data:image/jpeg;base64,BB==",
+      },
+    ];
+    const first = mergeCachedStrips({}, {}, strips, new Set());
+    const hydrated = new Set(first.added);
+    const second = mergeCachedStrips(
+      first.spines,
+      first.jobs,
+      strips,
+      hydrated,
+    );
+    return {
+      added: first.added,
+      passSpine: first.spines[1],
+      passJob: first.jobs[1]?.state,
+      fallbackSpine: first.spines[2],
+      fallbackJob: first.jobs[2]?.state,
+      secondAdded: second.added,
+      sameSpines: second.spines === first.spines,
+      sameJobs: second.jobs === first.jobs,
+    };
+  });
+
+  expect(result).toEqual({
+    added: [1, 2],
+    passSpine: "data:image/jpeg;base64,AA==",
+    passJob: "ready",
+    fallbackSpine: undefined,
+    fallbackJob: "ready",
+    secondAdded: [],
+    sameSpines: true,
+    sameJobs: true,
+  });
 });
 
 test("the shelf swaps to the generated spine when ready", async ({ page }) => {

@@ -50,6 +50,7 @@ import type {
   SearchQuery,
   Shelf,
   SpineArtifact,
+  SpineCachedStrip,
   SpineCropBox,
   SpineProgress,
   SpineProgressListener,
@@ -848,6 +849,15 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     (
       window as unknown as { __POCKETLIBRARY_SPINE_STATUS_CALLS__?: number }
     ).__POCKETLIBRARY_SPINE_STATUS_CALLS__ = spineStatusCalls;
+  };
+  let spineCachedStripCalls = 0;
+  const noteSpineCachedStrips = () => {
+    spineCachedStripCalls += 1;
+    (
+      window as unknown as {
+        __POCKETLIBRARY_SPINE_CACHED_STRIP_CALLS__?: number;
+      }
+    ).__POCKETLIBRARY_SPINE_CACHED_STRIP_CALLS__ = spineCachedStripCalls;
   };
 
   /* --------------------------------------------------- mock spine queue */
@@ -2305,6 +2315,16 @@ export function createMockPlatform(config: MockConfig = {}): Platform {
     spineArtifact: async (bookId) => {
       const artifact = spineArtifacts.get(bookId);
       return artifact ? { ...artifact } : null;
+    },
+    spineCachedStrips: async () => {
+      noteSpineCachedStrips();
+      return [...spineArtifacts.values()].map(
+        (artifact): SpineCachedStrip => ({
+          bookId: artifact.bookId,
+          verdict: artifact.verdict,
+          spineDataUrl: artifact.spineDataUrl,
+        }),
+      );
     },
     spineStatus: async () => {
       noteSpineStatus();

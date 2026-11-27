@@ -316,7 +316,23 @@ function AppShell() {
 
   const initialLoadStarted = useRef(false);
   const spineBackfillStarted = useRef(false);
+  const spineHydratedStarted = useRef(false);
   const enqueueSpines = spineActivity.enqueue;
+  const hydrateSpines = spineActivity.hydrate;
+
+  useEffect(() => {
+    // Seed the wall from the cache as soon as the library is ready. This is
+    // independent of `backfillPending`: a warm cache has no queue work left,
+    // so the worker never emits a completion for it.
+    if (status?.state !== "ready" || spineHydratedStarted.current) return;
+    spineHydratedStarted.current = true;
+    void platform
+      .spineCachedStrips()
+      .then((strips) => hydrateSpines(strips))
+      .catch(() => {
+        // A cold or unreadable cache is not a wall failure; jobs fill in.
+      });
+  }, [status?.state, hydrateSpines]);
 
   useEffect(() => {
     // The shell queues the existing library once per model bundle and reports

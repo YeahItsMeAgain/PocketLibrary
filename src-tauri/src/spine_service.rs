@@ -10,11 +10,12 @@
 //! Nothing here touches the network. Models come from `spine_assets`, which
 //! extracts the APK assets on first use and sets `ORT_DYLIB_PATH`.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::time::SystemTime;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
@@ -23,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use pocketlibrary_core::spine_cache::{SpineCache, cache_key as spine_cache_key};
+use pocketlibrary_core::spine_cache::{ARTIFACT_FILE, SpineCache, cache_key as spine_cache_key};
 use pocketlibrary_core::{Api, ApiError, Book};
 use pocketlibrary_spine::{BookInput, Engine, Models, SPINE_H, SPINE_W, Stage};
 
@@ -56,6 +57,18 @@ pub struct SpineArtifact {
     pub pages_approximate: bool,
     pub run_json: Value,
     pub qa_json: Value,
+}
+
+/// One shelf-ready strip projected from a complete cache entry. The wall only
+/// needs the verdict and the 52 x 236 image, so this wire shape stays small.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpineCachedStrip {
+    pub book_id: i64,
+    /// "pass" | "review" | "fallback"
+    pub verdict: String,
+    /// `data:image/jpeg;base64,...`, exactly 52 x 236.
+    pub spine_data_url: String,
 }
 
 /// The v8 pipeline's `final.crop_box_work`, expressed for the wire.
@@ -216,6 +229,56 @@ impl SpineService {
             return Ok(None);
         };
         Ok(self.cache.read(&prepared.dir))
+    }
+
+    /// Project every complete cache entry into a shelf strip. This is the
+    /// launch fast path: it scans `spine/books/*/artifact.json` directly, so it
+    /// never runs inference and never hashes a cover. Corrupt entries, and
+    /// entries whose strip cannot be decoded, are skipped.
+    ///
+    /// A book can own more than one key (a changed cover keeps the old entry
+    /// until the trim); the most recently written artifact wins.
+    pub fn cached_strips(&self) -> Vec<SpineCachedStrip> {
+        let Ok(entries) = fs::read_dir(self.cache.books_dir()) else {
+            return Vec::new();
+        };
+        let mut latest: BTreeMap<i64, (SystemTime, SpineCachedStrip)> = BTreeMap::new();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = entry.file_name();
+            if name.to_string_lossy().starts_with('.') {
+                // Hidden staging directories are not complete entries.
+                continue;
+            }
+            if !entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false) {
+                continue;
+            }
+            let Some(artifact) = self.cache.read::<SpineArtifact>(&path) else {
+                continue;
+            };
+            let Some(spine_data_url) = projected_strip(&path, &artifact) else {
+                eprintln!(
+                    "pocketlibrary spine cache: cannot project strip in {}",
+                    path.display()
+                );
+                continue;
+            };
+            let modified = fs::metadata(path.join(ARTIFACT_FILE))
+                .and_then(|meta| meta.modified())
+                .unwrap_or(SystemTime::UNIX_EPOCH);
+            let strip = SpineCachedStrip {
+                book_id: artifact.book_id,
+                verdict: artifact.verdict,
+                spine_data_url,
+            };
+            match latest.get(&strip.book_id) {
+                Some((seen, _)) if *seen > modified => {}
+                _ => {
+                    latest.insert(strip.book_id, (modified, strip));
+                }
+            }
+        }
+        latest.into_values().map(|(_, strip)| strip).collect()
     }
 
     /// Resolve the model bundle once and report it. Never builds the engine.
@@ -508,13 +571,40 @@ fn spine_data_url(path: &Path) -> Result<String, ApiError> {
     let image = image::open(path)
         .map_err(|error| cache_error(format!("decode {}: {error}", path.display())))?
         .to_rgb8();
-    let spine = image::imageops::resize(&image, SPINE_W, SPINE_H, FilterType::Nearest);
+    encode_spine_strip(&image)
+}
+
+/// A complete entry that has lost `spine-2x.jpg` can still be projected from
+/// the strip already stored in its artifact.
+fn spine_data_url_from_artifact(data_url: &str) -> Result<String, ApiError> {
+    let encoded = data_url
+        .strip_prefix("data:image/jpeg;base64,")
+        .unwrap_or(data_url);
+    let bytes = STANDARD
+        .decode(encoded)
+        .map_err(|error| cache_error(format!("decode cached spine: {error}")))?;
+    let image = image::load_from_memory(&bytes)
+        .map_err(|error| cache_error(format!("read cached spine image: {error}")))?
+        .to_rgb8();
+    encode_spine_strip(&image)
+}
+
+/// The shelf contract is one 52 x 236 JPEG, whichever file it came from.
+fn encode_spine_strip(image: &image::RgbImage) -> Result<String, ApiError> {
+    let spine = image::imageops::resize(image, SPINE_W, SPINE_H, FilterType::Nearest);
     let mut bytes = Vec::new();
     let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, 92);
     encoder
         .encode_image(&spine)
         .map_err(|error| cache_error(format!("encode spine: {error}")))?;
     Ok(format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
+}
+
+/// Prefer the runtime file; fall back to the strip stored in the artifact.
+fn projected_strip(dir: &Path, artifact: &SpineArtifact) -> Option<String> {
+    spine_data_url(&dir.join("spine-2x.jpg"))
+        .or_else(|_| spine_data_url_from_artifact(&artifact.spine_data_url))
+        .ok()
 }
 
 fn bundle_bytes(paths: &SpineModelPaths) -> u64 {
@@ -727,6 +817,108 @@ mod tests {
         let absent = temp.path().join("gone.jpg");
         let error = require_cover(3, Some(&absent)).expect_err("cover file absent");
         assert_eq!(error.code, "cover_missing");
+    }
+
+    fn set_modified(path: &Path, secs: u64) {
+        let modified = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(secs);
+        fs::File::options()
+            .write(true)
+            .open(path)
+            .expect("open for mtime")
+            .set_modified(modified)
+            .expect("set mtime");
+    }
+
+    /// Write a complete cache entry: runtime files in a staging dir, then the
+    /// artifact and its strip in the entry directory the cache scan reads.
+    fn write_cached_entry(cache: &SpineCache, key: &str, book_id: i64, verdict: &str) -> PathBuf {
+        let staged = cache.staged_dir(key);
+        fixture(&staged);
+        let mut artifact = artifact_from_dir(&staged, book_id).expect("artifact");
+        artifact.verdict = verdict.to_owned();
+        let dir = cache.entry_dir(key);
+        cache.write(&dir, &artifact).expect("write artifact");
+        fs::copy(staged.join("spine-2x.jpg"), dir.join("spine-2x.jpg")).expect("copy spine");
+        dir
+    }
+
+    fn decode_spine(strip: &SpineCachedStrip) -> image::RgbImage {
+        let bytes = STANDARD
+            .decode(
+                strip
+                    .spine_data_url
+                    .strip_prefix("data:image/jpeg;base64,")
+                    .expect("data url prefix"),
+            )
+            .expect("base64 strip");
+        image::load_from_memory(&bytes)
+            .expect("decode strip")
+            .to_rgb8()
+    }
+
+    #[test]
+    fn cached_strips_project_complete_entries_and_skip_corrupt_ones() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cache = SpineCache::new(temp.path());
+        write_cached_entry(&cache, "pass", 1, "pass");
+        write_cached_entry(&cache, "review", 2, "review");
+        write_cached_entry(&cache, "fallback", 3, "fallback");
+
+        let corrupt = cache.entry_dir("corrupt");
+        fs::create_dir_all(&corrupt).expect("corrupt dir");
+        fs::write(corrupt.join(ARTIFACT_FILE), "{ not json").expect("corrupt artifact");
+
+        // A complete artifact whose strip is neither on disk nor a valid URL
+        // cannot be projected and must not reach the wall.
+        let unprojectable = cache.entry_dir("unprojectable");
+        let mut artifact = cache
+            .read::<SpineArtifact>(&cache.entry_dir("pass"))
+            .expect("read pass artifact");
+        artifact.book_id = 9;
+        artifact.spine_data_url = "not a data url".to_owned();
+        cache
+            .write(&unprojectable, &artifact)
+            .expect("write unprojectable");
+
+        // A lost `spine-2x.jpg` still projects from the stored artifact.
+        let repaired = write_cached_entry(&cache, "repaired", 4, "pass");
+        fs::remove_file(repaired.join("spine-2x.jpg")).expect("drop strip file");
+
+        let service = SpineService::new(temp.path().to_path_buf());
+        let strips = service.cached_strips();
+        let ids: Vec<i64> = strips.iter().map(|strip| strip.book_id).collect();
+        assert_eq!(ids, vec![1, 2, 3, 4], "corrupt and unprojectable dropped");
+
+        assert_eq!(strips[0].verdict, "pass");
+        assert_eq!(strips[1].verdict, "review");
+        assert_eq!(strips[2].verdict, "fallback");
+        for strip in &strips {
+            let spine = decode_spine(strip);
+            assert_eq!((spine.width(), spine.height()), (SPINE_W, SPINE_H));
+        }
+    }
+
+    #[test]
+    fn cached_strips_dedupe_by_book_and_prefer_the_latest_artifact() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let cache = SpineCache::new(temp.path());
+        let older = write_cached_entry(&cache, "older", 5, "pass");
+        let newer = write_cached_entry(&cache, "newer", 5, "review");
+        set_modified(&older.join(ARTIFACT_FILE), 10);
+        set_modified(&newer.join(ARTIFACT_FILE), 20);
+
+        let service = SpineService::new(temp.path().to_path_buf());
+        let strips = service.cached_strips();
+        assert_eq!(strips.len(), 1, "one strip per book id");
+        assert_eq!(strips[0].book_id, 5);
+        assert_eq!(strips[0].verdict, "review", "latest artifact wins");
+    }
+
+    #[test]
+    fn cached_strips_are_empty_without_a_cache_directory() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let service = SpineService::new(temp.path().to_path_buf());
+        assert!(service.cached_strips().is_empty());
     }
 
     #[test]

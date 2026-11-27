@@ -12,6 +12,7 @@ import {
 import {
   platform,
   type SpineArtifact,
+  type SpineCachedStrip,
   type SpineQueueState,
   type SpineStage,
 } from "../platform";
@@ -42,6 +43,51 @@ export interface SpineActivityValue {
   readerClosed(): void;
   /** Record a manual generation or a known artifact as the book's result. */
   noteReady(bookId: number, artifact?: SpineArtifact | null): void;
+  /**
+   * Seed the wall from cached strips. Never enqueues work, and ignores books
+   * that are already hydrated, so a repeated call is a no-op.
+   */
+  hydrate(strips: SpineCachedStrip[]): void;
+}
+
+/**
+ * Merge cached strips into the wall state. Pure: already-hydrated ids are
+ * ignored, fallback verdicts keep the Cloth spine, and no book is enqueued.
+ * Reusing the same `hydrated` set makes a second call a no-op.
+ */
+export function mergeCachedStrips(
+  spines: Record<number, string>,
+  jobs: Record<number, SpineBookState>,
+  strips: readonly SpineCachedStrip[],
+  hydrated: ReadonlySet<number>,
+): {
+  spines: Record<number, string>;
+  jobs: Record<number, SpineBookState>;
+  added: number[];
+} {
+  let nextSpines = spines;
+  let nextJobs = jobs;
+  const added: number[] = [];
+  for (const strip of strips) {
+    const { bookId } = strip;
+    if (hydrated.has(bookId) || added.includes(bookId)) continue;
+    added.push(bookId);
+    if (strip.verdict === "fallback") {
+      if (bookId in nextSpines) {
+        if (nextSpines === spines) nextSpines = { ...spines };
+        delete nextSpines[bookId];
+      }
+    } else if (nextSpines[bookId] !== strip.spineDataUrl) {
+      if (nextSpines === spines) nextSpines = { ...spines };
+      nextSpines[bookId] = strip.spineDataUrl;
+    }
+    const job = nextJobs[bookId];
+    if (!job || job.state === "waiting") {
+      if (nextJobs === jobs) nextJobs = { ...jobs };
+      nextJobs[bookId] = { state: "ready" };
+    }
+  }
+  return { spines: nextSpines, jobs: nextJobs, added };
 }
 
 export const STAGE_LABELS: Record<SpineStage, string> = {
@@ -71,6 +117,7 @@ const fallback: SpineActivityValue = {
     void platform.spinePause(false).catch(() => {});
   },
   noteReady: () => {},
+  hydrate: () => {},
 };
 
 const SpineActivityContext = createContext<SpineActivityValue | null>(null);
@@ -87,6 +134,12 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
   const [readerOpen, setReaderOpen] = useState(false);
   const prevQueue = useRef<SpineQueueState | null>(null);
   const manualPaused = useRef(false);
+  /** Ids the wall already knows a result for; never re-fetched by enqueue. */
+  const hydrated = useRef<Set<number>>(new Set());
+  const spinesRef = useRef(spines);
+  const jobsRef = useRef(jobs);
+  spinesRef.current = spines;
+  jobsRef.current = jobs;
 
   const applyArtifact = useCallback((artifact: SpineArtifact | null) => {
     if (!artifact) return;
@@ -205,8 +258,10 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
         return next;
       });
       // A cached book is skipped by the worker, so it never emits a queue
-      // transition; settle those to ready from the cache seam.
+      // transition; settle those to ready from the cache seam. Books already
+      // seeded by `hydrate` need no second artifact read.
       for (const id of unique) {
+        if (hydrated.current.has(id)) continue;
         void platform.spineArtifact(id).then(applyArtifact).catch(() => {});
       }
       void platform
@@ -261,6 +316,19 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
     [applyArtifact, loadArtifact],
   );
 
+  const hydrate = useCallback((strips: SpineCachedStrip[]) => {
+    const merged = mergeCachedStrips(
+      spinesRef.current,
+      jobsRef.current,
+      strips,
+      hydrated.current,
+    );
+    if (merged.added.length === 0) return;
+    for (const bookId of merged.added) hydrated.current.add(bookId);
+    setSpines(merged.spines);
+    setJobs(merged.jobs);
+  }, []);
+
   const value = useMemo<SpineActivityValue>(
     () => ({
       queue,
@@ -273,6 +341,7 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
       readerOpened,
       readerClosed,
       noteReady,
+      hydrate,
     }),
     [
       queue,
@@ -285,6 +354,7 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
       readerOpened,
       readerClosed,
       noteReady,
+      hydrate,
     ],
   );
 

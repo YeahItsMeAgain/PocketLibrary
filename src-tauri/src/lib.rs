@@ -1003,6 +1003,19 @@ async fn spine_artifact(
     .await
 }
 
+/// Project every cached spine for the shelf wall. Scans the cache directly:
+/// no inference and no cover hashing, so a warm launch paints immediately.
+#[tauri::command]
+async fn spine_cached_strips(
+    app: AppHandle,
+) -> Result<Vec<spine_service::SpineCachedStrip>, ApiError> {
+    blocking(move || {
+        let service = app.state::<spine_service::SpineService>();
+        Ok(service.cached_strips())
+    })
+    .await
+}
+
 /// Whether the model bundle is available. Resolves the models once per app run.
 #[tauri::command]
 async fn spine_status(app: AppHandle) -> Result<spine_service::SpineStatus, ApiError> {
@@ -1708,6 +1721,7 @@ pub fn run() {
             share_diagnostics,
             spine_generate,
             spine_artifact,
+            spine_cached_strips,
             spine_status,
             spine_enqueue,
             spine_queue,
