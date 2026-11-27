@@ -74,8 +74,9 @@ release done.
   are pinned to their current size, so split them instead of growing the
   baseline.
 - Keep the crate dependency arrows one-way: `core` must not depend on Tauri or
-  `pocketlibrary-spine`, `spine` must not depend on `core` or `src-tauri`, and
-  only `src-tauri` may depend on both. In the web seam,
+  `pocketlibrary-spine` in its shipped graph (a dev-dependency on the engine is
+  allowed for host integration tests), `spine` must not depend on `core` or
+  `src-tauri`, and only `src-tauri` may depend on both. In the web seam,
   `src/platform/index.ts` and `src/platform/types.ts` must not import React,
   and `src/spineSpec.ts` stays dependency-free. The structure check enforces
   all of this.

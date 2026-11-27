@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary 0.1.9 — spine engine test APK</title>
+<title>PocketLibrary 0.1.10 — spine engine test APK</title>
 <style>
   :root {
     --bg: #0b0709;
@@ -123,30 +123,30 @@
 <main>
   <div class="wordmark"><i aria-hidden="true"></i> PocketLibrary · spine engine test build</div>
 
-  <p class="kicker">Signed arm64 release · version 0.1.9 (1009)</p>
+  <p class="kicker">Signed arm64 release · version 0.1.10 (1010)</p>
   <h1>The spine engine,<br><em>on the phone.</em></h1>
-  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. It finds the cover text, removes it, and renders <b>Wrap, Full-bleed and Cloth</b> without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test. This release also separates the book into a <b>read view and an Edit layer</b>, and gives Wrap and Full-bleed <b>real-book vertical typography</b>.</p>
+  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. It finds the cover text, removes it, and renders <b>Wrap, Full-bleed and Cloth</b> without a network call, API key, or upload. The four ONNX models and ONNX Runtime are bundled for this test. This release makes <b>cached spines hydrate the wall</b>, generates missing spines on launch, paints cached art above the face, moves spine controls entirely into Edit, and makes opening a book faster.</p>
 
   <div class="card">
     <div class="download">
       <div>
-        <h2>PocketLibrary 0.1.9 · spine arm64</h2>
-        <p>APK · 67,583,521 bytes (64.5 MiB) · release-signed · arm64-v8a only</p>
+        <h2>PocketLibrary 0.1.10 · spine arm64</h2>
+        <p>APK · 67,586,729 bytes (64.4 MiB) · release-signed · arm64-v8a only</p>
       </div>
-      <a class="button" href="pocketlibrary-0.1.9-spine-arm64.apk" download>Download APK</a>
+      <a class="button" href="pocketlibrary-0.1.10-spine-arm64.apk" download>Download APK</a>
     </div>
 
     <dl>
       <dt>File</dt>
-      <dd class="mono">pocketlibrary-0.1.9-spine-arm64.apk</dd>
+      <dd class="mono">pocketlibrary-0.1.10-spine-arm64.apk</dd>
       <dt>Size</dt>
-      <dd>67,583,521 bytes · 64.5 MiB</dd>
+      <dd>67,586,729 bytes · 64.4 MiB</dd>
       <dt>SHA-256</dt>
-      <dd><code class="hash">aed1ee3f16fc89f1b8ae461e9b8b8ec9fb8e963d26ef6aade440a30205a97853</code></dd>
+      <dd><code class="hash">9771c3b77badea8cb402135e0f3cef5913ae993a71dc9086842c257362b02960</code></dd>
       <dt>Package</dt>
       <dd class="mono">app.pocketlibrary</dd>
       <dt>Version</dt>
-      <dd>0.1.9 · versionCode 1009</dd>
+      <dd>0.1.10 · versionCode 1010</dd>
       <dt>SDK</dt>
       <dd>min 24 · target 36 · compile 36 (Android 16)</dd>
       <dt>ABI</dt>
@@ -162,47 +162,47 @@
   </div>
 
   <h2 class="section">Install</h2>
-  <p class="section-lede">Sideload it over 0.1.8, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
+  <p class="section-lede">Sideload it over 0.1.9, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
   <ol>
     <li>Download the APK on the phone (or copy it over).</li>
     <li>Open the file. If Android blocks it, allow <b>Install unknown apps</b> for the browser or file manager you used.</li>
-    <li>If 0.1.8 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 6</b>.</li>
+    <li>If 0.1.9 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 6</b>.</li>
     <li>A <b>debug build or a build signed with another key must be uninstalled first</b>; Android will refuse the update otherwise.</li>
     <li>Open PocketLibrary. Spines start preparing automatically; on an existing library the backfill runs once at low priority, so the wall stays usable.</li>
   </ol>
 
-  <h2 class="section">What changed in 0.1.9</h2>
+  <h2 class="section">What changed in 0.1.10</h2>
   <div class="grid">
     <div class="note">
-      <h3>Read view and Edit layer</h3>
-      <ul>
-        <li>The book sheet is now a <b>read view</b>: title, author, blurb, labels, status and the spine are shown without editable controls.</li>
-        <li><b>Edit</b> opens a separate layer with six sections in order — <b>Details, Cover, Spine, Status &amp; labels, Online details, Danger</b>.</li>
-        <li>Editing no longer risks a stray tap in the read view; <b>Escape</b> closes only the Edit layer and returns to the book.</li>
-      </ul>
-    </div>
-    <div class="note">
-      <h3>Autosave, Saved and Undo</h3>
-      <ul>
-        <li>Title, authors, pages and blurb <b>save on blur</b>; the blurb also saves after a short debounce while you keep typing.</li>
-        <li>Each field shows a <b>Saved</b> tick once the write lands, and closing Edit shows the new values immediately in the read view.</li>
-        <li>Cover and spine-style changes show an <b>Undo</b> toast that restores the previous cover or style.</li>
-      </ul>
-    </div>
-    <div class="note">
-      <h3>Real-book vertical typography</h3>
-      <ul>
-        <li>Wrap and Full-bleed now share the type bands of a real spine: <b>title in the upper third, author in the lower third, publisher mark at the base</b>.</li>
-        <li>The middle third stays with the cover art, so a shelf reads as books rather than posters.</li>
-        <li>The same layout follows RTL titles, and switching Wrap to Full-bleed moves the background only, not the type.</li>
-      </ul>
-    </div>
-    <div class="note">
-      <h3>Cached spines hydrate the shelf</h3>
+      <h3>The shelf hydrates itself</h3>
       <ul>
         <li>On launch, every <b>cached spine is projected onto the wall</b> without queueing a job, running inference or hashing covers.</li>
         <li>A warm shelf paints its ready spines immediately; only new or changed covers enter the automatic queue.</li>
-        <li>The queue, progress chip, reader pause, failure marker and 200 MB cache from 0.1.8 are unchanged.</li>
+        <li>A cached book whose strip is <b>missing is generated automatically in Wrap</b>, so the shelf heals instead of showing a bare face.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Cached art stays above the face</h3>
+      <ul>
+        <li>When a generated strip exists, it now paints <b>above the cover face</b> instead of being hidden behind it.</li>
+        <li>Cloth still keeps the face; Wrap and Full-bleed show the generated art, including after a relaunch.</li>
+        <li>The queue, progress chip, reader pause, failure marker and 200 MB cache from 0.1.9 are unchanged.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Read view and Edit layer</h3>
+      <ul>
+        <li>The book sheet is a <b>read view</b>: title, author, blurb, labels and status, with <b>no Spine section and no editable controls</b>.</li>
+        <li><b>Spine controls now live only in Edit</b>, in the six sections: <b>Details, Cover, Spine, Status &amp; labels, Online details, Danger</b>.</li>
+        <li><b>Edit opens at the top</b> so the first section is in view, and Escape closes only the Edit layer.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Faster opening</h3>
+      <ul>
+        <li>The detail panel is <b>preloaded</b> and the open animation no longer scales, so a book opens without the previous delay.</li>
+        <li>Opening a book no longer resolves the engine or runs a status check; it only reads the artifact cache.</li>
+        <li>Cover art is painted directly rather than waiting on a second layout pass.</li>
       </ul>
     </div>
   </div>
@@ -212,19 +212,19 @@
     <div class="note">
       <h3>Upgrade and the warm shelf</h3>
       <ul>
-        <li>Install over 0.1.8 without uninstalling. Your shelf, reading state, labels and per-book spine styles should be intact.</li>
-        <li>Relaunch on a prepared library: cached spines should appear on the wall without the queue starting.</li>
-        <li>Leave the app on the wall during a backfill: the chip should show progress without blocking scrolling.</li>
+        <li>Install over 0.1.9 without uninstalling. Your shelf, reading state, labels and per-book spine styles should be intact.</li>
+        <li>Relaunch on a prepared library: cached spines should appear on the wall without the queue starting, drawn above the face.</li>
+        <li>If one cached book has no strip, it should be generated automatically in Wrap and appear on the wall.</li>
         <li>Open a book while it is preparing: the queue should pause, then resume when you go back.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>Read, edit and undo</h3>
+      <h3>Read, edit and open speed</h3>
       <ul>
-        <li>Open a book: the read view should have no editable fields; tap <b>Edit</b> to reach the six sections.</li>
-        <li>Change the title, authors, pages and blurb; each should show <b>Saved</b>, and closing Edit should show the new values.</li>
-        <li>Change the cover and the spine style, then press <b>Undo</b> on each toast and confirm the previous value returns.</li>
-        <li>Check Wrap and Full-bleed on a real cover: title upper third, author lower third, publisher mark at the base, art in the middle.</li>
+        <li>Open a book: the read view should show no Spine section and no editable fields; tap <b>Edit</b> to reach the six sections.</li>
+        <li><b>Edit should open at the top</b>, with Details in view rather than the bottom of the sheet.</li>
+        <li>Generate a spine in Edit and go back: the wall should show the new art above the face, with no read-view spine controls.</li>
+        <li>Open several books in a row: the panel should appear immediately, without the old scale animation or engine status call.</li>
       </ul>
     </div>
   </div>
@@ -234,9 +234,9 @@
     <div class="note limits" style="border:0;background:transparent;padding:0">
       <h3>This is a test build</h3>
       <ul>
-        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.9.</li>
+        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.10.</li>
         <li><b>arm64 only.</b> It will not install on 32-bit, x86, or an emulator without arm64 translation.</li>
-        <li><b>~64.5 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
+        <li><b>~64.4 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
         <li>Generation runs fully on the device. On a phone it is slower than the host timings in the evidence; the inpaint route can take noticeably longer than the crop route.</li>
         <li>Release-signed, so it will not install over a debug build. Uninstall the old app first.</li>
       </ul>
@@ -244,9 +244,9 @@
   </div>
 
   <footer>
-    Built from the read-view, vertical-typography and cached-shelf release at <span class="mono">HEAD 07930f9</span> on 2026-11-27.
+    Built from the cached-shelf and read-view cleanup release at <span class="mono">HEAD d653a00</span> on 2026-11-27.
     Verification: <span class="mono">apksigner</span> v2 signature valid,
-    <span class="mono">zipalign -c -p 4</span> passed, packaged manifest has <span class="mono">android:extractNativeLibs="true"</span> so
+    <span class="mono">zipalign -c -P 16 -v 4</span> passed, packaged manifest has <span class="mono">android:extractNativeLibs="true"</span> so
     <span class="mono">nativeLibraryDir/libonnxruntime.so</span> exists after install.
     <a href="../">Spine engine notes</a>.
   </footer>

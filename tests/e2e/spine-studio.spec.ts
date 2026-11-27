@@ -104,7 +104,7 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(section!.width).toBeLessThanOrEqual(sizes.viewport);
 }
 
-test("the read view shows a compact spine and Edit holds the one obvious action", async ({
+test("the read view has no spine controls and Edit holds the one obvious action", async ({
   page,
 }) => {
   await boot(page);
