@@ -309,28 +309,26 @@ test("delete exists only inside Edit", async ({ page }) => {
   await expect(page.getByTestId("detail-delete-confirm")).toHaveCount(0);
 });
 
-test("Fix spine opens Edit at the Spine section", async ({ page }) => {
-  await boot(page, { spine: { verdict: "review", route: "inpaint" } });
+test("Edit opens at the top of the layer", async ({ page }) => {
+  await boot(page);
   await openDetail(page);
   await openEdit(page);
-  await page.getByTestId("spine-generate").click();
-  await expect(
-    page.getByTestId("edit-book").getByTestId("spine-verdict"),
-  ).toHaveText("Review");
+
+  const layer = page.getByTestId("edit-book");
+  await expect.poll(() => layer.evaluate((element) => element.scrollTop)).toBe(0);
+
+  // Closing from a scrolled position and reopening starts at the top again.
+  await layer.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect
+    .poll(() => layer.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0);
   await page.getByTestId("edit-book-close").click();
+  await expect(layer).toHaveCount(0);
 
-  // The read view keeps the verdict but none of the controls.
-  await expect(page.getByTestId("spine-readonly-verdict")).toHaveText("Review");
-  await expect(page.getByTestId("spine-generate")).toHaveCount(0);
-  const fix = page.getByTestId("spine-fix");
-  await expect(fix).toBeVisible();
-  await fix.click();
-
-  await expect(page.getByTestId("edit-book")).toBeVisible();
-  await expect(page.getByTestId("edit-section-spine")).toBeInViewport();
-  await expect(
-    page.getByTestId("edit-book").getByTestId("spine-use-cloth"),
-  ).toBeVisible();
+  await openEdit(page);
+  await expect.poll(() => layer.evaluate((element) => element.scrollTop)).toBe(0);
 });
 
 test("Escape closes only the Edit layer", async ({ page }) => {
