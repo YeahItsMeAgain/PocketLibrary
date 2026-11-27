@@ -229,6 +229,14 @@ test("fallback state applies Cloth automatically", async ({ page }) => {
   );
 });
 
+test("an approximate page count labels the spine width", async ({ page }) => {
+  await boot(page, { pagesApproximate: true });
+  await generate(page);
+  await expect(page.getByTestId("spine-approximate-note")).toContainText(
+    "Approximate spine width",
+  );
+});
+
 test("the picker offers exactly Wrap, Full-bleed and Cloth", async ({ page }) => {
   await boot(page);
   await generate(page);

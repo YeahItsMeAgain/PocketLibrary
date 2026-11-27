@@ -140,6 +140,8 @@ export interface SpineArtifact {
   route: SpineRoute;
   verdict: SpineVerdict;
   maskPercent: number;
+  /** True when a missing page count forced the ~320-page width estimate. */
+  pagesApproximate: boolean;
   cropBox: SpineCropBox | null;
   /** Text-free working art; `data:image/jpeg;base64,...`. */
   artDataUrl: string;
@@ -1107,6 +1109,7 @@ async function buildMockSpineArtifact(
     route,
     verdict,
     maskPercent,
+    pagesApproximate: config.pagesApproximate ?? false,
     cropBox: crop,
     artDataUrl,
     spineDataUrl,
@@ -1262,6 +1265,8 @@ export interface MockSpineConfig {
   verdict?: SpineVerdict;
   route?: SpineRoute;
   maskPercent?: number;
+  /** Mark the generated width as the ~320-page estimate. */
+  pagesApproximate?: boolean;
   /** Artifacts `spineArtifact` returns before anything is generated. */
   artifacts?: Record<number, SpineArtifact>;
   /** Milliseconds a mock generation takes, so the honest progress copy shows. */

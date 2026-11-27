@@ -91,11 +91,22 @@ export function SpineActivityProvider({ children }: { children: ReactNode }) {
   const applyArtifact = useCallback((artifact: SpineArtifact | null) => {
     if (!artifact) return;
     const bookId = artifact.bookId;
-    setSpines((current) =>
-      current[bookId] === artifact.spineDataUrl
-        ? current
-        : { ...current, [bookId]: artifact.spineDataUrl },
-    );
+    if (artifact.verdict === "fallback") {
+      // The quality gate rejected the generated art, so the shelf keeps its
+      // typographic Cloth spine. The detail still previews the artifact.
+      setSpines((current) => {
+        if (!(bookId in current)) return current;
+        const next = { ...current };
+        delete next[bookId];
+        return next;
+      });
+    } else {
+      setSpines((current) =>
+        current[bookId] === artifact.spineDataUrl
+          ? current
+          : { ...current, [bookId]: artifact.spineDataUrl },
+      );
+    }
     setJobs((current) =>
       current[bookId]?.state === "ready"
         ? current

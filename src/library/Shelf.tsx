@@ -108,6 +108,9 @@ export const Spine = memo(function Spine({
 }: SpineProps) {
   const statusLabel = STATUS_LABELS[book.readingStatus];
   const style = useMemo(() => spineStyle(book), [book]);
+  // Wrap and Full-bleed paint the generated strip; Cloth is the typographic
+  // spine rendered below. A rejected fallback never reaches here with a strip.
+  const showGenerated = Boolean(generatedSpine) && book.spineStyle !== "cloth";
   const attention = spineState?.state === "needs-attention";
   const spineNote =
     spineState?.state === "working"
@@ -120,7 +123,7 @@ export const Spine = memo(function Spine({
   return (
     <li
       className={`spine book${dragging ? " is-dragging-source" : ""}${
-        generatedSpine ? " has-generated" : ""
+        showGenerated ? " has-generated" : ""
       }`}
       data-testid="spine"
       data-book-id={book.id}
@@ -154,7 +157,7 @@ export const Spine = memo(function Spine({
         }
       }}
     >
-      {generatedSpine ? (
+      {showGenerated ? (
         <img
           className="spine-generated"
           data-testid="spine-generated"

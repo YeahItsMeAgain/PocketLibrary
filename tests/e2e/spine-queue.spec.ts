@@ -58,6 +58,7 @@ function artifact(overrides: Partial<SpineArtifact> = {}): SpineArtifact {
     route: "crop",
     verdict: "pass",
     maskPercent: 0,
+    pagesApproximate: false,
     cropBox: { x: 20, y: 20, width: 260, height: 410 },
     artDataUrl: svgArt("#111111", "#f4f4f4"),
     spineDataUrl: spineStrip("#3b2233"),
@@ -391,6 +392,58 @@ test("the shelf swaps to the generated spine when ready", async ({ page }) => {
     timeout: 8_000,
   });
   await expect(spine).toHaveAttribute("data-spine-state", "ready");
+});
+
+test("a fallback verdict leaves the shelf on its cloth spine", async ({
+  page,
+}) => {
+  await boot(page, {
+    spine: {
+      queueStepMs: 25,
+      artifacts: {
+        1: artifact({ verdict: "fallback", route: "fallback" }),
+      },
+    },
+  });
+
+  const spine = page.getByTestId("spine").first();
+  await expect(spine).toHaveAttribute("data-spine-state", "ready", {
+    timeout: 8_000,
+  });
+  await expect(spine.getByTestId("spine-generated")).toHaveCount(0);
+  await expect(spine).not.toHaveClass(/has-generated/);
+});
+
+test("the shelf shows the generated strip only for Wrap and Full-bleed", async ({
+  page,
+}) => {
+  await boot(page, {
+    books: [
+      book(1, { spineStyle: "wrap" }),
+      book(2, { spineStyle: "full-bleed" }),
+      book(3, { spineStyle: "cloth" }),
+    ],
+    spine: {
+      queueStepMs: 25,
+      artifacts: {
+        1: artifact({ bookId: 1 }),
+        2: artifact({ bookId: 2 }),
+        3: artifact({ bookId: 3 }),
+      },
+    },
+  });
+
+  const wrap = page.locator('[data-testid="spine"][data-book-id="1"]');
+  const fullBleed = page.locator('[data-testid="spine"][data-book-id="2"]');
+  const cloth = page.locator('[data-testid="spine"][data-book-id="3"]');
+
+  await expect(wrap.getByTestId("spine-generated")).toBeVisible({
+    timeout: 8_000,
+  });
+  await expect(fullBleed.getByTestId("spine-generated")).toBeVisible();
+  await expect(cloth.getByTestId("spine-generated")).toHaveCount(0);
+  await expect(cloth).not.toHaveClass(/has-generated/);
+  await expect(cloth.locator(".spine-text")).toBeVisible();
 });
 
 test("a failed job shows a marker until a manual generation succeeds", async ({

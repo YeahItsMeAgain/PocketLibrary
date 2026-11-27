@@ -36,7 +36,7 @@ impl Engine {
 |---|---|
 | `source.jpg` | working copy of the cover |
 | `art.jpg` | text-free art, crop or MI-GAN-filled |
-| `spine-2x.jpg` | 52 × 236 spine |
+| `spine-2x.jpg` | 104 × 472 spine; the shell downsamples to 52 × 236 for the wire |
 | `fallback-spine.jpg` | typographic fallback |
 | `mask.png` | text mask preview |
 | `run.json` | existing v8-app schema, including `final.crop_box_work` |

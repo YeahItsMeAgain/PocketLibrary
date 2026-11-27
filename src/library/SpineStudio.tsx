@@ -1829,6 +1829,13 @@ export function SpineStudio({
             </span>
           </div>
 
+          {state.artifact.pagesApproximate ? (
+            <p className="spine-fine" data-testid="spine-approximate-note">
+              Approximate spine width — no page count, so the wrap uses a
+              ~320-page estimate.
+            </p>
+          ) : null}
+
           {state.artifact.verdict === "review" ? (
             <p className="spine-note" data-testid="spine-review-note">
               The check found art it cannot vouch for. Inspect the spine, then
