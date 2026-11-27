@@ -12,10 +12,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter, Manager};
 
 use pocketlibrary_core::Api;
-use pocketlibrary_core::spine_queue::{self, QueueCore, QueueStage};
+use pocketlibrary_core::spine_queue::{self, BackfillFlag, QueueCore, QueueStage};
 use pocketlibrary_spine::Stage;
 
-use crate::spine_service::SpineService;
+use crate::spine_service::{BUNDLE_ID, SpineService};
 
 pub const QUEUE_EVENT: &str = "spine://queue";
 pub const PROGRESS_EVENT: &str = "spine://progress";
@@ -35,6 +35,7 @@ fn stage_from_engine(stage: Stage) -> QueueStage {
 /// The managed automatic queue.
 pub struct SpineQueue {
     core: Mutex<QueueCore>,
+    backfill: Mutex<BackfillFlag>,
     app_data_dir: PathBuf,
     app: AppHandle,
     worker_running: AtomicBool,
@@ -45,8 +46,11 @@ impl SpineQueue {
         let mut core = QueueCore::default();
         let restored = spine_queue::load_pending(&spine_queue::queue_path(&app_data_dir));
         core.enqueue(restored);
+        let backfill = BackfillFlag::load(&app_data_dir);
+        core.set_backfill_pending(backfill.is_pending(BUNDLE_ID));
         Self {
             core: Mutex::new(core),
+            backfill: Mutex::new(backfill),
             app_data_dir,
             app,
             worker_running: AtomicBool::new(false),
@@ -64,6 +68,7 @@ impl SpineQueue {
                 failed: 0,
                 current_book_id: None,
                 stage: None,
+                backfill_pending: false,
             },
         }
     }
@@ -80,6 +85,53 @@ impl SpineQueue {
             self.emit_queue();
         }
         self.kick();
+    }
+
+    /// Queue the existing library once per model bundle. Restored pending jobs
+    /// stay ahead of it because they were enqueued first.
+    pub fn backfill_once(&self, api: &Api) {
+        let pending = self
+            .core
+            .lock()
+            .map(|core| core.backfill_pending())
+            .unwrap_or(false);
+        if !pending {
+            return;
+        }
+        let ids = match api.list_books() {
+            Ok(books) => books.into_iter().map(|book| book.id).collect::<Vec<_>>(),
+            Err(error) => {
+                // Leave the flag pending: the next launch (or the frontend
+                // fallback) can retry without a permanent skip.
+                eprintln!(
+                    "pocketlibrary spine: backfill catalogue read failed ({}): {}",
+                    error.code, error.message
+                );
+                return;
+            }
+        };
+        self.enqueue(ids);
+        self.finish_backfill();
+    }
+
+    fn finish_backfill(&self) {
+        let marked = match self.backfill.lock() {
+            Ok(mut flag) => flag.mark_done(BUNDLE_ID),
+            Err(_) => return,
+        };
+        match marked {
+            Ok(()) => {
+                if let Ok(mut core) = self.core.lock() {
+                    core.set_backfill_pending(false);
+                }
+                self.emit_queue();
+            }
+            Err(error) => {
+                // The in-memory queue already has the work. Keeping the flag
+                // pending only means a harmless re-enqueue next launch.
+                eprintln!("pocketlibrary spine: persist backfill flag: {error}");
+            }
+        }
     }
 
     /// An explicit generate jumps the queue by leaving it.

@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 const QUEUE_FILE: &str = "queue.json";
+const BACKFILL_FILE: &str = "backfill.json";
 
 /// Coarse pipeline stages exposed on the wire.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -42,6 +43,9 @@ pub struct QueueState {
     pub current_book_id: Option<i64>,
     /// "art" | "text" | "check" | null
     pub stage: Option<String>,
+    /// True when the existing library has not yet been queued for this model
+    /// bundle. The shell clears it after one full-library enqueue.
+    pub backfill_pending: bool,
 }
 
 /// One stage event sent as `spine://progress`.
@@ -74,6 +78,7 @@ pub struct QueueCore {
     failed: u64,
     stage: Option<QueueStage>,
     waiting: bool,
+    backfill_pending: bool,
 }
 
 impl QueueCore {
@@ -111,6 +116,16 @@ impl QueueCore {
 
     pub fn is_waiting(&self) -> bool {
         self.waiting
+    }
+
+    /// True when the full-library backfill is still due for the active bundle.
+    pub fn backfill_pending(&self) -> bool {
+        self.backfill_pending
+    }
+
+    /// Track whether the one-shot library backfill is still due.
+    pub fn set_backfill_pending(&mut self, pending: bool) {
+        self.backfill_pending = pending;
     }
 
     pub fn peek(&self) -> Option<i64> {
@@ -173,6 +188,7 @@ impl QueueCore {
             failed: self.failed,
             current_book_id: self.current,
             stage: self.stage.map(|stage| stage.as_str().to_owned()),
+            backfill_pending: self.backfill_pending,
         }
     }
 
@@ -200,6 +216,76 @@ impl QueueCore {
 
 pub fn queue_path(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("spine").join(QUEUE_FILE)
+}
+
+/// The one-shot library backfill marker, keyed by model bundle id.
+///
+/// A missing or unreadable file means "backfill due"; that is the safe
+/// direction because the worker skips cache hits. It lives next to the queue
+/// so an upgrade keeps the same app-data directory.
+#[derive(Debug, Default)]
+pub struct BackfillFlag {
+    path: PathBuf,
+    bundle_id: Option<String>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PersistedBackfill {
+    #[serde(default)]
+    bundle_id: Option<String>,
+}
+
+impl BackfillFlag {
+    pub fn load(app_data_dir: &Path) -> Self {
+        let path = backfill_path(app_data_dir);
+        let bundle_id = fs::read_to_string(&path)
+            .ok()
+            .and_then(|text| serde_json::from_str::<PersistedBackfill>(&text).ok())
+            .and_then(|flag| flag.bundle_id);
+        Self { path, bundle_id }
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// True when this bundle has never been fully queued.
+    pub fn is_pending(&self, bundle_id: &str) -> bool {
+        self.bundle_id.as_deref() != Some(bundle_id)
+    }
+
+    /// Record that this bundle's library backfill has been queued. The write is
+    /// atomic so a crash cannot leave a half-written marker that reads as
+    /// "done" for the wrong bundle.
+    pub fn mark_done(&mut self, bundle_id: &str) -> std::io::Result<()> {
+        write_backfill(&self.path, bundle_id)?;
+        self.bundle_id = Some(bundle_id.to_owned());
+        Ok(())
+    }
+}
+
+pub fn backfill_path(app_data_dir: &Path) -> PathBuf {
+    app_data_dir.join("spine").join(BACKFILL_FILE)
+}
+
+fn write_backfill(path: &Path, bundle_id: &str) -> std::io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let text = serde_json::to_string_pretty(&PersistedBackfill {
+        bundle_id: Some(bundle_id.to_owned()),
+    })
+    .map_err(std::io::Error::other)?;
+    let staged = path.with_extension(format!("json.tmp-{}", std::process::id()));
+    fs::write(&staged, text)?;
+    match fs::rename(&staged, path) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            let _ = fs::remove_file(&staged);
+            Err(error)
+        }
+    }
 }
 
 pub fn load_pending(path: &Path) -> Vec<i64> {
@@ -332,5 +418,40 @@ mod tests {
         assert_eq!(progress.index, 2);
         assert_eq!(progress.total, 3);
         assert_eq!(progress.stage, "text");
+    }
+
+    #[test]
+    fn backfill_runs_once_per_bundle_and_again_for_a_new_bundle() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut flag = BackfillFlag::load(dir.path());
+        assert!(
+            flag.is_pending("spine-v1"),
+            "a fresh install owes a backfill"
+        );
+        assert!(!flag.path().exists());
+
+        flag.mark_done("spine-v1").expect("mark backfill");
+        assert!(!flag.is_pending("spine-v1"));
+        assert!(flag.path().exists());
+
+        // A later process sees the marker and does not queue the library again.
+        let reloaded = BackfillFlag::load(dir.path());
+        assert!(!reloaded.is_pending("spine-v1"));
+        // A new model bundle invalidates the completed backfill.
+        assert!(reloaded.is_pending("spine-v2"));
+
+        // A corrupt marker reads as pending rather than silently skipping work.
+        fs::write(reloaded.path(), "{ not json").expect("corrupt marker");
+        assert!(BackfillFlag::load(dir.path()).is_pending("spine-v1"));
+    }
+
+    #[test]
+    fn snapshot_carries_the_backfill_state() {
+        let mut core = QueueCore::default();
+        assert!(!core.snapshot().backfill_pending);
+        core.set_backfill_pending(true);
+        assert!(core.snapshot().backfill_pending);
+        core.set_backfill_pending(false);
+        assert!(!core.snapshot().backfill_pending);
     }
 }

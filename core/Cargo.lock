@@ -1804,7 +1804,7 @@ dependencies = [
 
 [[package]]
 name = "pocketlibrary_core"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "base64",
  "blake3",

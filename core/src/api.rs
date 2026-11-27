@@ -216,13 +216,6 @@ impl Api {
             .map_err(ApiError::from)
     }
 
-    /// Safe enrichment state for one book.
-    pub fn enrichment_state(&self, book_id: i64) -> ApiResult<crate::models::BookEnrichmentState> {
-        self.enrichment
-            .state_for_book(book_id)
-            .map_err(ApiError::from)
-    }
-
     /// Search Libgen through the production provider.
     pub async fn search_libgen(&self, query: SearchQuery) -> ApiResult<SearchPage> {
         self.acquisition
@@ -287,6 +280,11 @@ impl Api {
     /// Every book known to the library, in shelf order.
     pub fn list_books(&self) -> ApiResult<Vec<Book>> {
         self.service.list_books().map_err(ApiError::from)
+    }
+
+    /// One book by id, with its labels.
+    pub fn book(&self, id: i64) -> ApiResult<Book> {
+        self.service.book(id).map_err(ApiError::from)
     }
 
     /// Every shelf in ordinal order.

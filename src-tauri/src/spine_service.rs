@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use pocketlibrary_core::spine_cache::{CACHE_LIMIT_BYTES, trim_cache};
+use pocketlibrary_core::spine_cache::{SpineCache, cache_key as spine_cache_key};
 use pocketlibrary_core::{Api, ApiError, Book};
 use pocketlibrary_spine::{BookInput, Engine, Models, SPINE_H, SPINE_W, Stage};
 
@@ -31,8 +31,6 @@ use crate::spine_assets::{self, SpineModelPaths};
 
 /// Model bundle version. Part of the cache key and the status payload.
 pub const BUNDLE_ID: &str = "spine-v1";
-/// Cache file written last; its presence means a complete entry.
-const ARTIFACT_FILE: &str = "artifact.json";
 /// Page estimate used when a book has no reliable page count.
 const ESTIMATED_PAGES: u32 = 320;
 
@@ -85,6 +83,7 @@ pub struct SpineStatus {
 /// resolves the models once, and the engine is only built on first generation.
 pub struct SpineService {
     app_data_dir: PathBuf,
+    cache: SpineCache,
     models: Mutex<Option<Result<SpineModelPaths, String>>>,
     engine: Mutex<Option<Arc<Engine>>>,
     in_flight: Mutex<HashSet<i64>>,
@@ -92,16 +91,14 @@ pub struct SpineService {
 
 impl SpineService {
     pub fn new(app_data_dir: PathBuf) -> Self {
+        let cache = SpineCache::new(&app_data_dir);
         Self {
             app_data_dir,
+            cache,
             models: Mutex::new(None),
             engine: Mutex::new(None),
             in_flight: Mutex::new(HashSet::new()),
         }
-    }
-
-    fn books_dir(&self) -> PathBuf {
-        self.app_data_dir.join("spine").join("books")
     }
 
     /// Generate or reuse one book's spine. Call from a blocking thread.
@@ -119,14 +116,14 @@ impl SpineService {
         let book = find_book(api, book_id)?;
         let prepared = self.prepare(book_id, &book)?;
 
-        if let Some(artifact) = read_cached(&prepared.dir) {
+        if let Some(artifact) = self.cache.read(&prepared.dir) {
             return Ok(artifact);
         }
 
         if !self.begin(book_id) {
             // The first call may have completed between the cache check and the
             // guard; prefer its result over an "in progress" error.
-            if let Some(artifact) = read_cached(&prepared.dir) {
+            if let Some(artifact) = self.cache.read(&prepared.dir) {
                 return Ok(artifact);
             }
             return Err(api_error(
@@ -140,25 +137,14 @@ impl SpineService {
         };
 
         let engine = self.engine()?;
-        let staged = self.books_dir().join(format!(
-            ".{}.tmp-{}",
-            key_name(&prepared.dir),
-            std::process::id()
-        ));
-        if staged.exists() {
-            fs::remove_dir_all(&staged).map_err(|error| {
-                cache_error(format!(
-                    "clear stale spine cache {}: {error}",
-                    staged.display()
-                ))
-            })?;
-        }
+        let staged = self.cache.staged_dir(&prepared.key);
+        self.cache.discard(&staged);
 
         engine
             .generate_with_progress(&prepared.input, &staged, &mut progress)
             .map_err(|error| {
                 eprintln!("pocketlibrary spine {book_id}: {error:#}");
-                let _ = fs::remove_dir_all(&staged);
+                self.cache.discard(&staged);
                 api_error(
                     "spine_failed",
                     "The spine could not be generated for this book. Please try again.",
@@ -173,41 +159,28 @@ impl SpineService {
 
         let artifact = match artifact_from_dir(&staged, book_id).and_then(|mut artifact| {
             artifact.pages_approximate = prepared.pages_approximate;
-            write_artifact(&staged, &artifact).map(|_| artifact)
+            self.cache
+                .write(&staged, &artifact)
+                .map_err(|error| cache_error(error.to_string()))?;
+            Ok(artifact)
         }) {
             Ok(artifact) => artifact,
             Err(error) => {
-                let _ = fs::remove_dir_all(&staged);
+                self.cache.discard(&staged);
                 return Err(error);
             }
         };
-        install_dir(&staged, &prepared.dir)?;
-        trim_cache(&self.books_dir(), CACHE_LIMIT_BYTES, Some(&prepared.dir));
+        self.cache
+            .install(&staged, &prepared.key)
+            .map_err(|error| cache_error(error.to_string()))?;
+        self.cache.trim(Some(&prepared.dir));
         Ok(artifact)
     }
 
     /// Drop a deleted book's cache entries. The artifact records the book id,
     /// so this still works after the cover file has gone.
     pub fn remove_cache(&self, book_id: i64) {
-        let Ok(entries) = fs::read_dir(self.books_dir()) else {
-            return;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if !path.is_dir() {
-                continue;
-            }
-            let belongs = read_cached(&path).is_some_and(|artifact| artifact.book_id == book_id);
-            if !belongs {
-                continue;
-            }
-            if let Err(error) = fs::remove_dir_all(&path) {
-                eprintln!(
-                    "pocketlibrary spine: remove cache {}: {error}",
-                    path.display()
-                );
-            }
-        }
+        self.cache.remove_book(book_id);
     }
 
     /// True when this book already has a complete cache entry.
@@ -218,7 +191,7 @@ impl SpineService {
         let Ok(prepared) = self.prepare(book_id, &book) else {
             return false;
         };
-        read_cached(&prepared.dir).is_some()
+        self.cache.read::<SpineArtifact>(&prepared.dir).is_some()
     }
 
     /// Resolve the bundled models once. Never builds an ONNX session.
@@ -242,7 +215,7 @@ impl SpineService {
         let Ok(prepared) = self.prepare(book_id, &book) else {
             return Ok(None);
         };
-        Ok(read_cached(&prepared.dir))
+        Ok(self.cache.read(&prepared.dir))
     }
 
     /// Resolve the model bundle once and report it. Never builds the engine.
@@ -268,12 +241,20 @@ impl SpineService {
                 bytes: bundle_bytes(paths),
                 error: None,
             },
-            Some(Err(error)) => SpineStatus {
-                models: classify_model_error(error),
-                bundle_id: BUNDLE_ID,
-                bytes: 0,
-                error: Some(error.clone()),
-            },
+            Some(Err(error)) => {
+                // The raw filesystem/JNI detail stays in `spine.log`; the
+                // WebView only receives a short, user-safe reason.
+                spine_assets::log(
+                    &self.app_data_dir,
+                    &format!("status: models unavailable: {error}"),
+                );
+                SpineStatus {
+                    models: classify_model_error(error),
+                    bundle_id: BUNDLE_ID,
+                    bytes: 0,
+                    error: Some(user_safe_model_error(error).to_owned()),
+                }
+            }
             None => SpineStatus {
                 models: "error",
                 bundle_id: BUNDLE_ID,
@@ -298,7 +279,7 @@ impl SpineService {
         })?;
         let cover_hash = sha256_hex(&cover_bytes);
         let key = cache_key(&book.content_hash, &cover_hash, pages, BUNDLE_ID);
-        let dir = self.books_dir().join(&key);
+        let dir = self.cache.entry_dir(&key);
 
         Ok(Prepared {
             input: BookInput {
@@ -307,6 +288,7 @@ impl SpineService {
                 author: author_line(&book.authors),
                 pages,
             },
+            key,
             dir,
             pages_approximate,
         })
@@ -379,6 +361,7 @@ impl SpineService {
 
 struct Prepared {
     input: BookInput,
+    key: String,
     dir: PathBuf,
     pages_approximate: bool,
 }
@@ -395,15 +378,10 @@ impl Drop for InFlight<'_> {
 }
 
 /// The cache key from the spec: content hash, cover bytes, page count, bundle.
+/// The definition lives in `pocketlibrary_core::spine_cache`; this stays for
+/// callers and tests that use the shell-side name.
 pub fn cache_key(content_hash: &str, cover_hash: &str, pages: u32, bundle_id: &str) -> String {
-    sha256_hex(format!("{content_hash}\n{cover_hash}\n{pages}\n{bundle_id}").as_bytes())
-}
-
-fn key_name(dir: &Path) -> String {
-    dir.file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or("book")
-        .to_owned()
+    spine_cache_key(content_hash, cover_hash, pages, bundle_id)
 }
 
 /// A real positive page count, or a clamped estimate with a flag for the
@@ -420,10 +398,7 @@ fn author_line(authors: &[String]) -> String {
 }
 
 fn find_book(api: &Api, book_id: i64) -> Result<Book, ApiError> {
-    api.list_books()?
-        .into_iter()
-        .find(|book| book.id == book_id)
-        .ok_or_else(|| api_error("book_not_found", "That book is not in the library."))
+    api.book(book_id)
 }
 
 /// A clear, UI-facing error when a book has no cover file to work from.
@@ -450,34 +425,6 @@ fn sha256_hex(bytes: &[u8]) -> String {
         let _ = write!(hex, "{byte:02x}");
     }
     hex
-}
-
-fn read_cached(dir: &Path) -> Option<SpineArtifact> {
-    let text = fs::read_to_string(dir.join(ARTIFACT_FILE)).ok()?;
-    serde_json::from_str(&text).ok()
-}
-
-fn write_artifact(dir: &Path, artifact: &SpineArtifact) -> Result<(), ApiError> {
-    let text = serde_json::to_string_pretty(artifact)
-        .map_err(|error| cache_error(format!("serialise spine artifact: {error}")))?;
-    fs::write(dir.join(ARTIFACT_FILE), text)
-        .map_err(|error| cache_error(format!("write {}: {error}", ARTIFACT_FILE)))
-}
-
-/// Install a fully written entry in one rename.
-fn install_dir(staged: &Path, target: &Path) -> Result<(), ApiError> {
-    if let Some(parent) = target.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|error| cache_error(format!("create {}: {error}", parent.display())))?;
-    }
-    if target.exists() {
-        fs::remove_dir_all(target)
-            .map_err(|error| cache_error(format!("replace {}: {error}", target.display())))?;
-    }
-    fs::rename(staged, target).map_err(|error| {
-        let _ = fs::remove_dir_all(staged);
-        cache_error(format!("install {}: {error}", target.display()))
-    })
 }
 
 /// Build the wire artifact from the seven engine files in `dir`.
@@ -593,6 +540,26 @@ fn classify_model_error(error: &str) -> &'static str {
     }
 }
 
+/// Short, user-safe reason for a model failure.
+///
+/// The raw detail (filesystem paths, hashes, JNI messages) is written to
+/// `spine/spine.log`; it must never reach the WebView.
+fn user_safe_model_error(error: &str) -> &'static str {
+    let lower = error.to_ascii_lowercase();
+    if lower.contains("missing") || lower.contains("not found") || lower.contains("does not exist")
+    {
+        "models missing"
+    } else if lower.contains("size mismatch")
+        || lower.contains("sha256 mismatch")
+        || lower.contains("incomplete")
+        || lower.contains("download")
+    {
+        "download incomplete"
+    } else {
+        "models could not be loaded"
+    }
+}
+
 fn api_error(code: &'static str, message: impl Into<String>) -> ApiError {
     ApiError {
         code,
@@ -695,12 +662,20 @@ mod tests {
         let spine = image::load_from_memory(&spine_bytes).expect("decode spine");
         assert_eq!((spine.width(), spine.height()), (SPINE_W, SPINE_H));
 
-        write_artifact(temp.path(), &artifact).expect("write artifact");
-        let read_back = read_cached(temp.path()).expect("read artifact");
+        let cache = SpineCache::with_limit(
+            temp.path(),
+            pocketlibrary_core::spine_cache::CACHE_LIMIT_BYTES,
+        );
+        cache.write(temp.path(), &artifact).expect("write artifact");
+        let read_back: SpineArtifact = cache.read(temp.path()).expect("read artifact");
         assert_eq!(artifact, read_back);
 
         // JSON persists the camelCase wire names the frontend expects.
-        let text = fs::read_to_string(temp.path().join(ARTIFACT_FILE)).expect("read text");
+        let text = fs::read_to_string(
+            temp.path()
+                .join(pocketlibrary_core::spine_cache::ARTIFACT_FILE),
+        )
+        .expect("read text");
         assert!(text.contains("\"bookId\""));
         assert!(text.contains("\"artDataUrl\""));
         assert!(text.contains("\"runJson\""));
@@ -752,5 +727,34 @@ mod tests {
         let absent = temp.path().join("gone.jpg");
         let error = require_cover(3, Some(&absent)).expect_err("cover file absent");
         assert_eq!(error.code, "cover_missing");
+    }
+
+    #[test]
+    fn model_errors_are_short_and_user_safe() {
+        // Raw paths and hashes never cross the wire.
+        assert_eq!(
+            user_safe_model_error(
+                "missing /data/app/spine/models/spine-v1/migan.onnx: No such file"
+            ),
+            "models missing"
+        );
+        assert_eq!(
+            user_safe_model_error("/data/spine/migan.onnx sha256 mismatch: expected aa, got bb"),
+            "download incomplete"
+        );
+        assert_eq!(
+            user_safe_model_error("JNI JavaVM::from_raw: jni error"),
+            "models could not be loaded"
+        );
+
+        // The `models` enum keeps its existing classification.
+        assert_eq!(
+            classify_model_error("missing /data/app/spine/models/migan.onnx"),
+            "missing"
+        );
+        assert_eq!(
+            classify_model_error("JNI JavaVM::from_raw: jni error"),
+            "error"
+        );
     }
 }

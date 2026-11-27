@@ -31,6 +31,16 @@ window, but a first-window-only backend command is future work. Reader fonts are
 deliberately not subsetted because EPUB text is arbitrary; they stay lazy. The
 original ticket 13 report below is kept as the historical baseline.
 
+## Historical baseline (ticket 13, phase 1)
+
+> **Historical.** Everything from here to **Reproduce** describes the phase-1
+> wall, including its zero-height sentinel + `IntersectionObserver` mounting
+> and the "nodes are kept once mounted" rule. The shipped renderer no longer
+> works that way: it derives an arithmetic window from scroll position and
+> recycles a fixed slot pool (see the 0.1.2 update above and
+> `src/library/window.ts`). The numbers below are kept as the ticket-13
+> baseline, not as a description of current behaviour.
+
 ## Headline
 
 Progressive mounting plus an imperative filter and model-arithmetic geometry
@@ -91,12 +101,15 @@ Long-task phases (after): `load` 91 ms and 58 ms; `scroll` 0; `filter` 0;
 
 `src/App.tsx`:
 
-- **Progressive mount.** The first shelf paints immediately; one zero-height
-  sentinel plus a single spacer reserve the exact remaining wall height, and an
-  `IntersectionObserver` mounts one more case just before it is needed. Mounting
-  is wrapped in `startTransition`, nodes are kept once mounted (no recycling),
-  and the spacer preserves scroll position. Libraries of 12 shelves or fewer
-  mount fully at once so small-library tests and navigation are unaffected.
+- **Progressive mount (phase 1; since replaced).** The first shelf painted
+  immediately; one zero-height sentinel plus a single spacer reserved the exact
+  remaining wall height, and an `IntersectionObserver` mounted one more case
+  just before it was needed. Mounting was wrapped in `startTransition` and
+  nodes were kept once mounted (no recycling). The shipped renderer instead
+  computes the visible shelf range from `scrollY`, the viewport height and the
+  fixed 358px shelf unit, keeps one shelf of overscan, and recycles a pool of
+  nine slots while `v4-shelf-placeholder` gaps reserve the exact height of
+  every unmounted shelf. Twelve shelves or fewer still mount eagerly.
 - **Memoised shelves and spines.** `ShelfCase` is `React.memo` with a comparator
   on shelf identity and book references, so a drag preview or filter does not
   reconcile unaffected shelves. Empty label bands are omitted; labels only
@@ -125,16 +138,17 @@ Long-task phases (after): `load` 91 ms and 58 ms; `scroll` 0; `filter` 0;
   first wall commit. Scroll, filter and drag are clean. If zero load tasks is a
   hard requirement, the next rung is an app-shell split (deliver masthead/filter
   first, defer non-library views) rather than more wall work.
-- **Memory over a full traversal.** The benchmark reads 11.3 MB at the measured
-  top-of-wall state. Because nodes are kept once mounted (the ticket's
-  no-JS-windowing rule), a user who scrolls the entire 182-shelf wall grows the
-  renderer further; the pre-hardening build did the same once every shelf had
-  been painted. The documented ladder for a hard cap remains an 8-shelf JS
-  window, which is explicitly out of scope for this ticket.
+- **Memory over a full traversal (phase 1).** The benchmark read 11.3 MB at the
+  measured top-of-wall state. Under phase 1, nodes were kept once mounted, so a
+  user who scrolled the entire 182-shelf wall grew the renderer; the 0.1.2
+  window recycles a nine-slot pool, so the mounted set tracks the viewport
+  rather than the library size. The phase-1 node counts above are historical and
+  are not a current memory projection.
 
 The fallback ladder was applied at step 1 (paint/DOM tuning) and step 2's
-model-arithmetic part for drag. A JS window / canvas path was not used, per the
-spec's v1 decision.
+model-arithmetic part for drag. The ticket-13 build did not use a JS window;
+the 0.1.2 phase 2 later added the arithmetic window and slot recycling described
+at the top. A canvas path was still not used.
 
 ## Device remainder
 
@@ -144,7 +158,7 @@ checkbox stays open. On device, check:
 - First shelf excluding Tauri/SQLite startup, and the real bundle-evaluation
   time on the target WebView.
 - Renderer memory with `dumpsys meminfo`, not just Blink embedder heap.
-- Compositor fling behaviour and the progressive-mount boundary (no blank shelf
+- Compositor fling behaviour and the shelf-window boundary (no blank shelf
   and no scroll jump).
 - Lift/drop and filtering with the real touch pipeline.
 

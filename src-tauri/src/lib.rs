@@ -1616,6 +1616,11 @@ pub fn run() {
             app.manage(spine_service::SpineService::new(data_dir.clone()));
             let spine_queue = spine_queue::SpineQueue::new(data_dir.clone(), app.handle().clone());
             app.manage(spine_queue);
+            // Once per model bundle, queue the existing library behind any
+            // restored jobs. New downloads, scans and cover changes enqueue
+            // their own book immediately.
+            app.state::<spine_queue::SpineQueue>()
+                .backfill_once(app.state::<Api>().inner());
             let updates_state = updates::UpdatesState::from_config(app.config());
             app.manage(updates_state);
             app.manage(BackupExchange::default());

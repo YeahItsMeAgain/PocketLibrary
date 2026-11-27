@@ -51,3 +51,31 @@ _Avoid_: download, purchase
 **Reader**:
 The in-app view that renders an EPUB or PDF and tracks reading position.
 _Avoid_: viewer, renderer
+
+**Spine**:
+The narrow strip a book shows when it sits on a shelf: either the generated spine or the typographic fallback.
+_Avoid_: side, edge
+
+**Spine engine**:
+The on-device pipeline that generates a spine from a book's cover and text, producing either cover art or a typographic fallback. It runs locally and never touches the network.
+_Avoid_: model, generator, spine service
+
+**Spine artifact**:
+The cached result for one book: the art, spine and fallback images plus route, verdict, mask coverage and run/QA data. It is complete only when its `artifact.json` has been written.
+_Avoid_: output, image, cache file
+
+**Spine style**:
+How a generated spine is presented: `wrap`, `full-bleed` or `cloth`. This is the per-book `Book.spineStyle` value (optional on the wire; absent means `wrap`). It is not the generation route or the QA verdict.
+_Avoid_: route, verdict, layout, theme
+
+**Backfill**:
+The one-time job that queues the existing library for spine generation when it has not been processed for the active model bundle.
+_Avoid_: sync, import
+
+**Bundle id**:
+The version identifier of the spine model set (currently `spine-v1`). It is part of a spine cache key, so a new bundle id invalidates earlier artifacts.
+_Avoid_: version, model name
+
+**Stage**:
+One coarse step of spine generation for a single book: `art` (cover art), `text` (typographic spine) or `check` (QA verdict).
+_Avoid_: step, phase, status

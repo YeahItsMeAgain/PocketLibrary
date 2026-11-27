@@ -36,7 +36,7 @@ impl Engine {
 |---|---|
 | `source.jpg` | working copy of the cover |
 | `art.jpg` | text-free art, crop or MI-GAN-filled |
-| `spine-2x.jpg` | 104 × 472 spine; the shell downsamples to 52 × 236 for the wire |
+| `spine-2x.jpg` | 104 × 472 spine; the service downsamples it to 52 × 236 for the wire |
 | `fallback-spine.jpg` | typographic fallback |
 | `mask.png` | text mask preview |
 | `run.json` | existing v8-app schema, including `final.crop_box_work` |
@@ -65,6 +65,7 @@ interface SpineArtifact {
   artDataUrl: string;      // data:image/jpeg;base64,...
   spineDataUrl: string;    // 52 x 236
   fallbackDataUrl: string;
+  pagesApproximate: boolean;  // page count used for geometry was an estimate
   runJson: unknown;
   qaJson: unknown;
 }
@@ -120,11 +121,17 @@ interface SpineQueueState {
   failed: number;
   currentBookId: number | null;
   stage: "art" | "text" | "check" | null;
+  /** True only while the library has never been queued for this bundle. */
+  backfillPending: boolean;
 }
 ```
 
 - The backend owns a single FIFO worker. Automatic jobs run one at a time;
   `spine_generate` jumps the queue. Completed caches are skipped.
+- The full-library backfill runs once per model bundle id. The shell records
+  that in `<app data>/spine/backfill.json` and queues the library itself at
+  startup; `backfillPending` tells the frontend whether that is still due.
+  New downloads, scans and cover changes enqueue their book immediately.
 - Events: `spine://queue` with `SpineQueueState` on every transition, and
   `spine://progress` with `{ bookId, stage, index, total }` per stage.
 - Jobs survive process death: unfinished book ids are persisted and re-queued
