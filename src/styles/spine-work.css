@@ -1,0 +1,127 @@
+/* ------------------------------------------------- automatic spine work */
+
+.spine-activity {
+  position: fixed;
+  left: 50%;
+  bottom: 74px;
+  z-index: 690;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  width: max-content;
+  padding: 7px 8px 7px 12px;
+  border: 1px solid rgba(201, 168, 106, 0.42);
+  border-radius: 999px;
+  background: rgba(20, 12, 24, 0.92);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 244, 214, 0.12);
+  color: #cbb78c;
+  transform: translateX(-50%);
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.spine-activity-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.spine-activity-action {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(201, 168, 106, 0.55);
+  border-radius: 999px;
+  background: rgba(201, 168, 106, 0.14);
+  color: #f0dbad;
+  font-size: 7.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  pointer-events: auto;
+}
+
+.spine-activity.is-paused {
+  border-color: rgba(201, 168, 106, 0.28);
+  color: #a89163;
+}
+
+.spine-activity.is-paused .spine-activity-action {
+  border-color: rgba(201, 168, 106, 0.8);
+  background: rgba(201, 168, 106, 0.22);
+}
+
+.spine-book-state {
+  margin: 8px 0 0;
+  color: #b39a70;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.spine-book-state.is-needs-attention {
+  color: #e0a58c;
+}
+
+.spine-generated {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: fill;
+}
+
+.spine.has-generated::after {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.24),
+    transparent 18%,
+    transparent 82%,
+    rgba(0, 0, 0, 0.24)
+  );
+}
+
+.spine-attention {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  z-index: 4;
+  display: grid;
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(240, 190, 160, 0.8);
+  border-radius: 50%;
+  background: rgba(96, 34, 24, 0.92);
+  color: #f4d2b8;
+  font-size: 8px;
+  line-height: 1;
+  place-items: center;
+  pointer-events: none;
+}
+
+@media (max-width: 340px) {
+  .spine-activity {
+    bottom: 68px;
+    gap: 7px;
+    padding: 6px 6px 6px 10px;
+  }
+
+  .spine-activity-text {
+    font-size: 7.5px;
+    letter-spacing: 0.05em;
+  }
+
+  .spine-activity-action {
+    padding: 0 8px;
+    font-size: 6.8px;
+    letter-spacing: 0.05em;
+  }
+}

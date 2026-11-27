@@ -1,0 +1,33 @@
+/* ------------------------------------------------------------------ room */
+
+.room {
+  position: relative;
+  min-height: 100dvh;
+  padding: 0 0 calc(var(--drawer-pull-space) + 36px);
+  color: #d9cbb2;
+  background:
+    radial-gradient(78% 26% at 50% 1%, rgba(201, 168, 106, 0.13), transparent 70%),
+    radial-gradient(58% 16% at 50% 34%, rgba(160, 118, 150, 0.08), transparent 72%),
+    radial-gradient(58% 16% at 50% 68%, rgba(160, 118, 150, 0.07), transparent 72%),
+    linear-gradient(180deg, #150e16 0%, #0e0810 48%, #09050b 100%);
+  isolation: isolate;
+}
+
+.room::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(45deg, rgba(201, 168, 106, 0.028) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(-45deg, rgba(201, 168, 106, 0.024) 0 1px, transparent 1px 26px),
+    var(--noise);
+  background-size: auto, auto, 96px 96px;
+  opacity: 0.42;
+  mix-blend-mode: overlay;
+}
+
+.room > * {
+  position: relative;
+}

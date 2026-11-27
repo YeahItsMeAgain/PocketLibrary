@@ -1,0 +1,409 @@
+/* ------------------------------------------------------------------ wall */
+
+.library-wall {
+  padding: 0 0 38px;
+}
+
+.wall-inner {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+.v4-shelf {
+  position: relative;
+  margin: 30px 0 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 328px;
+}
+
+/* Windowed wall: the container reserves the full wall height and mounted
+   cases are absolutely positioned into recycled slots. Placeholders keep the
+   exact height of every unmounted shelf, so the scrollbar never changes. */
+.shelf-window {
+  position: relative;
+}
+.shelf-slot {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flow-root;
+  height: 358px;
+}
+.v4-shelf-placeholder {
+  position: absolute;
+  right: 0;
+  left: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 328px;
+}
+
+/* First-paint skeleton: masthead, filter strip and shelf rhythm only. */
+.library-skeleton .wall-inner {
+  padding-top: 4px;
+}
+.skeleton-filter {
+  display: flex;
+  gap: 6px;
+  height: 44px;
+  padding: 12px 2px;
+  margin-bottom: 10px;
+}
+.skeleton-filter span {
+  height: 20px;
+  border-radius: 10px;
+  background: rgba(201, 168, 106, 0.1);
+}
+.skeleton-filter span:nth-child(1) { width: 74px; }
+.skeleton-filter span:nth-child(2) { width: 92px; }
+.skeleton-filter span:nth-child(3) { width: 61px; }
+.skeleton-shelf {
+  position: relative;
+  height: 328px;
+  margin: 30px 0 0;
+  opacity: 0.75;
+}
+.skeleton-crown {
+  display: block;
+  height: 27px;
+  margin: 0 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #35213f, #211228);
+}
+.skeleton-cavity {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 264px;
+  margin: 0 1px;
+  padding: 0 9px;
+  background: linear-gradient(180deg, #1b1022, #120b17);
+}
+.skeleton-cavity i {
+  flex: 1;
+  height: 72%;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(180deg, rgba(201, 168, 106, 0.12), rgba(201, 168, 106, 0.03));
+}
+.skeleton-cavity i:nth-child(2) { height: 84%; }
+.skeleton-cavity i:nth-child(3) { height: 66%; }
+.skeleton-cavity i:nth-child(4) { height: 78%; }
+.skeleton-board {
+  display: block;
+  height: 18px;
+  margin: 0 1px;
+  background: linear-gradient(180deg, #3d2846, #180d20);
+}
+.skeleton-shelf::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 10px;
+  height: 10px;
+  background: #0b060e;
+  border-radius: 0 0 2px 2px;
+}
+
+.v4-case {
+  position: relative;
+}
+
+.v4-crown {
+  position: relative;
+  height: 27px;
+  margin: 0 3px;
+  border-radius: 3px 3px 0 0;
+  background:
+    linear-gradient(180deg, rgba(230, 207, 160, 0.24), transparent 22%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 9px),
+    linear-gradient(180deg, #3a2540 0%, #271731 38%, #190f20 66%, #100812 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 220, 180, 0.24),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.62),
+    0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+.v4-crown::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(
+    180deg,
+    rgba(230, 207, 160, 0.32),
+    rgba(0, 0, 0, 0.45) 48%,
+    rgba(230, 207, 160, 0.1)
+  );
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.v4-crown::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: 4px;
+  left: 10px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(230, 207, 160, 0.32) 18%,
+    rgba(230, 207, 160, 0.08) 50%,
+    rgba(230, 207, 160, 0.3) 82%,
+    transparent
+  );
+}
+
+.v4-crest {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 62px;
+  height: 17px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='18' viewBox='0 0 64 18' fill='none'%3E%3Cpath d='M2 15h18M44 15h18' stroke='%23c9a86a' opacity='.5'/%3E%3Cpath d='M32 2c-3 4-6.5 6-11 6 4 1.8 6.8 4.6 8.2 8 1.1-2.4 2-2.8 2.8-4.2.8 1.4 1.7 1.8 2.8 4.2C36.2 12.6 39 9.8 43 8c-4.5 0-8-2-11-6z' fill='%23c9a86a' opacity='.9'/%3E%3Ccircle cx='32' cy='16' r='1.1' fill='%23c9a86a'/%3E%3C/svg%3E")
+    center / 62px 17px no-repeat;
+  filter: drop-shadow(0 1px 0 #120814);
+  transform: translateX(-50%);
+}
+
+/* Brackets are a single background image rather than two inline SVGs, saving
+   ten DOM nodes per case while keeping the same drawing. */
+.v4-case::before,
+.v4-case::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  z-index: 0;
+  width: 30px;
+  height: 30px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34' fill='none'%3E%3Cpath d='M3 3c0 16 7 25 27 28' stroke='%239a8058' stroke-width='1.2'/%3E%3Cpath d='M8 4c.5 12 5.5 19 20 22' stroke='%239a8058' stroke-width='1' opacity='.55'/%3E%3Cpath d='M13 5c.6 8 3.6 13 12 15' stroke='%239a8058' stroke-width='1' opacity='.4'/%3E%3Ccircle cx='5' cy='5' r='2' fill='%239a8058' opacity='.7'/%3E%3C/svg%3E")
+    center / 30px 30px no-repeat;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.v4-case::before {
+  left: -8px;
+}
+
+.v4-case::after {
+  right: -8px;
+  transform: scaleX(-1);
+}
+
+.v4-cavity {
+  position: relative;
+  height: 264px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(120, 76, 120, 0.3), transparent 62%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(25% - 1px),
+      rgba(201, 168, 106, 0.075) calc(25% - 1px) 25%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 calc(50% - 1px),
+      rgba(201, 168, 106, 0.045) calc(50% - 1px) 50%
+    ),
+    linear-gradient(180deg, #1a1020 0%, #120a16 64%, #0b060e 100%);
+  box-shadow:
+    inset 0 24px 36px rgba(0, 0, 0, 0.88),
+    inset 0 0 0 1px rgba(201, 168, 106, 0.14),
+    inset 16px 0 26px -18px #000,
+    inset -16px 0 26px -18px #000;
+}
+
+.v4-cavity::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 215, 160, 0.025) 0 1px,
+      transparent 1px 5px,
+      rgba(0, 0, 0, 0.1) 5px 6px,
+      transparent 6px 19px
+    ),
+    var(--noise);
+  background-size: auto, 96px 96px;
+  opacity: 0.38;
+}
+
+.v4-back {
+  position: absolute;
+  inset: 9px 26px 0;
+  z-index: 0;
+  border: 1px solid rgba(201, 168, 106, 0.12);
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 34px rgba(0, 0, 0, 0.7),
+    inset 0 2px 0 rgba(201, 168, 106, 0.05);
+}
+
+.v4-pil {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 13px;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.7),
+      rgba(232, 214, 176, 0.1) 30%,
+      rgba(0, 0, 0, 0.22) 55%,
+      rgba(232, 214, 176, 0.08) 74%,
+      rgba(0, 0, 0, 0.75)
+    ),
+    repeating-linear-gradient(90deg, #33203a 0 2px, #1d1224 2px 4px, #402b46 4px 5px);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.v4-pil-l {
+  left: 0;
+}
+
+.v4-pil-r {
+  right: 0;
+}
+
+.v4-pil::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 9px;
+  background: linear-gradient(180deg, #4a3152, #251730);
+  box-shadow:
+    inset 0 1px 0 rgba(230, 207, 160, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.v4-lamp {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  z-index: 1;
+  width: 86%;
+  height: 176px;
+  background: radial-gradient(
+    ellipse at 50% 18%,
+    rgba(216, 186, 130, 0.22),
+    rgba(140, 100, 150, 0.06) 44%,
+    transparent 72%
+  );
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.v4-books {
+  position: absolute;
+  top: 0;
+  right: 7px;
+  bottom: 0;
+  left: 7px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 1px;
+}
+
+.v4-lip {
+  position: relative;
+  height: 9px;
+  margin: 0 -1px;
+  background:
+    linear-gradient(180deg, rgba(230, 207, 160, 0.3), transparent 26%),
+    linear-gradient(180deg, #4a3052 0%, #2f1d39 48%, #1b1022 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 220, 180, 0.26),
+    0 2px 3px rgba(0, 0, 0, 0.6);
+}
+
+.v4-lip::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 8px;
+  left: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(230, 207, 160, 0.45), transparent);
+}
+
+.v4-board {
+  position: relative;
+  height: 18px;
+  margin: 0 1px;
+  background:
+    linear-gradient(180deg, rgba(230, 207, 160, 0.18), transparent 20%),
+    linear-gradient(180deg, #3d2846 0%, #2a1832 46%, #180d20 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 222, 184, 0.22),
+    0 14px 22px rgba(0, 0, 0, 0.72),
+    0 3px 0 #0b060e;
+}
+
+.v4-board::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(230, 207, 160, 0.45) 16%,
+    rgba(230, 207, 160, 0.16) 50%,
+    rgba(230, 207, 160, 0.42) 84%,
+    transparent
+  );
+}
+
+.v4-plinth {
+  height: 10px;
+  margin: 0 7px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(180deg, #1c1024, #0b060e 70%, #060309);
+  box-shadow:
+    inset 0 1px 0 rgba(230, 207, 160, 0.1),
+    0 6px 12px rgba(0, 0, 0, 0.55);
+}
+
+.v4-plate,
+.v4-full {
+  position: absolute;
+  top: 3px;
+  z-index: 3;
+  padding: 1px 7px;
+  border: 1px solid rgba(201, 168, 106, 0.55);
+  background: linear-gradient(180deg, #1e1326, #0f0914);
+  box-shadow:
+    inset 0 1px 0 rgba(230, 207, 160, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.6);
+  color: #e2caa0;
+  font-size: 6.2px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.v4-plate {
+  left: 13px;
+}
+
+.v4-full {
+  right: 13px;
+  color: #efd9a6;
+}

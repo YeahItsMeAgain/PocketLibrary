@@ -1,0 +1,91 @@
+/* ------------------------------------------------------------------ base */
+:root {
+  color-scheme: dark;
+  --display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino,
+    "Hoefler Text", Georgia, "Noto Serif", serif;
+  --body: "Iowan Old Style", Palatino, "Book Antiqua", Georgia, "Noto Serif",
+    serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --brass: #c9a86a;
+  --brass-bright: #ecd6a6;
+  --brass-dim: #8f7446;
+  --cream: #d9cbb2;
+  --ink: #33261a;
+  --paper: #f4e9cf;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-io: cubic-bezier(0.65, 0.05, 0.36, 1);
+  /* Room reserved below content for the fixed brass drawer pull. */
+  --drawer-pull-space: calc(32px + env(safe-area-inset-bottom));
+  /* A pre-rasterised noise tile. The old feTurbulence filter was the most
+     expensive first-paint raster task; WebP at 96px keeps the same grain at
+     9 kB instead of 82 kB. */
+  --noise: url("../assets/noise.webp");
+  font-family: var(--body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  overflow-x: hidden;
+  background: #0e0810;
+}
+
+body {
+  overflow-x: hidden;
+  color: var(--cream);
+  background: #0e0810;
+}
+
+button {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button:focus-visible {
+  outline: 2px solid #f2dda0;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(201, 168, 106, 0.4);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}

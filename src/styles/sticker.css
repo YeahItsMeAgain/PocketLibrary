@@ -1,0 +1,93 @@
+/* --------------------------------------------------------------- sticker */
+
+.sticker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  text-align: center;
+  transform: rotate(-5deg);
+}
+
+.sticker-paper {
+  width: 62px;
+  height: 62px;
+  padding: 6px;
+  border-radius: 2px;
+  background: radial-gradient(120% 100% at 20% 10%, #fffdf6, #f2e7ce 70%, #e2d2b0 100%);
+  box-shadow:
+    0 3px 7px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(120, 95, 55, 0.22);
+  color: #3a2a18;
+}
+
+.sticker-paper::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(120, 95, 55, 0.28);
+  border-radius: 1px;
+}
+
+.sticker-paper .pct {
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.sticker-paper .pct i {
+  font-size: 10px;
+  font-style: normal;
+}
+
+.sticker-paper .psub {
+  margin-top: 2px;
+  font-size: 6px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.sticker-paper .psub::after {
+  content: "read";
+}
+
+.sticker-gold {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 24%, #fff6c8 0%, #efd488 22%, #cfa84a 55%, #9a7222 82%, #6d4c12 100%);
+  box-shadow:
+    0 4px 9px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 2px rgba(255, 244, 190, 0.55),
+    inset 0 0 0 5px rgba(120, 84, 22, 0.3);
+  color: #4e3210;
+}
+
+.sticker-gold::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed rgba(92, 62, 14, 0.45);
+  border-radius: 50%;
+}
+
+.sticker-gold .gstar {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sticker-gold .gsub {
+  margin-top: 2px;
+  font-size: 5px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

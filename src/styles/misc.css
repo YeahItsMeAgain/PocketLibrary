@@ -1,0 +1,117 @@
+/* ------------------------------------------------------------------ misc */
+
+.wall-note {
+  max-width: 320px;
+  margin: 30px auto 0;
+  color: #927c5d;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  line-height: 1.8;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.wall-actions {
+  max-width: 320px;
+  margin: 8px auto 0;
+  text-align: center;
+}
+
+.wall-actions .wall-note {
+  margin-top: 0;
+}
+
+.wall-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.wall-buttons .primary-action,
+.wall-buttons .secondary-action {
+  flex: 1 1 130px;
+}
+
+.scan-notice {
+  margin: 16px 0 0 !important;
+  color: #c8b088 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.06em;
+}
+
+.library-notice {
+  max-width: 420px;
+  margin: 14px auto 0 !important;
+  text-align: center;
+}
+
+.about-block {
+  width: min(370px, 100%);
+  margin-top: 14px;
+  text-align: center;
+}
+
+.manage-labels {
+  position: fixed;
+  inset: 14px 12px;
+  z-index: 520;
+  width: min(390px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 20px 18px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(201, 168, 106, 0.65);
+  background:
+    radial-gradient(100% 60% at 50% 0%, rgba(104, 58, 116, 0.3), transparent 58%),
+    linear-gradient(180deg, rgba(30, 18, 38, 0.98), rgba(12, 7, 16, 0.99));
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  color: #d9cbb2;
+}
+
+.manage-labels .detail-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(201, 168, 106, 0.5);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #2a1834, #140b1c);
+  color: #efd9a6;
+  font-size: 22px;
+  place-items: center;
+}
+
+@media (max-width: 379px) {
+  .spine.book {
+    width: calc(var(--w) * 0.9);
+  }
+
+  .spine .lb {
+    font-size: 6.9px;
+  }
+}
+
+@media (max-width: 339px) {
+  .spine.book {
+    width: calc(var(--w) * 0.8);
+  }
+
+  .spine .lb {
+    font-size: 6.4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
