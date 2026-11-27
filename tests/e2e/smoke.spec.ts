@@ -12,7 +12,7 @@ test("fresh install opens on folder onboarding", async ({ page }) => {
 
   const appInfo = page.getByTestId("app-info");
   await expect(appInfo).toContainText("PocketLibrary");
-  await expect(appInfo).toContainText("v0.1.8");
+  await expect(appInfo).toContainText("v0.1.9");
   await expect(appInfo).toContainText("schema 6");
 });
 
