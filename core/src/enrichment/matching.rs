@@ -3,8 +3,8 @@
 
 use unicode_normalization::UnicodeNormalization;
 
-use super::provider::{first_year, ProviderCandidate};
 use super::BookSnapshot;
+use super::provider::{ProviderCandidate, first_year};
 use crate::models::BookFormat;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,16 +37,16 @@ impl CombiningMark for char {
 pub fn normalise_title(value: &str) -> String {
     let mut folded = fold(value);
     if let Some((main, subtitle)) = folded.split_once(':') {
-        if main.trim().split_whitespace().count() >= 2 {
+        if main.split_whitespace().count() >= 2 {
             folded = main.to_owned();
         } else {
             let _ = subtitle;
         }
     }
-    if let Some((main, _subtitle)) = folded.split_once('—') {
-        if main.trim().split_whitespace().count() >= 2 {
-            folded = main.to_owned();
-        }
+    if let Some((main, _subtitle)) = folded.split_once('—')
+        && main.split_whitespace().count() >= 2
+    {
+        folded = main.to_owned();
     }
     let words: Vec<String> = folded
         .chars()
@@ -146,14 +146,17 @@ pub(super) fn clean_blurb(raw: &str) -> Option<String> {
                     .next()
                     .unwrap_or("")
                     .to_ascii_lowercase();
-                if matches!(name.as_str(), "p" | "br" | "div" | "li" | "h1" | "h2" | "h3") {
+                if matches!(
+                    name.as_str(),
+                    "p" | "br" | "div" | "li" | "h1" | "h2" | "h3"
+                ) {
                     text.push('\n');
                 }
                 in_tag = false;
             }
             '&' => {
                 let mut entity = String::new();
-                while let Some(next) = chars.next() {
+                for next in chars.by_ref() {
                     if next == ';' || entity.len() > 10 {
                         break;
                     }
@@ -178,11 +181,7 @@ pub(super) fn clean_blurb(raw: &str) -> Option<String> {
     }
     let lines: Vec<String> = text
         .lines()
-        .map(|line| {
-            line.split_whitespace()
-                .collect::<Vec<_>>()
-                .join(" ")
-        })
+        .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
         .filter(|line| !line.is_empty())
         .collect();
     let mut cleaned = lines.join("\n\n");
@@ -253,7 +252,7 @@ pub fn normalise_isbn(value: &str) -> Option<String> {
                 };
                 sum += digit * (10 - index as u32);
             }
-            if sum % 11 != 0 {
+            if !sum.is_multiple_of(11) {
                 return None;
             }
             let core = format!("978{}", &cleaned[..9]);
@@ -294,7 +293,7 @@ fn valid_isbn13(value: &str) -> bool {
             if index % 2 == 0 { digit } else { digit * 3 }
         })
         .sum();
-    sum % 10 == 0
+    sum.is_multiple_of(10)
 }
 
 // ---------------------------------------------------------------------------
@@ -324,16 +323,19 @@ pub(super) fn confidence(snapshot: &BookSnapshot, candidate: &ProviderCandidate)
         _ => true,
     };
 
-    if let Some(isbn) = snapshot.identifier.as_deref().and_then(find_isbn) {
-        if candidate.cover_keys.iter().any(|key| key == &format!("isbn:{isbn}")) {
-            // Open Library edition records usually link authors by key and omit
-            // their names. An exact ISBN is already the strongest key, so a
-            // missing author list is not a conflict as long as the title agrees.
-            if similarity >= 0.9 && (author_ok || candidate.authors.is_empty()) {
-                return Confidence::High;
-            }
-            return Confidence::Medium;
+    if let Some(isbn) = snapshot.identifier.as_deref().and_then(find_isbn)
+        && candidate
+            .cover_keys
+            .iter()
+            .any(|key| key == &format!("isbn:{isbn}"))
+    {
+        // Open Library edition records usually link authors by key and omit
+        // their names. An exact ISBN is already the strongest key, so a
+        // missing author list is not a conflict as long as the title agrees.
+        if similarity >= 0.9 && (author_ok || candidate.authors.is_empty()) {
+            return Confidence::High;
         }
+        return Confidence::Medium;
     }
     if similarity >= 0.98 && author_ok && year_ok {
         return Confidence::High;
@@ -412,8 +414,8 @@ mod tests {
 
     #[test]
     fn blurbs_are_plain_text_and_bounded() {
-        let cleaned = clean_blurb("<p>A quiet &amp; <b>revolution</b>.</p><p>Second.</p>")
-            .expect("blurb");
+        let cleaned =
+            clean_blurb("<p>A quiet &amp; <b>revolution</b>.</p><p>Second.</p>").expect("blurb");
         assert_eq!(cleaned, "A quiet & revolution.\n\nSecond.");
         assert!(clean_blurb("   ").is_none());
         assert!(clean_blurb("https://example.com/book").is_none());
@@ -440,7 +442,11 @@ mod tests {
 
     #[test]
     fn isbn_edition_candidates_are_high_when_title_and_author_agree() {
-        let snapshot = snapshot_with("The Dispossessed", &["Ursula K. Le Guin"], Some("9780306406157"));
+        let snapshot = snapshot_with(
+            "The Dispossessed",
+            &["Ursula K. Le Guin"],
+            Some("9780306406157"),
+        );
         let exact = ProviderCandidate {
             title: "The Dispossessed".to_owned(),
             authors: vec!["Ursula K. Le Guin".to_owned()],
@@ -452,11 +458,7 @@ mod tests {
 
     #[test]
     fn an_isbn_match_without_author_names_still_needs_the_title_to_agree() {
-        let snapshot = snapshot_with(
-            "Needful Things",
-            &["Stephen King"],
-            Some("9780670839537"),
-        );
+        let snapshot = snapshot_with("Needful Things", &["Stephen King"], Some("9780670839537"));
         let same_book = ProviderCandidate {
             title: "Needful Things".to_owned(),
             authors: Vec::new(),

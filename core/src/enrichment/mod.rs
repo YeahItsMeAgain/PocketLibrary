@@ -15,7 +15,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use rusqlite::{Connection, OptionalExtension, params};
-use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, Result};
 use crate::models::{
@@ -30,12 +29,12 @@ pub use provider::{
     ProviderErrorKind, ProviderResult, ProviderSupplement,
 };
 
+pub(crate) use cache::state_for;
 use cache::{
     cached_enrichment, cached_outcome, enrichment_state, provenance_for, store_enrichment,
     unix_now, write_provenance,
 };
 use cover::{PendingDevice, data_url, restore_file_cover, source_to_cover};
-pub(crate) use cache::state_for;
 use matching::{Confidence, clean_blurb, confidence, publication_year};
 
 pub const SOURCE_OPEN_LIBRARY: &str = "open_library";
@@ -181,11 +180,16 @@ impl EnrichmentService {
 
         let mut request = self.lookup_request(&snapshot);
         if request.isbn.is_none()
-            && let Some(key) = cached.as_ref().and_then(|cached| cached.matched_key.clone())
+            && let Some(key) = cached
+                .as_ref()
+                .and_then(|cached| cached.matched_key.clone())
         {
             request.edition_key = Some(key);
         }
-        if request.isbn.is_none() && request.edition_key.is_none() && request.title.trim().is_empty() {
+        if request.isbn.is_none()
+            && request.edition_key.is_none()
+            && request.title.trim().is_empty()
+        {
             return Ok(EnrichmentOutcome::NoMatch {
                 source: SOURCE_OPEN_LIBRARY.to_owned(),
                 reason: "no_title".to_owned(),
@@ -271,7 +275,7 @@ impl EnrichmentService {
             });
         }
 
-        let attribution = attribution_for(&SOURCE_LABEL, &review[0].source_url, Vec::new());
+        let attribution = attribution_for(SOURCE_LABEL, &review[0].source_url, Vec::new());
         let candidates = self.preview_candidates(&review).await;
         if !self.is_current(book_id, generation) {
             return Ok(EnrichmentOutcome::Cancelled);
@@ -297,7 +301,10 @@ impl EnrichmentService {
         }
     }
 
-    async fn lookup_with_retry(&self, request: LookupRequest) -> std::result::Result<Vec<ProviderCandidate>, ProviderError> {
+    async fn lookup_with_retry(
+        &self,
+        request: LookupRequest,
+    ) -> std::result::Result<Vec<ProviderCandidate>, ProviderError> {
         let mut attempt = 0;
         loop {
             match self.provider.lookup(request.clone()).await {
@@ -317,7 +324,10 @@ impl EnrichmentService {
         }
     }
 
-    async fn preview_candidates(&self, candidates: &[ProviderCandidate]) -> Vec<EnrichmentCandidate> {
+    async fn preview_candidates(
+        &self,
+        candidates: &[ProviderCandidate],
+    ) -> Vec<EnrichmentCandidate> {
         let mut previews = Vec::new();
         for candidate in candidates {
             let cover = self.cover_preview(candidate).await;
@@ -345,13 +355,18 @@ impl EnrichmentService {
         let description_gap = match provenance.0 {
             Provenance::Manual => false,
             Provenance::Online => force || explicit,
-            Provenance::File => snapshot.description.as_deref().map_or(true, |value| value.trim().is_empty()),
+            Provenance::File => snapshot
+                .description
+                .as_deref()
+                .is_none_or(|value| value.trim().is_empty()),
         };
         let cover_gap = match provenance.1 {
             Provenance::Manual => false,
             Provenance::Online => force || explicit,
-            Provenance::File => snapshot.cover_source != Some(CoverSource::Embedded)
-                && snapshot.cover_source != Some(CoverSource::Rendered),
+            Provenance::File => {
+                snapshot.cover_source != Some(CoverSource::Embedded)
+                    && snapshot.cover_source != Some(CoverSource::Rendered)
+            }
         };
 
         // Fill a missing IA supplement lazily when the provider has an ocaid.
@@ -402,13 +417,15 @@ impl EnrichmentService {
 
         let cover_path = cover_bytes
             .as_deref()
-            .and_then(|bytes| crate::cover::store(&self.service.cover_dir(), bytes));
+            .and_then(|bytes| crate::cover::store(self.service.cover_dir(), bytes));
         let write_description = description_gap
             && cleaned_description.is_some()
             && snapshot.description.as_deref() != cleaned_description.as_deref();
         let write_cover = cover_gap
             && cover_path.is_some()
-            && cover_path.as_deref().map(|path| path.to_string_lossy().into_owned())
+            && cover_path
+                .as_deref()
+                .map(|path| path.to_string_lossy().into_owned())
                 != snapshot.cover_path;
         if !write_description && !write_cover {
             if explicit {
@@ -443,15 +460,23 @@ impl EnrichmentService {
                 "UPDATE books SET description = ?1 WHERE id = ?2",
                 params![cleaned_description, book_id],
             )?;
-            write_provenance(&tx, book_id, "description", &description_source, Some(&description_url))?;
+            write_provenance(
+                &tx,
+                book_id,
+                "description",
+                &description_source,
+                Some(&description_url),
+            )?;
             fields.push("description".to_owned());
         }
-        if write_cover
-            && let Some(path) = &cover_path
-        {
+        if write_cover && let Some(path) = &cover_path {
             tx.execute(
                 "UPDATE books SET cover_path = ?1, cover_source = ?2 WHERE id = ?3",
-                params![path.to_string_lossy(), source_to_cover(&cover_source), book_id],
+                params![
+                    path.to_string_lossy(),
+                    source_to_cover(&cover_source),
+                    book_id
+                ],
             )?;
             write_provenance(&tx, book_id, "cover", &cover_source, Some(&cover_url))?;
             fields.push("cover".to_owned());
@@ -542,7 +567,10 @@ impl EnrichmentService {
                 write_provenance(&tx, book_id, "description", "manual", None)?;
             }
             None => {
-                tx.execute("UPDATE books SET description = NULL WHERE id = ?1", [book_id])?;
+                tx.execute(
+                    "UPDATE books SET description = NULL WHERE id = ?1",
+                    [book_id],
+                )?;
                 tx.execute(
                     "DELETE FROM field_provenance WHERE book_id = ?1 AND field = 'description'",
                     [book_id],
@@ -600,13 +628,7 @@ impl EnrichmentService {
 // ---------------------------------------------------------------------------
 
 fn unavailable(error: &ProviderError) -> EnrichmentOutcome {
-    let source = if error.kind == ProviderErrorKind::Status(429)
-        || error.kind == ProviderErrorKind::RateLimited
-    {
-        SOURCE_OPEN_LIBRARY
-    } else {
-        SOURCE_OPEN_LIBRARY
-    };
+    let source = SOURCE_OPEN_LIBRARY;
     EnrichmentOutcome::Unavailable {
         source: source.to_owned(),
         code: error.code().to_owned(),

@@ -9,8 +9,8 @@ use super::cache::{cached_enrichment, write_provenance};
 use super::provider::ProviderCandidate;
 use super::{
     BookSnapshot, EnrichmentOutcome, EnrichmentService, MAX_REVIEW_CANDIDATES,
-    SOURCE_INTERNET_ARCHIVE, SOURCE_LABEL, SOURCE_OPEN_LIBRARY, attribution_for,
-    provider_to_error, snapshot, unavailable,
+    SOURCE_INTERNET_ARCHIVE, SOURCE_LABEL, SOURCE_OPEN_LIBRARY, attribution_for, provider_to_error,
+    snapshot, unavailable,
 };
 use crate::cover::{self, CoverRejection};
 use crate::error::{Error, Result};
@@ -162,12 +162,7 @@ impl EnrichmentService {
             snapshot.cover_source,
             true,
         );
-        let original = original_option(
-            &conn,
-            book_id,
-            &snapshot,
-            self.service.cover_dir(),
-        );
+        let original = original_option(&conn, book_id, &snapshot, self.service.cover_dir());
         let mut online = Vec::new();
         if let Some(cached) = cached_enrichment(&conn, book_id)?
             && cached.status == "ok"
@@ -207,20 +202,22 @@ impl EnrichmentService {
         let request = self.lookup_request(&snapshot);
         let candidates = match self.lookup_with_retry(request).await {
             Ok(candidates) => candidates,
-            Err(error) => return Ok(match unavailable(&error) {
-                EnrichmentOutcome::Unavailable {
-                    source,
-                    code,
-                    message,
-                    retry_after_seconds,
-                } => CoverLookupOutcome::Unavailable {
-                    source,
-                    code,
-                    message,
-                    retry_after_seconds,
-                },
-                _ => unreachable!(),
-            }),
+            Err(error) => {
+                return Ok(match unavailable(&error) {
+                    EnrichmentOutcome::Unavailable {
+                        source,
+                        code,
+                        message,
+                        retry_after_seconds,
+                    } => CoverLookupOutcome::Unavailable {
+                        source,
+                        code,
+                        message,
+                        retry_after_seconds,
+                    },
+                    _ => unreachable!(),
+                });
+            }
         };
         if !self.is_current(book_id, generation) {
             return Ok(CoverLookupOutcome::Cancelled);
@@ -238,7 +235,9 @@ impl EnrichmentService {
                 if !seen_keys.insert(key.clone()) {
                     continue;
                 }
-                let Ok(fetched) = self.fetch_cover(key, from_supplement, CoverCheck::Manual).await
+                let Ok(fetched) = self
+                    .fetch_cover(key, from_supplement, CoverCheck::Manual)
+                    .await
                 else {
                     continue;
                 };
@@ -258,7 +257,10 @@ impl EnrichmentService {
                 };
                 let detail = [
                     candidate.authors.join(" · ").trim().to_owned(),
-                    candidate.year.map(|year| year.to_string()).unwrap_or_default(),
+                    candidate
+                        .year
+                        .map(|year| year.to_string())
+                        .unwrap_or_default(),
                     candidate.publisher.clone().unwrap_or_default(),
                 ]
                 .into_iter()
@@ -299,11 +301,7 @@ impl EnrichmentService {
         }
         Ok(CoverLookupOutcome::Found {
             candidates: options,
-            attribution: attribution_for(
-                SOURCE_LABEL,
-                &candidates[0].source_url,
-                Vec::new(),
-            ),
+            attribution: attribution_for(SOURCE_LABEL, &candidates[0].source_url, Vec::new()),
         })
     }
 
@@ -331,7 +329,7 @@ impl EnrichmentService {
         match choice.source.as_str() {
             "embedded" | "rendered" | "generated" | "original" => {
                 if choice.key == "generated" || snapshot.file_cover_path.is_none() {
-                    new_path = Some(ensure_generated(&self.service.cover_dir(), &snapshot)?);
+                    new_path = Some(ensure_generated(self.service.cover_dir(), &snapshot)?);
                     new_source = Some(CoverSource::Generated);
                 } else {
                     new_path = snapshot.file_cover_path.clone();
@@ -344,7 +342,10 @@ impl EnrichmentService {
                     .strip_prefix("device:")
                     .ok_or(Error::CoverTokenInvalid)?;
                 let pending = {
-                    let mut pending = self.device_pending.lock().map_err(|_| Error::LockPoisoned)?;
+                    let mut pending = self
+                        .device_pending
+                        .lock()
+                        .map_err(|_| Error::LockPoisoned)?;
                     let value = pending.remove(token).ok_or(Error::CoverTokenInvalid)?;
                     if value.book_id != book_id {
                         return Err(Error::CoverTokenInvalid);
@@ -356,7 +357,7 @@ impl EnrichmentService {
                     }
                     value
                 };
-                let Some(path) = cover::store(&self.service.cover_dir(), &pending.cover) else {
+                let Some(path) = cover::store(self.service.cover_dir(), &pending.cover) else {
                     return Err(Error::CoverWriteFailed);
                 };
                 new_path = Some(path.to_string_lossy().into_owned());
@@ -381,7 +382,7 @@ impl EnrichmentService {
                         message: warning.unwrap_or_default(),
                     });
                 }
-                let Some(path) = cover::store(&self.service.cover_dir(), &cover) else {
+                let Some(path) = cover::store(self.service.cover_dir(), &cover) else {
                     return Err(Error::CoverWriteFailed);
                 };
                 new_path = Some(path.to_string_lossy().into_owned());
@@ -402,13 +403,9 @@ impl EnrichmentService {
             params![path, source, book_id],
         )?;
         match provenance_source {
-            Some("manual") => write_provenance(
-                &tx,
-                book_id,
-                "cover",
-                "manual",
-                source_url.as_deref(),
-            )?,
+            Some("manual") => {
+                write_provenance(&tx, book_id, "cover", "manual", source_url.as_deref())?
+            }
             _ => {
                 tx.execute(
                     "DELETE FROM field_provenance WHERE book_id = ?1 AND field = 'cover'",
@@ -429,7 +426,10 @@ impl EnrichmentService {
         let token = format!("device-{book_id}-{}", *counter);
         *counter += 1;
         {
-            let mut pending = self.device_pending.lock().map_err(|_| Error::LockPoisoned)?;
+            let mut pending = self
+                .device_pending
+                .lock()
+                .map_err(|_| Error::LockPoisoned)?;
             pending.insert(
                 token.clone(),
                 PendingDevice {
@@ -485,7 +485,12 @@ fn cover_option_for_path(
         key: "current".to_owned(),
         source: source.map(source_name).unwrap_or("generated").to_owned(),
         label: "Current cover".to_owned(),
-        detail: Some(source.map(source_description).unwrap_or("Current cover").to_owned()),
+        detail: Some(
+            source
+                .map(source_description)
+                .unwrap_or("Current cover")
+                .to_owned(),
+        ),
         preview_data_url: Some(preview),
         is_current,
         is_original: false,
@@ -509,7 +514,11 @@ fn original_option(
         let source = snapshot.file_cover_source.unwrap_or(CoverSource::Generated);
         let is_generated = source == CoverSource::Generated;
         return CoverOption {
-            key: if is_generated { "generated".to_owned() } else { "original".to_owned() },
+            key: if is_generated {
+                "generated".to_owned()
+            } else {
+                "original".to_owned()
+            },
             source: source_name(source).to_owned(),
             label: if is_generated {
                 "Generated jacket plate".to_owned()
@@ -544,10 +553,7 @@ fn original_option(
     }
 }
 
-fn ensure_generated(
-    cache_dir: &std::path::Path,
-    snapshot: &BookSnapshot,
-) -> Result<String> {
+fn ensure_generated(cache_dir: &std::path::Path, snapshot: &BookSnapshot) -> Result<String> {
     if snapshot.file_cover_source == Some(CoverSource::Generated)
         && let Some(path) = snapshot.file_cover_path.clone()
         && std::path::Path::new(&path).is_file()
@@ -566,8 +572,8 @@ pub(super) fn restore_file_cover(
 ) -> Result<()> {
     use rusqlite::OptionalExtension;
 
-    let (content_hash, file_path, file_source): (String, Option<String>, Option<CoverSource>) = conn
-        .query_row(
+    let (content_hash, file_path, file_source): (String, Option<String>, Option<CoverSource>) =
+        conn.query_row(
             "SELECT content_hash, file_cover_path, file_cover_source FROM books WHERE id = ?1",
             [book_id],
             |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),

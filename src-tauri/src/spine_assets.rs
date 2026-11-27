@@ -99,11 +99,7 @@ pub fn log(app_data_dir: &Path, message: &str) {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_millis())
         .unwrap_or(0);
-    if let Ok(mut file) = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-    {
+    if let Ok(mut file) = fs::OpenOptions::new().create(true).append(true).open(&path) {
         let _ = writeln!(file, "{millis} {line}");
     }
 }
@@ -492,11 +488,7 @@ fn android_context() -> Result<ndk_context::AndroidContext, String> {
 /// error. Leaving the exception pending would make the next JNI call fail or
 /// abort the thread.
 #[cfg(target_os = "android")]
-fn jni_failure(
-    env: &mut jni::JNIEnv,
-    context: &str,
-    error: impl std::fmt::Display,
-) -> String {
+fn jni_failure(env: &mut jni::JNIEnv, context: &str, error: impl std::fmt::Display) -> String {
     let pending = env.exception_check().unwrap_or(false);
     if pending {
         let _ = env.exception_clear();

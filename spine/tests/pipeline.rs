@@ -256,8 +256,7 @@ fn missing_cover_is_an_error() {
             ),
             out.path(),
         )
-        .err()
-        .expect("missing cover must fail");
+        .expect_err("missing cover must fail");
     assert!(format!("{err:#}").contains("cover not found"), "{err:#}");
 }
 

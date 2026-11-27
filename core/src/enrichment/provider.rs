@@ -139,7 +139,9 @@ impl ProviderError {
             ProviderErrorKind::Offline => {
                 "You're offline. The book is still here; details were not updated."
             }
-            ProviderErrorKind::Timeout => "Open Library did not answer in time. Try again in a moment.",
+            ProviderErrorKind::Timeout => {
+                "Open Library did not answer in time. Try again in a moment."
+            }
             ProviderErrorKind::RateLimited => {
                 "Open Library asked the app to slow down. Try again in a moment."
             }
@@ -165,9 +167,13 @@ pub type ProviderResult<T> = std::result::Result<T, ProviderError>;
 /// The provider surface. Production has one general provider (Open Library)
 /// plus its edition-linked Internet Archive supplement.
 pub trait MetadataProvider: Send + Sync {
-    fn lookup<'a>(&'a self, request: LookupRequest) -> BoxFuture<'a, ProviderResult<Vec<ProviderCandidate>>>;
+    fn lookup<'a>(
+        &'a self,
+        request: LookupRequest,
+    ) -> BoxFuture<'a, ProviderResult<Vec<ProviderCandidate>>>;
     fn fetch_cover<'a>(&'a self, key: String) -> BoxFuture<'a, ProviderResult<Vec<u8>>>;
-    fn supplement<'a>(&'a self, ocaid: String) -> BoxFuture<'a, ProviderResult<ProviderSupplement>>;
+    fn supplement<'a>(&'a self, ocaid: String)
+    -> BoxFuture<'a, ProviderResult<ProviderSupplement>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -273,7 +279,10 @@ impl OpenLibraryProvider {
                 retry_after_seconds: None,
             });
         }
-        let bytes = response.bytes().await.map_err(|_| ProviderError::offline())?;
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|_| ProviderError::offline())?;
         if bytes.len() > 4 * 1024 * 1024 {
             return Err(ProviderError {
                 kind: ProviderErrorKind::TooLarge,
@@ -283,7 +292,11 @@ impl OpenLibraryProvider {
         serde_json::from_slice(&bytes).map_err(|_| ProviderError::malformed())
     }
 
-    async fn edition_candidate(&self, edition: &serde_json::Value, isbn: Option<&str>) -> Option<ProviderCandidate> {
+    async fn edition_candidate(
+        &self,
+        edition: &serde_json::Value,
+        isbn: Option<&str>,
+    ) -> Option<ProviderCandidate> {
         let key = edition.get("key")?.as_str()?.to_owned();
         let title = edition
             .get("title")
@@ -375,7 +388,9 @@ impl OpenLibraryProvider {
                     .collect()
             })
             .unwrap_or_default();
-        candidate.year = result.get("first_publish_year").and_then(|value| value.as_i64());
+        candidate.year = result
+            .get("first_publish_year")
+            .and_then(|value| value.as_i64());
         candidate.publisher = result
             .get("publisher")
             .and_then(|value| value.as_array())
@@ -431,9 +446,17 @@ fn edition_year(value: &serde_json::Value) -> Option<i64> {
     value
         .get("publish_date")
         .and_then(|value| value.as_str())
-        .or_else(|| value.get("first_publish_year").and_then(|value| value.as_str()))
+        .or_else(|| {
+            value
+                .get("first_publish_year")
+                .and_then(|value| value.as_str())
+        })
         .and_then(first_year)
-        .or_else(|| value.get("first_publish_year").and_then(|value| value.as_i64()))
+        .or_else(|| {
+            value
+                .get("first_publish_year")
+                .and_then(|value| value.as_i64())
+        })
 }
 
 fn edition_cover_keys(value: &serde_json::Value, isbn: Option<&str>) -> Vec<String> {
@@ -481,7 +504,10 @@ fn retry_after(response: &wreq::Response) -> Option<u64> {
 }
 
 impl MetadataProvider for OpenLibraryProvider {
-    fn lookup<'a>(&'a self, request: LookupRequest) -> BoxFuture<'a, ProviderResult<Vec<ProviderCandidate>>> {
+    fn lookup<'a>(
+        &'a self,
+        request: LookupRequest,
+    ) -> BoxFuture<'a, ProviderResult<Vec<ProviderCandidate>>> {
         Box::pin(async move {
             if let Some(isbn) = request.isbn.as_deref() {
                 Self::gate(&self.metadata_gate, Duration::from_millis(360)).await;
@@ -496,13 +522,14 @@ impl MetadataProvider for OpenLibraryProvider {
             }
 
             if let Some(key) = request.edition_key.as_deref() {
-                let path = key
-                    .strip_prefix("open_library:")
-                    .unwrap_or(key)
-                    .to_owned();
+                let path = key.strip_prefix("open_library:").unwrap_or(key).to_owned();
                 Self::gate(&self.metadata_gate, Duration::from_millis(360)).await;
                 let value = self.get_json(format!("{}{}", self.base, path)).await?;
-                return Ok(self.edition_candidate(&value, None).await.into_iter().collect());
+                return Ok(self
+                    .edition_candidate(&value, None)
+                    .await
+                    .into_iter()
+                    .collect());
             }
 
             let mut query = Vec::new();
@@ -598,7 +625,10 @@ impl MetadataProvider for OpenLibraryProvider {
                     retry_after_seconds: None,
                 });
             }
-            let bytes = response.bytes().await.map_err(|_| ProviderError::offline())?;
+            let bytes = response
+                .bytes()
+                .await
+                .map_err(|_| ProviderError::offline())?;
             if bytes.len() > cover::MAX_ONLINE_COVER_BYTES {
                 return Err(ProviderError {
                     kind: ProviderErrorKind::TooLarge,
@@ -609,7 +639,10 @@ impl MetadataProvider for OpenLibraryProvider {
         })
     }
 
-    fn supplement<'a>(&'a self, ocaid: String) -> BoxFuture<'a, ProviderResult<ProviderSupplement>> {
+    fn supplement<'a>(
+        &'a self,
+        ocaid: String,
+    ) -> BoxFuture<'a, ProviderResult<ProviderSupplement>> {
         Box::pin(async move {
             Self::gate(&self.archive_gate, Duration::from_millis(1100)).await;
             let value = self

@@ -6,7 +6,7 @@
 //! the prototype's flat-ring fill when it is not.
 
 use anyhow::{Context, Result};
-use image::{GrayImage, RgbImage, imageops::FilterType};
+use image::{imageops::FilterType, GrayImage, RgbImage};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::path::{Path, PathBuf};
@@ -538,7 +538,11 @@ fn slugify(title: &str) -> String {
     while out.ends_with('-') {
         out.pop();
     }
-    if out.is_empty() { "book".into() } else { out }
+    if out.is_empty() {
+        "book".into()
+    } else {
+        out
+    }
 }
 
 pub fn save_jpg(path: &Path, img: &RgbImage, quality: u8) -> Result<()> {

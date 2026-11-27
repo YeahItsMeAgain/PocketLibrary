@@ -67,8 +67,8 @@ impl Recognizer {
         if dims.ndim() != 3 {
             return Ok((String::new(), 0.0));
         }
-        let steps = dims[1] as usize;
-        let classes = dims[2] as usize;
+        let steps = dims[1];
+        let classes = dims[2];
         let mut text = String::new();
         let mut prev = usize::MAX;
         let mut probs: Vec<f32> = Vec::new();

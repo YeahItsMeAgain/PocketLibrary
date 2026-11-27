@@ -187,8 +187,8 @@ pub fn seam_metrics(source: &RgbImage, art: &RgbImage, mask: &GrayImage) -> Seam
     let mut de_sum = 0.0f64;
     let mut de_n = 0usize;
     let mut inside_l = Vec::new();
-    for i in 0..w * h {
-        if m[i] > 0 {
+    for (i, &v) in m.iter().enumerate().take(w * h) {
+        if v > 0 {
             let x = (i % w) as u32;
             let y = (i / w) as u32;
             let p = art.get_pixel(x, y);

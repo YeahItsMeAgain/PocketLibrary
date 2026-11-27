@@ -7,7 +7,9 @@ use super::{
     SOURCE_OPEN_LIBRARY, SOURCE_URL, attribution_for, attribution_label,
 };
 use crate::error::{Error, Result};
-use crate::models::{BookEnrichmentState, CoverSource, EnrichmentMode, EnrichmentOutcome, EnrichmentSettings};
+use crate::models::{
+    BookEnrichmentState, CoverSource, EnrichmentMode, EnrichmentOutcome, EnrichmentSettings,
+};
 
 const SUCCESS_TTL_SECONDS: i64 = 30 * 24 * 60 * 60;
 const NO_MATCH_TTL_SECONDS: i64 = 7 * 24 * 60 * 60;
@@ -276,7 +278,7 @@ pub(super) fn enrichment_state(conn: &Connection, book_id: i64) -> Result<BookEn
         && snapshot
             .description
             .as_deref()
-            .map_or(true, |value| value.trim().is_empty())
+            .is_none_or(|value| value.trim().is_empty())
         || (cover.0 != Provenance::Manual
             && snapshot.cover_source != Some(CoverSource::Embedded)
             && snapshot.cover_source != Some(CoverSource::Rendered));
@@ -303,7 +305,9 @@ pub(super) fn enrichment_state(conn: &Connection, book_id: i64) -> Result<BookEn
     let attribution = if fields.is_empty() {
         None
     } else {
-        let description_label = description_source_name.as_deref().unwrap_or(SOURCE_OPEN_LIBRARY);
+        let description_label = description_source_name
+            .as_deref()
+            .unwrap_or(SOURCE_OPEN_LIBRARY);
         let cover_label = cover_source_name.as_deref().unwrap_or(SOURCE_OPEN_LIBRARY);
         let label = attribution_label(&fields, description_label, cover_label);
         Some(attribution_for(

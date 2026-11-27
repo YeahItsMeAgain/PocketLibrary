@@ -277,10 +277,10 @@ fn isbn_lookup_keeps_edition_cover_keys() {
         }))
         .expect("isbn lookup");
     assert_eq!(candidates.len(), 1);
-    assert!(candidates[0]
-        .cover_keys
-        .contains(&"id:14651900".to_owned()));
-    assert!(candidates[0]
-        .cover_keys
-        .contains(&"isbn:9780670839537".to_owned()));
+    assert!(candidates[0].cover_keys.contains(&"id:14651900".to_owned()));
+    assert!(
+        candidates[0]
+            .cover_keys
+            .contains(&"isbn:9780670839537".to_owned())
+    );
 }

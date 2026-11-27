@@ -95,7 +95,10 @@ fn inspect(bytes: &[u8]) -> Result<(u32, u32), CoverRejection> {
 }
 
 /// Validate and normalise a downloaded cover for the automatic path.
-pub fn validate_online(bytes: &[u8], content_type: Option<&str>) -> Result<Vec<u8>, CoverRejection> {
+pub fn validate_online(
+    bytes: &[u8],
+    content_type: Option<&str>,
+) -> Result<Vec<u8>, CoverRejection> {
     if bytes.is_empty() {
         return Err(CoverRejection::Empty);
     }
@@ -132,9 +135,7 @@ pub fn validate_online(bytes: &[u8], content_type: Option<&str>) -> Result<Vec<u
 /// Extremely small images are refused. A low-resolution or landscape image is
 /// allowed, but the caller must show a warning and the reader must acknowledge
 /// it before the image is applied.
-pub fn prepare_manual(
-    bytes: &[u8],
-) -> Result<(Vec<u8>, u32, u32, Option<String>), CoverRejection> {
+pub fn prepare_manual(bytes: &[u8]) -> Result<(Vec<u8>, u32, u32, Option<String>), CoverRejection> {
     let (width, height) = inspect(bytes)?;
     if width < MIN_MANUAL_WIDTH || height < MIN_MANUAL_HEIGHT {
         return Err(CoverRejection::TooSmall { width, height });

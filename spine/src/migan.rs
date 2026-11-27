@@ -90,8 +90,8 @@ impl Migan {
         if dims.ndim() != 4 {
             anyhow::bail!("unexpected MI-GAN output rank {}", dims.ndim());
         }
-        let oh = dims[2] as usize;
-        let ow = dims[3] as usize;
+        let oh = dims[2];
+        let ow = dims[3];
         let mut full = RgbImage::new(ow as u32, oh as u32);
         for y in 0..oh {
             for x in 0..ow {

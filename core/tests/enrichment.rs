@@ -10,8 +10,8 @@ use std::sync::{Arc, Mutex};
 use common::{FakeDir, epub_with, needful_things_pdf, png_cover};
 use futures_util::future::BoxFuture;
 use pocketlibrary_core::{
-    Api, CoverSource, EnrichmentMode, EnrichmentOutcome, MetadataProvider,
-    ProviderCandidate, ProviderError, ProviderErrorKind, ProviderResult, ProviderSupplement,
+    Api, CoverSource, EnrichmentMode, EnrichmentOutcome, MetadataProvider, ProviderCandidate,
+    ProviderError, ProviderErrorKind, ProviderResult, ProviderSupplement,
 };
 use tempfile::TempDir;
 
@@ -79,7 +79,11 @@ impl MetadataProvider for FakeProvider {
             if delay > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(delay as u64)).await;
             }
-            if self.transient_failures.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
+            if self
+                .transient_failures
+                .try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1))
+                .is_ok()
+            {
                 return Err(ProviderError {
                     kind: ProviderErrorKind::Status(503),
                     retry_after_seconds: None,
@@ -105,15 +109,11 @@ impl MetadataProvider for FakeProvider {
         })
     }
 
-    fn supplement<'a>(&'a self, _ocaid: String) -> BoxFuture<'a, ProviderResult<ProviderSupplement>> {
-        Box::pin(async move {
-            Ok(self
-                .supplement
-                .lock()
-                .unwrap()
-                .clone()
-                .unwrap_or_default())
-        })
+    fn supplement<'a>(
+        &'a self,
+        _ocaid: String,
+    ) -> BoxFuture<'a, ProviderResult<ProviderSupplement>> {
+        Box::pin(async move { Ok(self.supplement.lock().unwrap().clone().unwrap_or_default()) })
     }
 }
 
@@ -193,7 +193,8 @@ fn basic_metadata(title: &str, author: &str, year: &str) -> Vec<String> {
 
 #[test]
 fn offline_details_make_zero_provider_calls() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -204,13 +205,17 @@ fn offline_details_make_zero_provider_calls() {
 
     let settings = api.enrichment_settings().expect("settings");
     assert_eq!(settings.mode, EnrichmentMode::Off);
-    assert!(provider.requests().is_empty(), "opening a library must not call a provider");
+    assert!(
+        provider.requests().is_empty(),
+        "opening a library must not call a provider"
+    );
     assert!(book.description.is_none());
 }
 
 #[test]
 fn a_high_confidence_match_fills_only_missing_blurb_and_cover() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -219,7 +224,9 @@ fn a_high_confidence_match_fills_only_missing_blurb_and_cover() {
         None,
     );
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::Applied { fields, .. } => {
             assert_eq!(fields, vec!["description", "cover"]);
@@ -233,7 +240,7 @@ fn a_high_confidence_match_fills_only_missing_blurb_and_cover() {
         Some("A quiet revolution.")
     );
     assert_eq!(detail.book.cover_source, Some(CoverSource::OpenLibrary));
-    assert!(detail.enrichment.has_file_cover == false);
+    assert!(!detail.enrichment.has_file_cover);
     assert!(detail.enrichment.attribution.is_some());
     assert_eq!(detail.book.file_cover_source, Some(CoverSource::Generated));
 }
@@ -250,7 +257,9 @@ fn a_needful_things_isbn_match_without_author_names_fills_its_cover() {
     );
     assert_eq!(book.cover_source, Some(CoverSource::Generated));
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::Applied { fields, .. } => {
             assert_eq!(fields, vec!["description", "cover"]);
@@ -293,7 +302,9 @@ fn a_needful_things_title_match_ignores_the_pdf_creation_date() {
     assert_eq!(book.published_date.as_deref(), Some("2011"));
     assert_eq!(book.cover_source, Some(CoverSource::Generated));
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(
         matches!(outcome, EnrichmentOutcome::Applied { .. }),
         "the 1991 edition should match, got {outcome:?}"
@@ -305,25 +316,32 @@ fn a_needful_things_title_match_ignores_the_pdf_creation_date() {
 
 #[test]
 fn an_embedded_blurb_and_real_cover_survive_a_lookup() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let cover = png_cover(400, 600);
     let mut metadata = basic_metadata("The Dispossessed", "Ursula K. Le Guin", "1974");
     metadata.push("<dc:description>Publisher's own blurb.</dc:description>".to_owned());
     let book = add_book(&api, "The Dispossessed.epub", &metadata, Some(&cover));
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(outcome, EnrichmentOutcome::NoMatch { .. }));
 
     let detail = api.get_book_detail(book.id, None).expect("detail");
-    assert_eq!(detail.book.description.as_deref(), Some("Publisher's own blurb."));
+    assert_eq!(
+        detail.book.description.as_deref(),
+        Some("Publisher's own blurb.")
+    );
     assert_eq!(detail.book.cover_source, Some(CoverSource::Embedded));
     assert_eq!(detail.book.file_cover_source, Some(CoverSource::Embedded));
 }
 
 #[test]
 fn a_real_cover_keeps_its_bytes_while_a_missing_blurb_is_filled() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let cover = png_cover(400, 600);
     let book = add_book(
@@ -332,9 +350,14 @@ fn a_real_cover_keeps_its_bytes_while_a_missing_blurb_is_filled() {
         &basic_metadata("The Dispossessed", "Ursula K. Le Guin", "1974"),
         Some(&cover),
     );
-    let before = api.get_book_detail(book.id, None).expect("detail").cover_data_url;
+    let before = api
+        .get_book_detail(book.id, None)
+        .expect("detail")
+        .cover_data_url;
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::Applied { fields, .. } => assert_eq!(fields, vec!["description"]),
         other => panic!("expected blurb-only apply, got {other:?}"),
@@ -346,7 +369,8 @@ fn a_real_cover_keeps_its_bytes_while_a_missing_blurb_is_filled() {
 
 #[test]
 fn a_manual_blurb_edit_survives_a_forced_refresh() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -354,30 +378,40 @@ fn a_manual_blurb_edit_survives_a_forced_refresh() {
         &basic_metadata("The Dispossessed", "Ursula K. Le Guin", "1974"),
         None,
     );
-    runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     api.edit_blurb(book.id, Some("My own note about this edition."))
         .expect("edit");
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, true)).expect("refresh");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, true))
+        .expect("refresh");
     assert!(matches!(outcome, EnrichmentOutcome::NoMatch { .. }));
     let detail = api.get_book_detail(book.id, None).expect("detail");
     assert_eq!(
         detail.book.description.as_deref(),
         Some("My own note about this edition.")
     );
-    assert_eq!(detail.enrichment.description_source.as_deref(), Some("manual"));
+    assert_eq!(
+        detail.enrichment.description_source.as_deref(),
+        Some("manual")
+    );
 }
 
 #[test]
 fn reverting_restores_the_file_blurb_and_generated_plate() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let mut metadata = basic_metadata("The Dispossessed", "Ursula K. Le Guin", "1974");
     metadata.push("<dc:description>File blurb.</dc:description>".to_owned());
     let book = add_book(&api, "The Dispossessed.epub", &metadata, None);
 
     // The file blurb blocks a description write, but the generated cover is a gap.
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(outcome, EnrichmentOutcome::Applied { .. }));
     api.revert_enrichment(book.id).expect("revert");
     let detail = api.get_book_detail(book.id, None).expect("detail");
@@ -407,7 +441,9 @@ fn ambiguous_candidates_return_review_and_write_nothing() {
         None,
     );
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::NeedsReview { candidates, .. } => {
             assert_eq!(candidates.len(), 2);
@@ -435,20 +471,31 @@ fn a_no_match_is_cached_and_does_not_repeat_within_the_ttl() {
         None,
     );
 
-    let first = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let first = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(first, EnrichmentOutcome::NoMatch { .. }));
-    let second = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let second = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(second, EnrichmentOutcome::NoMatch { .. }));
-    assert_eq!(provider.requests().len(), 1, "negative cache prevents a repeat request");
+    assert_eq!(
+        provider.requests().len(),
+        1,
+        "negative cache prevents a repeat request"
+    );
 
-    let forced = runtime().block_on(api.lookup_enrichment(book.id, true)).expect("refresh");
+    let forced = runtime()
+        .block_on(api.lookup_enrichment(book.id, true))
+        .expect("refresh");
     assert!(matches!(forced, EnrichmentOutcome::NoMatch { .. }));
     assert_eq!(provider.requests().len(), 2, "force bypasses the TTL");
 }
 
 #[test]
 fn a_rate_limit_is_reported_and_not_cached_as_no_match() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     provider.set_failure(ProviderError {
         kind: ProviderErrorKind::RateLimited,
         retry_after_seconds: Some(7),
@@ -461,7 +508,9 @@ fn a_rate_limit_is_reported_and_not_cached_as_no_match() {
         None,
     );
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::Unavailable {
             code,
@@ -477,13 +526,16 @@ fn a_rate_limit_is_reported_and_not_cached_as_no_match() {
     }
     // The cooldown is not a no-match; a forced refresh asks again.
     *provider.failure.lock().unwrap() = None;
-    let retried = runtime().block_on(api.lookup_enrichment(book.id, true)).expect("retry");
+    let retried = runtime()
+        .block_on(api.lookup_enrichment(book.id, true))
+        .expect("retry");
     assert!(matches!(retried, EnrichmentOutcome::Applied { .. }));
 }
 
 #[test]
 fn a_temporary_fault_is_retried_within_the_lookup() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     provider.set_transient(1);
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
@@ -493,14 +545,21 @@ fn a_temporary_fault_is_retried_within_the_lookup() {
         None,
     );
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(outcome, EnrichmentOutcome::Applied { .. }));
-    assert_eq!(provider.requests().len(), 2, "one transient failure, then a retry");
+    assert_eq!(
+        provider.requests().len(),
+        2,
+        "one transient failure, then a retry"
+    );
 }
 
 #[test]
 fn a_permanent_refusal_is_not_retried() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     provider.set_failure(ProviderError {
         kind: ProviderErrorKind::Status(403),
         retry_after_seconds: None,
@@ -512,15 +571,20 @@ fn a_permanent_refusal_is_not_retried() {
         &basic_metadata("The Dispossessed", "Ursula K. Le Guin", "1974"),
         None,
     );
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(outcome, EnrichmentOutcome::Unavailable { code, .. } if code == "forbidden"));
     // A forced refresh does not retry a permanent refusal within the same call.
-    let _ = runtime().block_on(api.lookup_enrichment(book.id, true)).expect("lookup");
+    let _ = runtime()
+        .block_on(api.lookup_enrichment(book.id, true))
+        .expect("lookup");
 }
 
 #[test]
 fn cancellation_during_lookup_writes_nothing() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     provider.set_lookup_delay(80);
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
@@ -551,7 +615,8 @@ fn cancellation_during_lookup_writes_nothing() {
 
 #[test]
 fn invalid_and_landscape_covers_leave_the_generated_plate() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     *provider.cover.lock().unwrap() = png_cover(800, 300);
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
@@ -560,7 +625,9 @@ fn invalid_and_landscape_covers_leave_the_generated_plate() {
         &basic_metadata("The Dispossessed", "Ursula K. Le Guin", "1974"),
         None,
     );
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::Applied { fields, .. } => assert_eq!(fields, vec!["description"]),
         other => panic!("expected blurb-only apply, got {other:?}"),
@@ -571,7 +638,8 @@ fn invalid_and_landscape_covers_leave_the_generated_plate() {
 
 #[test]
 fn cover_choices_show_current_and_original_sources() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(provider);
     let cover = png_cover(400, 600);
     let book = add_book(
@@ -588,7 +656,8 @@ fn cover_choices_show_current_and_original_sources() {
 
 #[test]
 fn the_manual_chooser_can_apply_and_reset_an_online_cover() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let cover = png_cover(400, 600);
     let book = add_book(
@@ -598,9 +667,13 @@ fn the_manual_chooser_can_apply_and_reset_an_online_cover() {
         Some(&cover),
     );
 
-    let found = runtime().block_on(api.lookup_cover_candidates(book.id)).expect("find covers");
+    let found = runtime()
+        .block_on(api.lookup_cover_candidates(book.id))
+        .expect("find covers");
     let option = match found {
-        pocketlibrary_core::CoverLookupOutcome::Found { mut candidates, .. } => candidates.remove(0),
+        pocketlibrary_core::CoverLookupOutcome::Found { mut candidates, .. } => {
+            candidates.remove(0)
+        }
         other => panic!("expected covers, got {other:?}"),
     };
     assert!(option.preview_data_url.is_some());
@@ -613,7 +686,9 @@ fn the_manual_chooser_can_apply_and_reset_an_online_cover() {
 
     // Automatic enrichment may fill a missing blurb, but it may not replace a
     // manual cover.
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, true)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, true))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::Applied { fields, .. } => {
             assert_eq!(fields, vec!["description"]);
@@ -645,11 +720,7 @@ fn both_cover_paths_try_work_cover_ids_before_dead_isbn_and_olid_keys() {
         "olid:OL52963676M".to_owned(),
     ];
     let provider = FakeProvider::with_candidate(candidate);
-    provider.fail_cover_keys(&[
-        "id:10826952",
-        "isbn:9780008371005",
-        "olid:OL52963676M",
-    ]);
+    provider.fail_cover_keys(&["id:10826952", "isbn:9780008371005", "olid:OL52963676M"]);
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -695,7 +766,8 @@ fn both_cover_paths_try_work_cover_ids_before_dead_isbn_and_olid_keys() {
 
 #[test]
 fn a_device_image_is_staged_then_applied_with_provenance() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(provider);
     let book = add_book(
         &api,
@@ -723,7 +795,8 @@ fn a_device_image_is_staged_then_applied_with_provenance() {
 
 #[test]
 fn a_small_device_image_is_refused_and_a_landscape_one_needs_acknowledgement() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(provider);
     let book = add_book(
         &api,
@@ -746,7 +819,8 @@ fn a_small_device_image_is_refused_and_a_landscape_one_needs_acknowledgement() {
 
 #[test]
 fn cover_choices_make_no_network_request_until_find_covers() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -757,26 +831,37 @@ fn cover_choices_make_no_network_request_until_find_covers() {
     api.cover_choices(book.id).expect("choices");
     assert!(provider.requests().is_empty());
     assert!(provider.cover_requests().is_empty());
-    let _ = runtime().block_on(api.lookup_cover_candidates(book.id)).expect("find");
+    let _ = runtime()
+        .block_on(api.lookup_cover_candidates(book.id))
+        .expect("find");
     assert!(!provider.requests().is_empty());
 }
 
 #[test]
 fn settings_round_trip_through_all_three_modes() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(provider);
     assert_eq!(api.enrichment_settings().unwrap().mode, EnrichmentMode::Off);
-    for mode in [EnrichmentMode::Ask, EnrichmentMode::Automatic, EnrichmentMode::Off] {
+    for mode in [
+        EnrichmentMode::Ask,
+        EnrichmentMode::Automatic,
+        EnrichmentMode::Off,
+    ] {
         let saved = api.set_enrichment_mode(mode).expect("save mode");
         assert_eq!(saved.mode, mode);
         assert_eq!(api.enrichment_settings().unwrap().mode, mode);
     }
-    assert_eq!(api.enrichment_settings().unwrap().source_label, "Open Library");
+    assert_eq!(
+        api.enrichment_settings().unwrap().source_label,
+        "Open Library"
+    );
 }
 
 #[test]
 fn the_target_queue_is_capped_and_skips_complete_books() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(provider);
     let cover = png_cover(400, 600);
     let mut complete = basic_metadata("A Complete Book", "An Author", "2000");
@@ -795,7 +880,8 @@ fn the_target_queue_is_capped_and_skips_complete_books() {
 
 #[test]
 fn a_cached_attribution_is_present_only_when_an_online_field_was_used() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -805,7 +891,9 @@ fn a_cached_attribution_is_present_only_when_an_online_field_was_used() {
     );
     let before = api.get_book_detail(book.id, None).expect("detail");
     assert!(before.enrichment.attribution.is_none());
-    runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     let after = api.get_book_detail(book.id, None).expect("detail");
     assert!(after.enrichment.attribution.is_some());
     assert!(
@@ -828,8 +916,7 @@ fn runtime() -> tokio::runtime::Runtime {
 
 #[test]
 fn a_conflicting_author_returns_review_and_writes_nothing() {
-    let provider =
-        FakeProvider::with_candidate(candidate("The Dispossessed", &["Stephen King"]));
+    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Stephen King"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -838,7 +925,9 @@ fn a_conflicting_author_returns_review_and_writes_nothing() {
         None,
     );
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     match outcome {
         EnrichmentOutcome::NeedsReview { candidates, .. } => {
             assert_eq!(candidates.len(), 1);
@@ -853,7 +942,8 @@ fn a_conflicting_author_returns_review_and_writes_nothing() {
 
 #[test]
 fn the_chooser_can_restore_the_generated_plate() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let book = add_book(
         &api,
@@ -862,7 +952,9 @@ fn the_chooser_can_restore_the_generated_plate() {
         None,
     );
 
-    let found = runtime().block_on(api.lookup_cover_candidates(book.id)).expect("find covers");
+    let found = runtime()
+        .block_on(api.lookup_cover_candidates(book.id))
+        .expect("find covers");
     let option = match found {
         pocketlibrary_core::CoverLookupOutcome::Found { mut candidates, .. } => {
             candidates.remove(0)
@@ -905,7 +997,9 @@ fn the_internet_archive_supplement_is_linked_to_an_ocaid_and_respects_access() {
         None,
     );
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(outcome, EnrichmentOutcome::Applied { .. }));
     let detail = api.get_book_detail(book.id, None).expect("detail");
     assert_eq!(detail.book.cover_source, Some(CoverSource::InternetArchive));
@@ -939,7 +1033,9 @@ fn an_access_restricted_supplement_adds_nothing() {
         None,
     );
 
-    let outcome = runtime().block_on(api.lookup_enrichment(book.id, false)).expect("lookup");
+    let outcome = runtime()
+        .block_on(api.lookup_enrichment(book.id, false))
+        .expect("lookup");
     assert!(matches!(outcome, EnrichmentOutcome::NoMatch { .. }));
     let detail = api.get_book_detail(book.id, None).expect("detail");
     assert!(detail.book.description.is_none());
@@ -948,7 +1044,8 @@ fn an_access_restricted_supplement_adds_nothing() {
 
 #[test]
 fn manual_cover_provenance_survives_a_backup_round_trip() {
-    let provider = FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
+    let provider =
+        FakeProvider::with_candidate(candidate("The Dispossessed", &["Ursula K. Le Guin"]));
     let (_dir, api) = database_with_provider(Arc::clone(&provider));
     let cover = png_cover(400, 600);
     let book = add_book(
@@ -957,7 +1054,9 @@ fn manual_cover_provenance_survives_a_backup_round_trip() {
         &basic_metadata("The Dispossessed", "Ursula K. Le Guin", "1974"),
         Some(&cover),
     );
-    let found = runtime().block_on(api.lookup_cover_candidates(book.id)).expect("find");
+    let found = runtime()
+        .block_on(api.lookup_cover_candidates(book.id))
+        .expect("find");
     let option = match found {
         pocketlibrary_core::CoverLookupOutcome::Found { mut candidates, .. } => {
             candidates.remove(0)
@@ -980,6 +1079,9 @@ fn manual_cover_provenance_survives_a_backup_round_trip() {
     assert_eq!(detail.book.description.as_deref(), Some("My own note."));
     assert_eq!(detail.book.cover_source, Some(CoverSource::OpenLibrary));
     assert!(detail.enrichment.cover_manual);
-    assert_eq!(detail.enrichment.description_source.as_deref(), Some("manual"));
+    assert_eq!(
+        detail.enrichment.description_source.as_deref(),
+        Some("manual")
+    );
     drop(restore_dir);
 }

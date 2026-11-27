@@ -220,16 +220,16 @@ pub fn line_colour_mask(img: &RgbImage, boxes: &[&TextBox]) -> Vec<u8> {
                 y0 = y0.min(rects[g].r[1]);
                 y1 = y1.max(rects[g].r[3]);
             }
-            for s in 0..rects.len() {
-                if rects[s].used || rects[s].ang.abs() >= 45.0 {
+            for (s, rect) in rects.iter_mut().enumerate() {
+                if rect.used || rect.ang.abs() >= 45.0 {
                     continue;
                 }
-                let hh = (y1 - y0).min(rects[s].r[3] - rects[s].r[1]);
-                let yov = y1.min(rects[s].r[3]) - y0.max(rects[s].r[1]);
-                let gap = (rects[s].r[0] - x1).max(x0 - rects[s].r[2]);
+                let hh = (y1 - y0).min(rect.r[3] - rect.r[1]);
+                let yov = y1.min(rect.r[3]) - y0.max(rect.r[1]);
+                let gap = (rect.r[0] - x1).max(x0 - rect.r[2]);
                 if yov > 0.65 * hh.max(1.0) && gap < 3.0 * hh.max(1.0) {
                     grp.push(s);
-                    rects[s].used = true;
+                    rect.used = true;
                     changed = true;
                 }
             }

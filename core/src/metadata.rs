@@ -324,7 +324,7 @@ fn page_cover_score(page: &hayro::hayro_syntax::page::Page<'_>) -> Option<f32> {
     let mut sampled = 0u32;
     let mut ink = 0u32;
     let mut colour = 0u32;
-    for pixel in data.chunks_exact(4) {
+    for pixel in data.as_chunks::<4>().0 {
         let (red, green, blue, alpha) = (pixel[0], pixel[1], pixel[2], pixel[3]);
         if alpha == 0 {
             continue;
@@ -425,10 +425,7 @@ fn parse_filename(filename: &str) -> FilenameHints {
 /// itself the marker is kept, so a book genuinely named `Ebook` is untouched.
 fn strip_trailing_acquisition_words(value: &str) -> String {
     let mut value = collapse_spaces(value);
-    loop {
-        let Some((before, last)) = value.rsplit_once(' ') else {
-            break;
-        };
+    while let Some((before, last)) = value.rsplit_once(' ') {
         let word =
             last.trim_matches(|character: char| !character.is_alphanumeric() && character != '-');
         if word.eq_ignore_ascii_case("ebook") || word.eq_ignore_ascii_case("e-book") {

@@ -92,9 +92,9 @@ fn highlights_and_notes_create_list_update_and_delete() {
         "colour is kept when not supplied"
     );
 
-    let repaired = format!(
-        r#"{{"v":2,"href":"OEBPS/chapter2.xhtml","text":{{"highlight":"The lamp was lit"}}}}"#
-    );
+    let repaired =
+        r#"{"v":2,"href":"OEBPS/chapter2.xhtml","text":{"highlight":"The lamp was lit"}}"#
+            .to_string();
     let updated = api
         .update_annotation(id, highlight.id, Some("#7d91a8"), None, Some(&repaired))
         .expect("repair locator and recolour");

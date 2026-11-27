@@ -106,7 +106,7 @@ impl Detector {
         let (shape, vals) = outputs[0].try_extract_tensor::<f32>()?;
         let dims = shape.to_ixdyn();
         let (oh, ow) = if dims.ndim() == 4 {
-            (dims[2] as usize, dims[3] as usize)
+            (dims[2], dims[3])
         } else {
             (h, w)
         };
