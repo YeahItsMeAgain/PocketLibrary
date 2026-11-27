@@ -1,0 +1,11 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. The app is intentionally dark; the window
+         background matches the aubergine room so launch never flashes white. -->
+    <style name="Theme.pocketlibrary" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/pocketlibrary_aubergine</item>
+        <item name="android:navigationBarColor">@color/pocketlibrary_aubergine</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

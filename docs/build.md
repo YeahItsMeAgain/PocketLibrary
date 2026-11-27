@@ -5,6 +5,17 @@ This is the headless build path: no Android Studio, no emulator, no device, no
 
 Verified on 2026-11-24 with the versions listed below.
 
+**Quick start (fresh checkout):**
+
+```bash
+npm install
+./scripts/android-build.sh
+```
+
+`./scripts/android-build.sh` is the supported build path; it needs no manual
+`init` because `src-tauri/gen/android` is tracked. Sections below explain the
+provisioning, what the script patches, and how to verify the APK.
+
 | Component | Version / path |
 |---|---|
 | JDK | Temurin 21.0.9+10 (`$HOME/tools/jdk-21`) |
@@ -22,8 +33,9 @@ Verified on 2026-11-24 with the versions listed below.
 
 ## 1. Prerequisites
 
-Everything below is user-space. `scripts/android-env.sh` exports the paths; source
-it in every shell that builds:
+Everything below is user-space. `scripts/android-env.sh` exports the paths;
+`./scripts/android-build.sh` sources it automatically. To use a shell directly,
+source it yourself:
 
 ```bash
 source scripts/android-env.sh
@@ -70,46 +82,84 @@ rustup target add aarch64-linux-android
 `sdkmanager` prints a deprecation warning ("use Android CLI instead") on this SDK;
 it is harmless and `sdkmanager` still works.
 
-## 2. SDK 37 → 36 fallback
+## 2. Android patches (applied automatically)
 
-Tauri 2.12's Android template pins `compileSdk = 37` and `targetSdk = 37`, but this
-machine's `sdkmanager` does not offer `platforms;android-37`. Install 36 and edit
-`src-tauri/gen/android/app/build.gradle.kts`:
+`tauri android init` generates the upstream Tauri Android template. The repo
+tracks a customised `src-tauri/gen/android` tree, so a regenerated project needs
+these edits back:
 
-```kotlin
-android {
-    compileSdk = 36          // was 37
-    defaultConfig {
-        minSdk = 24
-        targetSdk = 36       // was 37
-    }
-}
+| Patch | Where |
+|---|---|
+| `compileSdk = 36`, `targetSdk = 36` (template pins 37, which this machine's `sdkmanager` does not offer) | `app/build.gradle.kts` |
+| Environment-driven release signing (`POCKETLIBRARY_KEYSTORE*`), failing loudly if a release build has no key | `app/build.gradle.kts` |
+| `packaging { jniLibs { useLegacyPackaging = true } }` so `libonnxruntime.so` is extracted to `nativeLibraryDir` for `dlopen` | `app/build.gradle.kts` |
+| `REQUEST_INSTALL_PACKAGES` permission and the `FileProvider` provider | `app/src/main/AndroidManifest.xml` |
+| `updates/` cache path exposed through the FileProvider | `app/src/main/res/xml/file_paths.xml` |
+| `UpdatesPlugin.kt` (the Kotlin side of the in-app updater) | `app/src/main/java/app/pocketlibrary/` |
+| Aubergine window/splash themes, launcher background color, and branded launcher mipmaps | `app/src/main/res/` |
+
+The patches live in `scripts/android-patches/` (a Python applier plus an
+overlay of app-specific resources) and are applied by
+`scripts/android-patch.sh`. They are idempotent; `./scripts/android-patch.sh
+check` reports drift and exits non-zero.
+
+`./scripts/android-build.sh` applies them before every build, so the normal
+workflow never needs a manual edit. If you prefer to do it by hand, run the
+patch script once after `tauri android init`:
+
+```bash
+./scripts/android-patch.sh
 ```
 
-Leave `minSdk = 24`. AGP 9.x supports API 36. **`tauri android init` overwrites
-`gen/android`, so re-apply this edit if you regenerate the Android project.**
-Put the edit immediately after `tauri android init` and before the first build.
+## 3. Build
 
-## 3. Initialize and build
+The one-command path builds a signed arm64 release APK from a clean checkout:
+
+```bash
+npm install                     # once, if node_modules is missing
+./scripts/android-build.sh
+```
+
+The script sources `scripts/android-env.sh`, re-applies the Android patches from
+section 2, stages the spine models and ONNX Runtime, runs
+`npm run tauri android build -- --apk --target aarch64 --ci`, and then
+sanity-checks the APK (version, `assets/spine/*`, `lib/arm64-v8a/libonnxruntime.so`,
+`extractNativeLibs="true"`). It is safe to re-run; a second run applies no
+patches and rebuilds only what changed.
+
+### When to run `tauri android init`
+
+Only after deleting `src-tauri/gen/android`, or when you deliberately want to
+regenerate it:
 
 ```bash
 source scripts/android-env.sh
-npm install                     # if node_modules is missing
 npm run tauri android init -- --ci
-# re-apply the compileSdk/targetSdk 36 edit from section 2, plus the release
-# signing config from section 6
+./scripts/android-build.sh
+```
+
+`init` preserves existing files in a checked-out `gen/android`, but a deleted or
+freshly regenerated tree loses the patches above. `./scripts/android-build.sh`
+restores them, so `init` followed by the build script is always safe. `init`
+also installs the armv7/i686/x86_64 Rust targets; that is expected. Only
+`aarch64` is needed for a phone build.
+
+### Raw build (advanced)
+
+If you have already run `./scripts/android-patch.sh` and
+`./scripts/stage-spine-android-assets.sh`, the raw Tauri command is:
+
+```bash
+source scripts/android-env.sh
 npm run tauri android build -- --apk --target aarch64 --ci
 ```
 
 Release is the default build. Add `--debug` only when you specifically need a
 debuggable APK.
 
-`init` also installs the armv7/i686/x86_64 Rust targets; that is expected. Only
-`aarch64` is needed for a phone build.
-
 The first build downloads Gradle 9.6.1, AGP, Kotlin, and Maven dependencies and
 takes 10–20 minutes. Later builds are much faster. Tauri prints the APK path at
-the end.
+the end; the build script prints it again with the check results.
 
 ## 4. APK output
 
@@ -136,12 +186,16 @@ debug APK is signed with the Android debug key (`CN=Android Debug`).
 
 ## 5. Verification
 
+`./scripts/android-build.sh` runs these checks automatically and fails the build
+if any of them regress. To inspect an existing APK by hand:
+
 ```bash
 source scripts/android-env.sh
 APK=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
 
 "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK"
 "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | head -20
+unzip -l "$APK" | grep -E 'assets/spine/|lib/arm64-v8a/libonnxruntime.so'
 sha256sum "$APK"
 ```
 
@@ -171,8 +225,7 @@ The release build is signed from environment variables read by
 below exist, so the normal workflow is just:
 
 ```bash
-source scripts/android-env.sh
-npm run tauri android build -- --apk --target aarch64 --ci
+./scripts/android-build.sh
 ```
 
 A release build with the variables missing fails at Gradle configuration time
@@ -209,16 +262,21 @@ chmod 600 "$HOME/.android-keys/pocketlibrary-release.jks"
 
 ### Re-applying after `tauri android init`
 
-The signing config lives in `src-tauri/gen/android/app/build.gradle.kts`.
-`tauri android init` regenerates the whole `gen/android` tree and overwrites it,
-so after any re-init you must re-apply:
+`./scripts/android-build.sh` already does this; the list is here so you know
+what it restores. `tauri android init` regenerates the Tauri Android template,
+and the repo's customisations live in `scripts/android-patches/`:
 
-1. the `compileSdk`/`targetSdk` 36 edit from section 2, and
+1. the `compileSdk`/`targetSdk` 36 edit from section 2;
 2. the environment-driven `signingConfigs`/`buildTypes.release` block from this
-   section (or copy the file back from git).
+   section;
+3. `useLegacyPackaging = true` under `packaging.jniLibs`;
+4. `UpdatesPlugin.kt`, the `REQUEST_INSTALL_PACKAGES` permission, the
+   `FileProvider` provider, and the `updates/` path in `file_paths.xml`;
+5. the aubergine theme/splash resources and branded launcher mipmaps.
 
-The same applies to the `optimization`/ProGuard settings in that file. The
-keystore itself is outside the repo and unaffected by re-init.
+The keystore itself is outside the repo and unaffected by re-init. Run
+`./scripts/android-patch.sh check` to see whether anything is missing, or
+`./scripts/android-patch.sh apply` to restore it without building.
 
 ### Version codes
 
@@ -247,12 +305,14 @@ The config (`playwright.config.ts`) starts the Vite dev server at
 cargo test --manifest-path core/Cargo.toml   # headless catalog tests
 npm run build              # tsc && vite build
 npm run test:e2e           # Playwright smoke
+source scripts/android-env.sh
 cargo clippy --manifest-path src-tauri/Cargo.toml --target aarch64-linux-android --all-targets -- -D warnings
-npm run tauri android build -- --apk --target aarch64 --ci
+./scripts/android-build.sh # patches + assets + signed arm64 APK + checks
 ```
 
-`source scripts/android-env.sh` first: it now exports the NDK C compiler for
-`aarch64-linux-android`, which the bundled SQLite in `libsqlite3-sys` needs.
+`source scripts/android-env.sh` first (the build script does it for you): it
+exports the NDK C compiler for `aarch64-linux-android`, which the bundled SQLite
+in `libsqlite3-sys` needs.
 
 The core crate (`core/`) has no Tauri dependency, so its tests run on this
 headless host. `cargo test` / host-target `cargo clippy` for `src-tauri` still
@@ -266,7 +326,11 @@ machine with the Tauri desktop prerequisites.
 
 - **`platforms;android-37` not found**: expected here; see section 2.
 - **`compileSdk 37` errors about a missing platform after regenerating**: the
-  SDK override was lost; re-apply it.
+  patches were lost; run `./scripts/android-patch.sh` (or just
+  `./scripts/android-build.sh`).
+- **Updater installs nothing / `UpdatesPlugin` not found**: `UpdatesPlugin.kt`,
+  the install permission, or the FileProvider was lost by a re-init; run
+  `./scripts/android-patch.sh`.
 - **`JAVA_HOME`/JDK toolchain errors**: point `JAVA_HOME` at the Temurin JDK, not
   a JRE. `java -version` must show 21.
 - **`clang`/linker errors naming the NDK**: `NDK_HOME` must be the exact version
