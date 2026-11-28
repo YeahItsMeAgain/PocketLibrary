@@ -4,6 +4,7 @@ import {
   isApiError,
   platform,
   type BookFormat,
+  type ReadingStatus,
   type SpineArtifact,
   type SpineStatus,
   type SpineStyle,
@@ -34,7 +35,7 @@ export const SPINE_STYLES: ReadonlyArray<{
   {
     id: "art",
     label: "Art",
-    note: "Generated art with a cap band, a cropped art window and a foot band for the author and labels.",
+    note: "Full-height art under a warm smoked scrim: author and label codes on the deep foot, no band.",
   },
   {
     id: "cloth",
@@ -81,6 +82,8 @@ export function SpineCanvas({
     canvas.dataset.direction = meta.direction;
     canvas.dataset.scrim = String(meta.scrim);
     canvas.dataset.scrimAlpha = meta.scrimAlpha.toFixed(2);
+    canvas.dataset.scrimHead = meta.scrimHead?.toFixed(2) ?? "";
+    canvas.dataset.scrimTail = meta.scrimTail?.toFixed(2) ?? "";
     canvas.dataset.contrast = meta.contrast.toFixed(2);
     canvas.dataset.blockCx = meta.block.x.toFixed(2);
     canvas.dataset.blockCy = meta.block.y.toFixed(2);
@@ -100,12 +103,20 @@ export function SpineCanvas({
     canvas.dataset.authorFontSize = meta.author?.fs.toFixed(2) ?? "";
     canvas.dataset.authorLines = meta.author ? String(meta.author.lines) : "";
     canvas.dataset.colophonY = meta.colophon.y.toFixed(2);
-    canvas.dataset.bandTop = meta.bands ? meta.bands.top.toFixed(2) : "";
-    canvas.dataset.bandBottom = meta.bands ? meta.bands.bottom.toFixed(2) : "";
-    canvas.dataset.artTop = meta.bands ? meta.bands.top.toFixed(2) : "";
-    canvas.dataset.artBottom = meta.bands
-      ? (size.height - meta.bands.bottom).toFixed(2)
+    canvas.dataset.footTop = meta.foot ? meta.foot.top.toFixed(2) : "";
+    canvas.dataset.footHeight = meta.foot
+      ? (meta.foot.bottom - meta.foot.top).toFixed(2)
       : "";
+    canvas.dataset.artTop = meta.art ? meta.art.top.toFixed(2) : "";
+    canvas.dataset.artBottom = meta.art ? meta.art.bottom.toFixed(2) : "";
+    canvas.dataset.headReserve = meta.headReserve?.toFixed(2) ?? "";
+    canvas.dataset.markKind = meta.mark?.kind ?? "none";
+    canvas.dataset.markTop = meta.mark?.y.toFixed(2) ?? "";
+    canvas.dataset.markWidth = meta.mark?.width.toFixed(2) ?? "";
+    canvas.dataset.markHeight = meta.mark?.height.toFixed(2) ?? "";
+    // Every face is band-free now; an empty value is the honest report.
+    canvas.dataset.bandTop = "";
+    canvas.dataset.bandBottom = "";
     canvas.setAttribute("dir", meta.direction);
   }, [book, style, strip]);
   return <canvas ref={ref} data-testid={testId} />;
@@ -126,8 +137,14 @@ interface StudioProps {
   contentHash?: string;
   slotIndex?: number | null;
   format?: BookFormat;
-  /** Labels worn by the book, shown as chips in the Art bottom band. */
+  /** Labels worn by the book, shown as chips in the Art foot. */
   labels?: ReadonlyArray<{ name: string; colour: string }>;
+  /**
+   * The book's current reading status. The edit layer owns it, so passing it
+   * here keeps the preview's status mark in step with the shelf when the user
+   * changes status without closing the sheet.
+   */
+  readingStatus?: ReadingStatus;
   /**
    * The read view's compact summary: a single static preview and verdict,
    * with no Generate, style tiles, Use Cloth or persistence controls.
@@ -232,6 +249,7 @@ export function SpineStudio({
   slotIndex,
   format,
   labels,
+  readingStatus,
   readOnly = false,
   onFixSpine,
   style: controlledStyle,
@@ -374,6 +392,7 @@ export function SpineStudio({
         slotIndex: slotIndex ?? undefined,
         format,
         labels,
+        readingStatus,
       };
       prepareSpinePalette(book);
       setPrepared(book);
@@ -381,7 +400,7 @@ export function SpineStudio({
     return () => {
       alive = false;
     };
-  }, [state, title, author, pages, coverDataUrl, contentHash, slotIndex, format, labels]);
+  }, [state, title, author, pages, coverDataUrl, contentHash, slotIndex, format, labels, readingStatus]);
 
   const generate = useCallback(async () => {
     if (busy) return;

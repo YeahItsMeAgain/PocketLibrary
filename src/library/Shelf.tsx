@@ -1,7 +1,6 @@
 import type { Book, Shelf } from "../platform";
 import {
   memo,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -18,7 +17,7 @@ import {
   spineLabelAbbr,
   surname,
 } from "./spine";
-import { mix, readableInk } from "./spineRenderer";
+import { textDirection } from "./spineRenderer";
 import type { SpineBookState } from "./spineActivity";
 
 interface ShelfCaseProps {
@@ -46,15 +45,15 @@ export function paintsArt(spineStyle: SpineStyleName): boolean {
   return spineStyle === "art";
 }
 
-/** Art's bottom band exists when there is anything to put in it. */
-export function hasBottomBand(book: Book): boolean {
+/** Art's deep scrim foot exists when there is anything to put in it. */
+export function hasFootContent(book: Book): boolean {
   return Boolean(book.authors[0]) || book.labels.length > 0;
 }
 
 /** Non-band faces need to know what sits below the title block. */
 export function spineFurnitureClass(book: Book): string {
   return `${book.labels.length > 0 ? " has-labels" : ""}${
-    book.readingStatus === "finished" ? " has-seal" : ""
+    book.labels.length > 2 ? " many-labels" : ""
   }`;
 }
 
@@ -65,9 +64,9 @@ export function spineFurnitureVars(book: Book): CSSProperties {
 }
 
 /**
- * Split an author into two balanced lines for the Art foot band. A one-word
- * name stays on one line; otherwise the split mirrors the reading order, with
- * the first line taking the extra word when the count is odd.
+ * Split an author into two balanced lines for the Art foot. A one-word name
+ * stays on one line; otherwise the split mirrors the reading order, with the
+ * first line taking the extra word when the count is odd.
  */
 export function authorLines(author: string): string[] {
   const words = author.trim().split(/\s+/).filter(Boolean);
@@ -76,129 +75,20 @@ export function authorLines(author: string): string[] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-/** Fixed band percentages; a missing author/labels collapses the foot. */
-export function spineBandVars(book: Book): CSSProperties {
-  // Non-band faces reserve the space actually occupied by chips/seal, so the
-  // title+author group can centre in what is left instead of a guessed 50px.
+/** Reserved layout space; a missing author/labels collapses the foot. */
+export function spineReserveVars(book: Book): CSSProperties {
+  // Cloth and Typography reserve the space actually occupied by their chips,
+  // so the title+author group can centre in what is left instead of a guessed
+  // 50px. Art's foot is the scrim's darkest 30%, so it needs no reserve.
   const chips =
     Math.min(book.labels.length, 2) + (book.labels.length > 2 ? 1 : 0);
   const labelReserve = chips
     ? 8 + chips * 13 + (chips - 1) * 2 + 2
     : 0;
-  const sealReserve = book.readingStatus === "finished" ? 64 : 0;
-  const lowerReserve =
-    labelReserve > 0 || sealReserve > 0
-      ? Math.max(labelReserve, sealReserve)
-      : 26;
+  const lowerReserve = labelReserve > 0 ? labelReserve : 26;
   return {
     "--lower-reserve": `${lowerReserve}px`,
-    ...(spineStyleName(book) === "art"
-      ? {
-          // No cap band: the art runs to the top edge. The foot gets the
-          // extra height the cap used to take, so the author can sit on two
-          // lines above the label chips.
-          "--band-top": "0%",
-          "--band-bottom": hasBottomBand(book) ? "27%" : "0%",
-        }
-      : null),
   } as CSSProperties;
-}
-
-interface SpineInk {
-  ink: string;
-  halo: string;
-  shadow: string;
-}
-
-// Cream is the safe default: the strip itself is dark more often than not, and
-// the sample lands within a frame of the image load.
-const DEFAULT_SPINE_INK: SpineInk = {
-  ink: "#f4e6c4",
-  halo: "#160d09",
-  shadow: "rgba(8, 4, 2, 0.72)",
-};
-const DARK_INK: SpineInk = {
-  ink: "#2a1a10",
-  halo: "#fffaf0",
-  shadow: "rgba(255, 250, 238, 0.7)",
-};
-const inkCache = new Map<string, SpineInk>();
-const inkPending = new Map<string, Promise<SpineInk>>();
-
-/**
- * Read the strip's title band once per URL and choose a hairline ink pairing.
- * The strip is the only reliable evidence of what sits behind the type; the
- * book's palette is not.
- */
-function loadSpineInk(url: string): Promise<SpineInk> {
-  const cached = inkCache.get(url);
-  if (cached) return Promise.resolve(cached);
-  const pending = inkPending.get(url);
-  if (pending) return pending;
-  const promise = new Promise<SpineInk>((resolve) => {
-    const finish = (ink: SpineInk) => {
-      inkCache.set(url, ink);
-      inkPending.delete(url);
-      resolve(ink);
-    };
-    const image = new Image();
-    image.decoding = "async";
-    image.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 16;
-        canvas.height = 64;
-        const context = canvas.getContext("2d", {
-          willReadFrequently: true,
-        });
-        if (!context) {
-          finish(DEFAULT_SPINE_INK);
-          return;
-        }
-        context.drawImage(image, 0, 0, 16, 64);
-        const pixels = context.getImageData(0, 0, 16, 64).data;
-        const luminance: number[] = [];
-        // The title run occupies the middle of the spine, away from its caps.
-        for (let y = 8; y < 56; y += 1) {
-          for (let x = 2; x < 14; x += 1) {
-            const offset = (y * 16 + x) * 4;
-            luminance.push(
-              (0.2126 * pixels[offset] +
-                0.7152 * pixels[offset + 1] +
-                0.0722 * pixels[offset + 2]) /
-                255,
-            );
-          }
-        }
-        luminance.sort((left, right) => left - right);
-        const median = luminance[Math.floor(luminance.length / 2)] ?? 0.5;
-        finish(median > 0.22 ? DARK_INK : DEFAULT_SPINE_INK);
-      } catch {
-        finish(DEFAULT_SPINE_INK);
-      }
-    };
-    image.onerror = () => finish(DEFAULT_SPINE_INK);
-    image.src = url;
-  });
-  inkPending.set(url, promise);
-  return promise;
-}
-
-function useSpineInk(url: string | undefined): SpineInk {
-  const [sample, setSample] = useState<SpineInk>(
-    () => (url ? inkCache.get(url) : undefined) ?? DEFAULT_SPINE_INK,
-  );
-  useEffect(() => {
-    if (!url) return;
-    let alive = true;
-    void loadSpineInk(url).then((next) => {
-      if (alive) setSample(next);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [url]);
-  return sample;
 }
 
 /** The ink and board variables shared by a shelf spine and its drag ghost. */
@@ -206,16 +96,10 @@ export function spinePaletteVars(book: Book): CSSProperties {
   const style = shelfSpineStyle(book);
   const spineStyle = spineStyleName(book);
   const foil = "#ecd7a4";
-  // The backdrop standardises the art, so the ink is chosen against the smoked
-  // window rather than the raw pixels. Cloth has no window; its foil is fixed
-  // and tested against the board colour. Typography keeps the original cream
-  // board lettering.
-  const ink =
-    spineStyle === "cloth"
-      ? foil
-      : spineStyle === TYPOGRAPHY
-        ? SPINE_INK
-        : readableInk(mix(style.c1, "#0b0908", 0.78));
+  // Art's scrim standardises the strip, so its ink is always cream. Cloth has
+  // no window; its foil is fixed and tested against the board colour.
+  // Typography keeps the original cream board lettering.
+  const ink = spineStyle === "cloth" ? foil : SPINE_INK;
   const inkDim = spineStyle === "cloth" ? "#cbb78c" : "#dccba4";
   return {
     "--c1": style.c1,
@@ -234,6 +118,9 @@ const MIN_TITLE_FONT = 2.8;
 // all the way down to the floor; only a title that cannot fit one column at
 // this size is split across two.
 const READABLE_FONT = 6.4;
+// A short column tracked to the full run spreads "Man" into "M a n". The lab
+// caps per-column tracking at 0.12em.
+const COLUMN_TRACKING_CAP = 0.12;
 
 interface TitleColumn {
   text: string;
@@ -322,6 +209,8 @@ function fitSpineTitle(
   probe.style.fontFamily = style.fontFamily;
   probe.style.fontWeight = style.fontWeight;
   probe.style.fontStyle = style.fontStyle;
+  probe.style.direction = style.direction === "rtl" ? "rtl" : "ltr";
+  probe.style.unicodeBidi = "isolate";
   probe.style.letterSpacing = "0px";
   document.body.appendChild(probe);
   const measure = (text: string, size: number) => {
@@ -372,7 +261,22 @@ function fitSpineTitle(
     }
     let parts = splitBalanced(title, (text) => measure(text, size));
     if (!parts) {
-      return { size, tracking: 0, columns: null };
+      // A single long word cannot become two columns. Shrink one column until
+      // it fits rather than returning a run that overflows the title box.
+      let single = size;
+      for (let attempt = 0; attempt < 12 && measure(title, single) > target; attempt += 1) {
+        single *= 0.97;
+      }
+      // The floor is a legibility goal, not a licence to clip: if the word
+      // still overflows at 2.8px, the last resort is smaller type.
+      for (let attempt = 0; attempt < 40 && measure(title, single) > target; attempt += 1) {
+        single *= 0.94;
+      }
+      return {
+        size: single,
+        tracking: Math.max(0, (target - measure(title, single)) / chars),
+        columns: null,
+      };
     }
     // A short word at the split can make one half longer than the run; shrink
     // and rebalance until both halves fit.
@@ -387,8 +291,25 @@ function fitSpineTitle(
       if (!next) break;
       parts = next;
     }
+    // Whatever the rebalance did, each column must fit the box.
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const longest = Math.max(
+        measure(parts.left, size),
+        measure(parts.right, size),
+      );
+      if (longest <= target) break;
+      size *= (target / longest) * 0.99;
+      const next = splitBalanced(title, (text) => measure(text, size));
+      if (!next) break;
+      parts = next;
+    }
     const leftLength = measure(`${parts.left} `, size);
     const rightLength = measure(parts.right, size);
+    const columnTracking = (length: number, text: string) =>
+      Math.min(
+        size * COLUMN_TRACKING_CAP,
+        Math.max(0, (columnTarget - length) / titleChars(text)),
+      );
     return {
       size,
       tracking: 0,
@@ -397,19 +318,14 @@ function fitSpineTitle(
           // The trailing space keeps the title's text content intact across
           // the column break; it is invisible in the rendered run.
           text: `${parts.left} `,
-          // Each column is tracked independently to the same run, so the
-          // shorter half does not leave a dark gap below its words.
-          tracking: Math.max(
-            0,
-            (columnTarget - leftLength) / titleChars(`${parts.left} `),
-          ),
+          // Each column is tracked independently towards the same run, so the
+          // shorter half does not leave a dark gap below its words. The cap
+          // stops a short half being spread into "M a n".
+          tracking: columnTracking(leftLength, `${parts.left} `),
         },
         {
           text: parts.right,
-          tracking: Math.max(
-            0,
-            (columnTarget - rightLength) / titleChars(parts.right),
-          ),
+          tracking: columnTracking(rightLength, parts.right),
         },
       ],
     };
@@ -422,10 +338,13 @@ export function SpineFace({
   book,
   spineStyle = "art",
   generatedSpine,
+  floating = false,
 }: {
   book: Book;
   spineStyle?: SpineStyleName;
   generatedSpine?: string;
+  /** The drag ghost hangs below the shelf lip, so it carries its own drape. */
+  floating?: boolean;
 }) {
   const bands = book.labels.slice(0, 2);
   const hiddenLabels = book.labels.length - bands.length;
@@ -435,14 +354,6 @@ export function SpineFace({
   const [layout, setLayout] = useState<TitleLayout | null>(null);
   const strip = generatedSpine || book.spineDataUrl || undefined;
   const showGenerated = Boolean(strip) && paintsArt(spineStyle);
-  const adaptiveInk = useSpineInk(showGenerated ? strip : undefined);
-  const inkStyle = showGenerated
-    ? ({
-        "--spine-ink": adaptiveInk.ink,
-        "--spine-halo": adaptiveInk.halo,
-        "--spine-halo-shadow": adaptiveInk.shadow,
-      } as CSSProperties)
-    : undefined;
 
   useLayoutEffect(() => {
     const title = titleRef.current;
@@ -473,20 +384,20 @@ export function SpineFace({
   const isArt = spineStyle === "art";
 
   // The Art author gets the full two-line name at a fixed starting size. Shrink
-  // only when a long name would spill out of the foot band; the floor keeps it
-  // legible on the narrowest spine.
+  // only when a long name would spill out of the scrim's foot; the floor keeps
+  // it legible on the narrowest spine.
   useLayoutEffect(() => {
     if (!isArt || !author) return;
     const node = authorRef.current;
-    const band = node?.closest<HTMLElement>(".spine-band-bottom");
-    if (!node || !band) return;
+    const foot = node?.closest<HTMLElement>(".spine-foot");
+    if (!node || !foot) return;
     const fit = () => {
-      let size = 6.8;
+      let size = 6.2;
       node.style.fontSize = `${size}px`;
       while (
         size > 4.2 &&
-        (band.scrollHeight > band.clientHeight + 1 ||
-          node.scrollWidth > node.clientWidth + 1)
+        (foot.scrollHeight > foot.clientHeight ||
+          node.scrollWidth > node.clientWidth)
       ) {
         size = Math.round((size - 0.2) * 10) / 10;
         node.style.fontSize = `${size}px`;
@@ -495,7 +406,7 @@ export function SpineFace({
     fit();
     const observer =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fit);
-    observer?.observe(band);
+    observer?.observe(foot);
     let alive = true;
     void document.fonts?.ready.then(() => {
       if (alive) fit();
@@ -514,7 +425,7 @@ export function SpineFace({
             key={label.id}
             className="lb"
             data-testid="spine-label-band"
-            data-short={isArt ? "" : spineLabelAbbr(label.name)}
+            data-short={spineLabelAbbr(label.name)}
             style={
               {
                 "--lc": label.colour,
@@ -524,11 +435,7 @@ export function SpineFace({
             }
             title={label.name}
           >
-            {isArt ? (
-              <span className="lb-name">{label.name}</span>
-            ) : (
-              <span className="visually-hidden">{label.name}</span>
-            )}
+            <span className="lb-name">{label.name}</span>
           </span>
         ))}
         {hiddenLabels > 0 ? (
@@ -550,11 +457,11 @@ export function SpineFace({
           draggable={false}
         />
       ) : null}
-      {isArt && hasBottomBand(book) ? (
-        <span
-          className="spine-band spine-band-bottom"
-          data-testid="spine-bottom-band"
-        >
+      {showGenerated ? (
+        <span className="spine-smoke" data-testid="spine-scrim" aria-hidden="true" />
+      ) : null}
+      {isArt && hasFootContent(book) ? (
+        <span className="spine-foot" data-testid="spine-foot">
           {author ? (
             <span className="sa" ref={authorRef}>
               {authorLines(author).map((line, index, lines) => (
@@ -569,11 +476,9 @@ export function SpineFace({
           {labelBands}
         </span>
       ) : null}
-      <span className={`spine-text${isArt ? " is-band-layout" : ""}`}>
+      <span className="spine-text">
         <span
-          className={`st${layout?.columns ? " has-columns" : ""}${
-            showGenerated ? " is-adaptive" : ""
-          }`}
+          className={`st${layout?.columns ? " has-columns" : ""}`}
           ref={titleRef}
           style={
             {
@@ -583,7 +488,6 @@ export function SpineFace({
                     letterSpacing: `${Math.round(layout.tracking * 100) / 100}px`,
                   }
                 : null),
-              ...inkStyle,
             } as CSSProperties
           }
         >
@@ -607,20 +511,14 @@ export function SpineFace({
       </span>
       {book.readingStatus === "finished" ? (
         <span
-          className="seal"
-          data-testid="spine-seal"
-          aria-hidden="true"
-        >
-          ✦
-        </span>
-      ) : null}
-      {!isArt ? labelBands : null}
-      {book.readingStatus === "reading" ? (
-        <span
-          className="ribbon"
-          data-testid="spine-ribbon"
+          className="gold-ribbon"
+          data-testid="spine-gold-ribbon"
           aria-hidden="true"
         />
+      ) : null}
+      {!isArt ? labelBands : null}
+      {floating && book.readingStatus === "reading" ? (
+        <span className="spine-drape is-inline" aria-hidden="true" />
       ) : null}
     </>
   );
@@ -678,6 +576,7 @@ export const Spine = memo(function Spine({
       data-slot={book.slotIndex ?? undefined}
       data-status={book.readingStatus}
       data-style={spineStyle}
+      dir={textDirection(book.title) === "rtl" ? "rtl" : undefined}
       data-spine-state={spineState?.state ?? "waiting"}
       data-dragging={dragging || undefined}
       title={`${book.title} — ${statusLabel} — ${spineNote}`}
@@ -688,7 +587,7 @@ export const Spine = memo(function Spine({
       style={
         {
           ...spinePaletteVars(book),
-          ...spineBandVars(book),
+          ...spineReserveVars(book),
           ...spineFurnitureVars(book),
           "--w": `${style.width}px`,
           "--h": `${style.height}px`,
@@ -719,6 +618,100 @@ function areSpineEqual(prev: SpineProps, next: SpineProps): boolean {
     prev.dragging === next.dragging &&
     prev.generatedSpine === next.generatedSpine &&
     prev.spineState === next.spineState
+  );
+}
+
+/**
+ * Reading cue B lives over the shelf lip and board, so it cannot sit inside
+ * `.v4-cavity` (which clips). This layer is a sibling of the cavity inside the
+ * case: it measures each reading book and hangs an oxblood drape from the
+ * book's foot to the bottom of the board. Positions are remeasured when the
+ * shelf resizes, scrolls into view, or a book starts dragging or is dimmed.
+ */
+function ShelfCues({ books }: { books: Book[] }) {
+  const layerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const layer = layerRef.current;
+    const caseEl = layer?.parentElement;
+    if (!layer || !caseEl) return;
+    const list = caseEl.querySelector<HTMLElement>(".v4-books");
+    const board = caseEl.querySelector<HTMLElement>(".v4-board");
+    let frame = 0;
+
+    const place = () => {
+      frame = 0;
+      const caseRect = caseEl.getBoundingClientRect();
+      const boardRect = board?.getBoundingClientRect() ?? caseRect;
+      layer.textContent = "";
+      for (const spine of caseEl.querySelectorAll<HTMLElement>(
+        '.spine[data-status="reading"]',
+      )) {
+        if (spine.dataset.dragging === "true") continue;
+        const rect = spine.getBoundingClientRect();
+        if (!rect.width || !rect.height) continue;
+        const top = rect.bottom - caseRect.top - 4;
+        const drape = document.createElement("span");
+        drape.className = "spine-drape";
+        drape.dataset.testid = "spine-drape";
+        drape.dataset.bookId = spine.dataset.bookId ?? "";
+        drape.style.left = `${rect.right - caseRect.left - 10}px`;
+        drape.style.top = `${top}px`;
+        drape.style.height = `${Math.max(24, boardRect.bottom - caseRect.top - top)}px`;
+        if (spine.dataset.dimmed === "true") drape.dataset.dimmed = "true";
+        layer.appendChild(drape);
+      }
+    };
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(place);
+    };
+
+    place();
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
+    observer?.observe(caseEl);
+    if (list) observer?.observe(list);
+    const mutations =
+      typeof MutationObserver === "undefined"
+        ? null
+        : new MutationObserver(schedule);
+    if (list) {
+      // Filtering dims the drapes directly (a data-attribute sweep); only a
+      // drag changes the drape set, so the cue layer must not rebuild on the
+      // dim flag or a filter would mutate DOM it has no reason to touch.
+      mutations?.observe(list, {
+        attributes: true,
+        attributeFilter: ["data-dragging"],
+        subtree: true,
+      });
+    }
+    const intersection =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) schedule();
+          });
+    intersection?.observe(caseEl);
+    window.addEventListener("resize", schedule);
+    document.fonts?.ready.then(schedule);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      mutations?.disconnect();
+      intersection?.disconnect();
+      window.removeEventListener("resize", schedule);
+    };
+  }, [books]);
+
+  return (
+    <div
+      className="v4-cues"
+      data-testid="spine-cue-layer"
+      ref={layerRef}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -787,6 +780,7 @@ export const ShelfCase = memo(function ShelfCase({
           ) : null}
         </div>
         <div className="v4-plinth" aria-hidden="true" />
+        {!empty ? <ShelfCues books={books} /> : null}
       </div>
     </section>
   );

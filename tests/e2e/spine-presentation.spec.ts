@@ -114,6 +114,7 @@ interface TitleColumnFit {
   fill: number;
   gap: number;
   text: string;
+  tracking: number;
 }
 
 interface TitleFit {
@@ -124,6 +125,11 @@ interface TitleFit {
   font: number;
   letterSpacing: number;
   inside: boolean;
+  glyphTop: number;
+  glyphBottom: number;
+  boxTop: number;
+  boxBottom: number;
+  spineHeight: number;
 }
 
 function measureTitle(element: HTMLElement): TitleFit {
@@ -131,6 +137,7 @@ function measureTitle(element: HTMLElement): TitleFit {
   if (!title) throw new Error("no title");
   const style = getComputedStyle(title);
   const box = title.getBoundingClientRect();
+  const spineRect = element.getBoundingClientRect();
   const columnNodes = [...title.querySelectorAll<HTMLElement>(":scope > .st-col")];
   const groups = columnNodes.length > 0 ? columnNodes : [title];
   const columnFits = groups.map((group) => {
@@ -143,17 +150,21 @@ function measureTitle(element: HTMLElement): TitleFit {
       fill: (bottom - top) / box.height,
       gap: (box.height - (bottom - top)) / box.height,
       text: group.textContent ?? "",
+      tracking:
+        getComputedStyle(group).letterSpacing === "normal"
+          ? 0
+          : Number.parseFloat(getComputedStyle(group).letterSpacing),
     };
   });
   const minFill = Math.min(...columnFits.map((column) => column.fill));
-  const inside = columnFits.every((column) => {
+  const glyphRects = groups.map((group) => {
     const range = document.createRange();
-    range.selectNodeContents(
-      columnNodes.length > 0 ? groups[columnFits.indexOf(column)] : title,
-    );
-    const rect = range.getBoundingClientRect();
-    return rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1;
+    range.selectNodeContents(group);
+    return range.getBoundingClientRect();
   });
+  const inside = glyphRects.every(
+    (rect) => rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1,
+  );
   return {
     fill: minFill,
     columns: groups.length,
@@ -165,6 +176,13 @@ function measureTitle(element: HTMLElement): TitleFit {
         ? 0
         : Number.parseFloat(style.letterSpacing),
     inside,
+    glyphTop: Math.min(...glyphRects.map((rect) => rect.top - spineRect.top)),
+    glyphBottom: Math.max(
+      ...glyphRects.map((rect) => rect.bottom - spineRect.top),
+    ),
+    boxTop: box.top - spineRect.top,
+    boxBottom: box.bottom - spineRect.top,
+    spineHeight: spineRect.height,
   };
 }
 
@@ -196,23 +214,23 @@ for (const width of [390, 320]) {
         .getByTestId("spine")
         .nth(index)
         .evaluate(measureTitle as unknown as (element: Element) => TitleFit);
-      expect(fit.fill, `${title} fill`).toBeGreaterThanOrEqual(0.85);
+      expect(fit.fill, `${title} fill`).toBeGreaterThanOrEqual(0.8);
       expect(fit.fill, `${title} fill`).toBeLessThanOrEqual(1.02);
       expect(fit.columns, `${title} columns`).toBeLessThanOrEqual(2);
       expect(fit.overflowY, `${title} overflow`).toBeLessThanOrEqual(2);
       expect(fit.inside, `${title} glyph inside box`).toBe(true);
       expect(fit.font, `${title} font`).toBeGreaterThan(2.5);
       // Two-column titles must carry type down both columns, not leave the
-      // second one half empty.
+      // second one half empty. A single long word stays one column.
       for (const [column, metrics] of fit.columnFits.entries()) {
         expect(
           metrics.fill,
           `${title} column ${column} fill`,
-        ).toBeGreaterThanOrEqual(0.85);
+        ).toBeGreaterThanOrEqual(0.8);
         expect(
           metrics.gap,
           `${title} column ${column} empty gap`,
-        ).toBeLessThanOrEqual(0.15);
+        ).toBeLessThanOrEqual(0.2);
       }
     }
     // Short and medium titles fill one column instead of being split.
@@ -259,63 +277,65 @@ test("the drag ghost keeps the shelf's spine presentation", async ({
     mockBook(2, "Dune", "typography"),
     // A row that still carries the retired style renders as Wrap.
     mockBook(3, "The Picture of Dorian Gray", "full-bleed"),
+    mockBook(4, "A Reading Volume", "art", {
+      readingStatus: "reading",
+      labels: [{ id: 2, name: "Favourite", colour: "#6e2630" }],
+    }),
   ];
   await boot(page, books);
-  await expect(page.getByTestId("spine-generated")).toHaveCount(2);
-  // Let the per-strip ink sample land before comparing source and ghost.
-  await page.waitForTimeout(700);
+  await expect(page.getByTestId("spine-generated")).toHaveCount(3);
 
   for (const [index, expected] of [
     [0, "art"],
     [1, "typography"],
     [2, "art"],
+    [3, "art"],
   ] as const) {
     const bookId = books[index].id;
     const source = page.locator(
       `[data-testid="spine"][data-book-id="${bookId}"]`,
     );
     const before = await source.evaluate((element) => {
-      const title = element.querySelector<HTMLElement>(".st");
-      const top = element.querySelector<HTMLElement>(".spine-band-top");
-      const bottom = element.querySelector<HTMLElement>(".spine-band-bottom");
-      const image = element.querySelector<HTMLImageElement>("img.spine-generated");
+      const pick = <T extends HTMLElement>(selector: string) =>
+        element.querySelector<T>(selector);
+      const title = pick<HTMLElement>(".st");
+      const image = pick<HTMLImageElement>("img.spine-generated");
       const frame = element.getBoundingClientRect();
+      const box = (node: HTMLElement | null) =>
+        node
+          ? {
+              top: node.getBoundingClientRect().top - frame.top,
+              bottom: node.getBoundingClientRect().bottom - frame.top,
+            }
+          : null;
       return {
         ink: title ? getComputedStyle(title).color : null,
         font: title ? getComputedStyle(title).fontSize : null,
         letterSpacing: title ? getComputedStyle(title).letterSpacing : null,
         style: (element as HTMLElement).dataset.style,
-        topBand: top
-          ? {
-              height: top.getBoundingClientRect().height,
-              top: top.getBoundingClientRect().top - frame.top,
-              bottom: top.getBoundingClientRect().bottom - frame.top,
-            }
-          : null,
-        bottomBand: bottom
-          ? {
-              height: bottom.getBoundingClientRect().height,
-              top: bottom.getBoundingClientRect().top - frame.top,
-              bottom: bottom.getBoundingClientRect().bottom - frame.top,
-            }
-          : null,
-        image: image
-          ? {
-              top: image.getBoundingClientRect().top - frame.top,
-              bottom: image.getBoundingClientRect().bottom - frame.top,
-            }
-          : null,
+        status: (element as HTMLElement).dataset.status,
+        image: box(image),
+        imageFit: image ? getComputedStyle(image).objectFit : null,
+        foot: box(pick<HTMLElement>(".spine-foot")),
+        scrim: Boolean(pick(".spine-smoke")),
+        band: Boolean(pick(".spine-band")),
+        ribbon: Boolean(pick(".gold-ribbon")),
       };
     });
 
     await longPress(page, source);
     const ghost = page.getByTestId("spine-drag-ghost");
     await expect(ghost).toHaveAttribute("data-style", expected);
+    await expect(ghost).toHaveAttribute(
+      "data-status",
+      books[index].readingStatus,
+    );
     await expect(ghost).toHaveClass(/drag-ghost/);
-    await expect(ghost.locator(".spine-scrim")).toHaveCount(0);
+    await expect(ghost.locator(".spine-band")).toHaveCount(0);
     if (expected === "typography") {
       await expect(ghost.locator("img.spine-generated")).toHaveCount(0);
-      await expect(ghost.locator(".spine-band")).toHaveCount(0);
+      await expect(ghost.locator(".spine-smoke")).toHaveCount(0);
+      await expect(ghost.locator(".spine-foot")).toHaveCount(0);
     } else {
       const image = ghost.locator("img.spine-generated");
       await expect(image).toBeVisible();
@@ -323,54 +343,40 @@ test("the drag ghost keeps the shelf's spine presentation", async ({
       expect(
         await image.evaluate((img) => (img as HTMLImageElement).naturalWidth),
       ).toBeGreaterThan(0);
-      await expect(ghost.locator(".spine-band-top")).toHaveCount(0);
-      await expect(ghost.locator(".spine-band-bottom")).toHaveCount(1);
-      if (index === 0) {
-        await expect(
-          ghost.locator(".spine-band-bottom .lb").first(),
-        ).toBeVisible();
-      } else {
-        await expect(
-          ghost.locator(".spine-band-bottom .sa"),
-        ).toBeVisible();
-      }
+      await expect(ghost.locator(".spine-smoke")).toHaveCount(1);
+      await expect(ghost.locator(".spine-foot")).toHaveCount(1);
+      await expect(ghost.locator(".spine-foot .sa")).toBeVisible();
     }
     const after = await ghost.evaluate((element) => {
-      const title = element.querySelector<HTMLElement>(".st");
-      const top = element.querySelector<HTMLElement>(".spine-band-top");
-      const bottom = element.querySelector<HTMLElement>(".spine-band-bottom");
-      const image = element.querySelector<HTMLImageElement>("img.spine-generated");
+      const pick = <T extends HTMLElement>(selector: string) =>
+        element.querySelector<T>(selector);
+      const title = pick<HTMLElement>(".st");
+      const image = pick<HTMLImageElement>("img.spine-generated");
+      const foot = pick<HTMLElement>(".spine-foot");
       const frame = element.getBoundingClientRect();
-      const author = element.querySelector<HTMLElement>(".spine-band-bottom .sa");
+      const box = (node: HTMLElement | null) =>
+        node
+          ? {
+              top: node.getBoundingClientRect().top - frame.top,
+              bottom: node.getBoundingClientRect().bottom - frame.top,
+            }
+          : null;
       return {
         ink: title ? getComputedStyle(title).color : null,
         font: title ? getComputedStyle(title).fontSize : null,
         letterSpacing: title ? getComputedStyle(title).letterSpacing : null,
         style: (element as HTMLElement).dataset.style,
-        topBand: top
-          ? {
-              height: top.getBoundingClientRect().height,
-              top: top.getBoundingClientRect().top - frame.top,
-              bottom: top.getBoundingClientRect().bottom - frame.top,
-            }
-          : null,
-        bottomBand: bottom
-          ? {
-              height: bottom.getBoundingClientRect().height,
-              top: bottom.getBoundingClientRect().top - frame.top,
-              bottom: bottom.getBoundingClientRect().bottom - frame.top,
-            }
-          : null,
-        image: image
-          ? {
-              top: image.getBoundingClientRect().top - frame.top,
-              bottom: image.getBoundingClientRect().bottom - frame.top,
-            }
-          : null,
-        authorInBand: Boolean(author),
+        status: (element as HTMLElement).dataset.status,
+        image: box(image),
+        foot: box(foot),
+        height: frame.height,
+        authorInFoot: Boolean(foot && pick(".spine-foot .sa")),
+        ribbon: Boolean(pick(".gold-ribbon")),
+        drape: Boolean(pick(".spine-drape.is-inline")),
       };
     });
     expect(after.style).toBe(expected);
+    expect(after.status).toBe(before.status);
     expect(after.ink).toBe(before.ink);
     expect(after.font).toBe(before.font);
     // Sub-pixel fit rounding may shift the tracking by a hundredth of a pixel.
@@ -379,24 +385,20 @@ test("the drag ghost keeps the shelf's spine presentation", async ({
     expect(
       Math.abs(spacing(after.letterSpacing) - spacing(before.letterSpacing)),
     ).toBeLessThan(0.05);
+    expect(after.scrim ?? before.scrim).toBe(before.scrim);
     if (expected === "art") {
-      const ghostHeight = (await ghost.boundingBox())?.height ?? 1;
-      const ghostBottom = after.bottomBand?.height ?? 0;
-      // The ghost is lifted by scale(1.04); ratios, not pixels, must match.
-      expect(after.topBand).toBeNull();
-      expect(ghostBottom / ghostHeight).toBeCloseTo(0.27, 2);
-      // With no cap band the art starts at the spine's top edge.
+      // The ghost is lifted by scale(1.04); ratios, not pixels, match.
       expect(after.image?.top).toBeCloseTo(0, 0);
-      expect(after.image?.bottom).toBeCloseTo(
-        after.bottomBand?.top ?? 0,
-        0,
-      );
-      expect(after.authorInBand).toBe(true);
+      expect(after.image?.bottom).toBeCloseTo(after.height, 0);
+      expect(after.foot?.bottom).toBeCloseTo(after.height, 0);
+      expect(after.authorInFoot).toBe(true);
+      expect(after.ribbon).toBe(books[index].readingStatus === "finished");
+      expect(after.drape).toBe(books[index].readingStatus === "reading");
     }
     // The only change on the shelf is the source fading out.
     await expect(source).toHaveCSS("opacity", "0");
     await page.screenshot({
-      path: testInfo.outputPath(`drag-${expected}.png`),
+      path: testInfo.outputPath(`drag-${expected}-${index}.png`),
     });
     await page.mouse.up();
     await expect(ghost).toHaveCount(0);
@@ -404,7 +406,7 @@ test("the drag ghost keeps the shelf's spine presentation", async ({
 });
 
 for (const width of [390, 320]) {
-  test(`Art runs to the top edge above its foot band at ${width}px`, async ({
+  test(`S1 Art is full-height smoked leather at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 844 });
@@ -429,36 +431,44 @@ for (const width of [390, 320]) {
 
     const read = (element: Element) => {
       const spine = element as HTMLElement;
-      const pick = (selector: string) =>
-        spine.querySelector<HTMLElement>(selector);
+      const pick = <T extends HTMLElement>(selector: string) =>
+        spine.querySelector<T>(selector);
       const boxOf = (node: HTMLElement | null) => {
         if (!node) return null;
+        // Layout offsets, not rects: a leaning book's rect is rotated.
         return {
           top: node.offsetTop,
           bottom: node.offsetTop + node.offsetHeight,
           height: node.offsetHeight,
           width: node.offsetWidth,
+          left: node.offsetLeft,
         };
       };
-      const image = pick("img.spine-generated");
-      const title = pick(".st");
-      const text = pick(".spine-text");
-      const author = pick(".spine-band-bottom .sa");
-      const label = pick(".spine-band-bottom .lb");
+      const image = pick<HTMLImageElement>("img.spine-generated");
+      const title = pick<HTMLElement>(".st");
+      const text = pick<HTMLElement>(".spine-text");
+      const foot = pick<HTMLElement>(".spine-foot");
+      const scrim = pick<HTMLElement>(".spine-smoke");
+      const author = pick<HTMLElement>(".spine-foot .sa");
+      const label = pick<HTMLElement>(".spine-foot .lb");
       const authorStyle = author ? getComputedStyle(author) : null;
       const labelStyle = label ? getComputedStyle(label) : null;
       return {
         style: spine.dataset.style,
+        status: spine.dataset.status,
         height: spine.offsetHeight,
         width: spine.clientWidth,
-        topBand: boxOf(pick(".spine-band-top")),
-        bottomBand: boxOf(pick(".spine-band-bottom")),
+        topBand: Boolean(pick(".spine-band-top")),
+        bottomBand: Boolean(pick(".spine-band-bottom")),
         image: boxOf(image),
         objectFit: image ? getComputedStyle(image).objectFit : null,
         text: boxOf(text),
         titleBox: boxOf(title),
-        hasFrame: Boolean(pick(".spine-scrim")),
-        authorInBand: Boolean(author),
+        foot: boxOf(foot),
+        footBackground: foot ? getComputedStyle(foot).backgroundImage : null,
+        footBorder: foot ? getComputedStyle(foot).borderTopWidth : null,
+        smoke: scrim ? getComputedStyle(scrim).backgroundImage : null,
+        authorInFoot: Boolean(author),
         authorWriting: authorStyle?.writingMode ?? null,
         authorCaps: authorStyle?.fontVariantCaps ?? null,
         authorText: author?.textContent ?? "",
@@ -468,25 +478,23 @@ for (const width of [390, 320]) {
             author.scrollHeight > author.clientHeight + 1
           : false,
         authorFont: authorStyle?.fontSize ?? null,
-        labelInBand: Boolean(label),
-        labels: spine.querySelectorAll(".spine-band-bottom .lb").length,
-        labelChips: [...spine.querySelectorAll<HTMLElement>(".spine-band-bottom .lb")].map(
+        labelInFoot: Boolean(label),
+        labels: spine.querySelectorAll(".spine-foot .lb").length,
+        labelChips: [...spine.querySelectorAll<HTMLElement>(".spine-foot .lb")].map(
           (chip) => ({
             short:
-              chip.querySelector<HTMLElement>(".lb-name")?.textContent ??
-              chip.dataset.short ??
+              getComputedStyle(chip, "::before").content?.replace(/"/g, "") ??
               "",
-            text:
-              chip.querySelector<HTMLElement>(".lb-name")?.textContent ?? "",
+            text: chip.textContent ?? "",
             client: chip.clientWidth,
             scroll: chip.scrollWidth,
             font: getComputedStyle(chip).fontSize,
+            height: chip.getBoundingClientRect().height,
           }),
         ),
         labelTransform: labelStyle?.textTransform ?? null,
-        labelOverflow: labelStyle?.textOverflow ?? null,
-        seal: Boolean(pick(".seal")),
-        ribbon: Boolean(pick(".ribbon")),
+        ribbon: Boolean(pick(".gold-ribbon")),
+        drape: Boolean(pick(".spine-drape")),
       };
     };
 
@@ -503,39 +511,37 @@ for (const width of [390, 320]) {
 
     for (const wrapped of [dune, labelled, retired]) {
       expect(wrapped.style).toBe("art");
-      expect(wrapped.hasFrame).toBe(false);
-      // No cap band; foot ~27%, art exactly the 73% above it.
-      expect(wrapped.topBand).toBeNull();
-      expect(wrapped.bottomBand!.height / wrapped.height).toBeCloseTo(0.27, 2);
-      expect(
-        (wrapped.height - wrapped.bottomBand!.height - wrapped.bottomBand!.top) /
-          wrapped.height,
-      ).toBeLessThan(0.01);
-      expect(wrapped.image?.top).toBeCloseTo(0, 0);
-      expect(
-        Math.abs((wrapped.image?.bottom ?? 0) - wrapped.bottomBand!.top),
-      ).toBeLessThan(1.5);
-      expect(wrapped.image!.height / wrapped.height).toBeCloseTo(0.73, 2);
-      expect(wrapped.image?.width).toBeCloseTo(wrapped.width, 1);
+      // No cap band and no foot band: the art is full height under the scrim.
+      expect(wrapped.topBand).toBe(false);
+      expect(wrapped.bottomBand).toBe(false);
+      expect(wrapped.image?.top).toBeCloseTo(0, 1);
+      expect(wrapped.image?.bottom).toBeCloseTo(wrapped.height, 1);
+      expect(wrapped.image?.height).toBeCloseTo(wrapped.height, 0);
+      expect(wrapped.image?.width).toBeCloseTo(wrapped.width, 0);
       expect(wrapped.objectFit).toBe("fill");
-      // The title lives only above the foot band.
-      expect(wrapped.text!.top).toBeGreaterThanOrEqual(2);
+      // The scrim is a plain warm gradient, .64 head to .84 tail.
+      expect(wrapped.smoke).toContain("rgba(22, 13, 8, 0.64)");
+      expect(wrapped.smoke).toContain("rgba(14, 8, 4, 0.84)");
+      // The foot is the scrim's darkest 30%, not a painted band.
+      expect(wrapped.foot).not.toBeNull();
+      expect(wrapped.foot!.height / wrapped.height).toBeCloseTo(0.3, 2);
+      expect(wrapped.foot!.bottom).toBeCloseTo(wrapped.height, 1);
+      expect(wrapped.footBackground).toBe("none");
+      expect(wrapped.footBorder).toBe("0px");
+      // The title box: 10px head (28px finished), foot at 70% + 4px gap.
+      const head = wrapped.status === "finished" ? 28 : 10;
+      expect(wrapped.text!.top).toBeCloseTo(head, 0);
+      expect(
+        wrapped.height - wrapped.text!.bottom - wrapped.height * 0.3,
+      ).toBeCloseTo(4, 0);
+      expect(wrapped.text!.left).toBeCloseTo(2, 0);
       expect(wrapped.text!.bottom).toBeLessThanOrEqual(
-        wrapped.bottomBand!.top + 1,
+        wrapped.foot!.top - 3,
       );
-      expect(
-        Math.abs(wrapped.text!.height - (wrapped.bottomBand!.top - 6)),
-      ).toBeLessThan(3);
-      expect(
-        Math.abs(
-          (wrapped.text!.top + wrapped.text!.bottom) / 2 -
-            wrapped.bottomBand!.top / 2,
-        ),
-      ).toBeLessThanOrEqual(2);
     }
 
-    // Author and chips are inside the foot band, horizontal and compact.
-    expect(labelled.authorInBand).toBe(true);
+    // Author and chips are inside the deep scrim, horizontal and compact.
+    expect(labelled.authorInFoot).toBe(true);
     expect(labelled.authorWriting).toBe("horizontal-tb");
     expect(labelled.authorCaps).toBe("small-caps");
     // The whole name, balanced over two lines and not clipped.
@@ -543,38 +549,45 @@ for (const width of [390, 320]) {
     expect(labelled.authorLineCount).toBe(2);
     expect(labelled.authorClipped).toBe(false);
     expect(Number.parseFloat(labelled.authorFont ?? "0")).toBeGreaterThan(5);
-    expect(labelled.labelInBand).toBe(true);
+    expect(labelled.labelInFoot).toBe(true);
     expect(labelled.labelTransform).toBe("uppercase");
-    expect(labelled.labelOverflow).toBe("ellipsis");
-    // Full label names, not four-letter abbreviations; two chips fit the band.
+    // Full label names stay in the DOM; the visible chip is the 4-5 letter
+    // code from `data-short`.
     expect(labelled.labelChips.map((chip) => chip.short)).toEqual([
+      "FAVO",
+      "BOOK",
+    ]);
+    expect(labelled.labelChips.map((chip) => chip.text)).toEqual([
       "Favourite",
       "Book club",
     ]);
     for (const chip of labelled.labelChips) {
-      expect(chip.short.length).toBeGreaterThan(4);
-      expect(chip.text).toContain(chip.short);
+      expect(chip.short.length).toBeGreaterThanOrEqual(3);
+      expect(chip.short.length).toBeLessThanOrEqual(5);
       expect(chip.scroll).toBeLessThanOrEqual(chip.client + 1);
-      expect(Number.parseFloat(chip.font)).toBeGreaterThanOrEqual(3.9);
+      expect(Number.parseFloat(chip.font)).toBe(5);
+      expect(chip.height).toBe(9);
     }
-    expect(labelled.seal).toBe(true);
+    expect(labelled.ribbon).toBe(true);
+    expect(labelled.drape).toBe(false);
 
-    // A book with no author and no labels collapses the foot band, so the art
-    // fills the whole spine.
+    // A book with no author and no labels collapses the foot, so the art
+    // still fills the whole spine.
     expect(empty.style).toBe("art");
-    expect(empty.bottomBand).toBeNull();
-    expect(empty.image!.height / empty.height).toBeCloseTo(1, 2);
-    expect(empty.text!.bottom).toBeCloseTo(empty.height - 3, 0);
+    expect(empty.foot).toBeNull();
+    expect(empty.image?.height).toBeCloseTo(empty.height, 0);
+    expect(empty.text!.bottom).toBeGreaterThanOrEqual(
+      empty.height * 0.7 - 6,
+    );
+    expect(empty.text!.bottom).toBeLessThanOrEqual(empty.height * 0.7 - 2);
 
     // Cloth and Typography keep their full-face layouts.
     expect(cloth.style).toBe("cloth");
-    expect(cloth.topBand).toBeNull();
-    expect(cloth.bottomBand).toBeNull();
     expect(cloth.image).toBeNull();
+    expect(cloth.foot).toBeNull();
     expect(typography.style).toBe("typography");
-    expect(typography.topBand).toBeNull();
-    expect(typography.bottomBand).toBeNull();
     expect(typography.image).toBeNull();
+    expect(typography.foot).toBeNull();
 
     // The title still fills the middle run.
     for (const index of [0, 1]) {
@@ -582,9 +595,27 @@ for (const width of [390, 320]) {
         .getByTestId("spine")
         .nth(index)
         .evaluate(measureTitle as unknown as (element: Element) => TitleFit);
-      expect(fit.fill).toBeGreaterThanOrEqual(0.85);
+      expect(fit.fill).toBeGreaterThanOrEqual(0.8);
       expect(fit.overflowY).toBeLessThanOrEqual(2);
+      expect(fit.inside).toBe(true);
     }
+
+    // No CSS filter or blend mode anywhere in the case.
+    const effects = await page.getByTestId("shelf").evaluate((shelf) => {
+      const offenders: string[] = [];
+      for (const node of [shelf, ...shelf.querySelectorAll<HTMLElement>("*")]) {
+        const style = getComputedStyle(node);
+        if (style.filter !== "none") offenders.push(`filter:${style.filter}`);
+        if (
+          style.mixBlendMode !== "normal" ||
+          style.backgroundBlendMode !== "normal"
+        ) {
+          offenders.push(`blend:${style.mixBlendMode}/${style.backgroundBlendMode}`);
+        }
+      }
+      return offenders;
+    });
+    expect(effects).toEqual([]);
   });
 }
 
@@ -594,25 +625,25 @@ for (const width of [390, 320]) {
   }) => {
     await page.setViewportSize({ width, height: 844 });
     const specs = [
-      { title: "Dune", author: "Frank Herbert", labels: 0, seal: false },
+      { title: "Dune", author: "Frank Herbert", labels: 0, finished: false },
       {
         title: "Rock Paper Scissors",
         author: "Alice Feeney",
         labels: 1,
-        seal: false,
+        finished: false,
       },
       {
         title: "The Picture of Dorian Gray",
         author: "Oscar Wilde",
         labels: 2,
-        seal: true,
+        finished: true,
       },
       {
         title:
           "The Extraordinary, Long and Complicated Lighthouse Keeper's Daughter",
         author: "E. Marlowe",
         labels: 0,
-        seal: false,
+        finished: false,
       },
     ];
     const books: Book[] = [];
@@ -627,7 +658,7 @@ for (const width of [390, 320]) {
           mockBook(books.length + 1, spec.title, style, {
             authors: [spec.author],
             labels,
-            readingStatus: spec.seal ? "finished" : "unread",
+            readingStatus: spec.finished ? "finished" : "unread",
           }),
         );
       }
@@ -664,11 +695,12 @@ for (const width of [390, 320]) {
         const title = pick(".st");
         const author = pick(".sa");
         const labels = [...spine.querySelectorAll<HTMLElement>(".lb")];
-        const seal = pick(".seal");
+        const ribbon = pick(".gold-ribbon");
         const titleGlyph = glyphs(title);
         const authorGlyph = glyphs(author);
         return {
           style: spine.dataset.style,
+          status: spine.dataset.status,
           height: spine.offsetHeight,
           text: box(text),
           title: box(title),
@@ -677,7 +709,7 @@ for (const width of [390, 320]) {
             labels.length > 0
               ? Math.min(...labels.map((label) => box(label)!.top))
               : null,
-          sealTop: seal ? box(seal)!.top : null,
+          ribbonTop: ribbon ? ribbon.offsetTop : null,
           titleGlyph,
           authorGlyph,
           titleScroll: title
@@ -692,10 +724,7 @@ for (const width of [390, 320]) {
 
     for (const meta of metrics) {
       expect(meta.style === "cloth" || meta.style === "typography").toBe(true);
-      const furnitureTop = Math.min(
-        meta.labelTop ?? Number.POSITIVE_INFINITY,
-        meta.sealTop ?? Number.POSITIVE_INFINITY,
-      );
+      const furnitureTop = meta.labelTop ?? Number.POSITIVE_INFINITY;
       const expectedCenter = Number.isFinite(furnitureTop)
         ? ((meta.text?.top ?? 0) + furnitureTop) / 2
         : meta.height / 2;
@@ -726,6 +755,11 @@ for (const width of [390, 320]) {
       }
       expect(glyphTop).toBeGreaterThanOrEqual(-0.5);
       expect(glyphBottom).toBeLessThanOrEqual(meta.height + 0.5);
+      // Finished reserves the 28px head band on every face.
+      if (meta.status === "finished") {
+        expect(meta.text!.top).toBeCloseTo(28, 0);
+        expect(meta.ribbonTop).toBe(0);
+      }
     }
   });
 }
@@ -779,6 +813,13 @@ for (const width of [390, 320]) {
       })),
     );
     expect(new Set(spines.map((spine) => spine.width)).size).toBe(3);
+    // The scrim and the gold hairlines sit over the strip by design; hide them
+    // so this test reads the image's own mapped edges.
+    await page.addStyleTag({
+      content:
+        ".spine[data-style='art']::after{display:none!important}" +
+        ".spine-smoke,.spine-text,.spine-foot{visibility:hidden!important}",
+    });
 
     for (const spine of spines) {
       expect(spine.fit).toBe("fill");
@@ -929,7 +970,7 @@ function pixelStats(values: number[]) {
 }
 
 for (const width of [390, 320]) {
-  test(`adaptive ink clears 4.5:1 over light and dark art at ${width}px`, async ({
+  test(`the smoked scrim clears 4.5:1 over light and dark art at ${width}px`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 844 });
@@ -942,7 +983,7 @@ for (const width of [390, 320]) {
       2: darkStrip(),
     });
     await expect(page.getByTestId("spine-generated")).toHaveCount(2);
-    await page.waitForTimeout(900);
+    await page.waitForTimeout(500);
 
     const inks = await page.getByTestId("spine").evaluateAll((spines) =>
       spines.map((spine) => {
@@ -955,10 +996,13 @@ for (const width of [390, 320]) {
         };
       }),
     );
-    expect(inks[0].adaptive).toBe(true);
-    expect(inks[0].colour).toBe("rgb(42, 26, 16)");
-    expect(inks[1].colour).toBe("rgb(244, 230, 196)");
-    expect(inks[0].stroke).not.toBe("0px");
+    // The scrim standardises the art, so the ink is always the same cream and
+    // there is no adaptive halo.
+    for (const ink of inks) {
+      expect(ink.colour).toBe("rgb(244, 230, 196)");
+      expect(ink.adaptive).toBe(false);
+      expect(ink.stroke).not.toContain("1px");
+    }
 
     for (const index of [0, 1]) {
       const spine = page.getByTestId("spine").nth(index);
@@ -973,25 +1017,12 @@ for (const width of [390, 320]) {
       const behind = await page.screenshot({ clip: box });
       await spine.evaluate((element) => {
         element.querySelectorAll(".st").forEach((node) => {
-          const title = node as HTMLElement;
-          title.style.visibility = "";
-          title.style.color = "transparent";
-          title.style.textShadow = "none";
-        });
-      });
-      const haloOnly = await page.screenshot({ clip: box });
-      await spine.evaluate((element) => {
-        element.querySelectorAll(".st").forEach((node) => {
-          const title = node as HTMLElement;
-          title.style.color = "";
-          title.style.textShadow = "";
+          (node as HTMLElement).style.visibility = "";
         });
       });
 
       const shown = decodePng(withText);
       const hidden = decodePng(behind);
-      const halo = decodePng(haloOnly);
-      const fillVsHalo: number[] = [];
       const inkVsArt: number[] = [];
       for (let y = 0; y < shown.height; y += 1) {
         for (let x = 0; x < shown.width; x += 1) {
@@ -1006,17 +1037,6 @@ for (const width of [390, 320]) {
             hidden.data[offset + 1],
             hidden.data[offset + 2],
           ];
-          const c: [number, number, number] = [
-            halo.data[offset],
-            halo.data[offset + 1],
-            halo.data[offset + 2],
-          ];
-          const fillDelta = Math.max(
-            Math.abs(a[0] - c[0]),
-            Math.abs(a[1] - c[1]),
-            Math.abs(a[2] - c[2]),
-          );
-          if (fillDelta >= 150) fillVsHalo.push(contrastRatio(a, c));
           const rawDelta = Math.max(
             Math.abs(a[0] - b[0]),
             Math.abs(a[1] - b[1]),
@@ -1025,10 +1045,8 @@ for (const width of [390, 320]) {
           if (rawDelta >= 150) inkVsArt.push(contrastRatio(a, b));
         }
       }
-      const fill = pixelStats(fillVsHalo);
       const raw = pixelStats(inkVsArt);
-      expect(fill.count).toBeGreaterThan(200);
-      expect(fill.min).toBeGreaterThanOrEqual(4.5);
+      expect(raw.count).toBeGreaterThan(200);
       expect(raw.min).toBeGreaterThanOrEqual(4.5);
     }
   });
@@ -1048,7 +1066,7 @@ for (const width of [390, 320]) {
     await expect(page.getByTestId("spine")).toHaveCount(1);
     await page.waitForTimeout(400);
 
-    const author = page.locator(".spine-band-bottom .sa");
+    const author = page.locator(".spine-foot .sa");
     const metrics = await author.evaluate((element) => {
       const node = element as HTMLElement;
       const style = getComputedStyle(node);
@@ -1059,15 +1077,392 @@ for (const width of [390, 320]) {
         clipped:
           node.scrollWidth > node.clientWidth + 1 ||
           node.scrollHeight > node.clientHeight + 1,
-        inBand: Boolean(node.closest(".spine-band-bottom")),
+        inFoot: Boolean(node.closest(".spine-foot")),
       };
     });
     expect(metrics.text).toBe("A. Very Long Author Name");
     expect(metrics.lines).toBe(2);
     expect(metrics.clipped).toBe(false);
-    expect(metrics.inBand).toBe(true);
-    // The name shrinks below the 6.8px start but never below the 4.2px floor.
-    expect(metrics.font).toBeLessThanOrEqual(6.8);
+    expect(metrics.inFoot).toBe(true);
+    // The name starts at 6.2px and shrinks toward the 4.2px floor.
+    expect(metrics.font).toBeLessThanOrEqual(6.2);
     expect(metrics.font).toBeGreaterThanOrEqual(4.19);
   });
 }
+
+for (const width of [430, 390, 360, 320]) {
+  test(`the S1 shelf has no overflow and no clipped title at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const books = [
+      mockBook(1, "The Whisper Man", "art", {
+        readingStatus: "finished",
+        labels: [{ id: 1, name: "Crime", colour: "#6e2630" }],
+      }),
+      mockBook(2, "Ready Player One", "art", {
+        readingStatus: "reading",
+        labels: [{ id: 2, name: "Sci-Fi", colour: "#214d4c" }],
+      }),
+      mockBook(3, "The Shadow Friend", "art", { readingStatus: "reading" }),
+      mockBook(4, "Everyone in My Family Has Killed Someone", "art", {
+        authors: ["Benjamin Stevenson"],
+        readingStatus: "reading",
+        labels: [
+          { id: 3, name: "Humour", colour: "#7a5a26" },
+          { id: 4, name: "Family", colour: "#2f4a3c" },
+          { id: 5, name: "Crime", colour: "#6e2630" },
+        ],
+      }),
+      mockBook(5, "The Collector", "art", { readingStatus: "finished" }),
+      mockBook(6, "Needful Things", "art"),
+      mockBook(7, "The Picture of Dorian Gray", "art"),
+    ];
+    await boot(page, books);
+    await expect(page.getByTestId("spine")).toHaveCount(books.length);
+    await page.waitForTimeout(300);
+
+    const sizes = await page.evaluate(() => {
+      const root = document.documentElement;
+      const body = document.body;
+      return {
+        doc: root.scrollWidth - root.clientWidth,
+        body: body.scrollWidth - body.clientWidth,
+      };
+    });
+    expect(sizes.doc).toBeLessThanOrEqual(1);
+    expect(sizes.body).toBeLessThanOrEqual(1);
+
+    const fits = await page.getByTestId("spine").evaluateAll((spines) =>
+      spines.map((spine) => {
+        const frame = (spine as HTMLElement).getBoundingClientRect();
+        const title = spine.querySelector<HTMLElement>(".st")!;
+        const text = spine.querySelector<HTMLElement>(".spine-text")!;
+        const titleBox = title.getBoundingClientRect();
+        const textBox = text.getBoundingClientRect();
+        const groups = [
+          ...title.querySelectorAll<HTMLElement>(".st-col"),
+        ];
+        const ranges = (groups.length > 0 ? groups : [title]).map((group) => {
+          const range = document.createRange();
+          range.selectNodeContents(group);
+          return range.getBoundingClientRect();
+        });
+        return {
+          title: title.textContent,
+          insideSpine:
+            titleBox.top >= frame.top - 1 &&
+            titleBox.bottom <= frame.bottom + 1 &&
+            titleBox.left >= frame.left - 1 &&
+            titleBox.right <= frame.right + 1,
+          insideBox: ranges.every(
+            (box) =>
+              box.top >= textBox.top - 1 && box.bottom <= textBox.bottom + 1,
+          ),
+          clipped: title.scrollHeight > title.clientHeight + 1,
+        };
+      }),
+    );
+    for (const fit of fits) {
+      expect(fit.insideSpine, `${fit.title} inside spine`).toBe(true);
+      expect(fit.insideBox, `${fit.title} glyph inside box`).toBe(true);
+      expect(fit.clipped, `${fit.title} clipped`).toBe(false);
+    }
+  });
+}
+
+/* ------------------------------------------------------- status language */
+
+function positionedBook(
+  id: number,
+  title: string,
+  overrides: Partial<Book> = {},
+): Book {
+  for (let attempt = 0; attempt < 400; attempt += 1) {
+    const candidate = mockBook(id, title, "art", {
+      contentHash: `position-${id}-${title}-${attempt}`,
+      slotIndex: id - 1 + attempt * 17,
+      ...overrides,
+    });
+    if (shelfSpineStyle(candidate).width === 27) return candidate;
+  }
+  throw new Error(`no 27px spine for ${title}`);
+}
+
+test("reading is a drape past the lip, finished is a gold head ribbon", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const books = [
+    positionedBook(1, "The Whisper Man", {
+      authors: ["Alex North"],
+      readingStatus: "finished",
+      labels: [
+        { id: 1, name: "Crime", colour: "#6e2630" },
+        { id: 2, name: "Gothic", colour: "#4b2d5c" },
+      ],
+    }),
+    positionedBook(2, "Ready Player One", {
+      authors: ["Ernest Cline"],
+      readingStatus: "reading",
+      labels: [{ id: 3, name: "Sci-Fi", colour: "#214d4c" }],
+    }),
+    positionedBook(3, "The Shadow Friend", {
+      authors: ["Alex North"],
+      readingStatus: "reading",
+      labels: [{ id: 1, name: "Crime", colour: "#6e2630" }],
+    }),
+    positionedBook(4, "Needful Things", {
+      authors: ["Stephen King"],
+      readingStatus: "unread",
+      labels: [{ id: 4, name: "Horror", colour: "#5d1f2a" }],
+    }),
+  ];
+  await boot(page, books);
+  await expect(page.getByTestId("spine")).toHaveCount(4);
+  await page.waitForTimeout(500);
+
+  // Exactly the reading books have a drape, in the case-level cue layer.
+  await expect(page.getByTestId("spine-drape")).toHaveCount(2);
+  const drapeIds = await page
+    .getByTestId("spine-drape")
+    .evaluateAll((drapes) =>
+      drapes.map((drape) => (drape as HTMLElement).dataset.bookId),
+    );
+  expect(new Set(drapeIds)).toEqual(new Set(["2", "3"]));
+
+  // Finished books carry the gold head ribbon; unread books carry neither.
+  const marks = await page.getByTestId("spine").evaluateAll((spines) =>
+    spines.map((spine) => {
+      const element = spine as HTMLElement;
+      const ribbon = element.querySelector<HTMLElement>(".gold-ribbon");
+      const text = element.querySelector<HTMLElement>(".spine-text")!;
+      return {
+        id: element.dataset.bookId,
+        status: element.dataset.status,
+        ribbon: ribbon
+          ? {
+              // Offsets, not rects: a leaning book rotates its rect.
+              top: ribbon.offsetTop,
+              right:
+                element.clientWidth - ribbon.offsetLeft - ribbon.offsetWidth,
+              width: ribbon.offsetWidth,
+              height: ribbon.offsetHeight,
+            }
+          : null,
+        titleTop: text.offsetTop,
+        aria: element.getAttribute("aria-label"),
+      };
+    }),
+  );
+
+  for (const meta of marks) {
+    if (meta.status === "finished") {
+      expect(meta.ribbon, `finished ${meta.id} ribbon`).not.toBeNull();
+      expect(meta.ribbon!.width).toBeCloseTo(8, 0);
+      expect(meta.ribbon!.height).toBeCloseTo(26, 0);
+      expect(meta.ribbon!.top).toBeCloseTo(0, 0);
+      expect(meta.ribbon!.right).toBeCloseTo(3, 0);
+      // The title box starts below the 26px ribbon's 28px reserve.
+      expect(meta.titleTop).toBeGreaterThanOrEqual(27);
+      expect(meta.ribbon!.top + meta.ribbon!.height).toBeLessThanOrEqual(
+        meta.titleTop - 1,
+      );
+      expect(meta.aria).toMatch(/Finished/);
+    } else {
+      expect(meta.ribbon, `${meta.status} ${meta.id} ribbon`).toBeNull();
+      expect(meta.aria).toMatch(meta.status === "reading" ? /Reading/ : /Unread/);
+    }
+  }
+
+  // No book shows both marks: status is exclusive.
+  for (const book of books) {
+    const both = await page.evaluate((bookId) => {
+      const ribbon = document.querySelector(
+        `[data-testid="spine"][data-book-id="${bookId}"] .gold-ribbon`,
+      );
+      const drape = document.querySelector(
+        `[data-testid="spine-drape"][data-book-id="${bookId}"]`,
+      );
+      return Boolean(ribbon && drape);
+    }, book.id);
+    expect(both).toBe(false);
+  }
+
+  // The drape hangs from 4px above the book's foot to the bottom of the board.
+  const geometry = await page.evaluate(() => {
+    const board = document.querySelector<HTMLElement>(".v4-board")!;
+    const boardBottom = board.getBoundingClientRect().bottom;
+    return [...document.querySelectorAll<HTMLElement>(".spine-drape")].map(
+      (drape) => {
+        const box = drape.getBoundingClientRect();
+        const spine = document.querySelector<HTMLElement>(
+          `[data-testid="spine"][data-book-id="${drape.dataset.bookId}"]`,
+        )!;
+        const book = spine.getBoundingClientRect();
+        return {
+          id: drape.dataset.bookId,
+          width: box.width,
+          top: box.top,
+          bottom: box.bottom,
+          left: box.left,
+          bookBottom: book.bottom,
+          bookRight: book.right,
+          boardBottom,
+        };
+      },
+    );
+  });
+  for (const drape of geometry) {
+    expect(drape.width).toBeCloseTo(8, 0);
+    expect(drape.top).toBeCloseTo(drape.bookBottom - 4, 0);
+    // It passes the clip and reaches the board, not the cavity's foot.
+    expect(drape.bottom).toBeGreaterThan(drape.bookBottom + 9);
+    expect(drape.bottom).toBeCloseTo(drape.boardBottom, 0);
+    expect(drape.left).toBeCloseTo(drape.bookRight - 10, 0);
+  }
+
+  // Prove the drape is painted (not clipped) by finding its oxblood below the
+  // cavity's foot, over the lip and board.
+  const reading = geometry[0];
+  const strip = await page.screenshot({
+    clip: {
+      x: reading.left,
+      y: reading.bookBottom - 2,
+      width: 10,
+      height: reading.boardBottom - reading.bookBottom + 2,
+    },
+  });
+  const shot = decodePng(strip);
+  let red = 0;
+  for (let y = 0; y < shot.height; y += 1) {
+    for (let x = 0; x < shot.width; x += 1) {
+      const offset = (y * shot.width + x) * shot.channels;
+      const r = shot.data[offset];
+      const g = shot.data[offset + 1];
+      const b = shot.data[offset + 2];
+      if (r > 60 && r > g + 18 && r > b + 18) red += 1;
+    }
+  }
+  expect(red / (shot.width * shot.height)).toBeGreaterThan(0.35);
+  await page.screenshot({
+    path: testInfo.outputPath("reading-drape.png"),
+    clip: {
+      x: reading.bookRight - 14,
+      y: reading.bookBottom - 8,
+      width: 16,
+      height: reading.boardBottom - reading.bookBottom + 12,
+    },
+  });
+});
+
+/* ------------------------------------------------ 27px title containment */
+
+const STRESS: Array<{
+  title: string;
+  overrides: Partial<Book>;
+  columns: number;
+  rtl?: boolean;
+}> = [
+  {
+    title: "Forty Characters Make A Long Spine Title",
+    overrides: {},
+    columns: 2,
+  },
+  {
+    title: "Characteristically",
+    overrides: {},
+    columns: 1,
+  },
+  {
+    title: "השם של הוורד",
+    overrides: { authors: ["David Grossman"] },
+    columns: 1,
+    rtl: true,
+  },
+];
+
+for (const width of [390, 320]) {
+  test(`27px titles stay inside the title box at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 });
+    const books = STRESS.map((entry, index) =>
+      positionedBook(index + 1, entry.title, entry.overrides),
+    );
+    for (const book of books) {
+      expect(shelfSpineStyle(book).width).toBe(27);
+    }
+    await boot(page, books);
+    await expect(page.getByTestId("spine")).toHaveCount(books.length);
+    await page.waitForTimeout(500);
+
+    for (const [index, entry] of STRESS.entries()) {
+      const spine = page.getByTestId("spine").nth(index);
+      const fit = await spine.evaluate(
+        measureTitle as unknown as (element: Element) => TitleFit,
+      );
+      const textContent = await spine.locator(".st").textContent();
+      // Nothing truncated, nothing moved outside the box.
+      expect(textContent?.replace(/\s+/g, " ").trim()).toBe(entry.title);
+      expect(fit.columns, `${entry.title} columns`).toBeLessThanOrEqual(
+        entry.columns,
+      );
+      expect(fit.font, `${entry.title} font`).toBeGreaterThanOrEqual(2.8);
+      expect(fit.overflowY, `${entry.title} overflow`).toBeLessThanOrEqual(1);
+      expect(fit.inside, `${entry.title} run inside`).toBe(true);
+      expect(fit.glyphTop, `${entry.title} glyph top`).toBeGreaterThanOrEqual(
+        fit.boxTop - 0.5,
+      );
+      expect(
+        fit.glyphBottom,
+        `${entry.title} glyph bottom`,
+      ).toBeLessThanOrEqual(fit.boxBottom + 0.5);
+      // Title box: 10px head to 70% + 4px gap on a 27px spine.
+      expect(fit.boxTop).toBeCloseTo(10, 0);
+      expect(fit.boxBottom).toBeLessThanOrEqual(fit.spineHeight * 0.7 - 3);
+      // Two-column halves are tracked to the same run; the cap stops a short
+      // half being spread into "M a n". A one-column title is tracked out to
+      // fill its run, as before.
+      if (fit.columns > 1) {
+        for (const column of fit.columnFits) {
+          expect(column.tracking).toBeLessThanOrEqual(
+            fit.font * 0.12 + 0.011,
+          );
+        }
+      }
+      const dir = await spine.getAttribute("dir");
+      expect(dir).toBe(entry.rtl ? "rtl" : null);
+      await spine.screenshot({
+        path: testInfo.outputPath(`stress-${width}-${index}.png`),
+      });
+    }
+  });
+}
+
+test("a single long word shrinks one column instead of overflowing", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  // 38 characters, no space to split at: the old two-column branch returned a
+  // run that overflowed here.
+  const title = "CharacteristicallyUncharacteristically";
+  const book = positionedBook(1, title, { authors: ["Alice Feeney"] });
+  await boot(page, [book]);
+  await expect(page.getByTestId("spine")).toHaveCount(1);
+  await page.waitForTimeout(400);
+
+  const fit = await page
+    .getByTestId("spine")
+    .first()
+    .evaluate(measureTitle as unknown as (element: Element) => TitleFit);
+  expect(fit.columns).toBe(1);
+  expect(fit.font).toBeGreaterThanOrEqual(2.8);
+  expect(fit.overflowY).toBeLessThanOrEqual(1);
+  expect(fit.inside).toBe(true);
+  expect(fit.glyphTop).toBeGreaterThanOrEqual(fit.boxTop - 0.5);
+  expect(fit.glyphBottom).toBeLessThanOrEqual(fit.boxBottom + 0.5);
+  expect((await page.locator(".st").textContent())?.replace(/\s+/g, "")).toBe(
+    title,
+  );
+});

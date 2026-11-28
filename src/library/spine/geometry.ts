@@ -6,13 +6,65 @@
  * the measured bands and the art crop.
  */
 
-import type { SpineRoute, SpineVerdict } from "../../platform";
+import type { ReadingStatus, SpineRoute, SpineVerdict } from "../../platform";
 
 export const SPINE_W = 52;
 export const SPINE_H = 236;
 
 /** The 52 x 236 shelf strip; every style previews and shelves at this size. */
 export const SPINE_STRIP_SIZE = { width: SPINE_W, height: SPINE_H } as const;
+
+/* ------------------------------------------------ S1 smoked-leather marks */
+
+/** The Art foot: the scrim's deepest 30%, holding the author and chips. */
+export const ART_FOOT_RATIO = 0.3;
+export const ART_FOOT_TOP = SPINE_H * (1 - ART_FOOT_RATIO);
+
+/** The warm near-black scrim, head to tail. No filter, no blend. */
+export const ART_SCRIM = {
+  head: 0.64,
+  mid: 0.72,
+  tail: 0.84,
+} as const;
+
+/** The title box starts under the status mark that reserves the head. */
+export const ART_HEAD_RESERVE = 10;
+export const ART_HEAD_RESERVE_FINISHED = 28;
+
+/** Finished: an 8x26 brass ribbon at the head, right 3px, notched tail. */
+export const GOLD_RIBBON = {
+  width: 8,
+  height: 26,
+  right: 3,
+  stops: [
+    [0, "#8a6a2e"],
+    [0.14, "#b08d4a"],
+    [0.34, "#d2ac62"],
+    [0.48, "#f0dcae"],
+    [0.64, "#d2ac62"],
+    [0.84, "#b08d4a"],
+    [1, "#8a6a2e"],
+  ] as ReadonlyArray<readonly [number, string]>,
+  edge: "#3a280f",
+} as const;
+
+/**
+ * Reading: the oxblood drape over the lip and board. The canvas is only
+ * 52 x 236, so it paints the 4px that overlap the spine and reports the rest
+ * of the geometry for the shelf's case-level layer.
+ */
+export const READING_DRAPE = {
+  width: 8,
+  spineOverlap: 4,
+  overLipAndBoard: 27,
+  stops: [
+    [0, "#4c0a0f"],
+    [0.26, "#8e1b22"],
+    [0.48, "#c3353d"],
+    [0.74, "#8e1b22"],
+    [1, "#4c0a0f"],
+  ] as ReadonlyArray<readonly [number, string]>,
+} as const;
 
 export interface Palette {
   avg: string;
@@ -36,8 +88,10 @@ export interface RenderBook {
   contentHash?: string;
   slotIndex?: number;
   format?: "epub" | "pdf";
-  /** Labels worn by the book, for the Art bottom band chips. */
+  /** Labels worn by the book, for the Art foot chips. */
   labels?: ReadonlyArray<{ name: string; colour: string }>;
+  /** Reading status: decides the head reserve and which mark is painted. */
+  readingStatus?: ReadingStatus;
 }
 
 export const clamp = (value: number, min: number, max: number) =>

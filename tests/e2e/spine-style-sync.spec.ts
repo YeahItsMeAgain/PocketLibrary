@@ -384,6 +384,84 @@ test("Typography persists through close, reopen and reload with no shelf art", a
   );
 });
 
+test("reading and finished keep one language across Art, Cloth and Typography", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const books = [
+    book(1, { title: "Finished Art", readingStatus: "finished", spineStyle: "art" }),
+    book(2, { title: "Finished Cloth", readingStatus: "finished", spineStyle: "cloth" }),
+    book(3, {
+      title: "Finished Typography",
+      readingStatus: "finished",
+      spineStyle: "typography",
+    }),
+    book(4, { title: "Reading Art", readingStatus: "reading", spineStyle: "art" }),
+    book(5, { title: "Reading Cloth", readingStatus: "reading", spineStyle: "cloth" }),
+    book(6, {
+      title: "Reading Typography",
+      readingStatus: "reading",
+      spineStyle: "typography",
+    }),
+    book(7, { title: "Unread Art", readingStatus: "unread", spineStyle: "art" }),
+  ];
+  await boot(page, {
+    books,
+    spine: {
+      artifacts: Object.fromEntries(
+        books.map((entry) => [
+          entry.id,
+          { ...artifact(), bookId: entry.id },
+        ]),
+      ),
+    },
+  });
+  await expect(page.getByTestId("spine")).toHaveCount(books.length);
+  await page.waitForTimeout(400);
+
+  const states = await page.getByTestId("spine").evaluateAll((spines) =>
+    spines.map((spine) => {
+      const element = spine as HTMLElement;
+      const ribbon = element.querySelector<HTMLElement>(".gold-ribbon");
+      const text = element.querySelector<HTMLElement>(".spine-text");
+      const frame = element.getBoundingClientRect();
+      return {
+        id: Number(element.dataset.bookId),
+        style: element.dataset.style,
+        status: element.dataset.status,
+        ribbon: ribbon
+          ? {
+              width: ribbon.offsetWidth,
+              height: ribbon.offsetHeight,
+              top: ribbon.offsetTop,
+            }
+          : null,
+        titleTop: text ? text.getBoundingClientRect().top - frame.top : 0,
+      };
+    }),
+  );
+
+  for (const state of states) {
+    const drape = page.locator(
+      `[data-testid="spine-drape"][data-book-id="${state.id}"]`,
+    );
+    if (state.status === "finished") {
+      expect(state.ribbon, `${state.style} finished ribbon`).not.toBeNull();
+      expect(state.ribbon!.width).toBeCloseTo(8, 0);
+      expect(state.ribbon!.height).toBeCloseTo(26, 0);
+      expect(state.ribbon!.top).toBeCloseTo(0, 0);
+      expect(state.titleTop).toBeCloseTo(28, 0);
+      await expect(drape).toHaveCount(0);
+    } else if (state.status === "reading") {
+      expect(state.ribbon, `${state.style} reading ribbon`).toBeNull();
+      await expect(drape).toHaveCount(1);
+    } else {
+      expect(state.ribbon).toBeNull();
+      await expect(drape).toHaveCount(0);
+    }
+  }
+});
+
 test("touch taps on the style row are not swallowed by the undo toast", async ({
   page,
 }) => {

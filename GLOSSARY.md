@@ -29,7 +29,7 @@ A reusable, named, coloured tag attached to any number of books. It is rendered 
 _Avoid_: tag, category, folder
 
 **Reading status**:
-Whether a book is unread, being read, or finished. Set by the user or derived from reading progress, and shown as a sticker or ribbon on the spine.
+Whether a book is unread, being read, or finished. Set by the user or derived from reading progress, and shown on the spine by a shared status mark: reading is an oxblood drape over the shelf lip, finished is a gold head ribbon, unread has neither.
 _Avoid_: progress, state
 
 **Finished**:
@@ -65,8 +65,12 @@ The cached result for one book: the art, spine and fallback images plus route, v
 _Avoid_: output, image, cache file
 
 **Spine style**:
-How a generated spine is presented: `art`, `cloth` or `typography`. This is the per-book `Book.spineStyle` value (optional on the wire; absent means `art`, shown in the UI as **Art**). Art is the generated art spine that runs to the top edge with a foot band holding the full author over two lines and the label chips; `cloth` is a textured woven board; `typography` is the original flat, untextured two-tone board. Only `art` paints generated art. It is not the generation route or the QA verdict.
+How a generated spine is presented: `art`, `cloth` or `typography`. This is the per-book `Book.spineStyle` value (optional on the wire; absent means `art`, shown in the UI as **Art**). Art is S1 smoked leather: the cached strip full height under a warm near-black scrim, gold hairlines, and the full author over two lines above 4–5 letter label codes on the scrim's deepest 30% (no foot band); `cloth` is a textured woven board; `typography` is the original flat, untextured two-tone board. Only `art` paints generated art. It is not the generation route or the QA verdict.
 _Avoid_: route, verdict, layout, theme
+
+**Spine status mark**:
+The per-book reading cue drawn on every spine style. Reading is an 8px oxblood drape that starts at the book's foot and hangs 31px over the shelf lip and board; finished is an 8×26px gold ribbon at the head, right 3px, with a notched tail, inside a reserved 28px head band. The two are exclusive, and the title box never enters either.
+_Avoid_: sticker, seal, medallion, badge
 
 **Backfill**:
 The one-time job that queues the existing library for spine generation when it has not been processed for the active model bundle.

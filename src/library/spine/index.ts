@@ -13,12 +13,20 @@ import { type RenderMeta } from "./text";
 import { drawArtSpine, drawCloth, drawTypography } from "./styles";
 
 export {
+  ART_FOOT_TOP,
+  ART_HEAD_RESERVE,
+  ART_HEAD_RESERVE_FINISHED,
+  ART_SCRIM,
   artCropRect,
   contrast,
   fallbackCrop,
+  GOLD_RIBBON,
   mix,
+  READING_DRAPE,
   readableInk,
+  SPINE_H,
   SPINE_STRIP_SIZE,
+  SPINE_W,
 } from "./geometry";
 export type { Palette, RenderBook } from "./geometry";
 export { textDirection } from "./text";

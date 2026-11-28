@@ -80,7 +80,7 @@ test("a scan result renders book spines on the shelf", async ({ page }) => {
   );
 });
 
-test("finished spines show the brass seal and reading spines the ribbon", async ({
+test("finished spines show the gold head ribbon and reading spines the drape", async ({
   page,
 }) => {
   const books: Book[] = [
@@ -105,35 +105,55 @@ test("finished spines show the brass seal and reading spines the ribbon", async 
   await expect(finished).toHaveCount(1);
   await expect(reading).toHaveCount(1);
 
-  await expect(finished.getByTestId("spine-seal")).toBeVisible();
-  await expect(finished.getByTestId("spine-ribbon")).toHaveCount(0);
+  // Finished: the gold head ribbon inside the spine, clear of the title box.
+  await expect(finished.getByTestId("spine-gold-ribbon")).toBeVisible();
   await expect(finished).toHaveAttribute("aria-label", /Finished/);
+  await expect(finished.locator(".spine-drape")).toHaveCount(0);
 
-  await expect(reading.getByTestId("spine-ribbon")).toBeVisible();
-  await expect(reading.getByTestId("spine-seal")).toHaveCount(0);
+  // Reading: the oxblood drape lives in the case-level cue layer, past the
+  // cavity's clip, so it is not a descendant of the spine.
+  const drape = page.getByTestId("spine-drape");
+  await expect(drape).toHaveCount(1);
+  await expect(reading.getByTestId("spine-gold-ribbon")).toHaveCount(0);
   await expect(reading).toHaveAttribute("aria-label", /Reading/);
+  const readingId = await reading.getAttribute("data-book-id");
+  await expect(drape).toHaveAttribute("data-book-id", readingId ?? "");
 
-  // The cues stay inside the spine and the spines still share the shelf line.
   const finishedBox = await finished.boundingBox();
   const readingBox = await reading.boundingBox();
-  const sealBox = await finished.getByTestId("spine-seal").boundingBox();
-  const ribbonBox = await reading.getByTestId("spine-ribbon").boundingBox();
-  for (const box of [finishedBox, readingBox, sealBox, ribbonBox]) {
+  const ribbonBox = await finished.getByTestId("spine-gold-ribbon").boundingBox();
+  const titleBox = await finished.locator(".spine-text").boundingBox();
+  const drapeBox = await drape.boundingBox();
+  for (const box of [finishedBox, readingBox, ribbonBox, titleBox, drapeBox]) {
     expect(box).not.toBeNull();
   }
-  if (finishedBox && readingBox && sealBox && ribbonBox) {
-    expect(sealBox.y).toBeGreaterThanOrEqual(finishedBox.y);
-    expect(sealBox.y + sealBox.height).toBeLessThanOrEqual(
-      finishedBox.y + finishedBox.height + 1,
-    );
-    expect(sealBox.x).toBeGreaterThanOrEqual(finishedBox.x);
-    expect(sealBox.x + sealBox.width).toBeLessThanOrEqual(
+  if (finishedBox && readingBox && ribbonBox && titleBox && drapeBox) {
+    // The ribbon is 8x26 at the head, inside the spine, above the title.
+    expect(ribbonBox.width).toBeCloseTo(8, 0);
+    expect(ribbonBox.height).toBeCloseTo(26, 0);
+    expect(ribbonBox.y).toBeCloseTo(finishedBox.y, 0);
+    expect(ribbonBox.x).toBeGreaterThanOrEqual(finishedBox.x);
+    expect(ribbonBox.x + ribbonBox.width).toBeLessThanOrEqual(
       finishedBox.x + finishedBox.width + 1,
     );
-    expect(ribbonBox.y).toBeGreaterThanOrEqual(readingBox.y - 1);
-    expect(ribbonBox.y + ribbonBox.height).toBeLessThanOrEqual(
-      readingBox.y + readingBox.height,
+    expect(ribbonBox.y + ribbonBox.height).toBeLessThanOrEqual(titleBox.y - 1);
+    // The drape starts at the reading book's foot and hangs over the lip and
+    // board, so its bottom passes the spine and reaches the board.
+    const board = await page.locator(".v4-board").boundingBox();
+    expect(board).not.toBeNull();
+    expect(drapeBox.y).toBeCloseTo(
+      readingBox.y + readingBox.height - 4,
+      0,
     );
+    expect(drapeBox.y + drapeBox.height).toBeGreaterThan(
+      readingBox.y + readingBox.height + 9,
+    );
+    if (board) {
+      expect(drapeBox.y + drapeBox.height).toBeCloseTo(
+        board.y + board.height,
+        0,
+      );
+    }
     expect(
       Math.abs(
         finishedBox.y + finishedBox.height - (readingBox.y + readingBox.height),
