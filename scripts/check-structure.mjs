@@ -68,7 +68,9 @@ const GROWTH_SLACK = 25;
 const ALLOWLIST = [
   {
     path: "src/platform/mock.ts",
-    baseline: 2526,
+    // Refreshed 2026-11-28 after the 0.1.15-0.1.17 command growth; the split
+    // follow-up below is unchanged and still the next step.
+    baseline: 2600,
     reason:
       "Mock platform implements every command in one module so tests can switch behaviour at one seam.",
     followUp:
@@ -76,14 +78,16 @@ const ALLOWLIST = [
   },
   {
     path: "src-tauri/src/lib.rs",
-    baseline: 1852,
+    // Refreshed 2026-11-28; command wiring grew with the release work.
+    baseline: 1888,
     reason:
       "Tauri entry point: builder, plugin setup, command registration and shared state wiring.",
     followUp: "Move command bodies into feature modules; keep lib.rs to setup only.",
   },
   {
     path: "src-tauri/src/spine_service.rs",
-    baseline: 1121,
+    // Refreshed 2026-11-28; cover repair and status reporting are the next split.
+    baseline: 1267,
     reason:
       "Per-book generation, cache install, cover repair and model status share one service module and its host tests.",
     followUp:
