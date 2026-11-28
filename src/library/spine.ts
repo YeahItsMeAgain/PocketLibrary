@@ -103,8 +103,14 @@ export function surname(author: string): string {
   return parts[parts.length - 1] ?? author;
 }
 
+/**
+ * The 4-5 letter code a label wears on a spine. A word of five letters or
+ * fewer keeps its whole word; a longer word gives its first four letters, so
+ * every chip stays a readable code rather than a squeezed full name.
+ */
 export function spineLabelAbbr(name: string): string {
-  const words = name.trim().split(/\s+/);
-  const first = words[0] ?? name;
-  return first.length > 4 ? first.slice(0, 4) : first;
+  const first = name.trim().split(/\s+/)[0] ?? name;
+  const letters = first.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  if (!letters) return "·";
+  return first.length > 5 ? letters.slice(0, 4) : letters;
 }

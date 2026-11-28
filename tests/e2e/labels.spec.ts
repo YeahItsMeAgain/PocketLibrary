@@ -245,7 +245,7 @@ test("the detail cover shows a paper percentage sticker and a gold sticker, with
     "finished",
   );
   await expect(
-    page.getByTestId("spine").nth(0).getByTestId("spine-seal"),
+    page.getByTestId("spine").nth(0).getByTestId("spine-gold-ribbon"),
   ).toBeVisible();
 });
 

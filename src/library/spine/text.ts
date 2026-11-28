@@ -150,8 +150,11 @@ export interface SpineBlock {
 export interface RenderMeta {
   direction: "ltr" | "rtl";
   scrim: boolean;
-  /** The alpha of the painted backdrop behind the type, 0 when none. */
+  /** The deepest painted scrim alpha, 0 when none. */
   scrimAlpha: number;
+  /** The scrim's head and tail alphas, when it is a gradient. */
+  scrimHead?: number;
+  scrimTail?: number;
   contrast: number;
   /** The union of the title and author runs. */
   block: { x: number; y: number; width: number; height: number };
@@ -164,10 +167,22 @@ export interface RenderMeta {
   /** True when the title and author run down the spine. */
   vertical: boolean;
   /**
-   * The opaque Art cap and foot band heights, in spine pixels. Only the Art
-   * renderer reports these; the art fills the space between them.
+   * The Art foot zone: the scrim's deepest portion that holds the author and
+   * chips. It is not an opaque band.
    */
-  bands?: { top: number; bottom: number };
+  foot?: { top: number; bottom: number };
+  /** The art's painted bounds (full height on S1), 0 when no art is painted. */
+  art?: { top: number; bottom: number };
+  /** The clear head band reserved by the status mark at the head. */
+  headReserve?: number;
+  /** The status mark, when the book has one and the face can paint it. */
+  mark?: {
+    kind: "gold-ribbon" | "drape";
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   /**
    * Which way the glyphs face down the spine. Typography uses the shelf face
    * (`top-down`); the older cloth treatment reads `bottom-up`.
@@ -275,10 +290,19 @@ export function fitVertical(
     }
   }
   fs = Math.max(options.minSize, Math.floor(fs * 40) / 40);
-  const measured = lines.map((line) =>
+  let measured = lines.map((line) =>
     metrics(line, options.family, options.weight, options.track),
   );
-  const adv = Math.max(...measured.map((entry) => entry.adv)) * fs;
+  let adv = Math.max(...measured.map((entry) => entry.adv)) * fs;
+  // The floor is a legibility goal, not a licence to clip: if a single long
+  // word still overflows at the minimum, shrink it until the run fits.
+  for (let attempt = 0; attempt < 24 && adv > options.length * 0.999; attempt += 1) {
+    fs *= 0.96;
+    measured = lines.map((line) =>
+      metrics(line, options.family, options.weight, options.track),
+    );
+    adv = Math.max(...measured.map((entry) => entry.adv)) * fs;
+  }
   const thickNeed =
     (stacked ? 2 * 1.08 : 1) *
     Math.max(...measured.map((entry) => entry.ink)) *
@@ -412,6 +436,8 @@ export function fitHorizontal(
     track?: number;
     /** Split to two lines when the one-line fit lands below this size. */
     splitBelow?: number;
+    /** Split a multi-word run even when the one-line fit already succeeds. */
+    forceSplit?: boolean;
   },
 ): HorizontalFit {
   const track = options.track ?? 0.01;
@@ -421,7 +447,10 @@ export function fitHorizontal(
     (options.width * 0.96) / Math.max(0.05, one.adv),
   );
   let lines = [text];
-  if (fs < (options.splitBelow ?? 13) && (options.maxLines ?? 2) > 1) {
+  if (
+    (options.forceSplit || fs < (options.splitBelow ?? 13)) &&
+    (options.maxLines ?? 2) > 1
+  ) {
     const split = bestSplit(text);
     if (split) {
       const measured = split.lines.map((line) =>
@@ -429,13 +458,13 @@ export function fitHorizontal(
       );
       const adv = Math.max(...measured.map((entry) => entry.adv));
       const next = Math.min(options.maxSize, (options.width * 0.96) / adv);
-      if (next > fs * 1.05) {
+      if (options.forceSplit || next > fs * 1.05) {
         fs = next;
         lines = split.lines;
       }
     }
   }
-  fs = Math.max(options.minSize, Math.floor(fs * 20) / 20);
+  fs = Math.max(options.minSize, Math.round(fs * 10) / 10);
   return {
     fs,
     lines,

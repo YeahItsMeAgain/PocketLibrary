@@ -14,6 +14,8 @@
   min-width: 0;
   height: var(--h);
   border-radius: 2px 2px 1px 1px;
+  --spine-head: 24px;
+  --art-foot: 30%;
   background:
     linear-gradient(
       90deg,
@@ -76,24 +78,26 @@
 
 /* --------------------------------------------------------- style faces */
 
-/* ------------------------------------------------- Art: top edge and foot */
+/* ------------------------------------------------- S1: smoked leather */
 
-/* Art is the v2 cover-derived spine: the art runs to the top edge and an
-   opaque foot band carries the full author on two lines plus the label chips.
-   No rail or fill sits behind the title. */
+/* The Art face is full-height art under a warm near-black scrim. There is no
+   foot band: the bottom 30% is simply the darkest part of the same scrim and
+   carries the full author over two lines above the label codes. */
 .spine[data-style="art"] {
-  --band-top: 0%;
-  --band-bottom: 27%;
+  --spine-head: 10px;
+  --art-foot: 30%;
 }
 
 .spine[data-style="art"] .spine-generated {
   top: 0;
   right: 0;
-  bottom: var(--band-bottom, 27%);
+  bottom: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - var(--band-bottom, 27%));
+  height: 100%;
   border-radius: 0;
+  /* sit under the scrim */
+  z-index: 0;
   /* Show the whole cached 52x236 strip; cover would crop its side edges
      differently at every spine width. */
   object-fit: fill;
@@ -101,73 +105,95 @@
   box-shadow: none;
 }
 
-.spine-band {
+/* A plain warm scrim, no filter and no blend mode: rgba(22,13,8,.64) at the
+   head through rgba(20,12,7,.72) mid to rgba(14,8,4,.84) at the tail. */
+.spine-smoke {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(22, 13, 8, 0.64) 0%,
+    rgba(20, 12, 7, 0.72) 45%,
+    rgba(14, 8, 4, 0.84) 100%
+  );
+}
+
+/* Gold hairlines at the head and tail sit above the scrim, alongside a narrow
+   darkening of both side edges. */
+.spine[data-style="art"]::after {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0 7px,
+      rgba(236, 215, 164, 0.72) 7px 8px,
+      transparent 8px calc(100% - 4px),
+      rgba(236, 215, 164, 0.55) calc(100% - 4px) calc(100% - 3px),
+      transparent calc(100% - 3px)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.56) 0,
+      transparent 8%,
+      transparent 88%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+}
+
+/* The scrim's deep foot. No background, border or rule: the author and the
+   chips simply sit on the darkest part of the art's scrim. */
+.spine[data-style="art"] .st {
+  color: #f4e6c4;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
+}
+
+.spine-foot {
   position: absolute;
   right: 0;
+  bottom: 0;
   left: 0;
-  z-index: 3;
-  background: linear-gradient(180deg, #1b140e 0%, #090604 100%);
+  z-index: 5;
+  display: flex;
+  height: var(--art-foot, 30%);
+  flex-direction: column;
+  gap: 2px;
+  align-items: stretch;
+  /* The author and chips read as one group centred in the deep scrim. */
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px 1px 7px;
   pointer-events: none;
 }
 
-.spine-band-bottom {
-  bottom: 0;
-  display: flex;
-  height: var(--band-bottom, 27%);
-  flex-direction: column;
-  gap: 9px;
-  align-items: stretch;
-  /* The author and chips read as one group centred in the taller foot. */
-  justify-content: center;
-  padding: 4px 1px 6px;
-  border-top: 1px solid rgba(216, 185, 118, 0.78);
-  box-shadow:
-    0 -1px 0 rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 244, 214, 0.05);
-}
-
-.spine .spine-band-bottom .sa {
+.spine .spine-foot .sa {
+  display: block;
   flex: 0 0 auto;
-  max-height: 10px;
-  overflow: hidden;
+  width: calc(100% + 2px);
+  max-width: none;
+  max-height: none;
+  margin-inline: -1px;
+  overflow: visible;
   color: #e8d4a6;
   font-family: var(--display);
-  font-size: 6px;
+  font-size: 6.2px;
   font-variant-caps: small-caps;
   font-weight: 500;
   letter-spacing: 0.02em;
-  line-height: 9px;
+  line-height: 1.02;
   text-align: center;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.9);
-  white-space: nowrap;
+  white-space: normal;
   writing-mode: horizontal-tb;
 }
 
-/* Art shows the whole author name, balanced over two lines. The shelf script
-   shrinks it toward a 4.2px floor when a name still will not fit. */
-.spine[data-style="art"] .spine-band-bottom .sa {
-  display: block;
-  /* Use the band's 1px side padding too, so a two-line name has the widest
-     possible measure at the 4.2px floor. */
-  width: calc(100% + 2px);
-  max-width: none;
-  margin-inline: -1px;
-  max-height: none;
-  overflow: visible;
-  font-size: 6.8px;
-  letter-spacing: 0.02em;
-  line-height: 1.02;
-  text-overflow: clip;
-  white-space: normal;
-}
-
-.spine[data-style="art"] .spine-band-bottom .sa span {
+.spine .spine-foot .sa span {
   display: block;
   white-space: nowrap;
 }
 
-.spine .spine-band-bottom .bands {
+.spine .spine-foot .bands {
   position: static;
   right: auto;
   bottom: auto;
@@ -177,35 +203,27 @@
   gap: 1px;
 }
 
-.spine .spine-band-bottom .lb {
-  height: 10px;
-  font-size: 4px;
-  line-height: 8px;
-  letter-spacing: -0.04em;
+.spine .spine-foot .lb {
+  height: 9px;
+  font-size: 5px;
+  line-height: 7px;
+  letter-spacing: -0.02em;
 }
 
-.spine .spine-band-bottom .lb::before {
-  content: none;
+.spine.many-labels .spine-foot .lb {
+  height: 8px;
+  font-size: 4.6px;
+  line-height: 6px;
 }
 
-.spine .spine-band-bottom .lb-name {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.spine .spine-foot .lb::before {
+  content: attr(data-short);
 }
 
-/* The title occupies only the dead centre between the two opaque bands. */
-.spine .spine-text.is-band-layout {
-  top: calc(var(--band-top, 0%) + 3px);
-  right: 1px;
-  bottom: calc(var(--band-bottom, 27%) + 3px);
-  left: 1px;
-  gap: 0;
-}
-
-.spine[data-style="art"] .seal {
-  bottom: calc(var(--band-bottom, 27%) + 8px);
+/* Finished is the gold head ribbon; it reserves 28px of head on every face so
+   it never enters the title box. Reading has no head reserve (cue B). */
+.spine[data-status="finished"] {
+  --spine-head: 28px;
 }
 
 /* Typography is the original pre-engine spine: a flat two-tone board in the
@@ -305,7 +323,7 @@
 
 .spine .spine-text {
   position: absolute;
-  top: 24px;
+  top: var(--spine-head, 24px);
   right: 1px;
   bottom: var(--lower-reserve, 26px);
   left: 1px;
@@ -317,6 +335,16 @@
   gap: 4px;
   overflow: hidden;
   pointer-events: none;
+}
+
+/* The Art title box: 10px head for unread and reading, 28px for finished (the
+   gold ribbon reserve), and a foot at 70% (30% + a 4px gap). */
+.spine[data-style="art"] .spine-text {
+  top: var(--spine-head, 10px);
+  right: 2px;
+  bottom: calc(var(--art-foot, 30%) + 4px);
+  left: 2px;
+  gap: 0;
 }
 
 .spine .st,
@@ -354,12 +382,15 @@
   white-space: nowrap;
 }
 
-/* Adaptive ink: the sample sets the fill and halo; the hairline is a paint
-   stroke, not a backdrop, so the art stays visible between the glyphs. */
-.spine .st.is-adaptive {
-  -webkit-text-stroke: 1px var(--spine-halo, #160d09);
-  paint-order: stroke fill;
-  text-shadow: 0 1px 1px var(--spine-halo-shadow, rgba(8, 4, 2, 0.72));
+/* The visible chip is the 4-5 letter code from `data-short`; the full name
+   stays in the DOM for assistive technology and the title tooltip. */
+.spine .lb-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .spine .sa {
@@ -397,6 +428,7 @@
 }
 
 .spine .lb {
+  position: relative;
   height: 13px;
   padding: 0;
   overflow: hidden;
@@ -433,44 +465,92 @@
   color: #241420;
 }
 
-.spine .seal {
-  position: absolute;
-  bottom: 47px;
-  left: 50%;
-  z-index: 5;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 28%, #f6e3a8, #d8b25e 38%, #9c7024 76%, #5f3f0e);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 240, 190, 0.8),
-    inset 0 -2px 3px rgba(90, 55, 10, 0.55),
-    0 1px 2px rgba(0, 0, 0, 0.6);
-  color: #5a3a12;
-  font-family: var(--display);
-  font-size: 7px;
-  line-height: 15px;
-  text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 244, 198, 0.65);
-  transform: translateX(-50%);
-}
-
-.spine .ribbon {
+/* Finished cue D: an 8x26 brass ribbon in the reserved 28px head band, with a
+   notched swallowtail, a 1px dark edge and a 2px inner sheen. No filter or
+   blend mode; the brass ramp does the work. */
+.spine .gold-ribbon {
   position: absolute;
   top: 0;
   right: 3px;
   z-index: 6;
   width: 8px;
-  height: 38px;
-  background: linear-gradient(90deg, #5a0e14 0%, #a8232b 38%, #d4484f 52%, #8e1b22 78%, #4c0a0f 100%);
-  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+  height: 26px;
+  background: linear-gradient(
+    90deg,
+    #8a6a2e 0%,
+    #b08d4a 14%,
+    #d2ac62 34%,
+    #f0dcae 48%,
+    #d2ac62 64%,
+    #b08d4a 84%,
+    #8a6a2e 100%
+  );
+  box-shadow:
+    inset 0 0 0 1px #3a280f,
+    inset 0 1px 0 rgba(255, 246, 218, 0.5),
+    inset 0 -1px 0 rgba(56, 38, 12, 0.55);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
 }
 
-.spine .ribbon::after {
+.spine .gold-ribbon::after {
   content: "";
   position: absolute;
-  inset: 0 0 auto 0;
+  top: 2px;
+  bottom: 3px;
+  left: 1px;
+  width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 248, 224, 0.6),
+    rgba(255, 248, 224, 0.08) 55%,
+    transparent
+  );
+}
+
+/* Reading cue B: the oxblood tail emerges at the book's foot and hangs over
+   the shelf lip and board. The shelf renders it in the case's cue layer (the
+   cavity clips); the drag ghost carries its own copy. */
+.spine-drape {
+  position: absolute;
+  z-index: 8;
+  width: 8px;
+  pointer-events: none;
+}
+
+.spine-drape::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #4c0a0f 0%,
+    #8e1b22 26%,
+    #c3353d 48%,
+    #8e1b22 74%,
+    #4c0a0f 100%
+  );
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.55);
+}
+
+.spine-drape::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
   height: 2px;
-  background: rgba(255, 205, 180, 0.28);
+  background: rgba(236, 215, 164, 0.55);
+}
+
+.spine-drape[data-dimmed="true"] {
+  opacity: 0.24;
+}
+
+.spine .spine-drape.is-inline {
+  top: calc(100% - 4px);
+  right: 2px;
+  left: auto;
+  height: 31px;
 }

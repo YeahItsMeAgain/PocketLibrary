@@ -1,15 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import type { Label, MockSpineConfig } from "../../src/platform";
+import type { Label, MockSpineConfig, ReadingStatus } from "../../src/platform";
 
 async function boot(
   page: Page,
   spine: MockSpineConfig = {},
   labels: Label[] = [],
   title = "Rock Paper Scissors",
+  readingStatus: ReadingStatus = "unread",
 ) {
   await page.addInitScript(
-    ({ nextSpine, nextLabels, nextTitle }) => {
+    ({ nextSpine, nextLabels, nextTitle, nextStatus }) => {
       (
         window as unknown as { __POCKETLIBRARY_MOCK__: unknown }
       ).__POCKETLIBRARY_MOCK__ = {
@@ -33,7 +34,7 @@ async function boot(
             addedAt: 1_700_000_000,
             shelfId: 1,
             slotIndex: 0,
-            readingStatus: "unread",
+            readingStatus: nextStatus,
             labels: nextLabels,
           },
         ],
@@ -43,7 +44,12 @@ async function boot(
         spine: { queueStartPaused: true, ...nextSpine },
       };
     },
-    { nextSpine: spine, nextLabels: labels, nextTitle: title },
+    {
+      nextSpine: spine,
+      nextLabels: labels,
+      nextTitle: title,
+      nextStatus: readingStatus,
+    },
   );
   await page.goto("/");
   await expect(page.getByTestId("library-wall")).toBeVisible();
@@ -178,7 +184,7 @@ test("generate shows honest progress, then a result with three style canvases", 
   await expect(page.getByTestId("spine-strip-canvas")).toBeVisible();
 });
 
-test("Art paints the banded art spine with the title on the art", async ({
+test("Art paints S1 smoked leather over a full-height strip", async ({
   page,
 }) => {
   await boot(page);
@@ -197,42 +203,140 @@ test("Art paints the banded art spine with the title on the art", async ({
       colophonY: Number(data.colophonY),
       contrast: Number(data.contrast),
       scrimAlpha: Number(data.scrimAlpha),
+      scrimHead: Number(data.scrimHead),
+      scrimTail: Number(data.scrimTail),
       scrim: data.scrim,
       orientation: data.textOrientation,
-      bandTop: Number(data.bandTop),
-      bandBottom: Number(data.bandBottom),
+      bandTop: data.bandTop,
+      bandBottom: data.bandBottom,
       artTop: Number(data.artTop),
       artBottom: Number(data.artBottom),
+      footTop: Number(data.footTop),
+      footHeight: Number(data.footHeight),
+      headReserve: Number(data.headReserve),
+      markKind: data.markKind,
     };
   });
-  // No cap band; the art runs from the top edge to the opaque foot band.
-  expect(meta.bandTop).toBe(0);
-  expect(meta.bandBottom).toBeCloseTo(236 * 0.27, 0);
-  expect(meta.artTop).toBe(meta.bandTop);
-  expect(meta.artBottom).toBeCloseTo(236 - meta.bandBottom, 0);
+  // S1: full-height art under a warm 64 -> 84% scrim, no opaque bands, and a
+  // deep 30% foot for the author and codes.
+  expect(meta.scrim).toBe("true");
+  expect(meta.scrimAlpha).toBeCloseTo(0.84, 2);
+  expect(meta.scrimHead).toBeCloseTo(0.64, 2);
+  expect(meta.scrimTail).toBeCloseTo(0.84, 2);
+  expect(meta.bandTop).toBe("");
+  expect(meta.bandBottom).toBe("");
+  expect(meta.artTop).toBe(0);
+  expect(meta.artBottom).toBeCloseTo(236, 0);
+  expect(meta.footTop).toBeCloseTo(236 * 0.7, 0);
+  expect(meta.footHeight).toBeCloseTo(236 * 0.3, 0);
+  expect(meta.headReserve).toBe(10);
+  expect(meta.markKind).toBe("none");
+  // The title box is 10px to 70% + 4px; the run stays inside it.
   expect(meta.titleCy - meta.titleHeight / 2).toBeGreaterThanOrEqual(
-    meta.bandTop,
+    meta.headReserve,
   );
   expect(meta.titleCy + meta.titleHeight / 2).toBeLessThanOrEqual(
-    meta.artBottom,
+    meta.footTop - 3,
   );
-  expect(meta.authorCy).toBeGreaterThanOrEqual(meta.artBottom);
-  // The title sits on the art between the top mark band and the author band;
-  // there is no painted panel, just adaptive ink and a hairline halo.
-  expect(meta.cx).toBeCloseTo(26, 0);
-  expect(meta.scrim).toBe("false");
-  expect(meta.scrimAlpha).toBe(0);
-  expect(meta.orientation).toBe("top-down");
+  expect(meta.authorCy).toBeGreaterThan(meta.footTop);
+  expect(meta.authorCy + meta.authorHeight / 2).toBeLessThanOrEqual(236);
+  // Cream on the composited scrim: title ink and hairline are both gone.
   expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
+  expect(meta.cx).toBeCloseTo(26, 0);
+  expect(meta.orientation).toBe("top-down");
   expect(meta.titleLines).toBe(1);
   // Art has no cap mark, so the colophon sits at the top edge.
   expect(meta.colophonY).toBe(0);
   expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
     meta.authorCy - meta.authorHeight / 2,
   );
-  // The author is in the lower band, not the old base colophon.
-  expect(meta.authorCy).toBeGreaterThan(236 * 0.78);
 });
+
+for (const status of ["finished", "reading"] as const) {
+  test(`the Studio shares the shelf's ${status} mark and face geometry`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await boot(page, {}, [], "The Whisper Man", status);
+    await generate(page);
+    const canvas = page.getByTestId("spine-preview-canvas");
+    const meta = await canvas.evaluate((element) => {
+      const data = (element as HTMLCanvasElement).dataset;
+      return {
+        scrim: data.scrim,
+        footTop: Number(data.footTop),
+        footHeight: Number(data.footHeight),
+        headReserve: Number(data.headReserve),
+        markKind: data.markKind,
+        markTop: Number(data.markTop),
+        markWidth: Number(data.markWidth),
+        markHeight: Number(data.markHeight),
+      };
+    });
+    const shelf = await page
+      .locator('[data-testid="spine"][data-book-id="1"]')
+      .evaluate((element) => {
+        const spine = element as HTMLElement;
+        const frame = spine.getBoundingClientRect();
+        const pick = (selector: string) =>
+          spine.querySelector<HTMLElement>(selector);
+        const box = (node: HTMLElement | null) => {
+          if (!node) return null;
+          return {
+            top: node.offsetTop,
+            width: node.offsetWidth,
+            height: node.offsetHeight,
+            right: spine.clientWidth - node.offsetLeft - node.offsetWidth,
+          };
+        };
+        const text = pick(".spine-text");
+        const foot = pick(".spine-foot");
+        const ribbon = pick(".gold-ribbon");
+        return {
+          height: frame.height,
+          titleTop: text ? box(text)?.top ?? 0 : 0,
+          footTop: foot ? box(foot)?.top ?? 0 : 0,
+          footHeight: foot ? box(foot)?.height ?? 0 : 0,
+          scrim: Boolean(pick(".spine-smoke")),
+          ribbon: ribbon ? box(ribbon) : null,
+        };
+      });
+
+    // Both renderers report the same scrim, 30% foot and head reserve.
+    expect(meta.scrim).toBe("true");
+    expect(shelf.scrim).toBe(true);
+    expect(shelf.footTop / shelf.height).toBeCloseTo(0.7, 2);
+    expect(meta.footTop / 236).toBeCloseTo(0.7, 2);
+    expect(shelf.footHeight / shelf.height).toBeCloseTo(0.3, 2);
+    expect(meta.footHeight / 236).toBeCloseTo(0.3, 2);
+    expect(shelf.titleTop).toBeCloseTo(
+      status === "finished" ? 28 : 10,
+      0,
+    );
+    expect(meta.headReserve).toBe(status === "finished" ? 28 : 10);
+
+    if (status === "finished") {
+      expect(meta.markKind).toBe("gold-ribbon");
+      expect(meta.markTop).toBe(0);
+      expect(meta.markWidth).toBe(8);
+      expect(meta.markHeight).toBe(26);
+      expect(shelf.ribbon).not.toBeNull();
+      expect(shelf.ribbon!.width).toBeCloseTo(8, 0);
+      expect(shelf.ribbon!.height).toBeCloseTo(26, 0);
+      expect(shelf.ribbon!.top).toBeCloseTo(0, 0);
+      expect(shelf.ribbon!.right).toBeCloseTo(3, 0);
+    } else {
+      expect(meta.markKind).toBe("drape");
+      expect(meta.markTop).toBeCloseTo(232, 0);
+      expect(meta.markWidth).toBe(8);
+      expect(meta.markHeight).toBe(31);
+      expect(shelf.ribbon).toBeNull();
+      await expect(
+        page.locator('[data-testid="spine-drape"][data-book-id="1"]'),
+      ).toHaveCount(1);
+    }
+  });
+}
 
 const chipLabels: Label[] = [
   { id: 1, name: "Favourite", colour: "#6e2630", createdAt: 1 },
@@ -240,7 +344,9 @@ const chipLabels: Label[] = [
 ];
 
 for (const width of [390, 320]) {
-  test(`Art label chips paint full names at ${width}px`, async ({ page }) => {
+  test(`Art label chips paint 4-5 letter codes at ${width}px`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: 844 });
     await boot(page, {}, chipLabels);
     await generate(page);
@@ -253,10 +359,13 @@ for (const width of [390, 320]) {
       .getAttribute("data-label-chips");
     expect(chips).not.toBeNull();
     const texts = (chips ?? "").split("|");
-    expect(texts).toEqual(["FAVOURITE", "BOOK CLUB"]);
-    // The old four-character prefix is gone, and nothing was ellipsised.
-    expect(texts).not.toContain("FAVO");
-    expect(texts).not.toContain("BOOK");
+    expect(texts).toEqual(["FAVO", "BOOK"]);
+    for (const text of texts) {
+      expect(text.length).toBeGreaterThanOrEqual(4);
+      expect(text.length).toBeLessThanOrEqual(5);
+    }
+    expect(texts).not.toContain("FAVOURITE");
+    expect(texts).not.toContain("BOOK CLUB");
     expect(texts.some((text) => text.includes("…"))).toBe(false);
   });
 }
@@ -303,6 +412,72 @@ for (const width of [390, 320]) {
   });
 }
 
+
+test("changing the reading status updates the Studio mark live", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await boot(page, {}, [], "The Whisper Man", "reading");
+  await generate(page);
+  const canvas = page.getByTestId("spine-preview-canvas");
+  await expect(canvas).toHaveAttribute("data-mark-kind", "drape");
+
+  // The status section lives below the spine section in the same Edit sheet.
+  // Changing it must reach the canvas without closing or remounting the studio.
+  await page
+    .getByTestId("edit-section-status")
+    .evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await page.getByTestId("edit-status-finished").click();
+  await expect(page.getByTestId("edit-status-finished")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(canvas).toHaveAttribute("data-mark-kind", "gold-ribbon");
+  await expect(canvas).toHaveAttribute("data-head-reserve", "28.00");
+
+  await page.getByTestId("edit-status-unread").click();
+  await expect(page.getByTestId("edit-status-unread")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(canvas).toHaveAttribute("data-mark-kind", "none");
+  await expect(canvas).toHaveAttribute("data-head-reserve", "10.00");
+
+  await page.getByTestId("edit-status-reading").click();
+  await expect(page.getByTestId("edit-status-reading")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(canvas).toHaveAttribute("data-mark-kind", "drape");
+});
+
+test("a single long word stays inside the canvas title box", async ({
+  page,
+}) => {
+  await boot(page, {}, [], "CharacteristicallyUncharacteristically");
+  await generate(page);
+  const meta = await page
+    .getByTestId("spine-preview-canvas")
+    .evaluate((element) => {
+      const data = (element as HTMLCanvasElement).dataset;
+      return {
+        titleCy: Number(data.titleCy),
+        titleHeight: Number(data.titleHeight),
+        titleLines: Number(data.titleLines),
+        titleFontSize: Number(data.titleFontSize),
+        headReserve: Number(data.headReserve),
+        footTop: Number(data.footTop),
+      };
+    });
+  expect(meta.titleLines).toBe(1);
+  expect(meta.titleFontSize).toBeGreaterThanOrEqual(2.8);
+  expect(meta.titleCy - meta.titleHeight / 2).toBeGreaterThanOrEqual(
+    meta.headReserve - 0.5,
+  );
+  expect(meta.titleCy + meta.titleHeight / 2).toBeLessThanOrEqual(
+    meta.footTop - 3,
+  );
+});
 
 test("switching Art and Cloth re-renders the preview without generating again", async ({
   page,

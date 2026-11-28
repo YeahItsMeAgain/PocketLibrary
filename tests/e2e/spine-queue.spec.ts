@@ -341,7 +341,7 @@ test("a cover change queues the book again", async ({ page }) => {
     .toBeGreaterThanOrEqual(2);
 });
 
-test("Art fills the art spine with the title and puts the author in the bottom band", async ({
+test("Art puts the title on the scrim and the author in the deep foot", async ({
   page,
 }) => {
   await boot(page, {
@@ -371,6 +371,15 @@ test("Art fills the art spine with the title and puts the author in the bottom b
       colophonY: Number(data.colophonY),
       contrast: Number(data.contrast),
       scrim: data.scrim,
+      scrimAlpha: Number(data.scrimAlpha),
+      scrimHead: Number(data.scrimHead),
+      scrimTail: Number(data.scrimTail),
+      bandTop: data.bandTop,
+      bandBottom: data.bandBottom,
+      artTop: Number(data.artTop),
+      artBottom: Number(data.artBottom),
+      footTop: Number(data.footTop),
+      headReserve: Number(data.headReserve),
     };
   });
 
@@ -379,28 +388,46 @@ test("Art fills the art spine with the title and puts the author in the bottom b
   expect(meta.cx).toBeCloseTo(26, 0);
   expect(meta.titleHeight).toBeGreaterThan(90);
   expect(meta.titleLines).toBeLessThanOrEqual(2);
-  // There is no cap mark; the author sits in the taller foot band.
+  // S1: full-height art under the warm scrim, no opaque bands, and the author
+  // in the deepest 30% of that same scrim.
+  expect(meta.scrim).toBe("true");
+  expect(meta.scrimAlpha).toBeCloseTo(0.84, 2);
+  expect(meta.scrimHead).toBeCloseTo(0.64, 2);
+  expect(meta.scrimTail).toBeCloseTo(0.84, 2);
+  expect(meta.bandTop).toBe("");
+  expect(meta.bandBottom).toBe("");
+  expect(meta.artTop).toBe(0);
+  expect(meta.artBottom).toBeCloseTo(236, 0);
+  expect(meta.footTop).toBeCloseTo(236 * 0.7, 0);
+  // There is no cap mark; the author sits in the foot below the title box.
   expect(meta.colophonY).toBe(0);
+  expect(meta.titleCy - meta.titleHeight / 2).toBeGreaterThanOrEqual(
+    meta.headReserve - 0.5,
+  );
+  expect(meta.titleCy + meta.titleHeight / 2).toBeLessThanOrEqual(
+    meta.footTop - 3,
+  );
   expect(meta.titleCy + meta.titleHeight / 2).toBeLessThan(
     meta.authorCy - meta.authorHeight / 2,
   );
-  expect(meta.authorCy).toBeGreaterThan(236 * 0.78);
+  expect(meta.authorCy).toBeGreaterThan(meta.footTop);
+  expect(meta.authorCy + meta.authorHeight / 2).toBeLessThanOrEqual(236);
   expect(meta.titleHeight).toBeGreaterThan(meta.titleWidth);
   expect(meta.authorLines).toBeLessThanOrEqual(2);
+  // Cream against the real composited scrim, not adaptive ink on raw art.
   expect(meta.contrast).toBeGreaterThanOrEqual(4.5);
-  expect(meta.scrim).toBe("false");
 
   await expectNoHorizontalOverflow(page);
   await page.setViewportSize({ width: 320, height: 844 });
   await expectNoHorizontalOverflow(page);
-  await expect(canvas).toHaveAttribute("data-scrim", "false");
+  await expect(canvas).toHaveAttribute("data-scrim", "true");
 });
 
 for (const [label, colour] of [
   ["light", "#f4f4f4"],
   ["dark", "#0d0d0d"],
 ] as const) {
-  test(`Art keeps ${label} art readable without a scrim`, async ({
+  test(`Art keeps ${label} art readable under the smoked scrim`, async ({
     page,
   }) => {
     await boot(page, {
@@ -422,13 +449,27 @@ for (const [label, colour] of [
       return {
         scrim: data.scrim,
         scrimAlpha: Number(data.scrimAlpha),
+        scrimHead: Number(data.scrimHead),
+        scrimTail: Number(data.scrimTail),
         contrast: Number(data.contrast),
+        titleCy: Number(data.titleCy),
+        titleHeight: Number(data.titleHeight),
+        headReserve: Number(data.headReserve),
+        footTop: Number(data.footTop),
       };
     });
-    expect(meta.scrim, "Art paints no fill").toBe("false");
-    expect(meta.scrimAlpha).toBe(0);
-    // Adaptive ink against the actual art, not a fixed colour.
+    expect(meta.scrim, "Art paints the S1 scrim").toBe("true");
+    expect(meta.scrimAlpha).toBeCloseTo(0.84, 2);
+    expect(meta.scrimHead).toBeCloseTo(0.64, 2);
+    expect(meta.scrimTail).toBeCloseTo(0.84, 2);
+    // The meta contrast is cream against the composited scrim.
     expect(meta.contrast, `Art on ${label} art`).toBeGreaterThanOrEqual(4.5);
+    expect(meta.titleCy - meta.titleHeight / 2).toBeGreaterThanOrEqual(
+      meta.headReserve - 0.5,
+    );
+    expect(meta.titleCy + meta.titleHeight / 2).toBeLessThanOrEqual(
+      meta.footTop - 3,
+    );
   });
 }
 
@@ -785,10 +826,11 @@ test("the shelf shows the generated strip only for Art", async ({
   await expect(wrap).toHaveAttribute("data-style", "art");
   await expect(typography).toHaveAttribute("data-style", "typography");
   await expect(cloth).toHaveAttribute("data-style", "cloth");
-  // Art has no dark fill; Cloth/Typography are typographic boards.
-  await expect(wrap.locator(".spine-scrim")).toHaveCount(0);
-  await expect(typography.locator(".spine-scrim")).toHaveCount(0);
-  await expect(cloth.locator(".spine-scrim")).toHaveCount(0);
+  // Art paints the S1 scrim over the strip; Cloth and Typography keep their
+  // typographic boards.
+  await expect(wrap.locator(".spine-smoke")).toHaveCount(1);
+  await expect(typography.locator(".spine-smoke")).toHaveCount(0);
+  await expect(cloth.locator(".spine-smoke")).toHaveCount(0);
 
   const presentation = async (style: "art" | "cloth" | "typography") =>
     page
@@ -798,16 +840,10 @@ test("the shelf shows the generated strip only for Art", async ({
       .evaluate((spine) => {
         const title = spine.querySelector<HTMLElement>(".st")!;
         const author = spine.querySelector<HTMLElement>(".sa")!;
-        const scrim = spine.querySelector<HTMLElement>(".spine-scrim");
+        const scrim = spine.querySelector<HTMLElement>(".spine-smoke");
         const rect = spine.getBoundingClientRect();
         const titleRect = title.getBoundingClientRect();
         const authorRect = author.getBoundingClientRect();
-        const alpha = (value: string) => {
-          const match = value.match(/rgba?\(([^)]+)\)/);
-          if (!match) return 1;
-          const parts = match[1].split(",").map(Number);
-          return parts.length === 4 ? parts[3] : 1;
-        };
         return {
           centre: rect.width / 2,
           titleCentre: titleRect.x + titleRect.width / 2 - rect.x,
@@ -816,9 +852,7 @@ test("the shelf shows the generated strip only for Art", async ({
           authorTop: authorRect.top,
           titleClientHeight: title.clientHeight,
           titleScrollHeight: title.scrollHeight,
-          scrimAlpha: scrim
-            ? alpha(getComputedStyle(scrim).backgroundColor)
-            : 0,
+          scrimImage: scrim ? getComputedStyle(scrim).backgroundImage : null,
           titleColor: getComputedStyle(title).color,
         };
       });
@@ -831,8 +865,13 @@ test("the shelf shows the generated strip only for Art", async ({
     expect(meta.titleScrollHeight).toBeLessThanOrEqual(
       meta.titleClientHeight + 2,
     );
-    // No dark fill sits behind the type on any art style.
-    expect(meta.scrimAlpha).toBe(0);
+    if (style === "art") {
+      // The warm scrim standardises the art behind the cream title.
+      expect(meta.scrimImage).toContain("rgba(22, 13, 8, 0.64)");
+      expect(meta.titleColor).toBe("rgb(244, 230, 196)");
+    } else {
+      expect(meta.scrimImage).toBeNull();
+    }
   }
 });
 
@@ -957,31 +996,38 @@ test("Art shows generated art while Cloth and Typography keep the face", async (
   await expect(spines.nth(1).locator(".spine-text")).toBeVisible();
   await expect(spines.nth(2).locator(".spine-text")).toBeVisible();
 
-  // Art is the merged cover-derived spine: the art runs to the top edge above
-  // an opaque foot band that carries the full author and label chips.
+  // Art is S1 smoked leather: the strip is full height under the warm scrim,
+  // and the scrim's deepest 30% carries the full author and label codes.
   const wrap = spines.nth(0);
-  await expect(wrap.getByTestId("spine-top-band")).toHaveCount(0);
-  await expect(wrap.getByTestId("spine-bottom-band")).toHaveCount(1);
-  await expect(wrap.locator(".spine-scrim")).toHaveCount(0);
-  const bandGeometry = await wrap.evaluate((spine) => {
-    const bottom = spine.querySelector<HTMLElement>(".spine-band-bottom")!;
+  await expect(wrap.getByTestId("spine-foot")).toHaveCount(1);
+  await expect(wrap.getByTestId("spine-bottom-band")).toHaveCount(0);
+  await expect(wrap.locator(".spine-smoke")).toHaveCount(1);
+  const faceGeometry = await wrap.evaluate((spine) => {
+    const foot = spine.querySelector<HTMLElement>(".spine-foot")!;
     const image = spine.querySelector<HTMLElement>("img.spine-generated")!;
-    const author = spine.querySelector<HTMLElement>(".spine-band-bottom .sa")!;
+    const author = spine.querySelector<HTMLElement>(".spine-foot .sa")!;
+    const smoke = spine.querySelector<HTMLElement>(".spine-smoke")!;
     const height = (spine as HTMLElement).offsetHeight;
     return {
-      bottomRatio: bottom.offsetHeight / height,
+      height,
+      footRatio: foot.offsetHeight / height,
       artTop: image.offsetTop,
-      artBottom: image.offsetTop + image.offsetHeight,
-      bottomTop: bottom.offsetTop,
-      authorInBand: bottom.contains(author),
+      artHeight: image.offsetHeight,
+      footTop: foot.offsetTop,
+      authorInFoot: foot.contains(author),
+      scrimImage: getComputedStyle(smoke).backgroundImage,
+      footBackground: getComputedStyle(foot).backgroundImage,
+      footBorder: getComputedStyle(foot).borderTopWidth,
     };
   });
-  expect(bandGeometry.bottomRatio).toBeCloseTo(0.27, 2);
-  expect(bandGeometry.artTop).toBe(0);
-  expect(bandGeometry.artBottom).toBeLessThanOrEqual(
-    bandGeometry.bottomTop + 2,
-  );
-  expect(bandGeometry.authorInBand).toBe(true);
+  expect(faceGeometry.footRatio).toBeCloseTo(0.3, 2);
+  expect(faceGeometry.artTop).toBe(0);
+  expect(faceGeometry.artHeight).toBeCloseTo(faceGeometry.height, 0);
+  expect(faceGeometry.footTop).toBeCloseTo(faceGeometry.height * 0.7, 0);
+  expect(faceGeometry.authorInFoot).toBe(true);
+  expect(faceGeometry.scrimImage).toContain("rgba(22, 13, 8, 0.64)");
+  expect(faceGeometry.footBackground).toBe("none");
+  expect(faceGeometry.footBorder).toBe("0px");
 });
 
 test("the generated strip stays visible at 390 and 320 wide", async ({

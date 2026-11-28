@@ -30,13 +30,14 @@ import {
   ShelfCase,
   SpineFace,
   paintsArt,
-  spineBandVars,
+  spineReserveVars,
   spineFurnitureClass,
   spineFurnitureVars,
   spinePaletteVars,
   spineStyleName,
 } from "./Shelf";
 import { shelfMark } from "./spine";
+import { textDirection } from "./spineRenderer";
 import { useSpineActivity } from "./spineActivity";
 import {
   HINT_KEY,
@@ -447,6 +448,21 @@ export function LibraryWall({
           }
         },
       );
+      // Reading drapes live in the case's cue layer, outside the spine, so the
+      // same sweep must dim them or a filtered shelf keeps bright tails.
+      wall
+        .querySelectorAll<HTMLElement>('.spine-drape[data-book-id]')
+        .forEach((element) => {
+          const dimmed =
+            active && !matching.has(Number(element.dataset.bookId));
+          if (dimmed) {
+            if (element.dataset.dimmed !== "true") {
+              element.dataset.dimmed = "true";
+            }
+          } else if (element.dataset.dimmed !== undefined) {
+            delete element.dataset.dimmed;
+          }
+        });
       try {
         performance.measure("pocketlibrary:filter", {
           start: startedAt,
@@ -711,10 +727,14 @@ export function LibraryWall({
             data-testid="spine-drag-ghost"
             data-book-id={lift.book.id}
             data-style={spineStyleName(lift.book)}
+            data-status={lift.book.readingStatus}
+            dir={
+              textDirection(lift.book.title) === "rtl" ? "rtl" : undefined
+            }
             style={
               {
                 ...spinePaletteVars(lift.book),
-                ...spineBandVars(lift.book),
+                ...spineReserveVars(lift.book),
                 ...spineFurnitureVars(lift.book),
                 left: lift.left,
                 top: lift.top,
@@ -733,6 +753,7 @@ export function LibraryWall({
               book={lift.book}
               spineStyle={spineStyleName(lift.book)}
               generatedSpine={generatedSpines[lift.book.id]}
+              floating
             />
           </div>
         </div>

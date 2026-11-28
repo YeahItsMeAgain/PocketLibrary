@@ -7,12 +7,18 @@
 
 import type { Book } from "../../platform";
 import type { RenderBook } from "./geometry";
-import { shelfSpineStyle } from "../spine";
+import { shelfSpineStyle, spineLabelAbbr } from "../spine";
 import {
+  ART_FOOT_TOP,
+  ART_HEAD_RESERVE,
+  ART_HEAD_RESERVE_FINISHED,
+  ART_SCRIM,
   contrast,
+  GOLD_RIBBON,
   luminance,
   mix,
   paletteFor,
+  READING_DRAPE,
   SPINE_H,
   SPINE_W,
 } from "./geometry";
@@ -23,7 +29,6 @@ import {
   drawVerticalRun,
   fitHorizontal,
   fitVertical,
-  guardInk,
   metrics,
   SANS,
   samplePixels,
@@ -37,6 +42,116 @@ function provenance(book: RenderBook): "original" | "reconstructed" | "fallback"
   if (book.verdict === "fallback") return "fallback";
   if (book.route === "inpaint") return "reconstructed";
   return "original";
+}
+
+const STATUS_CREAM = "#f4e6c4";
+const CREAM_LUMA = luminance(STATUS_CREAM);
+
+function ratioLuma(a: number, b: number): number {
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+function horizontalRamp(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  width: number,
+  stops: ReadonlyArray<readonly [number, string]>,
+  y0: number,
+  y1: number,
+) {
+  const gradient = ctx.createLinearGradient(x, y0, x + width, y1);
+  for (const [offset, colour] of stops) gradient.addColorStop(offset, colour);
+  return gradient;
+}
+
+/** The finished gold head ribbon: 8 x 26 at right 3px, notched swallowtail. */
+function drawGoldRibbon(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  const { width, height, stops, edge } = GOLD_RIBBON;
+  const tail = y + height * 0.82;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + width, y);
+  ctx.lineTo(x + width, y + height);
+  ctx.lineTo(x + width / 2, tail);
+  ctx.lineTo(x, y + height);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = horizontalRamp(ctx, x, width, stops, y, y + height);
+  ctx.fillRect(x, y, width, height);
+  ctx.strokeStyle = edge;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
+  const sheen = ctx.createLinearGradient(x, y + 2, x, y + height - 3);
+  sheen.addColorStop(0, "rgba(255,248,224,.6)");
+  sheen.addColorStop(0.55, "rgba(255,248,224,.08)");
+  sheen.addColorStop(1, "rgba(255,248,224,0)");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(x + 1, y + 2, 2, height - 5);
+  ctx.restore();
+}
+
+/**
+ * The reading drape's in-spine 4px. The rest hangs over the shelf lip and
+ * board, which is outside this 52 x 236 canvas; the shelf's cue layer paints
+ * it and the meta below reports its full geometry.
+ */
+function drawDrapeSliver(ctx: CanvasRenderingContext2D, x: number) {
+  const y = SPINE_H - READING_DRAPE.spineOverlap;
+  const width = READING_DRAPE.width;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, width, SPINE_H - y);
+  ctx.clip();
+  ctx.fillStyle = horizontalRamp(
+    ctx,
+    x,
+    width,
+    READING_DRAPE.stops,
+    y,
+    SPINE_H,
+  );
+  ctx.fillRect(x, y, width, SPINE_H - y);
+  ctx.fillStyle = "rgba(236,215,164,.55)";
+  ctx.fillRect(x, y, width, 1);
+  ctx.restore();
+}
+
+function drawStatusMark(ctx: CanvasRenderingContext2D, book: RenderBook) {
+  if (book.readingStatus === "finished") {
+    drawGoldRibbon(ctx, SPINE_W - GOLD_RIBBON.right - GOLD_RIBBON.width, 0);
+  } else if (book.readingStatus === "reading") {
+    drawDrapeSliver(ctx, SPINE_W - 2 - READING_DRAPE.width);
+  }
+}
+
+function statusMark(book: RenderBook): RenderMeta["mark"] {
+  if (book.readingStatus === "finished") {
+    return {
+      kind: "gold-ribbon",
+      x: SPINE_W - GOLD_RIBBON.right - GOLD_RIBBON.width,
+      y: 0,
+      width: GOLD_RIBBON.width,
+      height: GOLD_RIBBON.height,
+    };
+  }
+  if (book.readingStatus === "reading") {
+    return {
+      kind: "drape",
+      x: SPINE_W - 2 - READING_DRAPE.width,
+      y: SPINE_H - READING_DRAPE.spineOverlap,
+      width: READING_DRAPE.width,
+      height: READING_DRAPE.spineOverlap + READING_DRAPE.overLipAndBoard,
+    };
+  }
+  return undefined;
+}
+
+/** Art reserves 28px for the finished ribbon and 10px otherwise. */
+function artHeadReserve(book: RenderBook): number {
+  return book.readingStatus === "finished"
+    ? ART_HEAD_RESERVE_FINISHED
+    : ART_HEAD_RESERVE;
 }
 
 export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): RenderMeta {
@@ -157,6 +272,7 @@ export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): Rend
   ctx.restore();
   drawProvenance(ctx, look.x, SPINE_H - 9, provenance(book));
   grain(ctx, SPINE_W, SPINE_H, 0.07);
+  drawStatusMark(ctx, book);
   return {
     direction: book.direction,
     scrim: false,
@@ -194,6 +310,8 @@ export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): Rend
     },
     vertical: true,
     textOrientation: "bottom-up",
+    headReserve: book.readingStatus === "finished" ? 28 : 24,
+    mark: statusMark(book),
   };
 }
 
@@ -313,6 +431,7 @@ export function drawTypography(
   ctx.arc(0, 0, look.ornSize * 0.13, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+  drawStatusMark(ctx, book);
   return {
     direction: book.direction,
     scrim: false,
@@ -350,11 +469,11 @@ export function drawTypography(
     },
     vertical: true,
     textOrientation: "top-down",
+    headReserve: book.readingStatus === "finished" ? 28 : 24,
+    mark: statusMark(book),
   };
 }
 
-const WRAP_UMBER = "#1b140e";
-const WRAP_UMBER_DEEP = "#090604";
 const WRAP_GOLD = "#d8b976";
 
 function drawLabelChip(
@@ -388,12 +507,12 @@ function drawLabelChip(
   ctx.restore();
 }
 
-const CHIP_FONT_MAX = 4.6;
+const CHIP_FONT_MAX = 5;
 const CHIP_FONT_MIN = 3.2;
 const CHIP_TRACK = 0.02;
 const CHIP_PADDING = 3;
 
-/** Fit the full uppercase name, shrinking before ever truncating. */
+/** Fit a 4-5 letter code, shrinking before ever truncating. */
 function fitChipText(
   text: string,
   width: number,
@@ -427,9 +546,8 @@ interface ChipPlan {
 }
 
 /**
- * Lay out up to two label chips side by side when both full names fit. If the
- * pair would truncate, stack them full width instead; ellipsis is the last
- * resort. A third chip is the gold `+N` overflow row.
+ * Every chip is a full-width row, as on the shelf: up to two 4-5 letter codes
+ * and a gold `+N` overflow row. Ellipsis is the last resort.
  */
 function planLabelChips(
   labels: ReadonlyArray<{ name: string; colour: string }>,
@@ -438,7 +556,7 @@ function planLabelChips(
   const entries: ChipEntry[] = labels
     .slice(0, 2)
     .map((label) => ({
-      name: label.name.toUpperCase(),
+      name: spineLabelAbbr(label.name),
       colour: label.colour,
       more: false,
     }));
@@ -446,67 +564,21 @@ function planLabelChips(
   if (hidden > 0) {
     entries.push({ name: `+${hidden}`, colour: WRAP_GOLD, more: true });
   }
-  if (entries.length === 0) return [];
-  if (entries.length === 1) {
-    return [
-      [
-        {
-          x: 0,
-          width: rowWidth,
-          entry: entries[0],
-          fit: fitChipText(entries[0].name, rowWidth),
-        },
-      ],
-    ];
-  }
-
-  const gap = 2;
-  const half = (rowWidth - gap) / 2;
-  const left = fitChipText(entries[0].name, half);
-  const right = fitChipText(entries[1].name, half);
-  const rows: ChipPlan[][] = [];
-  if (!left.truncated && !right.truncated) {
-    rows.push([
-      { x: 0, width: half, entry: entries[0], fit: left },
-      { x: half + gap, width: half, entry: entries[1], fit: right },
-    ]);
-  } else {
-    // Full names win over side-by-side: stack them rather than ellipsize.
-    rows.push([
-      {
-        x: 0,
-        width: rowWidth,
-        entry: entries[0],
-        fit: fitChipText(entries[0].name, rowWidth),
-      },
-    ]);
-    rows.push([
-      {
-        x: 0,
-        width: rowWidth,
-        entry: entries[1],
-        fit: fitChipText(entries[1].name, rowWidth),
-      },
-    ]);
-  }
-  if (entries.length > 2) {
-    rows.push([
-      {
-        x: 0,
-        width: rowWidth,
-        entry: entries[2],
-        fit: fitChipText(entries[2].name, rowWidth),
-      },
-    ]);
-  }
-  return rows;
+  return entries.map((entry) => [
+    {
+      x: 0,
+      width: rowWidth,
+      entry,
+      fit: fitChipText(entry.name, rowWidth),
+    },
+  ]);
 }
 
 /**
- * Art is the one art style: the art runs to the top edge, and a single foot
- * band carries the full author over two lines plus the label chips. The foot
- * is clipped away from the cover's printed base rather than overlaid. The
- * title runs down the art with adaptive ink and a hairline halo.
+ * Art is S1 smoked leather: full-height art under a warm near-black scrim,
+ * gold hairlines at head and tail, no foot band. The scrim's darkest 30% holds
+ * the full author over two lines above 4-5 letter label codes, and the title
+ * runs from a 10px (or 28px finished) head to 70%.
  */
 export function drawArtSpine(
   ctx: CanvasRenderingContext2D,
@@ -515,160 +587,168 @@ export function drawArtSpine(
   const authorText = String(book.author || "").trim();
   const hasAuthor = Boolean(authorText);
   const labels = book.labels ?? [];
-  const topH = 0;
-  const bottomH =
-    hasAuthor || labels.length > 0 ? Math.round(SPINE_H * 0.27) : 0;
-  const artTop = topH;
-  const artH = Math.max(1, SPINE_H - topH - bottomH);
+  const head = artHeadReserve(book);
+  const titleBottom = ART_FOOT_TOP - 4;
+  const titleArea = Math.max(20, titleBottom - head);
   ctx.direction = book.direction;
 
-  // The art is cropped to the middle window: it is drawn at the full spine
-  // size and clipped, so the bands remove the top/bottom of the cover rather
-  // than covering it with a translucent panel.
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, artTop, SPINE_W, artH);
-  ctx.clip();
+  // Full-height art, unchanged, then the warm scrim over all of it.
   drawArt(ctx, book, 0, 0, SPINE_W, SPINE_H);
+  const scrim = ctx.createLinearGradient(0, 0, 0, SPINE_H);
+  scrim.addColorStop(0, `rgba(22,13,8,${ART_SCRIM.head})`);
+  scrim.addColorStop(0.45, `rgba(20,12,7,${ART_SCRIM.mid})`);
+  scrim.addColorStop(1, `rgba(14,8,4,${ART_SCRIM.tail})`);
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, 0, SPINE_W, SPINE_H);
+
+  // Gold hairlines at 7-8px and 3-4px above the tail, above the scrim.
+  ctx.fillStyle = "rgba(236,215,164,.72)";
+  ctx.fillRect(0, 7, SPINE_W, 1);
+  ctx.fillStyle = "rgba(236,215,164,.55)";
+  ctx.fillRect(0, SPINE_H - 4, SPINE_W, 1);
+  // A narrow darkening of both side edges, as the CSS face does.
+  const edge = ctx.createLinearGradient(0, 0, SPINE_W, 0);
+  edge.addColorStop(0, "rgba(0,0,0,.56)");
+  edge.addColorStop(0.08, "rgba(0,0,0,0)");
+  edge.addColorStop(0.88, "rgba(0,0,0,0)");
+  edge.addColorStop(1, "rgba(0,0,0,.55)");
+  ctx.fillStyle = edge;
+  ctx.fillRect(0, 0, SPINE_W, SPINE_H);
+
+  const title = fitVertical(String(book.title || "Untitled"), {
+    family: SERIF,
+    weight: 600,
+    track: 0.012,
+    thick: SPINE_W - 4,
+    length: titleArea,
+    maxSize: 11.8,
+    minSize: 2.8,
+  });
+  const titleCenter = head + titleArea / 2;
+
+  // Contrast is measured against the real composited pixels behind the title,
+  // before the cream glyphs are painted over them.
+  const stats = samplePixels(
+    ctx,
+    2,
+    head,
+    SPINE_W - 4,
+    Math.max(1, titleArea),
+  );
+  const titleContrast = Math.min(
+    ratioLuma(CREAM_LUMA, stats.min),
+    ratioLuma(CREAM_LUMA, stats.max),
+  );
+
+  // The title sits on the scrim with a soft shadow, not a halo.
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,.9)";
+  ctx.shadowBlur = 2;
+  ctx.shadowOffsetY = 1;
+  drawVerticalRun(ctx, title, SPINE_W / 2, titleCenter, STATUS_CREAM, {
+    family: SERIF,
+    weight: 600,
+    track: 0.012,
+    direction: book.direction,
+  });
   ctx.restore();
 
-  if (bottomH > 0) {
-    const bandTop = SPINE_H - bottomH;
-    const band = ctx.createLinearGradient(0, bandTop, 0, SPINE_H);
-    band.addColorStop(0, WRAP_UMBER);
-    band.addColorStop(1, WRAP_UMBER_DEEP);
-    ctx.fillStyle = band;
-    ctx.fillRect(0, bandTop, SPINE_W, bottomH);
-    ctx.fillStyle = WRAP_GOLD;
-    ctx.globalAlpha = 0.78;
-    ctx.fillRect(3, bandTop, SPINE_W - 6, 0.7);
-    ctx.globalAlpha = 1;
-  }
-
-  spineEdges(ctx, SPINE_W, SPINE_H);
-
-  const titleText = String(book.title || "Untitled").toUpperCase();
-  const title = fitVertical(titleText, {
-    family: SANS,
-    weight: 600,
-    track: 0.05,
-    thick: Math.max(8, SPINE_W - 16),
-    length: Math.max(20, artH - 14),
-    maxSize: 9.4,
-    minSize: 2.6,
-  });
-  const titleInk = guardInk(
-    samplePixels(
-      ctx,
-      Math.max(0, (SPINE_W - title.thickness) / 2 - 2),
-      artTop + 2,
-      Math.min(SPINE_W, title.thickness + 4),
-      Math.max(1, artH - 4),
-    ),
-  );
-  drawVerticalRun(
-    ctx,
-    title,
-    SPINE_W / 2,
-    artTop + artH / 2,
-    titleInk.ink,
-    {
-      family: SANS,
-      weight: 600,
-      track: 0.05,
-      direction: book.direction,
-      halo: {
-        color: titleInk.halo,
-        width: titleInk.usedHalo ? 1.5 : 1,
-      },
-    },
-  );
-
+  // The foot: author above the codes, both on the scrim's deepest part.
   let author: SpineBlock | null = null;
   const chipTexts: string[] = [];
-  if (bottomH > 0) {
-    const bandTop = SPINE_H - bottomH;
-    const chipH = 7;
-    const chipGap = 2;
-    const chipWidth = SPINE_W - 12;
-    const chipRows = planLabelChips(labels, chipWidth);
-    const chipsHeight =
-      chipRows.length > 0
-        ? chipRows.length * chipH + (chipRows.length - 1) * chipGap
-        : 0;
-    const authorFit = hasAuthor
-      ? fitHorizontal(authorText.toUpperCase(), {
-          width: SPINE_W - 8,
-          maxSize: 6.8,
-          minSize: 4.2,
-          maxLines: 2,
-          splitBelow: 8,
-          family: SANS,
-          weight: 600,
-          track: 0.02,
-        })
-      : null;
-    const authorHeight = authorFit
-      ? authorFit.lines.length * authorFit.fs * 1.02
+  const footHeight = SPINE_H - ART_FOOT_TOP;
+  const chipH = 9;
+  const chipGap = 1;
+  const chipWidth = SPINE_W - 8;
+  const chipRows = planLabelChips(labels, chipWidth);
+  const chipsHeight =
+    chipRows.length > 0
+      ? chipRows.length * chipH + (chipRows.length - 1) * chipGap
       : 0;
-    const groupGap = authorHeight && chipsHeight ? 8 : 0;
-    const groupHeight = authorHeight + groupGap + chipsHeight;
-    let y = bandTop + Math.max(3, (bottomH - groupHeight) / 2);
-    if (hasAuthor && authorFit) {
-      ctx.save();
-      drawHorizontal(ctx, authorFit, SPINE_W / 2, y, "#e8d6ae", {
-        align: "center",
-        gap: 1.02,
-      });
-      ctx.restore();
-      const measured = Math.max(
-        ...authorFit.lines.map(
-          (line) => metrics(line, SANS, 600, 0.02).adv * authorFit.fs,
-        ),
+  const authorFit = hasAuthor
+    ? fitHorizontal(authorText.toUpperCase(), {
+        width: SPINE_W - 6,
+        maxSize: 6.2,
+        minSize: 3.4,
+        maxLines: 2,
+        // The shelf always balances a multi-word author over two lines.
+        forceSplit: true,
+        family: SERIF,
+        weight: 500,
+        track: 0.02,
+      })
+    : null;
+  const authorHeight = authorFit
+    ? authorFit.lines.length * authorFit.fs * 1.02
+    : 0;
+  const groupGap = authorHeight && chipsHeight ? 2 : 0;
+  const groupHeight = authorHeight + groupGap + chipsHeight;
+  let y = ART_FOOT_TOP + Math.max(4, (footHeight - groupHeight) / 2);
+  if (authorFit) {
+    ctx.save();
+    drawHorizontal(ctx, authorFit, SPINE_W / 2, y, "#e8d4a6", {
+      align: "center",
+      gap: 1.02,
+    });
+    ctx.restore();
+    const measured = Math.max(
+      ...authorFit.lines.map(
+        (line) => metrics(line, SERIF, 500, 0.02).adv * authorFit.fs,
+      ),
+    );
+    author = {
+      x: SPINE_W / 2,
+      y: y + authorHeight / 2,
+      width: Math.min(SPINE_W - 6, measured),
+      height: authorHeight,
+      fs: authorFit.fs,
+      lines: authorFit.lines.length,
+    };
+    y += authorHeight + groupGap;
+  }
+  for (const row of chipRows) {
+    for (const chip of row) {
+      drawLabelChip(
+        ctx,
+        4 + chip.x,
+        y,
+        chip.width,
+        chipH,
+        chip.entry.colour,
+        chip.fit.text,
+        chip.fit.fs,
+        chip.entry.more,
       );
-      author = {
-        x: SPINE_W / 2,
-        y: y + authorHeight / 2,
-        width: Math.min(SPINE_W - 6, measured),
-        height: authorHeight,
-        fs: authorFit.fs,
-        lines: authorFit.lines.length,
-      };
-      y += authorHeight + groupGap;
+      chipTexts.push(chip.fit.text);
     }
-    for (const row of chipRows) {
-      for (const chip of row) {
-        drawLabelChip(
-          ctx,
-          6 + chip.x,
-          y,
-          chip.width,
-          chipH,
-          chip.entry.colour,
-          chip.fit.text,
-          chip.fit.fs,
-          chip.entry.more,
-        );
-        chipTexts.push(chip.fit.text);
-      }
-      y += chipH + chipGap;
-    }
+    y += chipH + chipGap;
   }
 
+  drawStatusMark(ctx, book);
+
+  const titleTop = titleCenter - title.length / 2;
+  const titleLower = titleCenter + title.length / 2;
+  const blockTop = Math.min(titleTop, author ? author.y - author.height / 2 : titleLower);
+  const blockBottom = Math.max(
+    titleLower,
+    author ? author.y + author.height / 2 : titleTop,
+  );
   return {
     direction: book.direction,
-    scrim: false,
-    scrimAlpha: 0,
-    contrast: titleInk.contrast,
+    scrim: true,
+    scrimAlpha: ART_SCRIM.tail,
+    scrimHead: ART_SCRIM.head,
+    scrimTail: ART_SCRIM.tail,
+    contrast: titleContrast,
     block: {
       x: SPINE_W / 2,
-      y: artTop + artH / 2,
-      width: title.thickness,
-      height: title.length,
+      y: (blockTop + blockBottom) / 2,
+      width: SPINE_W - 4,
+      height: blockBottom - blockTop,
     },
     title: {
       x: SPINE_W / 2,
-      y: artTop + artH / 2,
+      y: titleCenter,
       width: title.thickness,
       height: title.length,
       fs: title.fs,
@@ -679,7 +759,10 @@ export function drawArtSpine(
     colophon: { x: SPINE_W / 2, y: 0, width: 0, height: 0 },
     vertical: true,
     textOrientation: "top-down",
-    bands: { top: topH, bottom: bottomH },
+    foot: { top: ART_FOOT_TOP, bottom: SPINE_H },
+    art: { top: 0, bottom: SPINE_H },
+    headReserve: head,
+    mark: statusMark(book),
     labelChips: chipTexts,
   };
 }

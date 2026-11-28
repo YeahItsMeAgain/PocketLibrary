@@ -30,6 +30,7 @@ export function SpineSection({
         slotIndex={detail.slotIndex}
         format={detail.format}
         labels={detail.labels}
+        readingStatus={detail.readingStatus}
         style={spineStyle}
         onStyleChange={onStyleChange}
       />
