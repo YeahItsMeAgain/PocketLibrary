@@ -61,12 +61,6 @@ async function openReader(page: Page) {
   });
 }
 
-async function showChrome(page: Page) {
-  if (await page.getByTestId("reader-progress").isVisible()) return;
-  await page.mouse.click(195, 420);
-  await expect(page.getByTestId("reader-progress")).toBeVisible();
-}
-
 /** Select a real range inside foliate's iframe and let the app observe it. */
 async function selectPassage(page: Page, length = 48) {
   await page.evaluate((length) => {
@@ -91,10 +85,14 @@ async function selectPassage(page: Page, length = 48) {
   await expect(page.getByTestId("reader-selection-popover")).toBeVisible();
 }
 
+async function openDesk(page: Page, tab: "contents" | "marks") {
+  await page.getByTestId("reader-pull").click();
+  await expect(page.getByTestId("reader-desk")).toBeVisible();
+  await page.getByTestId(`reader-desk-tab-${tab}`).click();
+}
+
 async function openAnnotations(page: Page) {
-  await showChrome(page);
-  await page.getByTestId("reader-contents").click();
-  await page.getByTestId("reader-tab-annotations").click();
+  await openDesk(page, "marks");
   await expect(page.getByTestId("reader-annotations")).toBeVisible();
 }
 
@@ -172,11 +170,10 @@ test("a note attaches to a highlight, edits and deletes while bookmarks coexist"
   await selectPassage(page);
   await page.getByTestId("reader-highlight-brass").click();
 
-  await showChrome(page);
+  // Bookmarks and highlights share the desk's single Marks list.
+  await openDesk(page, "marks");
   await page.getByTestId("reader-bookmark").click();
   await expect(page.getByTestId("reader-bookmark-ribbon")).toBeVisible();
-
-  await openAnnotations(page);
   await expect(page.getByTestId("reader-annotation-row")).toHaveCount(1);
 
   await page.getByTestId("reader-annotation-edit").click();
@@ -201,12 +198,9 @@ test("a note attaches to a highlight, edits and deletes while bookmarks coexist"
     "The rain keeps time.",
   );
 
-  await page.getByTestId("reader-tab-bookmarks").click();
   await expect(page.getByTestId("reader-bookmark-row")).toHaveCount(1);
-  await page.getByTestId("reader-tab-annotations").click();
   await page.getByTestId("reader-annotation-delete").click();
   await expect(page.getByTestId("reader-annotation-row")).toHaveCount(0);
-  await page.getByTestId("reader-tab-bookmarks").click();
   await expect(page.getByTestId("reader-bookmark-row")).toHaveCount(1);
 });
 

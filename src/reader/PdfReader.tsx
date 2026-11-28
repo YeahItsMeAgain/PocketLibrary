@@ -30,9 +30,14 @@ import {
   loadReaderSettings,
   saveReaderSettings,
   type ReaderSettings,
-  type ReaderTheme,
 } from "./settings";
-import { ReaderPersistentChrome, useReaderExit } from "./ReaderControls";
+import {
+  ReaderDesk,
+  ReaderPull,
+  ReaderThemeRow,
+  themeName,
+  useReaderExit,
+} from "./ReaderControls";
 import { useLayerExit } from "../navigation";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import "./pdf.css";
@@ -42,9 +47,14 @@ interface PdfReaderProps {
   onClose: () => void;
 }
 
-type Sheet = "contents" | "zoom" | null;
+type Sheet = "page" | "contents" | "marks" | null;
 
-const THEME_ORDER: ReaderTheme[] = ["paper", "sepia", "night"];
+const DESK_TABS = [
+  { id: "page", label: "Page" },
+  { id: "contents", label: "Contents" },
+  { id: "marks", label: "Marks" },
+] as const;
+
 const ZOOM_MIN = 0.6;
 const ZOOM_MAX = 3.5;
 const MAX_PDF_BYTES = 100 * 1024 * 1024;
@@ -76,6 +86,7 @@ function touchDistance(touches: TouchList): number {
 export default function PdfReader({ book, onClose }: PdfReaderProps) {
   const close = useReaderExit(onClose);
   const stageRef = useRef<HTMLDivElement>(null);
+  const pullRef = useRef<HTMLButtonElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
@@ -95,16 +106,20 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   const [pageNumber, setPageNumber] = useState(1);
   const [numPages, setNumPages] = useState(0);
   const [progress, setProgress] = useState(0);
+  // The desk header holds the closed-state readout until it closes, so a page
+  // change made from the desk does not rewrite the place it opened at.
+  const [frozenReadout, setFrozenReadout] = useState<{
+    progress: number;
+    percent: number;
+    meta: string;
+  } | null>(null);
   const [outline, setOutline] = useState<PdfOutlineEntry[]>([]);
   const [zoom, setZoom] = useState(1);
   const [stageWidth, setStageWidth] = useState(0);
-  const [chrome, setChrome] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
-  const [sheetTab, setSheetTab] = useState<"chapters" | "bookmarks">(
-    "chapters",
-  );
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [bookmarkNotice, setBookmarkNotice] = useState<string | null>(null);
+  const [externalNote, setExternalNote] = useState<string | null>(null);
   const [pageInput, setPageInput] = useState("1");
   const [rendering, setRendering] = useState(true);
 
@@ -112,8 +127,12 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   totalRef.current = numPages;
   zoomRef.current = zoom;
 
-  // The Contents and Zoom sheets unwind before the reader in the shared stack.
-  const closeSheet = useLayerExit(sheet !== null, () => setSheet(null));
+  // The desk unwinds before the reader in the shared stack.
+  const requestCloseSheet = useCallback(() => {
+    setSheet(null);
+    setFrozenReadout(null);
+  }, []);
+  const closeSheet = useLayerExit(sheet !== null, requestCloseSheet);
 
   const persist = useCallback(
     (page: number, total: number, immediate = false) => {
@@ -310,7 +329,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           ? Math.max(1, pageRef.current - 1)
           : Math.min(total, pageRef.current + 1);
       if (target === pageRef.current) return;
-      setChrome(false);
       setPageNumber(target);
     },
     [],
@@ -394,7 +412,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
       const ratio = event.clientX / Math.max(1, window.innerWidth);
       if (ratio < 1 / 3) turn("prev");
       else if (ratio > 2 / 3) turn("next");
-      else setChrome((visible) => !visible);
     },
     [turn],
   );
@@ -425,10 +442,21 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
     setSettings((current) => ({ ...current, ...patch }));
   }, []);
 
-  const cycleTheme = useCallback(() => {
-    const index = THEME_ORDER.indexOf(settings.theme);
-    update({ theme: THEME_ORDER[(index + 1) % THEME_ORDER.length] });
-  }, [settings.theme, update]);
+  const openExternally = useCallback(async () => {
+    setExternalNote(null);
+    try {
+      await platform.openBookExternally(book.id);
+      setExternalNote(
+        "Handed to the Android app chooser. Your place here is saved.",
+      );
+    } catch (error) {
+      setExternalNote(
+        isApiError(error)
+          ? error.message
+          : "No other reader could be opened for this book.",
+      );
+    }
+  }, [book.id]);
 
   const toggleBookmark = useCallback(async () => {
     if (!currentLocator) return;
@@ -468,7 +496,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         return;
       }
       goToPage(page);
-      setChrome(false);
     },
     [goToPage, pageInput, pageNumber],
   );
@@ -476,6 +503,18 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
   const theme = READER_THEMES[settings.theme];
   const percent = Math.round(progress * 100);
   const zoomLabel = zoom === 1 ? "Fit width" : `${Math.round(zoom * 100)}%`;
+  const deskMeta = `${percent}% · page ${pageNumber} of ${numPages || "—"}`;
+  const shownProgress = frozenReadout?.progress ?? progress;
+  const shownPercent = frozenReadout?.percent ?? percent;
+  const shownMeta = frozenReadout?.meta ?? deskMeta;
+
+  const openDesk = useCallback(
+    (tab: Exclude<Sheet, null>) => {
+      setFrozenReadout({ progress, percent, meta: deskMeta });
+      setSheet(tab);
+    },
+    [progress, percent, deskMeta],
+  );
 
   return (
     <section
@@ -483,6 +522,8 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
       data-testid="reader"
       data-format="pdf"
       data-theme={settings.theme}
+      data-desk={sheet ? "open" : "closed"}
+      data-flow="overlay"
       aria-label={`Reading ${book.title}`}
       style={
         {
@@ -500,10 +541,7 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         onClick={onStageClick}
       >
         <div className="pdf-page-wrap">
-          <div
-            className="pdf-page"
-            data-testid="pdf-page"
-          >
+          <div className="pdf-page" data-testid="pdf-page">
             <canvas ref={canvasRef} className="pdf-canvas" />
             <div
               ref={textRef}
@@ -522,9 +560,12 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         ) : null}
       </div>
 
-      <ReaderPersistentChrome
-        progress={progress}
-        label={`${percent}% · ${pageNumber}/${numPages || "—"}`}
+      <ReaderPull
+        progress={shownProgress}
+        percentLabel={`${shownPercent}%`}
+        expanded={sheet !== null}
+        onOpen={() => openDesk("page")}
+        buttonRef={pullRef}
       />
 
       {!ready && !failed ? (
@@ -553,90 +594,6 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
         />
       ) : null}
 
-      <header
-        className={`reader-bar reader-top${chrome ? " is-visible" : ""}`}
-        aria-hidden={!chrome}
-      >
-        <button
-          type="button"
-          className="reader-back"
-          data-testid="reader-back"
-          aria-label="Back to shelf"
-          onClick={close}
-        >
-          <span aria-hidden="true">←</span> Shelf
-        </button>
-        <button
-          type="button"
-          className="reader-top-action"
-          data-testid="reader-contents"
-          onClick={() => {
-            setSheet("contents");
-            setSheetTab("chapters");
-          }}
-        >
-          Contents
-        </button>
-        <span className="reader-progress" data-testid="reader-progress">
-          {percent}%
-        </span>
-        <form className="pdf-page-jump" onSubmit={submitPage}>
-          <label className="pdf-sr-only" htmlFor="pdf-page-input">
-            Page number
-          </label>
-          <input
-            id="pdf-page-input"
-            data-testid="reader-page-input"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={numPages || 1}
-            value={pageInput}
-            onChange={(event) => setPageInput(event.target.value)}
-          />
-          <span aria-hidden="true">/ {numPages || "—"}</span>
-          <button type="submit" data-testid="reader-page-go">
-            Go
-          </button>
-        </form>
-      </header>
-
-      <footer
-        className={`reader-bar reader-bottom${chrome ? " is-visible" : ""}`}
-        aria-hidden={!chrome}
-      >
-        <button
-          type="button"
-          className="reader-bottom-action"
-          data-testid="reader-zoom"
-          onClick={() => setSheet("zoom")}
-        >
-          <span aria-hidden="true">⤢</span>
-          <span>Zoom</span>
-        </button>
-        <button
-          type="button"
-          className="reader-bottom-action"
-          data-testid="reader-theme"
-          aria-label={`Theme: ${theme.name}`}
-          onClick={cycleTheme}
-        >
-          ◐ <span>{theme.name}</span>
-        </button>
-        <button
-          type="button"
-          className={`reader-bottom-action${
-            currentBookmark ? " is-active" : ""
-          }`}
-          data-testid="reader-bookmark"
-          aria-label={currentBookmark ? "Remove bookmark" : "Add bookmark"}
-          onClick={() => void toggleBookmark()}
-        >
-          <span aria-hidden="true">{currentBookmark ? "🔖" : "▽"}</span>
-          <span>{currentBookmark ? "Bookmarked" : "Bookmark"}</span>
-        </button>
-      </footer>
-
       {bookmarkNotice ? (
         <p
           className="reader-toast"
@@ -646,79 +603,197 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
           {bookmarkNotice}
         </p>
       ) : null}
+      {externalNote ? (
+        <p
+          className="reader-toast"
+          role="status"
+          data-testid="reader-external-note"
+        >
+          {externalNote}
+        </p>
+      ) : null}
 
-      {sheet === "contents" ? (
-        <>
-          <button
-            type="button"
-            className="reader-scrim"
-            aria-label="Close contents"
-            onClick={() => closeSheet()}
-          />
-          <section
-            className="reader-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Contents and bookmarks"
-            data-testid="reader-contents-sheet"
-          >
-            <div className="reader-sheet-grip" aria-hidden="true" />
-            <div className="reader-tabs" role="tablist">
+      {sheet ? (
+        <ReaderDesk
+          title={book.title}
+          meta={shownMeta}
+          tabs={DESK_TABS}
+          activeTab={sheet}
+          onTabChange={(id) => setSheet(id as Exclude<Sheet, null>)}
+          summary={`PDF · ${zoomLabel} · ${themeName(settings.theme)}`}
+          onClose={closeSheet}
+          onShelf={close}
+          returnFocusRef={pullRef}
+        >
+          {sheet === "page" ? (
+            <div className="reader-page-panel" data-testid="reader-page-panel">
+              <div className="reader-desk-block">
+                <span className="reader-desk-cap">
+                  Zoom{" "}
+                  <span
+                    className="reader-cap-value"
+                    data-testid="reader-zoom-value"
+                  >
+                    {zoomLabel}
+                  </span>
+                </span>
+                <div className="reader-pdf-row">
+                  <button
+                    type="button"
+                    data-testid="reader-zoom-out"
+                    aria-label="Zoom out"
+                    onClick={() =>
+                      setZoom((value) => clamp(value - 0.25, ZOOM_MIN, ZOOM_MAX))
+                    }
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="reader-fit-width"
+                    aria-pressed={zoom === 1}
+                    onClick={() => setZoom(1)}
+                  >
+                    Fit width
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="reader-zoom-in"
+                    aria-label="Zoom in"
+                    onClick={() =>
+                      setZoom((value) => clamp(value + 0.25, ZOOM_MIN, ZOOM_MAX))
+                    }
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="reader-desk-block">
+                <span className="reader-desk-cap">Page</span>
+                <form className="reader-page-jump" onSubmit={submitPage}>
+                  <button
+                    type="button"
+                    data-testid="reader-page-prev"
+                    aria-label="Previous page"
+                    onClick={() => turn("prev")}
+                  >
+                    ‹
+                  </button>
+                  <label className="pdf-sr-only" htmlFor="pdf-page-input">
+                    Page number
+                  </label>
+                  <input
+                    id="pdf-page-input"
+                    data-testid="reader-page-input"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={numPages || 1}
+                    value={pageInput}
+                    onChange={(event) => setPageInput(event.target.value)}
+                  />
+                  <span className="reader-page-total" aria-hidden="true">
+                    / {numPages || "—"}
+                  </span>
+                  <button type="submit" data-testid="reader-page-go">
+                    Go
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="reader-page-next"
+                    aria-label="Next page"
+                    onClick={() => turn("next")}
+                  >
+                    ›
+                  </button>
+                </form>
+              </div>
+
+              <div className="reader-desk-block">
+                <span className="reader-desk-cap">Theme</span>
+                <ReaderThemeRow
+                  value={settings.theme}
+                  onChange={(next) => update({ theme: next })}
+                />
+              </div>
+
               <button
                 type="button"
-                role="tab"
-                aria-selected={sheetTab === "chapters"}
-                data-testid="reader-tab-chapters"
-                onClick={() => setSheetTab("chapters")}
+                className="reader-outline-action"
+                data-testid="reader-outline"
+                onClick={() => setSheet("contents")}
               >
-                Contents
+                Outline · {outline.length} {outline.length === 1 ? "entry" : "entries"}
               </button>
+
               <button
                 type="button"
-                role="tab"
-                aria-selected={sheetTab === "bookmarks"}
-                data-testid="reader-tab-bookmarks"
-                onClick={() => setSheetTab("bookmarks")}
+                className="reader-quiet-action"
+                data-testid="reader-external"
+                onClick={() => {
+                  closeSheet();
+                  void openExternally();
+                }}
               >
-                Bookmarks
+                <span aria-hidden="true">↗</span> Open in another app
               </button>
             </div>
-            {sheetTab === "chapters" ? (
-              <ol className="reader-toc" data-testid="reader-toc">
-                {outline.length === 0 ? (
-                  <li className="reader-empty">
-                    This PDF has no outline. Use the page number to jump.
-                  </li>
-                ) : (
-                  outline.map((item) => {
-                    const current = item === currentOutline;
-                    return (
-                      <li key={`${item.page}-${item.title}-${item.depth}`}>
-                        <button
-                          type="button"
-                          className="reader-toc-item"
-                          data-testid="reader-toc-item"
-                          data-current={current || undefined}
-                          aria-current={current ? "location" : undefined}
-                          style={{ paddingLeft: 14 + item.depth * 16 }}
-                          onClick={() => {
-                            goToPage(item.page);
-                            closeSheet();
-                          }}
-                        >
-                          <span>{item.title}</span>
-                          <small>{item.page}</small>
-                        </button>
-                      </li>
-                    );
-                  })
-                )}
-              </ol>
-            ) : (
+          ) : null}
+
+          {sheet === "contents" ? (
+            <ol className="reader-toc" data-testid="reader-toc">
+              {outline.length === 0 ? (
+                <li className="reader-empty">
+                  This PDF has no outline. Use the page number to jump.
+                </li>
+              ) : (
+                outline.map((item) => {
+                  const current = item === currentOutline;
+                  return (
+                    <li key={`${item.page}-${item.title}-${item.depth}`}>
+                      <button
+                        type="button"
+                        className="reader-toc-item"
+                        data-testid="reader-toc-item"
+                        data-current={current || undefined}
+                        aria-current={current ? "location" : undefined}
+                        style={{ paddingLeft: 14 + item.depth * 16 }}
+                        onClick={() => {
+                          goToPage(item.page);
+                          closeSheet();
+                        }}
+                      >
+                        <span>{item.title}</span>
+                        <small className="reader-toc-page">{item.page}</small>
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ol>
+          ) : null}
+
+          {sheet === "marks" ? (
+            <div className="reader-marks" data-testid="reader-marks">
+              <button
+                type="button"
+                className="reader-mark-toggle"
+                data-testid="reader-bookmark"
+                aria-pressed={currentBookmark !== null}
+                onClick={() => void toggleBookmark()}
+              >
+                <span className="reader-mark-glyph" aria-hidden="true">
+                  {currentBookmark ? "◆" : "▽"}
+                </span>
+                {currentBookmark ? "Remove this bookmark" : "Bookmark this page"}
+              </button>
+
+              <p className="reader-marks-cap">Bookmarks</p>
               <ul className="reader-bookmarks" data-testid="reader-bookmarks">
                 {bookmarks.length === 0 ? (
                   <li className="reader-empty">
-                    No bookmarks yet. Use the ribbon in the bottom bar.
+                    No bookmarks yet. Bookmark this page to keep your place.
                   </li>
                 ) : (
                   bookmarks.map((bookmark) => {
@@ -754,81 +829,9 @@ export default function PdfReader({ book, onClose }: PdfReaderProps) {
                   })
                 )}
               </ul>
-            )}
-          </section>
-        </>
-      ) : null}
-
-      {sheet === "zoom" ? (
-        <>
-          <button
-            type="button"
-            className="reader-scrim"
-            aria-label="Close zoom settings"
-            onClick={() => closeSheet()}
-          />
-          <section
-            className="reader-sheet reader-type-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Zoom and theme"
-            data-testid="reader-zoom-sheet"
-          >
-            <div className="reader-sheet-grip" aria-hidden="true" />
-            <div className="reader-type-group" role="group" aria-label="Zoom">
-              <span className="reader-type-label">Zoom</span>
-              <div className="reader-segment pdf-zoom-controls">
-                <button
-                  type="button"
-                  data-testid="reader-zoom-out"
-                  aria-label="Zoom out"
-                  onClick={() => setZoom((value) => clamp(value - 0.25, ZOOM_MIN, ZOOM_MAX))}
-                >
-                  −
-                </button>
-                <button
-                  type="button"
-                  data-testid="reader-fit-width"
-                  aria-pressed={zoom === 1}
-                  onClick={() => setZoom(1)}
-                >
-                  Fit width
-                </button>
-                <button
-                  type="button"
-                  data-testid="reader-zoom-in"
-                  aria-label="Zoom in"
-                  onClick={() => setZoom((value) => clamp(value + 0.25, ZOOM_MIN, ZOOM_MAX))}
-                >
-                  +
-                </button>
-              </div>
             </div>
-            <p className="pdf-zoom-value" data-testid="reader-zoom-value">
-              {zoomLabel}
-            </p>
-            <div className="reader-type-group" role="group" aria-label="Theme">
-              <span className="reader-type-label">Theme</span>
-              <div className="reader-segment">
-                {THEME_ORDER.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={settings.theme === id}
-                    data-testid={`reader-theme-${id}`}
-                    onClick={() => update({ theme: id })}
-                  >
-                    {READER_THEMES[id].name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <p className="pdf-note">
-              PDF pages keep their own layout. Themes are a wash of colour over
-              the page, and pinching zooms without reflowing the text.
-            </p>
-          </section>
-        </>
+          ) : null}
+        </ReaderDesk>
       ) : null}
     </section>
   );

@@ -66,13 +66,24 @@ async function openReader(page: Page) {
     .toBeGreaterThan(0);
 }
 
-async function showChrome(page: Page) {
-  const bar = page.locator(".reader-top");
-  if (await bar.evaluate((element) => element.classList.contains("is-visible"))) {
-    return;
+async function openDesk(page: Page, tab: "page" | "contents" | "marks" = "page") {
+  await page.getByTestId("reader-pull").click();
+  await expect(page.getByTestId("reader-desk")).toBeVisible();
+  if (tab !== "page") {
+    await page.getByTestId(`reader-desk-tab-${tab}`).click();
   }
-  await page.mouse.click(195, 420);
-  await expect(bar).toHaveClass(/is-visible/);
+}
+
+async function closeDesk(page: Page) {
+  await page.getByTestId("reader-desk-close").click();
+  await expect(page.getByTestId("reader-desk")).toHaveCount(0);
+}
+
+async function percent(page: Page): Promise<number> {
+  const value = await page
+    .getByTestId("reader-persistent-progress")
+    .getAttribute("aria-valuenow");
+  return Number(value ?? 0);
 }
 
 async function canvasWidth(page: Page): Promise<number> {
@@ -100,31 +111,40 @@ test("a PDF opens fit-width, jumps, themes, zooms, resumes and returns", async (
   expect(fitted).toBeGreaterThan(stageWidth * 0.85);
   expect(fitted).toBeLessThanOrEqual(stageWidth);
 
-  await showChrome(page);
-  expect(await page.getByTestId("reader-progress").textContent()).toBe("33%");
+  // The PAGE desk carries the reading position rather than a top bar.
+  await openDesk(page);
+  await expect(page.getByTestId("reader-desk-tab-page")).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByTestId("reader-desk-meta")).toContainText("page 1 of 3");
+  expect(await percent(page)).toBe(33);
 
-  // Page-number jump.
+  // Page-number jump. The desk readout is held at the page it opened on, so
+  // the new position shows once the desk closes.
   await page.getByTestId("reader-page-input").fill("2");
   await page.getByTestId("reader-page-go").click();
-  await expect(page.getByTestId("reader-page-input")).toHaveValue("2");
   await expect
-    .poll(() => page.getByTestId("reader-progress").textContent())
-    .toBe("67%");
+    .poll(() => page.getByTestId("reader-page-input").inputValue())
+    .toBe("2");
+  await closeDesk(page);
+  await expect.poll(() => percent(page)).toBe(67);
+  await openDesk(page);
 
   // Contents lists the PDF outline and jumps by outline page.
-  await showChrome(page);
-  await page.getByTestId("reader-contents").click();
+  await page.getByTestId("reader-desk-tab-contents").click();
   await expect(page.getByTestId("reader-toc-item").first()).toContainText(
     "Chapter One",
   );
   await page.getByTestId("reader-toc-item").nth(1).click();
+  await expect(page.getByTestId("reader-desk")).toHaveCount(0);
+  await openDesk(page);
   await expect(page.getByTestId("reader-page-input")).toHaveValue("2");
 
   // Themes are a wash over the page, not a reflow: the tint layer changes and
   // the page keeps its layout.
-  await showChrome(page);
   const widthBefore = await canvasWidth(page);
-  await page.getByTestId("reader-theme").click();
+  await page.getByTestId("reader-theme-sepia").click();
   await expect(page.getByTestId("reader")).toHaveAttribute(
     "data-theme",
     "sepia",
@@ -133,8 +153,6 @@ test("a PDF opens fit-width, jumps, themes, zooms, resumes and returns", async (
   expect(await canvasWidth(page)).toBeCloseTo(widthBefore, 0);
 
   // Zoom multiplies the fitted page and fit-width restores it.
-  await page.getByTestId("reader-zoom").click();
-  await expect(page.getByTestId("reader-zoom-sheet")).toBeVisible();
   await expect(page.getByTestId("reader-fit-width")).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -145,12 +163,15 @@ test("a PDF opens fit-width, jumps, themes, zooms, resumes and returns", async (
   await page.getByTestId("reader-fit-width").click();
   await expect(page.getByTestId("reader-zoom-value")).toHaveText("Fit width");
   await expect.poll(() => canvasWidth(page)).toBeCloseTo(widthBefore, 0);
-  await page.getByRole("button", { name: "Close zoom settings" }).click();
+  await expect(page.getByTestId("reader-desk-summary")).toContainText(
+    "PDF · Fit width · Sepia",
+  );
 
   // Returning and reopening resumes on page 2.
+  await closeDesk(page);
   await page.waitForTimeout(700);
-  await showChrome(page);
-  await page.getByTestId("reader-back").click();
+  await openDesk(page);
+  await page.getByTestId("reader-shelf").click();
   await expect(page.getByTestId("reader")).toHaveCount(0);
   await expect(page.getByTestId("library-wall")).toBeVisible();
   await expect(page.getByTestId("spine").first()).toHaveAttribute(
@@ -159,83 +180,110 @@ test("a PDF opens fit-width, jumps, themes, zooms, resumes and returns", async (
   );
 
   await openReader(page);
-  await showChrome(page);
+  await openDesk(page);
   await expect(page.getByTestId("reader-page-input")).toHaveValue("2");
-  expect(await page.getByTestId("reader-progress").textContent()).toBe("67%");
+  expect(await percent(page)).toBe(67);
 });
 
-test("PDF bookmarks add from a page, survive relaunch, and remove", async ({
+test("PDF bookmarks add from Marks, survive relaunch, and remove", async ({
   page,
-}) => {  await boot(page);
+}) => {
+  await boot(page);
   await openReader(page);
-  await showChrome(page);
-
+  await openDesk(page);
   await page.getByTestId("reader-page-input").fill("3");
   await page.getByTestId("reader-page-go").click();
-  await expect(page.getByTestId("reader-progress")).toHaveText("100%");
+  await expect
+    .poll(() => page.getByTestId("reader-page-input").inputValue())
+    .toBe("3");
+  await closeDesk(page);
+  await expect.poll(() => percent(page)).toBe(100);
 
-  await showChrome(page);
+  await openDesk(page, "marks");
   await page.getByTestId("reader-bookmark").click();
   await expect(page.getByTestId("reader-bookmark-ribbon")).toBeVisible();
+  await closeDesk(page);
 
   await page.reload();
   await openReader(page);
-  await showChrome(page);
   await expect(page.getByTestId("reader-bookmark-ribbon")).toBeVisible();
 
-  await page.getByTestId("reader-contents").click();
-  await page.getByTestId("reader-tab-bookmarks").click();
+  await openDesk(page, "marks");
   await expect(page.getByTestId("reader-bookmark-row")).toHaveCount(1);
   await expect(page.getByTestId("reader-bookmark-row")).toContainText("Page 3");
   await page.getByTestId("reader-bookmark-delete").click();
   await expect(page.getByTestId("reader-bookmark-row")).toHaveCount(0);
 });
 
-async function persistentProgress(page: Page): Promise<number> {
-  const value = await page
-    .getByTestId("reader-persistent-progress")
-    .getAttribute("aria-valuenow");
-  return Number(value ?? 0);
-}
-
-test("PDF persistent progress stays visible and the top bar returns", async ({
+test("PDF's dock stays visible and the desk reports the position", async ({
   page,
 }) => {
   await boot(page);
   await openReader(page);
 
-  await expect(page.locator(".reader-top")).not.toHaveClass(/is-visible/);
-  await expect(page.getByTestId("reader-persistent-back")).toHaveCount(0);
+  await expect(page.locator(".reader-bar")).toHaveCount(0);
+  await expect(page.getByTestId("reader-dock")).toBeVisible();
   await expect(page.getByTestId("reader-persistent-progress")).toBeVisible();
-  await expect(page.getByTestId("reader-persistent-percent")).toContainText(
-    "1/3",
-  );
-  expect(await persistentProgress(page)).toBe(33);
+  await expect(page.getByTestId("reader-persistent-percent")).toHaveText("33%");
+  expect(await percent(page)).toBe(33);
 
-  await showChrome(page);
-  await page.getByTestId("reader-back").click();
+  await openDesk(page);
+  await expect(page.getByTestId("reader-zoom-value")).toHaveText("Fit width");
+  await expect(page.getByTestId("reader-outline")).toContainText("Outline");
+
+  await page.getByTestId("reader-desk-tab-marks").click();
+  await expect(page.getByTestId("reader-bookmarks")).toBeVisible();
+  await closeDesk(page);
+
+  await openDesk(page);
+  await page.getByTestId("reader-shelf").click();
   await expect(page.getByTestId("reader")).toHaveCount(0);
   await expect(page.getByTestId("library-wall")).toBeVisible();
 });
 
-test("PDF Escape closes the reader", async ({ page }) => {
+test("PDF swipe down closes the desk before the reader", async ({ page }) => {
   await boot(page);
   await openReader(page);
+  await openDesk(page);
+
+  const box = await page.getByTestId("reader-desk").boundingBox();
+  if (!box) throw new Error("The desk has no box");
+  const x = box.x + box.width / 2;
+  const y = box.y + 22;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 120, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.getByTestId("reader-desk")).toHaveCount(0);
+  await expect(page.getByTestId("reader")).toBeVisible();
+  await expect(page.getByTestId("reader-pull")).toBeFocused();
+});
+
+test("PDF Escape closes the desk, then the reader", async ({ page }) => {
+  await boot(page);
+  await openReader(page);
+
+  await openDesk(page);
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("reader-desk")).toHaveCount(0);
+  await expect(page.getByTestId("reader")).toBeVisible();
 
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("reader")).toHaveCount(0);
   await expect(page.getByTestId("library-wall")).toBeVisible();
 });
 
-test("PDF browser back closes the reader instead of leaving the app", async ({
-  page,
-}) => {
+test("PDF browser back closes the desk, then the reader", async ({ page }) => {
   await boot(page);
   await openReader(page);
+
+  await openDesk(page);
+  await page.goBack();
+  await expect(page.getByTestId("reader-desk")).toHaveCount(0);
+  await expect(page.getByTestId("reader")).toBeVisible();
 
   await page.goBack();
   await expect(page.getByTestId("reader")).toHaveCount(0);
   await expect(page.getByTestId("library-wall")).toBeVisible();
   await expect(page.getByTestId("spine").first()).toBeVisible();
 });
-

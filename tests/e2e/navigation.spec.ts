@@ -334,6 +334,30 @@ test("browser back closes book detail to the wall", async ({ page }) => {
   await expect(page.getByTestId("library-wall")).toBeVisible();
 });
 
+test("reader back closes the desk before it exits the reader", async ({
+  page,
+}) => {
+  await boot(page);
+  await page.getByTestId("spine").first().click();
+  await page.getByTestId("detail-read").click();
+  await expect(page.getByTestId("reader")).toBeVisible();
+  await expect(page.getByTestId("reader-loading")).toHaveCount(0, {
+    timeout: 15_000,
+  });
+
+  await page.getByTestId("reader-pull").click();
+  await expect(page.getByTestId("reader-desk")).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByTestId("reader-desk")).toHaveCount(0);
+  await expect(page.getByTestId("reader")).toBeVisible();
+  await expect(page.getByTestId("reader-pull")).toBeFocused();
+
+  await page.goBack();
+  await expect(page.getByTestId("reader")).toHaveCount(0);
+  await expect(page.getByTestId("library-wall")).toBeVisible();
+});
+
 test("reader default changes persist and are used by the reader", async ({
   page,
 }) => {
@@ -398,7 +422,7 @@ test("the wall carries no debug version text and Settings carries About", async 
     "true",
   );
   await expect(page.getByTestId("settings-version")).toContainText("v0.1.17");
-  await expect(page.getByTestId("settings-schema")).toContainText("6");
+  await expect(page.getByTestId("settings-schema")).toContainText("7");
   await expect(page.getByTestId("settings-view")).toContainText(
     "SIL Open Font License",
   );
