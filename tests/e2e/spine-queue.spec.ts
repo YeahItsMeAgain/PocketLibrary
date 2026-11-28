@@ -257,10 +257,7 @@ test("a manual Stop survives closing the reader", async ({ page }) => {
   await expect(page.getByTestId("reader-loading")).toHaveCount(0, {
     timeout: 20_000,
   });
-  if (!(await page.getByTestId("reader-back").isVisible())) {
-    await page.mouse.click(195, 420);
-  }
-  await page.getByTestId("reader-back").click();
+  await page.keyboard.press("Escape");
   await expect(page.getByTestId("reader")).toHaveCount(0);
 
   // The reader may pause and resume internally, but the last explicit state
@@ -282,18 +279,11 @@ test("opening the reader pauses preparation and closing resumes it", async ({
   await expect(page.getByTestId("reader-loading")).toHaveCount(0, {
     timeout: 20_000,
   });
-  if (!(await page.getByTestId("reader-back").isVisible())) {
-    await page.mouse.click(195, 420);
-  }
-  await expect(page.getByTestId("reader-back")).toBeVisible({
-    timeout: 20_000,
-  });
-
   // The chip hides while the reader is open.
   await expect(page.getByTestId("spine-activity")).toHaveCount(0);
   expect(await pauseCalls(page)).toContain(true);
 
-  await page.getByTestId("reader-back").click();
+  await page.keyboard.press("Escape");
   await expect(page.getByTestId("reader")).toHaveCount(0);
   await expect.poll(async () => (await pauseCalls(page)).at(-1)).toBe(false);
 });
