@@ -269,6 +269,9 @@ async function longPress(page: Page, spine: Locator) {
 test("the drag ghost keeps the shelf's spine presentation", async ({
   page,
 }, testInfo) => {
+  // Four drags and three saved screenshots: comfortably under the default
+  // timeout alone, but not when the gate runs the web and Rust groups at once.
+  test.setTimeout(90_000);
   const books = [
     mockBook(1, "Rock Paper Scissors", "art", {
       readingStatus: "finished",
