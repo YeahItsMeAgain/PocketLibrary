@@ -6,7 +6,7 @@ An Android-only reading room for the EPUBs and PDFs you already own. Point it at
 a folder, arrange the books on manual shelves, and read them in place. No
 account, sync service, store or telemetry.
 
-**Latest release 0.1.18** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
+**Latest release 0.1.19** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
 
 ## Features
 
