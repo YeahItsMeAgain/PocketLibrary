@@ -352,4 +352,78 @@ mod tests {
         assert!(decoded.width() <= COVER_WIDTH);
         assert!(decoded.height() <= COVER_HEIGHT);
     }
+
+    fn png(width: u32, height: u32) -> Vec<u8> {
+        let image =
+            DynamicImage::ImageRgb8(RgbImage::from_pixel(width, height, Rgb([190, 80, 60])));
+        let mut bytes = Vec::new();
+        image
+            .write_to(
+                &mut std::io::Cursor::new(&mut bytes),
+                image::ImageFormat::Png,
+            )
+            .expect("encode png");
+        bytes
+    }
+
+    #[test]
+    fn online_covers_must_be_portrait_and_large_enough() {
+        let fitted = validate_online(&png(500, 750), Some("image/png")).expect("valid");
+        let decoded = image::load_from_memory(&fitted).expect("jpeg");
+        assert_eq!(
+            (decoded.width(), decoded.height()),
+            (COVER_WIDTH, COVER_HEIGHT)
+        );
+
+        assert!(matches!(
+            validate_online(&png(250, 400), Some("image/png")),
+            Err(CoverRejection::TooSmall { .. })
+        ));
+        assert!(matches!(
+            validate_online(&png(900, 500), Some("image/png")),
+            Err(CoverRejection::Landscape { .. })
+        ));
+        assert!(matches!(
+            validate_online(&png(500, 1100), Some("image/png")),
+            Err(CoverRejection::Landscape { .. })
+        ));
+    }
+
+    #[test]
+    fn online_covers_reject_html_animation_and_oversized_payloads() {
+        assert!(matches!(
+            validate_online("<!doctype html>".as_bytes(), Some("image/png")),
+            Err(CoverRejection::UnsupportedFormat)
+        ));
+        assert!(matches!(
+            validate_online(&png(500, 750), Some("text/html")),
+            Err(CoverRejection::UnsupportedFormat)
+        ));
+        let mut animated = png(500, 750);
+        animated.extend_from_slice(b"acTL");
+        assert!(matches!(
+            validate_online(&animated, Some("image/png")),
+            Err(CoverRejection::Animated)
+        ));
+        let oversized = vec![0u8; MAX_ONLINE_COVER_BYTES + 1];
+        assert!(matches!(
+            validate_online(&oversized, Some("image/jpeg")),
+            Err(CoverRejection::TooLarge)
+        ));
+    }
+
+    #[test]
+    fn manual_images_allow_a_warned_landscape_or_small_picture() {
+        let (_, width, height, warning) = prepare_manual(&png(800, 300)).expect("landscape");
+        assert_eq!((width, height), (800, 300));
+        assert!(warning.is_some());
+
+        let (_, _, _, warning) = prepare_manual(&png(250, 400)).expect("small");
+        assert!(warning.is_some());
+
+        assert!(matches!(
+            prepare_manual(&png(80, 120)),
+            Err(CoverRejection::TooSmall { .. })
+        ));
+    }
 }
