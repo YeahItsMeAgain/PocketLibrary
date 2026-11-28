@@ -46,6 +46,9 @@ Deleted with the old mark:
   position. Labelled in `evidence/placeholder-notes.md`.
 - `evidence/placeholder-closeup-reading-finished@2x.png`: reading and finished share the head slot.
 - `evidence/placeholder-notes.md`: box, notch, ramp, head reserve and overlap report.
+- `evidence/real-notes.md` with `real-shelf-390@2x.png`, `real-shelf-360@2x.png`,
+  `real-closeup-rpo-needful@2x.png` and `real-closeup-rpo-whisper@2x.png`: the seven-book shelf
+  with one resolved real jacket per book and the user's statuses.
 
 ## Contract
 

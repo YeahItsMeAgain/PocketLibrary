@@ -1,0 +1,164 @@
+[
+  {
+    "id": "1",
+    "title": "The Collector",
+    "style": "art",
+    "status": "finished",
+    "spine": {
+      "width": 33,
+      "height": 227
+    },
+    "ribbon": {
+      "className": "gold-ribbon",
+      "width": 8,
+      "height": 26,
+      "top": 0,
+      "right": 3
+    },
+    "titleTop": 28,
+    "authorFontSize": "6.2px",
+    "overlaps": {
+      "title": false,
+      "author": false,
+      "labels": false
+    }
+  },
+  {
+    "id": "2",
+    "title": "The Whisper Man",
+    "style": "art",
+    "status": "finished",
+    "spine": {
+      "width": 30,
+      "height": 212
+    },
+    "ribbon": {
+      "className": "gold-ribbon",
+      "width": 8,
+      "height": 26,
+      "top": 0,
+      "right": 3
+    },
+    "titleTop": 28,
+    "authorFontSize": "6.2px",
+    "overlaps": {
+      "title": false,
+      "author": false,
+      "labels": false
+    }
+  },
+  {
+    "id": "3",
+    "title": "Needful Things",
+    "style": "art",
+    "status": "reading",
+    "spine": {
+      "width": 29,
+      "height": 238
+    },
+    "ribbon": {
+      "className": "reading-ribbon",
+      "width": 8,
+      "height": 26,
+      "top": 0,
+      "right": 3
+    },
+    "titleTop": 28,
+    "authorFontSize": "6.2px",
+    "overlaps": {
+      "title": false,
+      "author": false,
+      "labels": false
+    }
+  },
+  {
+    "id": "4",
+    "title": "I Am Pilgrim",
+    "style": "art",
+    "status": "reading",
+    "spine": {
+      "width": 32,
+      "height": 218
+    },
+    "ribbon": {
+      "className": "reading-ribbon",
+      "width": 8,
+      "height": 26,
+      "top": 0,
+      "right": 3
+    },
+    "titleTop": 28,
+    "authorFontSize": "6.2px",
+    "overlaps": {
+      "title": false,
+      "author": false,
+      "labels": false
+    }
+  },
+  {
+    "id": "5",
+    "title": "The Shadow Friend",
+    "style": "art",
+    "status": "unread",
+    "spine": {
+      "width": 28,
+      "height": 218
+    },
+    "ribbon": null,
+    "titleTop": 10,
+    "authorFontSize": "6.2px",
+    "overlaps": {
+      "title": false,
+      "author": false,
+      "labels": false
+    }
+  },
+  {
+    "id": "6",
+    "title": "Everyone In My Family Has Killed Someone",
+    "style": "art",
+    "status": "reading",
+    "spine": {
+      "width": 34,
+      "height": 222
+    },
+    "ribbon": {
+      "className": "reading-ribbon",
+      "width": 8,
+      "height": 26,
+      "top": 0,
+      "right": 3
+    },
+    "titleTop": 28,
+    "authorFontSize": "6.2px",
+    "overlaps": {
+      "title": false,
+      "author": false,
+      "labels": false
+    }
+  },
+  {
+    "id": "7",
+    "title": "Ready Player One",
+    "style": "art",
+    "status": "reading",
+    "spine": {
+      "width": 29,
+      "height": 231
+    },
+    "ribbon": {
+      "className": "reading-ribbon",
+      "width": 8,
+      "height": 26,
+      "top": 0,
+      "right": 3
+    },
+    "titleTop": 28,
+    "authorFontSize": "6.2px",
+    "overlaps": {
+      "title": false,
+      "author": false,
+      "labels": false
+    }
+  }
+]
