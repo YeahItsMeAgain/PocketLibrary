@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary 0.1.17 — spine engine test APK</title>
+<title>PocketLibrary 0.1.18 — spine engine test APK</title>
 <style>
   :root {
     --bg: #0b0709;
@@ -123,30 +123,30 @@
 <main>
   <div class="wordmark"><i aria-hidden="true"></i> PocketLibrary · spine engine test build</div>
 
-  <p class="kicker">Signed arm64 release · version 0.1.17 (1017)</p>
+  <p class="kicker">Signed arm64 release · version 0.1.18 (1018)</p>
   <h1>The Art spine,<br><em>finished.</em></h1>
-  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. This is the <b>maintenance release after the Art work</b>: the shelf is unchanged from 0.1.16 — art runs to the top edge, the full author sits over two lines in a 27% foot band, and the label chips sit beneath. <b>Cloth</b> keeps its woven board and foil type; <b>Typography</b> keeps the flat two-tone board. 0.1.17 fixes the clean-checkout CI failure in the real-ONNX tests; no app behaviour changed.</p>
+  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. <b>0.1.18 redesigns the shelf and the reader.</b> Art is now smoked leather: full-height cover art under a warm scrim, no foot band, an oxblood reading drape over the shelf lip and a gold finished ribbon in the reserved head. The reader's top and bottom bars are gone, replaced by one brass-pull reading desk carrying type, theme, contents, marks and PDF page controls.</p>
 
   <div class="card">
     <div class="download">
       <div>
-        <h2>PocketLibrary 0.1.17 · spine arm64</h2>
+        <h2>PocketLibrary 0.1.18 · spine arm64</h2>
         <p>APK · 64.97 MiB · release-signed · arm64-v8a only</p>
       </div>
-      <a class="button" href="pocketlibrary-0.1.17-spine-arm64.apk" download>Download APK</a>
+      <a class="button" href="pocketlibrary-0.1.18-spine-arm64.apk" download>Download APK</a>
     </div>
 
     <dl>
       <dt>File</dt>
-      <dd class="mono">pocketlibrary-0.1.17-spine-arm64.apk</dd>
+      <dd class="mono">pocketlibrary-0.1.18-spine-arm64.apk</dd>
       <dt>Size</dt>
-      <dd>68,122,525 bytes · 64.97 MiB</dd>
+      <dd>68,125,649 bytes · 64.97 MiB</dd>
       <dt>SHA-256</dt>
-      <dd><code class="hash">5b39307d6ceb56f9c47e7999beef516c35240af73538b9b40faaf7b9e4e977cd</code></dd>
+      <dd><code class="hash">504d894d2fd0b68605be11fb504758c6706409d2e09b659ece2c218fd346624b</code></dd>
       <dt>Package</dt>
       <dd class="mono">app.pocketlibrary</dd>
       <dt>Version</dt>
-      <dd>0.1.17 · versionCode 1017</dd>
+      <dd>0.1.18 · versionCode 1018</dd>
       <dt>SDK</dt>
       <dd>min 24 · target 36 · compile 36 (Android 16)</dd>
       <dt>ABI</dt>
@@ -162,41 +162,42 @@
   </div>
 
   <h2 class="section">Install</h2>
-  <p class="section-lede">Sideload it over 0.1.16, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
+  <p class="section-lede">Sideload it over 0.1.17, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
   <ol>
     <li>Download the APK on the phone (or copy it over).</li>
     <li>Open the file. If Android blocks it, allow <b>Install unknown apps</b> for the browser or file manager you used.</li>
-    <li>If 0.1.16 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 7</b>.</li>
+    <li>If 0.1.17 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 7</b>.</li>
     <li>A <b>debug build or a build signed with another key must be uninstalled first</b>; Android will refuse the update otherwise.</li>
     <li>Open PocketLibrary. Spines start preparing automatically; on an existing library the backfill runs once at low priority, so the wall stays usable.</li>
   </ol>
 
-  <h2 class="section">The Art release, unchanged in 0.1.17</h2>
+  <h2 class="section">The shelf and reader in 0.1.18</h2>
   <div class="grid">
     <div class="note">
-      <h3>Art uses the whole spine</h3>
+      <h3>Smoked leather</h3>
       <ul>
-        <li><b>No cap bar.</b> The top brass mark and its opaque band are gone; the art starts at the top edge and gains the height the cap used to take.</li>
-        <li><b>Taller foot, 27%.</b> The author and chips sit as one group centred in the band, with the chips pulled up from the bottom edge.</li>
-        <li><b>Full author, two lines.</b> “Alice / Feeney” at 6.8px, shrinking toward 4.2px for long names instead of ellipsising. Never clipped.</li>
-        <li>Books with neither author nor labels still collapse the foot, so the art fills the spine.</li>
+        <li><b>Full-height art under a warm scrim.</b> The cover strip is still the whole spine, but the title no longer relies on adaptive ink over raw art.</li>
+        <li><b>No foot band.</b> The full author over two lines and the 5px label codes sit on the scrim's deepest 30%, so a shelf no longer reads as one black bar.</li>
+        <li><b>Reading is an oxblood drape</b> over the shelf lip; <b>finished is a gold head ribbon</b>. Neither ever enters the title box.</li>
+        <li><b>Titles fit.</b> A single long word shrinks, per-column tracking is capped, RTL is measured in direction, and nothing clips.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>Cloth and Typography stay centred</h3>
+      <h3>One reading desk</h3>
       <ul>
-        <li>The title and author block is centred in the real available face, not a guessed offset.</li>
-        <li>Long titles wrap to two columns and shrink to fit; nothing is cut off at 320 or 390 px.</li>
-        <li>Full label names remain on the Art foot band: FAVOURITE, BOOK CLUB.</li>
-        <li>The Edit preview canvas matches the shelf, including the two-line author.</li>
+        <li>The old top and bottom bars are gone. A brass pull and the percentage open the desk.</li>
+        <li>Type, theme, mode, contents, bookmarks, highlights and PDF page/zoom live in one 48% sheet.</li>
+        <li>Drag down to close; the sheet follows and springs back under threshold. Escape and back also close it.</li>
+        <li>Paginated EPUB reflows while the desk is open; scrolled EPUB and PDF overlay without repaginating.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>Smaller fixes</h3>
+      <h3>Also in this build</h3>
       <ul>
-        <li>The fast test gate runs with 4 workers and no throwaway per-test screenshots: about 90–115s instead of ~438s.</li>
-        <li>0.1.17 skips the real-generation Rust tests when ONNX Runtime is absent, so a clean CI checkout no longer aborts while loading the dylib.</li>
-        <li>The source record stays a proper brass action, and the Settings spine panel stays quiet.</li>
+        <li>The Studio preview paints the same spine as the shelf and follows a reading-status change live.</li>
+        <li>Cloth and Typography keep their boards and share the drape/gold-ribbon status language.</li>
+        <li>Cover validation and the Open Library HTTP seam now have tests.</li>
+        <li>The fast gate still runs with 4 workers; the drag-ghost pass gets extra time under load.</li>
       </ul>
     </div>
   </div>
@@ -206,19 +207,19 @@
     <div class="note">
       <h3>On the shelf</h3>
       <ul>
-        <li>Install over 0.1.16 without uninstalling. Your shelf, reading state, labels and per-book styles should be intact.</li>
-        <li>Art spines should show art to the top edge, no cap bar, the full author on two lines, and the label chips beneath.</li>
-        <li>Check a short author (“Alice Feeney”) and a long one: the long name should shrink to fit two lines, never clip or ellipsise.</li>
-        <li>Open a book in Edit and confirm the preview matches the shelf.</li>
+        <li>Install over 0.1.17 without uninstalling. Your shelf, reading state, labels and per-book styles should be intact.</li>
+        <li>Art spines should show cover art under the warm scrim, the author and label codes on the deep foot, and no dark band across the shelf.</li>
+        <li>A reading book carries an oxblood drape over the shelf lip; a finished book a gold ribbon at the head. Flip a status and watch the mark move.</li>
+        <li>Open a book in Edit, change its status, and confirm the Studio preview follows.</li>
       </ul>
     </div>
     <div class="note">
-      <h3>If art looks stale</h3>
+      <h3>In the reader</h3>
       <ul>
-        <li>Cached strips from older builds are stamped stale and regenerate once on launch; give the backfill a moment.</li>
-        <li>Open <b>Settings → Diagnostics</b> and export them if a spine stays typographic.</li>
-        <li>In <code>spine.log</code>, check <code>shelf: books N, strips M</code> and <code>hydrate: scanned … projected …</code>.</li>
-        <li>If <code>strips</code> and <code>projected</code> are <b>0</b>, the cache root is wrong; include the logged root in the report.</li>
+        <li>Open a book: the page is clean except a brass pull and a percentage. Both open the desk; nothing else should.</li>
+        <li>Change size and theme, drag the desk down to close, and check that you land on the same text.</li>
+        <li>Try scrolled mode and a PDF: the desk should overlay without repaginating the page.</li>
+        <li>Check that Android back closes the desk first, then the reader.</li>
       </ul>
     </div>
   </div>
@@ -228,7 +229,7 @@
     <div class="note limits" style="border:0;background:transparent;padding:0">
       <h3>This is a test build</h3>
       <ul>
-        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.17.</li>
+        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.18.</li>
         <li><b>arm64 only.</b> It will not install on 32-bit, x86, or an emulator without arm64 translation.</li>
         <li><b>64.97 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
         <li>Generation runs fully on the device. On a phone it is slower than the host timings in the evidence.</li>
@@ -238,9 +239,9 @@
   </div>
 
   <footer>
-    Built from the Art-spine release at <span class="mono">0.1.17</span> on 2026-11-27.
-    Version 0.1.17 (1017), 68,122,525 bytes, SHA-256
-    <span class="mono">5b39307d6ceb56f9c47e7999beef516c35240af73538b9b40faaf7b9e4e977cd</span>.
+    Built from the shelf and reader release at <span class="mono">0.1.18</span> on 2026-11-28.
+    Version 0.1.18 (1018), 68,125,649 bytes, SHA-256
+    <span class="mono">504d894d2fd0b68605be11fb504758c6706409d2e09b659ece2c218fd346624b</span>.
     Verification: <span class="mono">apksigner</span> v2 signature valid,
     <span class="mono">zipalign -c -P 16 -v 4</span> passed, packaged manifest has <span class="mono">android:extractNativeLibs="true"</span>.
     <a href="../">Spine engine notes</a>.
