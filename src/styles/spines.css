@@ -220,9 +220,10 @@
   content: attr(data-short);
 }
 
-/* Finished is the gold head ribbon; it reserves 28px of head on every face so
-   it never enters the title box. Reading has no head reserve (cue B). */
-.spine[data-status="finished"] {
+/* Reading and finished wear the same 8x26 status ribbon in the head band, so
+   both reserve 28px of head on every face and the title never meets one. */
+.spine[data-status="finished"],
+.spine[data-status="reading"] {
   --spine-head: 28px;
 }
 
@@ -337,8 +338,8 @@
   pointer-events: none;
 }
 
-/* The Art title box: 10px head for unread and reading, 28px for finished (the
-   gold ribbon reserve), and a foot at 70% (30% + a 4px gap). */
+/* The Art title box: 10px head for unread, 28px when a reading or finished
+   ribbon reserves it, and a foot at 70% (30% + a 4px gap). */
 .spine[data-style="art"] .spine-text {
   top: var(--spine-head, 10px);
   right: 2px;
@@ -465,16 +466,22 @@
   color: #241420;
 }
 
-/* Finished cue D: an 8x26 brass ribbon in the reserved 28px head band, with a
-   notched swallowtail, a 1px dark edge and a 2px inner sheen. No filter or
-   blend mode; the brass ramp does the work. */
-.spine .gold-ribbon {
+/* Reading and finished share the head-ribbon box: 8x26 at the top right,
+   3px in from the edge. They differ only in colour: brass for finished,
+   oxblood for reading. Both sit in the 28px head reserve, clear of the title. */
+.spine .gold-ribbon,
+.spine .reading-ribbon {
   position: absolute;
   top: 0;
   right: 3px;
   z-index: 6;
   width: 8px;
   height: 26px;
+}
+
+/* Finished: a brass ramp with a notched swallowtail, a 1px dark edge and a
+   2px inner sheen. No filter or blend mode; the brass ramp does the work. */
+.spine .gold-ribbon {
   background: linear-gradient(
     90deg,
     #8a6a2e 0%,
@@ -508,49 +515,25 @@
   );
 }
 
-/* Reading cue B: the oxblood tail emerges at the book's foot and hangs over
-   the shelf lip and board. The shelf renders it in the case's cue layer (the
-   cavity clips); the drag ghost carries its own copy. */
-.spine-drape {
-  position: absolute;
-  z-index: 8;
-  width: 8px;
-  pointer-events: none;
-}
-
-.spine-drape::before {
-  content: "";
-  position: absolute;
-  inset: 0;
+/* Reading: the lab's cue A oxblood ramp, an 80% notch and a 2px top sheen.
+   It is the same in-spine ribbon as finished, just in the other colour. */
+.spine .reading-ribbon {
   background: linear-gradient(
     90deg,
     #4c0a0f 0%,
-    #8e1b22 26%,
-    #c3353d 48%,
-    #8e1b22 74%,
+    #8e1b22 30%,
+    #c3353d 50%,
+    #8e1b22 72%,
     #4c0a0f 100%
   );
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
-  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.55);
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.55);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
 }
 
-.spine-drape::after {
+.spine .reading-ribbon::after {
   content: "";
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
+  inset: 0 0 auto 0;
   height: 2px;
-  background: rgba(236, 215, 164, 0.55);
-}
-
-.spine-drape[data-dimmed="true"] {
-  opacity: 0.24;
-}
-
-.spine .spine-drape.is-inline {
-  top: calc(100% - 4px);
-  right: 2px;
-  left: auto;
-  height: 31px;
+  background: rgba(255, 205, 180, 0.25);
 }

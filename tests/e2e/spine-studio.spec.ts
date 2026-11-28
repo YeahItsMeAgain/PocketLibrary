@@ -309,11 +309,8 @@ for (const status of ["finished", "reading"] as const) {
     expect(meta.footTop / 236).toBeCloseTo(0.7, 2);
     expect(shelf.footHeight / shelf.height).toBeCloseTo(0.3, 2);
     expect(meta.footHeight / 236).toBeCloseTo(0.3, 2);
-    expect(shelf.titleTop).toBeCloseTo(
-      status === "finished" ? 28 : 10,
-      0,
-    );
-    expect(meta.headReserve).toBe(status === "finished" ? 28 : 10);
+    expect(shelf.titleTop).toBeCloseTo(28, 0);
+    expect(meta.headReserve).toBe(28);
 
     if (status === "finished") {
       expect(meta.markKind).toBe("gold-ribbon");
@@ -326,13 +323,14 @@ for (const status of ["finished", "reading"] as const) {
       expect(shelf.ribbon!.top).toBeCloseTo(0, 0);
       expect(shelf.ribbon!.right).toBeCloseTo(3, 0);
     } else {
-      expect(meta.markKind).toBe("drape");
-      expect(meta.markTop).toBeCloseTo(232, 0);
+      // Reading is the same head ribbon in oxblood, never a foot mark.
+      expect(meta.markKind).toBe("reading-ribbon");
+      expect(meta.markTop).toBe(0);
       expect(meta.markWidth).toBe(8);
-      expect(meta.markHeight).toBe(31);
+      expect(meta.markHeight).toBe(26);
       expect(shelf.ribbon).toBeNull();
       await expect(
-        page.locator('[data-testid="spine-drape"][data-book-id="1"]'),
+        page.locator('[data-testid="spine-reading-ribbon"][data-book-id="1"]'),
       ).toHaveCount(1);
     }
   });
@@ -420,7 +418,10 @@ test("changing the reading status updates the Studio mark live", async ({
   await boot(page, {}, [], "The Whisper Man", "reading");
   await generate(page);
   const canvas = page.getByTestId("spine-preview-canvas");
-  await expect(canvas).toHaveAttribute("data-mark-kind", "drape");
+  await expect(canvas).toHaveAttribute("data-mark-kind", "reading-ribbon");
+  await expect(canvas).toHaveAttribute("data-head-reserve", "28.00");
+  await expect(canvas).toHaveAttribute("data-mark-top", "0.00");
+  await expect(canvas).toHaveAttribute("data-mark-height", "26.00");
 
   // The status section lives below the spine section in the same Edit sheet.
   // Changing it must reach the canvas without closing or remounting the studio.
@@ -448,7 +449,8 @@ test("changing the reading status updates the Studio mark live", async ({
     "aria-pressed",
     "true",
   );
-  await expect(canvas).toHaveAttribute("data-mark-kind", "drape");
+  await expect(canvas).toHaveAttribute("data-mark-kind", "reading-ribbon");
+  await expect(canvas).toHaveAttribute("data-head-reserve", "28.00");
 });
 
 test("a single long word stays inside the canvas title box", async ({

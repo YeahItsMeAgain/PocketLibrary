@@ -10,15 +10,15 @@ import type { RenderBook } from "./geometry";
 import { shelfSpineStyle, spineLabelAbbr } from "../spine";
 import {
   ART_FOOT_TOP,
-  ART_HEAD_RESERVE,
-  ART_HEAD_RESERVE_FINISHED,
+  ART_HEAD_RESERVE_RIBBON,
+  ART_HEAD_RESERVE_UNREAD,
   ART_SCRIM,
   contrast,
   GOLD_RIBBON,
   luminance,
   mix,
   paletteFor,
-  READING_DRAPE,
+  READING_RIBBON,
   SPINE_H,
   SPINE_W,
 } from "./geometry";
@@ -91,40 +91,36 @@ function drawGoldRibbon(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.restore();
 }
 
-/**
- * The reading drape's in-spine 4px. The rest hangs over the shelf lip and
- * board, which is outside this 52 x 236 canvas; the shelf's cue layer paints
- * it and the meta below reports its full geometry.
- */
-function drawDrapeSliver(ctx: CanvasRenderingContext2D, x: number) {
-  const y = SPINE_H - READING_DRAPE.spineOverlap;
-  const width = READING_DRAPE.width;
+/** The reading head ribbon: the oxblood twin of the finished gold ribbon. */
+function drawReadingRibbon(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  const { width, height, stops, sheen } = READING_RIBBON;
+  const tail = y + height * 0.8;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x, y, width, SPINE_H - y);
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + width, y);
+  ctx.lineTo(x + width, y + height);
+  ctx.lineTo(x + width / 2, tail);
+  ctx.lineTo(x, y + height);
+  ctx.closePath();
   ctx.clip();
-  ctx.fillStyle = horizontalRamp(
-    ctx,
-    x,
-    width,
-    READING_DRAPE.stops,
-    y,
-    SPINE_H,
-  );
-  ctx.fillRect(x, y, width, SPINE_H - y);
-  ctx.fillStyle = "rgba(236,215,164,.55)";
-  ctx.fillRect(x, y, width, 1);
+  ctx.fillStyle = horizontalRamp(ctx, x, width, stops, y, y + height);
+  ctx.fillRect(x, y, width, height);
+  ctx.fillStyle = sheen;
+  ctx.fillRect(x, y, width, 2);
   ctx.restore();
 }
 
 function drawStatusMark(ctx: CanvasRenderingContext2D, book: RenderBook) {
+  const x = SPINE_W - GOLD_RIBBON.right - GOLD_RIBBON.width;
   if (book.readingStatus === "finished") {
-    drawGoldRibbon(ctx, SPINE_W - GOLD_RIBBON.right - GOLD_RIBBON.width, 0);
+    drawGoldRibbon(ctx, x, 0);
   } else if (book.readingStatus === "reading") {
-    drawDrapeSliver(ctx, SPINE_W - 2 - READING_DRAPE.width);
+    drawReadingRibbon(ctx, x, 0);
   }
 }
 
+/** Reading and finished share one head-ribbon box; unread has no ribbon. */
 function statusMark(book: RenderBook): RenderMeta["mark"] {
   if (book.readingStatus === "finished") {
     return {
@@ -137,21 +133,28 @@ function statusMark(book: RenderBook): RenderMeta["mark"] {
   }
   if (book.readingStatus === "reading") {
     return {
-      kind: "drape",
-      x: SPINE_W - 2 - READING_DRAPE.width,
-      y: SPINE_H - READING_DRAPE.spineOverlap,
-      width: READING_DRAPE.width,
-      height: READING_DRAPE.spineOverlap + READING_DRAPE.overLipAndBoard,
+      kind: "reading-ribbon",
+      x: SPINE_W - READING_RIBBON.right - READING_RIBBON.width,
+      y: 0,
+      width: READING_RIBBON.width,
+      height: READING_RIBBON.height,
     };
   }
   return undefined;
 }
 
-/** Art reserves 28px for the finished ribbon and 10px otherwise. */
+/** Wears a head ribbon: reading and finished. */
+function hasHeadRibbon(book: RenderBook): boolean {
+  return (
+    book.readingStatus === "finished" || book.readingStatus === "reading"
+  );
+}
+
+/** Art reserves 28px for a head ribbon and 10px when unread. */
 function artHeadReserve(book: RenderBook): number {
-  return book.readingStatus === "finished"
-    ? ART_HEAD_RESERVE_FINISHED
-    : ART_HEAD_RESERVE;
+  return hasHeadRibbon(book)
+    ? ART_HEAD_RESERVE_RIBBON
+    : ART_HEAD_RESERVE_UNREAD;
 }
 
 export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): RenderMeta {
@@ -310,7 +313,7 @@ export function drawCloth(ctx: CanvasRenderingContext2D, book: RenderBook): Rend
     },
     vertical: true,
     textOrientation: "bottom-up",
-    headReserve: book.readingStatus === "finished" ? 28 : 24,
+    headReserve: hasHeadRibbon(book) ? ART_HEAD_RESERVE_RIBBON : 24,
     mark: statusMark(book),
   };
 }
@@ -469,7 +472,7 @@ export function drawTypography(
     },
     vertical: true,
     textOrientation: "top-down",
-    headReserve: book.readingStatus === "finished" ? 28 : 24,
+    headReserve: hasHeadRibbon(book) ? ART_HEAD_RESERVE_RIBBON : 24,
     mark: statusMark(book),
   };
 }
@@ -578,7 +581,8 @@ function planLabelChips(
  * Art is S1 smoked leather: full-height art under a warm near-black scrim,
  * gold hairlines at head and tail, no foot band. The scrim's darkest 30% holds
  * the full author over two lines above 4-5 letter label codes, and the title
- * runs from a 10px (or 28px finished) head to 70%.
+ * runs from a 10px head (28px when a reading or finished ribbon is worn) to
+ * 70%.
  */
 export function drawArtSpine(
   ctx: CanvasRenderingContext2D,

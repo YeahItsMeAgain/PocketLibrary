@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>PocketLibrary 0.1.19 — spine engine test APK</title>
+<title>PocketLibrary 0.1.20 — spine engine test APK</title>
 <style>
   :root {
     --bg: #0b0709;
@@ -123,30 +123,30 @@
 <main>
   <div class="wordmark"><i aria-hidden="true"></i> PocketLibrary · spine engine test build</div>
 
-  <p class="kicker">Signed arm64 release · version 0.1.19 (1019)</p>
+  <p class="kicker">Signed arm64 release · version 0.1.20 (1020)</p>
   <h1>The Art spine,<br><em>finished.</em></h1>
-  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. <b>0.1.19 is a one-fix patch on the 0.1.18 redesign: the Edit &rarr; Labels menu is styled and tappable again.</b> 0.1.18 redesigned the shelf and the reader. Art is now smoked leather: full-height cover art under a warm scrim, no foot band, an oxblood reading drape over the shelf lip and a gold finished ribbon in the reserved head. The reader's top and bottom bars are gone, replaced by one brass-pull reading desk carrying type, theme, contents, marks and PDF page controls.</p>
+  <p class="lede">A real PocketLibrary build with the <b>on-device spine engine</b>, which prepares spines <b>automatically</b>: after downloads, scans, the first-library backfill and cover changes. <b>0.1.20 is a one-fix patch on 0.1.19: the reading status mark is back on the book.</b> Reading is now an oxblood head ribbon inside the spine, in the same slot as the finished gold ribbon, instead of a drape hanging below the book over the shelf lip. 0.1.18 redesigned the shelf and the reader: smoked-leather Art spines, full-height cover art under a warm scrim, no foot band, and one brass-pull reading desk carrying type, theme, contents, marks and PDF page controls.</p>
 
   <div class="card">
     <div class="download">
       <div>
-        <h2>PocketLibrary 0.1.19 · spine arm64</h2>
-        <p>APK · 64.98 MiB · release-signed · arm64-v8a only</p>
+        <h2>PocketLibrary 0.1.20 · spine arm64</h2>
+        <p>APK · 64.97 MiB · release-signed · arm64-v8a only</p>
       </div>
-      <a class="button" href="pocketlibrary-0.1.19-spine-arm64.apk" download>Download APK</a>
+      <a class="button" href="pocketlibrary-0.1.20-spine-arm64.apk" download>Download APK</a>
     </div>
 
     <dl>
       <dt>File</dt>
-      <dd class="mono">pocketlibrary-0.1.19-spine-arm64.apk</dd>
+      <dd class="mono">pocketlibrary-0.1.20-spine-arm64.apk</dd>
       <dt>Size</dt>
-      <dd>68,132,909 bytes · 64.98 MiB</dd>
+      <dd>68,126,233 bytes · 64.97 MiB</dd>
       <dt>SHA-256</dt>
-      <dd><code class="hash">b86bd6f6a5d7365a1302a9ecb41c90b74974efbc3b2c53704e9e3e19ec4dca8b</code></dd>
+      <dd><code class="hash">f3cf7b46f3a2a2626c72843997c09dc1695acfc7228e478bc51b93e505bf592d</code></dd>
       <dt>Package</dt>
       <dd class="mono">app.pocketlibrary</dd>
       <dt>Version</dt>
-      <dd>0.1.19 · versionCode 1019</dd>
+      <dd>0.1.20 · versionCode 1020</dd>
       <dt>SDK</dt>
       <dd>min 24 · target 36 · compile 36 (Android 16)</dd>
       <dt>ABI</dt>
@@ -162,11 +162,11 @@
   </div>
 
   <h2 class="section">Install</h2>
-  <p class="section-lede">Sideload it over 0.1.18, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
+  <p class="section-lede">Sideload it over 0.1.19, or do a clean install if your phone has a debug or differently signed PocketLibrary.</p>
   <ol>
     <li>Download the APK on the phone (or copy it over).</li>
     <li>Open the file. If Android blocks it, allow <b>Install unknown apps</b> for the browser or file manager you used.</li>
-    <li>If 0.1.18 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 7</b>.</li>
+    <li>If 0.1.19 is installed from this page: install straight over it. The release key is the same, the library is kept, and the database stays at <b>schema 7</b>.</li>
     <li>A <b>debug build or a build signed with another key must be uninstalled first</b>; Android will refuse the update otherwise.</li>
     <li>Open PocketLibrary. Spines start preparing automatically; on an existing library the backfill runs once at low priority, so the wall stays usable.</li>
   </ol>
@@ -178,7 +178,7 @@
       <ul>
         <li><b>Full-height art under a warm scrim.</b> The cover strip is still the whole spine, but the title no longer relies on adaptive ink over raw art.</li>
         <li><b>No foot band.</b> The full author over two lines and the 5px label codes sit on the scrim's deepest 30%, so a shelf no longer reads as one black bar.</li>
-        <li><b>Reading is an oxblood drape</b> over the shelf lip; <b>finished is a gold head ribbon</b>. Neither ever enters the title box.</li>
+        <li><b>Reading is an oxblood head ribbon</b> inside the spine; <b>finished is a gold head ribbon</b> in the same slot. Neither ever enters the title box.</li>
         <li><b>Titles fit.</b> A single long word shrinks, per-column tracking is capped, RTL is measured in direction, and nothing clips.</li>
       </ul>
     </div>
@@ -195,7 +195,7 @@
       <h3>Also in this build</h3>
       <ul>
         <li>The Studio preview paints the same spine as the shelf and follows a reading-status change live.</li>
-        <li>Cloth and Typography keep their boards and share the drape/gold-ribbon status language.</li>
+        <li>Cloth and Typography keep their boards and share the head-ribbon status language.</li>
         <li>Cover validation and the Open Library HTTP seam now have tests.</li>
         <li>The fast gate still runs with 4 workers; the drag-ghost pass gets extra time under load.</li>
       </ul>
@@ -209,7 +209,7 @@
       <ul>
         <li>Install over 0.1.17 without uninstalling. Your shelf, reading state, labels and per-book styles should be intact.</li>
         <li>Art spines should show cover art under the warm scrim, the author and label codes on the deep foot, and no dark band across the shelf.</li>
-        <li>A reading book carries an oxblood drape over the shelf lip; a finished book a gold ribbon at the head. Flip a status and watch the mark move.</li>
+        <li>A reading book carries an oxblood ribbon at the head; a finished book the gold ribbon in the same slot. Flip a status and watch the colour change.</li>
         <li>Open a book in Edit, change its status, and confirm the Studio preview follows.</li>
       </ul>
     </div>
@@ -229,9 +229,9 @@
     <div class="note limits" style="border:0;background:transparent;padding:0">
       <h3>This is a test build</h3>
       <ul>
-        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.19.</li>
+        <li><b>Models are still bundled</b> in this APK for testing. The production model downloader/cache is not part of 0.1.20.</li>
         <li><b>arm64 only.</b> It will not install on 32-bit, x86, or an emulator without arm64 translation.</li>
-        <li><b>64.98 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
+        <li><b>64.97 MiB download</b> plus ~41 MiB extracted models on first run. Leave roughly 120 MiB free.</li>
         <li>Generation runs fully on the device. On a phone it is slower than the host timings in the evidence.</li>
         <li>Release-signed, so it will not install over a debug build. Uninstall the old app first.</li>
       </ul>
@@ -239,9 +239,9 @@
   </div>
 
   <footer>
-    Built from the label fix release at <span class="mono">0.1.19</span> on 2026-11-28.
-    Version 0.1.19 (1019), 68,132,909 bytes, SHA-256
-    <span class="mono">b86bd6f6a5d7365a1302a9ecb41c90b74974efbc3b2c53704e9e3e19ec4dca8b</span>.
+    Built from the reading-ribbon fix release at <span class="mono">0.1.20</span> on 2026-11-28.
+    Version 0.1.20 (1020), 68,126,233 bytes, SHA-256
+    <span class="mono">f3cf7b46f3a2a2626c72843997c09dc1695acfc7228e478bc51b93e505bf592d</span>.
     Verification: <span class="mono">apksigner</span> v2 signature valid,
     <span class="mono">zipalign -c -P 16 -v 4</span> passed, packaged manifest has <span class="mono">android:extractNativeLibs="true"</span>.
     <a href="../">Spine engine notes</a>.

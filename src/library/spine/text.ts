@@ -177,7 +177,7 @@ export interface RenderMeta {
   headReserve?: number;
   /** The status mark, when the book has one and the face can paint it. */
   mark?: {
-    kind: "gold-ribbon" | "drape";
+    kind: "gold-ribbon" | "reading-ribbon";
     x: number;
     y: number;
     width: number;

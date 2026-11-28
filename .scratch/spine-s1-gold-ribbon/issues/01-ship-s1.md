@@ -1,5 +1,9 @@
 # 01 — Ship S1 smoked leather with reading drape and gold finished ribbon
 
+> **Superseded in part by [`02-reading-head-ribbon.md`](02-reading-head-ribbon.md).** The reading
+> cue B drape described here shipped in 0.1.19 and was replaced in 0.1.20 by the in-spine oxblood
+> head ribbon (cue A). Everything else in this ticket still applies.
+
 Status: ready-for-agent
 Type: task
 

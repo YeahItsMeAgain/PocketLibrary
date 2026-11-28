@@ -14,15 +14,15 @@ import { drawArtSpine, drawCloth, drawTypography } from "./styles";
 
 export {
   ART_FOOT_TOP,
-  ART_HEAD_RESERVE,
-  ART_HEAD_RESERVE_FINISHED,
+  ART_HEAD_RESERVE_RIBBON,
+  ART_HEAD_RESERVE_UNREAD,
   ART_SCRIM,
   artCropRect,
   contrast,
   fallbackCrop,
   GOLD_RIBBON,
   mix,
-  READING_DRAPE,
+  READING_RIBBON,
   readableInk,
   SPINE_H,
   SPINE_STRIP_SIZE,

@@ -6,7 +6,7 @@ An Android-only reading room for the EPUBs and PDFs you already own. Point it at
 a folder, arrange the books on manual shelves, and read them in place. No
 account, sync service, store or telemetry.
 
-**Latest release 0.1.19** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
+**Latest release 0.1.20** · `app.pocketlibrary` · Android 8.0+ (API 24, arm64-v8a)
 
 ## Features
 
@@ -54,7 +54,7 @@ Download the signed APK from
 sideload it:
 
 ```bash
-adb install -r PocketLibrary-0.1.7.apk
+adb install -r PocketLibrary-0.1.20.apk
 ```
 
 The release is signed with `CN=PocketLibrary`. Installing over an earlier release
@@ -101,7 +101,7 @@ debug APK when no release keystore is configured.
 
 ## Documentation
 
-- [Release notes](docs/release-0.1.7.md) · [Diagnostics](docs/diagnostics.md) ·
+- [Release notes](docs/release-0.1.20.md) · [Diagnostics](docs/diagnostics.md) ·
   [Updates and signing](docs/updates.md) · [Build guide](docs/build.md)
 - [Performance benchmark](docs/perf-shelf-benchmark.md) ·
   [Architecture decisions](docs/adr/) · [Contributing](CONTRIBUTING.md)

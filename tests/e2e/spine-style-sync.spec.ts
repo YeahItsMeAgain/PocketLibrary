@@ -422,18 +422,24 @@ test("reading and finished keep one language across Art, Cloth and Typography", 
   const states = await page.getByTestId("spine").evaluateAll((spines) =>
     spines.map((spine) => {
       const element = spine as HTMLElement;
-      const ribbon = element.querySelector<HTMLElement>(".gold-ribbon");
+      const ribbon = element.querySelector<HTMLElement>(
+        ".gold-ribbon, .reading-ribbon",
+      );
       const text = element.querySelector<HTMLElement>(".spine-text");
       const frame = element.getBoundingClientRect();
       return {
         id: Number(element.dataset.bookId),
         style: element.dataset.style,
         status: element.dataset.status,
+        gold: Boolean(element.querySelector(".gold-ribbon")),
+        reading: Boolean(element.querySelector(".reading-ribbon")),
         ribbon: ribbon
           ? {
               width: ribbon.offsetWidth,
               height: ribbon.offsetHeight,
               top: ribbon.offsetTop,
+              right:
+                element.clientWidth - ribbon.offsetLeft - ribbon.offsetWidth,
             }
           : null,
         titleTop: text ? text.getBoundingClientRect().top - frame.top : 0,
@@ -442,22 +448,30 @@ test("reading and finished keep one language across Art, Cloth and Typography", 
   );
 
   for (const state of states) {
-    const drape = page.locator(
-      `[data-testid="spine-drape"][data-book-id="${state.id}"]`,
-    );
     if (state.status === "finished") {
+      expect(state.gold, `${state.style} finished gold`).toBe(true);
+      expect(state.reading, `${state.style} finished reading`).toBe(false);
       expect(state.ribbon, `${state.style} finished ribbon`).not.toBeNull();
       expect(state.ribbon!.width).toBeCloseTo(8, 0);
       expect(state.ribbon!.height).toBeCloseTo(26, 0);
       expect(state.ribbon!.top).toBeCloseTo(0, 0);
+      expect(state.ribbon!.right).toBeCloseTo(3, 0);
       expect(state.titleTop).toBeCloseTo(28, 0);
-      await expect(drape).toHaveCount(0);
     } else if (state.status === "reading") {
-      expect(state.ribbon, `${state.style} reading ribbon`).toBeNull();
-      await expect(drape).toHaveCount(1);
+      expect(state.gold, `${state.style} reading gold`).toBe(false);
+      expect(state.reading, `${state.style} reading reading`).toBe(true);
+      // The reading ribbon shares the gold box on every face.
+      expect(state.ribbon, `${state.style} reading ribbon`).not.toBeNull();
+      expect(state.ribbon!.width).toBeCloseTo(8, 0);
+      expect(state.ribbon!.height).toBeCloseTo(26, 0);
+      expect(state.ribbon!.top).toBeCloseTo(0, 0);
+      expect(state.ribbon!.right).toBeCloseTo(3, 0);
+      expect(state.titleTop).toBeCloseTo(28, 0);
     } else {
+      expect(state.gold).toBe(false);
+      expect(state.reading).toBe(false);
       expect(state.ribbon).toBeNull();
-      await expect(drape).toHaveCount(0);
+      expect(state.titleTop).toBeCloseTo(10, 0);
     }
   }
 });

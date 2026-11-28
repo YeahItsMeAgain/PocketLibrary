@@ -1,0 +1,372 @@
+{
+  "shelf": "PocketLibrary shelf, mock with real cover art (test-assets/cover.jpg, cropped/tinted per book)",
+  "captured": [
+    "preview-shelf-390@2x.png",
+    "preview-shelf-360@2x.png",
+    "preview-shelf-320@2x.png"
+  ],
+  "books": [
+    {
+      "id": 1,
+      "contentHash": "preview-1-Ready Player One",
+      "format": "epub",
+      "title": "Ready Player One",
+      "authors": [
+        "Ernest Cline"
+      ],
+      "series": null,
+      "language": "English",
+      "description": null,
+      "publisher": null,
+      "publishedDate": "2021-08-01",
+      "identifier": null,
+      "pageCount": 320,
+      "addedAt": 1,
+      "shelfId": 1,
+      "slotIndex": 0,
+      "readingStatus": "reading",
+      "labels": [
+        {
+          "id": 3,
+          "name": "Sci-Fi",
+          "colour": "#214d4c"
+        }
+      ],
+      "spineStyle": "art"
+    },
+    {
+      "id": 2,
+      "contentHash": "preview-2-The Picture of Dorian Gray",
+      "format": "epub",
+      "title": "The Picture of Dorian Gray",
+      "authors": [
+        "Oscar Wilde"
+      ],
+      "series": null,
+      "language": "English",
+      "description": null,
+      "publisher": null,
+      "publishedDate": "2021-08-01",
+      "identifier": null,
+      "pageCount": 320,
+      "addedAt": 1,
+      "shelfId": 1,
+      "slotIndex": 1,
+      "readingStatus": "finished",
+      "labels": [
+        {
+          "id": 1,
+          "name": "Classics",
+          "colour": "#6e2630"
+        },
+        {
+          "id": 2,
+          "name": "Gothic",
+          "colour": "#4b2d5c"
+        }
+      ],
+      "spineStyle": "art"
+    },
+    {
+      "id": 3,
+      "contentHash": "preview-3-The Shadow Friend",
+      "format": "pdf",
+      "title": "The Shadow Friend",
+      "authors": [
+        "Alex North"
+      ],
+      "series": null,
+      "language": "English",
+      "description": null,
+      "publisher": null,
+      "publishedDate": "2021-08-01",
+      "identifier": null,
+      "pageCount": 320,
+      "addedAt": 1,
+      "shelfId": 1,
+      "slotIndex": 2,
+      "readingStatus": "reading",
+      "labels": [],
+      "spineStyle": "art"
+    },
+    {
+      "id": 4,
+      "contentHash": "preview-4-Dune",
+      "format": "epub",
+      "title": "Dune",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "series": null,
+      "language": "English",
+      "description": null,
+      "publisher": null,
+      "publishedDate": "2021-08-01",
+      "identifier": null,
+      "pageCount": 320,
+      "addedAt": 1,
+      "shelfId": 1,
+      "slotIndex": 3,
+      "readingStatus": "unread",
+      "labels": [
+        {
+          "id": 5,
+          "name": "Sci-Fi",
+          "colour": "#214d4c"
+        }
+      ],
+      "spineStyle": "art"
+    },
+    {
+      "id": 5,
+      "contentHash": "preview-5-Needful Things",
+      "format": "epub",
+      "title": "Needful Things",
+      "authors": [
+        "Stephen King"
+      ],
+      "series": null,
+      "language": "English",
+      "description": null,
+      "publisher": null,
+      "publishedDate": "2021-08-01",
+      "identifier": null,
+      "pageCount": 320,
+      "addedAt": 1,
+      "shelfId": 1,
+      "slotIndex": 4,
+      "readingStatus": "finished",
+      "labels": [
+        {
+          "id": 4,
+          "name": "Horror",
+          "colour": "#5d1f2a"
+        }
+      ],
+      "spineStyle": "art"
+    },
+    {
+      "id": 6,
+      "contentHash": "preview-6-The Whisper Man",
+      "format": "pdf",
+      "title": "The Whisper Man",
+      "authors": [
+        "Alex North"
+      ],
+      "series": null,
+      "language": "English",
+      "description": null,
+      "publisher": null,
+      "publishedDate": "2021-08-01",
+      "identifier": null,
+      "pageCount": 320,
+      "addedAt": 1,
+      "shelfId": 1,
+      "slotIndex": 5,
+      "readingStatus": "reading",
+      "labels": [
+        {
+          "id": 1,
+          "name": "Crime",
+          "colour": "#6e2630"
+        }
+      ],
+      "spineStyle": "art"
+    },
+    {
+      "id": 7,
+      "contentHash": "preview-7-Rock Paper Scissors",
+      "format": "epub",
+      "title": "Rock Paper Scissors",
+      "authors": [
+        "Alice Feeney"
+      ],
+      "series": null,
+      "language": "English",
+      "description": null,
+      "publisher": null,
+      "publishedDate": "2021-08-01",
+      "identifier": null,
+      "pageCount": 320,
+      "addedAt": 1,
+      "shelfId": 1,
+      "slotIndex": 6,
+      "readingStatus": "unread",
+      "labels": [],
+      "spineStyle": "art"
+    }
+  ],
+  "report": [
+    {
+      "id": "1",
+      "title": "Ready Player One",
+      "style": "art",
+      "status": "reading",
+      "spine": {
+        "width": 31,
+        "height": 200
+      },
+      "ribbon": {
+        "className": "reading-ribbon",
+        "width": 8,
+        "height": 26,
+        "top": 0,
+        "right": 3,
+        "inside": true
+      },
+      "titleTop": 28,
+      "overlaps": {
+        "title": false,
+        "author": false,
+        "labels": false
+      }
+    },
+    {
+      "id": "2",
+      "title": "The Picture of Dorian Gray",
+      "style": "art",
+      "status": "finished",
+      "spine": {
+        "width": 31,
+        "height": 200
+      },
+      "ribbon": {
+        "className": "gold-ribbon",
+        "width": 8,
+        "height": 26,
+        "top": 0,
+        "right": 3,
+        "inside": true
+      },
+      "titleTop": 28,
+      "overlaps": {
+        "title": false,
+        "author": false,
+        "labels": false
+      }
+    },
+    {
+      "id": "3",
+      "title": "The Shadow Friend",
+      "style": "art",
+      "status": "reading",
+      "spine": {
+        "width": 38.7,
+        "height": 208.7
+      },
+      "ribbon": {
+        "className": "reading-ribbon",
+        "width": 8,
+        "height": 26,
+        "top": 0,
+        "right": 3,
+        "inside": true
+      },
+      "titleTop": 28.3,
+      "overlaps": {
+        "title": false,
+        "author": false,
+        "labels": false
+      }
+    },
+    {
+      "id": "4",
+      "title": "Dune",
+      "style": "art",
+      "status": "unread",
+      "spine": {
+        "width": 33.7,
+        "height": 206.6
+      },
+      "ribbon": null,
+      "titleTop": 10.2,
+      "overlaps": {
+        "title": false,
+        "author": false,
+        "labels": false
+      }
+    },
+    {
+      "id": "5",
+      "title": "Needful Things",
+      "style": "art",
+      "status": "finished",
+      "spine": {
+        "width": 39.9,
+        "height": 234
+      },
+      "ribbon": {
+        "className": "gold-ribbon",
+        "width": 8,
+        "height": 26,
+        "top": 0,
+        "right": 3,
+        "inside": true
+      },
+      "titleTop": 28.4,
+      "overlaps": {
+        "title": false,
+        "author": false,
+        "labels": false
+      }
+    },
+    {
+      "id": "6",
+      "title": "The Whisper Man",
+      "style": "art",
+      "status": "reading",
+      "spine": {
+        "width": 28,
+        "height": 210
+      },
+      "ribbon": {
+        "className": "reading-ribbon",
+        "width": 8,
+        "height": 26,
+        "top": 0,
+        "right": 3,
+        "inside": true
+      },
+      "titleTop": 28,
+      "overlaps": {
+        "title": false,
+        "author": false,
+        "labels": false
+      }
+    },
+    {
+      "id": "7",
+      "title": "Rock Paper Scissors",
+      "style": "art",
+      "status": "unread",
+      "spine": {
+        "width": 29,
+        "height": 201
+      },
+      "ribbon": null,
+      "titleTop": 10,
+      "overlaps": {
+        "title": false,
+        "author": false,
+        "labels": false
+      }
+    }
+  ],
+  "summary": {
+    "reading": [
+      "Ready Player One",
+      "The Shadow Friend",
+      "The Whisper Man"
+    ],
+    "finished": [
+      "The Picture of Dorian Gray",
+      "Needful Things"
+    ],
+    "unread": [
+      "Dune",
+      "Rock Paper Scissors"
+    ],
+    "allRibbons": 5,
+    "allOverlapsFalse": true
+  }
+}

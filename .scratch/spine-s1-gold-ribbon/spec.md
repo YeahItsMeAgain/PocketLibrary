@@ -1,10 +1,18 @@
-# Spine presentation: S1 smoked leather, reading drape, gold finished ribbon
+# Spine presentation: S1 smoked leather, reading head ribbon, gold finished ribbon
 
 ## Decision
 
-The Art spine is redesigned in place as **S1 Smoked leather** with **reading cue B** (oxblood
-drape past the shelf lip) and **finished cue D** (gold ribbon in the reserved head band).
-Chosen by the user after the spine lab, 2026-11-28.
+The Art spine is redesigned in place as **S1 Smoked leather** with **reading cue A** (oxblood
+head ribbon in the reserved head band, the same slot as the finished gold ribbon) and **finished
+cue D** (gold ribbon in the same head band). Chosen by the user after the spine lab, 2026-11-28.
+
+**Revision 2026-11-28:** the first ship used reading cue B, an oxblood drape hanging from the
+book's foot over the shelf lip and board. The user rejected it on the device: *"the red ribbon is
+not located correctly … Detached from the book's foot, it should be located like the gold ribbon,
+now it's not on the book even."* The reading mark is now the lab's cue A: an 8×26 oxblood ribbon
+inside the spine's 28px head band, identical in box to the finished gold ribbon. Reading and
+finished are exclusive, so they share the slot; colour is the only distinction. See
+`issues/02-reading-head-ribbon.md`.
 
 The design is a throwaway prototype and is the source of truth for the look:
 
@@ -30,17 +38,18 @@ fit also clips in the app on narrow spines (seen on "Needful Things" in the user
   tail. No filter, no blend mode.
 - **No foot band on Art.** The bottom 30% is the darker part of the same scrim; the full author on
   two lines and the label chips sit on it. No translucent/opaque band rectangle, no gold band rule.
-- **Title box:** top at 10px for unread and reading, 28px for finished (the head ribbon reserve);
+- **Title box:** top at 10px for unread, 28px for reading and finished (the head ribbon reserve);
   bottom at 70% − 4px. One column, then balanced two columns; shrink-to-fit; never truncate or clip.
-- **Reading:** 8×31px oxblood drape: 4px over the book foot, 27px over the lip and board, matching
-  the lab's `height = 31px`. No mark in the title area. It lives in a non-clipping cue layer because
-  `.v4-cavity` is `overflow: hidden`.
+- **Reading:** the lab's cue A. An 8×26px oxblood ribbon at `top: 0`, `right: 3px`, inside the
+  spine, in the same box as the finished gold ribbon: oxblood ramp
+  `#4c0a0f 0%, #8e1b22 30%, #c3353d 50%, #8e1b22 72%, #4c0a0f 100%`, 80% notch, 2px top sheen
+  `rgba(255,205,180,.25)`. The 28px head reserve keeps it clear of the title.
 - **Finished:** 8×26px gold ribbon at `right: 3px`, notched swallowtail, brass ramp
   `#8a6a2e → #b08d4a → #d2ac62 → #f0dcae`, 1px dark edge, 2px inner sheen. It lives in the
   reserved 28px head band and never enters the title box.
 - **Status language is shared by Art, Cloth and Typography** so one shelf is consistent: reading is
-  the drape, finished is the gold head ribbon, unread has neither. Cloth/Typography keep their
-  boards and typography.
+  the oxblood head ribbon, finished is the gold head ribbon, unread has neither. Cloth/Typography
+  keep their boards and typography. The two ribbons occupy the same slot and differ only by colour.
 - **Author and labels:** full author over two balanced lines (shrink only to fit, 6.2–6.8px);
   labels stay colour chips with 4–5 letter codes at 5px, on the scrim.
 
@@ -48,7 +57,7 @@ fit also clips in the app on narrow spines (seen on "Needful Things" in the user
 
 `SpineStudio` © `SpineCanvas` renders the same faces with canvas (`src/library/spine/styles.ts`,
 `text.ts`, `geometry.ts`, `draw.ts`). The shelf and the Studio previews must agree: scrim, no foot
-band, head reserve, gold finished ribbon, drape reading mark, title fit and author treatment.
+band, head reserve, gold finished ribbon, oxblood reading ribbon, title fit and author treatment.
 `SpineCanvas` already publishes `data-scrim`, `data-contrast`, `data-band*`, `data-art*`; update
 those values honestly and add whatever the tests need for the new marks.
 
@@ -82,14 +91,15 @@ Do not edit `src/App.css`, `package.json`, `core/**`, `src/reader/**`, or the pr
 
 ## Acceptance
 
-- `?v=s1&cue=b&seal=d` from the lab is recognisably what ships: shelf screenshot at 360/390 shows
-  the scrim, gold ribbons at the head of finished books, oxblood tails under reading books, no
-  foot band, no mark touching a title.
+- `?v=s1&cue=a&seal=d` from the lab is recognisably what ships: shelf screenshot at 360/390 shows
+  the scrim, oxblood ribbons at the head of reading books, gold ribbons at the head of finished
+  books, no foot band, no mark touching a title.
 - 390/360/320/430: zero horizontal overflow; every title inside its box; 0 label/title collisions;
   worst title contrast ≥4.5:1 against the composited scrim.
-- Reading and finished are distinguishable without colour: position (head vs tail) and shape
-  (ribbon vs ribbon) plus `aria-label`/title text. Remember reading and finished are exclusive.
+- Reading and finished are distinguishable by colour and by their `aria-label`/title text; both use
+  the same 8×26 head slot and 80–82% notch. Remember reading and finished are exclusive.
 - Studio previews match the shelf; canvas metadata reports the same scrim/foot/head geometry.
 - `npm run build`, `npm run check:contract`, `npm run check:docs`, `npm run check:structure`, and
-  the four spine e2e specs pass. The integrator runs the full `./scripts/check.sh`.
-- Android device pass before release: Noto Serif metrics, DPR and the drape over the shelf lip.
+  the spine e2e specs pass. The integrator runs the full `./scripts/check.sh`.
+- Android device pass before release: Noto Serif metrics, DPR and the in-spine ribbon on a real
+  phone.

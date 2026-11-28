@@ -80,7 +80,7 @@ test("a scan result renders book spines on the shelf", async ({ page }) => {
   );
 });
 
-test("finished spines show the gold head ribbon and reading spines the drape", async ({
+test("finished and reading wear one head ribbon, in gold or oxblood", async ({
   page,
 }) => {
   const books: Book[] = [
@@ -105,30 +105,42 @@ test("finished spines show the gold head ribbon and reading spines the drape", a
   await expect(finished).toHaveCount(1);
   await expect(reading).toHaveCount(1);
 
-  // Finished: the gold head ribbon inside the spine, clear of the title box.
+  // Finished: the gold head ribbon inside the spine, clear of the title.
   await expect(finished.getByTestId("spine-gold-ribbon")).toBeVisible();
   await expect(finished).toHaveAttribute("aria-label", /Finished/);
-  await expect(finished.locator(".spine-drape")).toHaveCount(0);
+  await expect(finished.locator(".spine-reading-ribbon")).toHaveCount(0);
 
-  // Reading: the oxblood drape lives in the case-level cue layer, past the
-  // cavity's clip, so it is not a descendant of the spine.
-  const drape = page.getByTestId("spine-drape");
-  await expect(drape).toHaveCount(1);
+  // Reading: the oxblood head ribbon, also inside the spine. Nothing hangs off
+  // the book or over the shelf lip any more.
+  const readingRibbon = reading.getByTestId("spine-reading-ribbon");
+  await expect(readingRibbon).toBeVisible();
   await expect(reading.getByTestId("spine-gold-ribbon")).toHaveCount(0);
   await expect(reading).toHaveAttribute("aria-label", /Reading/);
-  const readingId = await reading.getAttribute("data-book-id");
-  await expect(drape).toHaveAttribute("data-book-id", readingId ?? "");
+  await expect(page.getByTestId("spine-drape")).toHaveCount(0);
+  await expect(page.locator(".v4-cues")).toHaveCount(0);
 
   const finishedBox = await finished.boundingBox();
   const readingBox = await reading.boundingBox();
   const ribbonBox = await finished.getByTestId("spine-gold-ribbon").boundingBox();
+  const readingRibbonBox = await readingRibbon.boundingBox();
   const titleBox = await finished.locator(".spine-text").boundingBox();
-  const drapeBox = await drape.boundingBox();
-  for (const box of [finishedBox, readingBox, ribbonBox, titleBox, drapeBox]) {
+  for (const box of [
+    finishedBox,
+    readingBox,
+    ribbonBox,
+    readingRibbonBox,
+    titleBox,
+  ]) {
     expect(box).not.toBeNull();
   }
-  if (finishedBox && readingBox && ribbonBox && titleBox && drapeBox) {
-    // The ribbon is 8x26 at the head, inside the spine, above the title.
+  if (
+    finishedBox &&
+    readingBox &&
+    ribbonBox &&
+    readingRibbonBox &&
+    titleBox
+  ) {
+    // The gold ribbon is 8x26 at the head, inside the spine, above the title.
     expect(ribbonBox.width).toBeCloseTo(8, 0);
     expect(ribbonBox.height).toBeCloseTo(26, 0);
     expect(ribbonBox.y).toBeCloseTo(finishedBox.y, 0);
@@ -137,23 +149,25 @@ test("finished spines show the gold head ribbon and reading spines the drape", a
       finishedBox.x + finishedBox.width + 1,
     );
     expect(ribbonBox.y + ribbonBox.height).toBeLessThanOrEqual(titleBox.y - 1);
-    // The drape starts at the reading book's foot and hangs over the lip and
-    // board, so its bottom passes the spine and reaches the board.
-    const board = await page.locator(".v4-board").boundingBox();
-    expect(board).not.toBeNull();
-    expect(drapeBox.y).toBeCloseTo(
-      readingBox.y + readingBox.height - 4,
-      0,
+
+    // The reading ribbon has the same box, and lies fully inside its spine.
+    expect(readingRibbonBox.width).toBeCloseTo(8, 0);
+    expect(readingRibbonBox.height).toBeCloseTo(26, 0);
+    expect(readingRibbonBox.y).toBeCloseTo(readingBox.y, 0);
+    expect(readingRibbonBox.x).toBeGreaterThanOrEqual(readingBox.x);
+    expect(readingRibbonBox.x + readingRibbonBox.width).toBeLessThanOrEqual(
+      readingBox.x + readingBox.width + 1,
     );
-    expect(drapeBox.y + drapeBox.height).toBeGreaterThan(
-      readingBox.y + readingBox.height + 9,
+    expect(readingRibbonBox.y + readingRibbonBox.height).toBeLessThanOrEqual(
+      readingBox.y + 28,
     );
-    if (board) {
-      expect(drapeBox.y + drapeBox.height).toBeCloseTo(
-        board.y + board.height,
-        0,
-      );
-    }
+    const rightInset = (
+      spine: { x: number; width: number },
+      ribbon: { x: number; width: number },
+    ) => spine.x + spine.width - (ribbon.x + ribbon.width);
+    expect(rightInset(finishedBox, ribbonBox)).toBeCloseTo(3, 0);
+    expect(rightInset(readingBox, readingRibbonBox)).toBeCloseTo(3, 0);
+
     expect(
       Math.abs(
         finishedBox.y + finishedBox.height - (readingBox.y + readingBox.height),

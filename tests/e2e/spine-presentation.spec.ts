@@ -375,7 +375,7 @@ test("the drag ghost keeps the shelf's spine presentation", async ({
         height: frame.height,
         authorInFoot: Boolean(foot && pick(".spine-foot .sa")),
         ribbon: Boolean(pick(".gold-ribbon")),
-        drape: Boolean(pick(".spine-drape.is-inline")),
+        readingRibbon: Boolean(pick(".reading-ribbon")),
       };
     });
     expect(after.style).toBe(expected);
@@ -396,7 +396,9 @@ test("the drag ghost keeps the shelf's spine presentation", async ({
       expect(after.foot?.bottom).toBeCloseTo(after.height, 0);
       expect(after.authorInFoot).toBe(true);
       expect(after.ribbon).toBe(books[index].readingStatus === "finished");
-      expect(after.drape).toBe(books[index].readingStatus === "reading");
+      expect(after.readingRibbon).toBe(
+        books[index].readingStatus === "reading",
+      );
     }
     // The only change on the shelf is the source fading out.
     await expect(source).toHaveCSS("opacity", "0");
@@ -497,7 +499,7 @@ for (const width of [390, 320]) {
         ),
         labelTransform: labelStyle?.textTransform ?? null,
         ribbon: Boolean(pick(".gold-ribbon")),
-        drape: Boolean(pick(".spine-drape")),
+        readingRibbon: Boolean(pick(".reading-ribbon")),
       };
     };
 
@@ -572,7 +574,7 @@ for (const width of [390, 320]) {
       expect(chip.height).toBe(9);
     }
     expect(labelled.ribbon).toBe(true);
-    expect(labelled.drape).toBe(false);
+    expect(labelled.readingRibbon).toBe(false);
 
     // A book with no author and no labels collapses the foot, so the art
     // still fills the whole spine.
@@ -1192,7 +1194,7 @@ function positionedBook(
   throw new Error(`no 27px spine for ${title}`);
 }
 
-test("reading is a drape past the lip, finished is a gold head ribbon", async ({
+test("reading is an oxblood head ribbon in the finished ribbon's slot", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -1221,142 +1223,166 @@ test("reading is a drape past the lip, finished is a gold head ribbon", async ({
       labels: [{ id: 4, name: "Horror", colour: "#5d1f2a" }],
     }),
   ];
-  await boot(page, books);
+  // A cold blue strip, so a red pixel can only come from the reading ribbon.
+  const strips = Object.fromEntries(
+    books.map((book) => [book.id, spineArt("#2f4a5a")]),
+  );
+  await boot(page, books, {}, strips);
   await expect(page.getByTestId("spine")).toHaveCount(4);
   await page.waitForTimeout(500);
 
-  // Exactly the reading books have a drape, in the case-level cue layer.
-  await expect(page.getByTestId("spine-drape")).toHaveCount(2);
-  const drapeIds = await page
-    .getByTestId("spine-drape")
-    .evaluateAll((drapes) =>
-      drapes.map((drape) => (drape as HTMLElement).dataset.bookId),
+  // Exactly the reading books wear a reading ribbon, inside their own spine.
+  await expect(page.getByTestId("spine-reading-ribbon")).toHaveCount(2);
+  const readingIds = await page
+    .getByTestId("spine-reading-ribbon")
+    .evaluateAll((ribbons) =>
+      ribbons.map((ribbon) => (ribbon as HTMLElement).dataset.bookId),
     );
-  expect(new Set(drapeIds)).toEqual(new Set(["2", "3"]));
+  expect(new Set(readingIds)).toEqual(new Set(["2", "3"]));
 
-  // Finished books carry the gold head ribbon; unread books carry neither.
+  // Nothing status-related paints outside a spine: the case-level cue layer is
+  // gone, and every reading ribbon is a descendant of its own book.
+  await expect(
+    page.locator(".v4-cues, .spine-drape, [data-testid='spine-cue-layer']"),
+  ).toHaveCount(0);
+
   const marks = await page.getByTestId("spine").evaluateAll((spines) =>
     spines.map((spine) => {
       const element = spine as HTMLElement;
-      const ribbon = element.querySelector<HTMLElement>(".gold-ribbon");
+      const gold = element.querySelector<HTMLElement>(".gold-ribbon");
+      const reading = element.querySelector<HTMLElement>(".reading-ribbon");
       const text = element.querySelector<HTMLElement>(".spine-text")!;
+      const title = element.querySelector<HTMLElement>(".st")!;
+      const author = element.querySelector<HTMLElement>(".sa");
+      const frame = element.getBoundingClientRect();
+      const mark = gold ?? reading;
       return {
         id: element.dataset.bookId,
         status: element.dataset.status,
-        ribbon: ribbon
+        gold: Boolean(gold),
+        reading: Boolean(reading),
+        // Offsets, not rects: a leaning book rotates its rect.
+        mark: mark
           ? {
-              // Offsets, not rects: a leaning book rotates its rect.
-              top: ribbon.offsetTop,
+              top: mark.offsetTop,
               right:
-                element.clientWidth - ribbon.offsetLeft - ribbon.offsetWidth,
-              width: ribbon.offsetWidth,
-              height: ribbon.offsetHeight,
+                element.clientWidth - mark.offsetLeft - mark.offsetWidth,
+              bottom: mark.offsetTop + mark.offsetHeight,
+              width: mark.offsetWidth,
+              height: mark.offsetHeight,
+              inside:
+                mark.offsetTop >= 0 &&
+                mark.offsetLeft >= 0 &&
+                mark.offsetLeft + mark.offsetWidth <=
+                  element.clientWidth + 1 &&
+                mark.offsetTop + mark.offsetHeight <=
+                  element.clientHeight + 1,
             }
           : null,
         titleTop: text.offsetTop,
+        titleBoxTop: title.getBoundingClientRect().top - frame.top,
+        authorTop: author
+          ? author.getBoundingClientRect().top - frame.top
+          : null,
         aria: element.getAttribute("aria-label"),
       };
     }),
   );
 
+  const readingMarks = marks.filter((meta) => meta.status === "reading");
+  const finishedMark = marks.find((meta) => meta.status === "finished")!;
+  expect(finishedMark).toBeTruthy();
+
   for (const meta of marks) {
     if (meta.status === "finished") {
-      expect(meta.ribbon, `finished ${meta.id} ribbon`).not.toBeNull();
-      expect(meta.ribbon!.width).toBeCloseTo(8, 0);
-      expect(meta.ribbon!.height).toBeCloseTo(26, 0);
-      expect(meta.ribbon!.top).toBeCloseTo(0, 0);
-      expect(meta.ribbon!.right).toBeCloseTo(3, 0);
-      // The title box starts below the 26px ribbon's 28px reserve.
-      expect(meta.titleTop).toBeGreaterThanOrEqual(27);
-      expect(meta.ribbon!.top + meta.ribbon!.height).toBeLessThanOrEqual(
-        meta.titleTop - 1,
-      );
+      expect(meta.gold, `finished ${meta.id} gold`).toBe(true);
+      expect(meta.reading, `finished ${meta.id} reading`).toBe(false);
       expect(meta.aria).toMatch(/Finished/);
+    } else if (meta.status === "reading") {
+      expect(meta.gold, `reading ${meta.id} gold`).toBe(false);
+      expect(meta.reading, `reading ${meta.id} reading`).toBe(true);
+      expect(meta.aria).toMatch(/Reading/);
     } else {
-      expect(meta.ribbon, `${meta.status} ${meta.id} ribbon`).toBeNull();
-      expect(meta.aria).toMatch(meta.status === "reading" ? /Reading/ : /Unread/);
+      expect(meta.gold, `unread ${meta.id} gold`).toBe(false);
+      expect(meta.reading, `unread ${meta.id} reading`).toBe(false);
+      expect(meta.mark).toBeNull();
+      expect(meta.aria).toMatch(/Unread/);
+    }
+
+    if (!meta.mark) continue;
+    // The shared head-ribbon box: 8 x 26, flush with the top, 3px inset.
+    expect(meta.mark.width).toBeCloseTo(8, 0);
+    expect(meta.mark.height).toBeCloseTo(26, 0);
+    expect(meta.mark.top).toBeCloseTo(0, 0);
+    expect(meta.mark.right).toBeCloseTo(3, 0);
+    // Fully inside the spine and inside the reserved head band.
+    expect(meta.mark.inside, `${meta.id} ribbon inside spine`).toBe(true);
+    expect(meta.mark.bottom).toBeLessThanOrEqual(meta.titleTop - 1);
+    // No glyph overlaps the ribbon: the title starts below the head band.
+    expect(meta.mark.bottom).toBeLessThanOrEqual(meta.titleBoxTop - 1);
+    if (meta.authorTop !== null) {
+      expect(meta.mark.bottom).toBeLessThanOrEqual(meta.authorTop - 1);
     }
   }
 
-  // No book shows both marks: status is exclusive.
-  for (const book of books) {
-    const both = await page.evaluate((bookId) => {
-      const ribbon = document.querySelector(
-        `[data-testid="spine"][data-book-id="${bookId}"] .gold-ribbon`,
-      );
-      const drape = document.querySelector(
-        `[data-testid="spine-drape"][data-book-id="${bookId}"]`,
-      );
-      return Boolean(ribbon && drape);
-    }, book.id);
-    expect(both).toBe(false);
+  // Reading and finished differ only in colour: the boxes are identical.
+  for (const meta of readingMarks) {
+    expect(meta.mark, `reading ${meta.id} box`).toEqual(finishedMark.mark);
+    expect(meta.titleTop).toBeCloseTo(finishedMark.titleTop, 0);
+    expect(meta.titleTop).toBeCloseTo(28, 0);
   }
 
-  // The drape hangs from 4px above the book's foot to the bottom of the board.
-  const geometry = await page.evaluate(() => {
-    const board = document.querySelector<HTMLElement>(".v4-board")!;
-    const boardBottom = board.getBoundingClientRect().bottom;
-    return [...document.querySelectorAll<HTMLElement>(".spine-drape")].map(
-      (drape) => {
-        const box = drape.getBoundingClientRect();
-        const spine = document.querySelector<HTMLElement>(
-          `[data-testid="spine"][data-book-id="${drape.dataset.bookId}"]`,
-        )!;
-        const book = spine.getBoundingClientRect();
-        return {
-          id: drape.dataset.bookId,
-          width: box.width,
-          top: box.top,
-          bottom: box.bottom,
-          left: box.left,
-          bookBottom: book.bottom,
-          bookRight: book.right,
-          boardBottom,
-        };
-      },
+  // The ribbon is painted (not merely boxed): its oxblood fills the top-right
+  // of the spine. The strip is blue, so red can only be the ribbon.
+  const firstReading = readingMarks[0];
+  const ribbonBox = await page
+    .locator(
+      `[data-testid="spine-reading-ribbon"][data-book-id="${firstReading.id}"]`,
+    )
+    .boundingBox();
+  const spineBox = await page
+    .locator(`[data-testid="spine"][data-book-id="${firstReading.id}"]`)
+    .boundingBox();
+  expect(spineBox).not.toBeNull();
+  expect(ribbonBox).not.toBeNull();
+  if (ribbonBox && spineBox) {
+    expect(ribbonBox.x).toBeGreaterThanOrEqual(spineBox.x - 1);
+    expect(ribbonBox.x + ribbonBox.width).toBeLessThanOrEqual(
+      spineBox.x + spineBox.width + 1,
     );
-  });
-  for (const drape of geometry) {
-    expect(drape.width).toBeCloseTo(8, 0);
-    expect(drape.top).toBeCloseTo(drape.bookBottom - 4, 0);
-    // It passes the clip and reaches the board, not the cavity's foot.
-    expect(drape.bottom).toBeGreaterThan(drape.bookBottom + 9);
-    expect(drape.bottom).toBeCloseTo(drape.boardBottom, 0);
-    expect(drape.left).toBeCloseTo(drape.bookRight - 10, 0);
-  }
+    expect(ribbonBox.y).toBeGreaterThanOrEqual(spineBox.y - 1);
+    expect(ribbonBox.y + ribbonBox.height).toBeLessThanOrEqual(
+      spineBox.y + spineBox.height + 1,
+    );
+    // It is in the head, not the foot: the whole box is in the top 28px.
+    expect(ribbonBox.y).toBeLessThanOrEqual(spineBox.y + 1);
+    expect(ribbonBox.y + ribbonBox.height).toBeLessThanOrEqual(
+      spineBox.y + 28,
+    );
 
-  // Prove the drape is painted (not clipped) by finding its oxblood below the
-  // cavity's foot, over the lip and board.
-  const reading = geometry[0];
-  const strip = await page.screenshot({
-    clip: {
-      x: reading.left,
-      y: reading.bookBottom - 2,
-      width: 10,
-      height: reading.boardBottom - reading.bookBottom + 2,
-    },
-  });
-  const shot = decodePng(strip);
-  let red = 0;
-  for (let y = 0; y < shot.height; y += 1) {
-    for (let x = 0; x < shot.width; x += 1) {
-      const offset = (y * shot.width + x) * shot.channels;
-      const r = shot.data[offset];
-      const g = shot.data[offset + 1];
-      const b = shot.data[offset + 2];
-      if (r > 60 && r > g + 18 && r > b + 18) red += 1;
+    const shot = decodePng(await page.screenshot({ clip: ribbonBox }));
+    let red = 0;
+    for (let y = 0; y < shot.height; y += 1) {
+      for (let x = 0; x < shot.width; x += 1) {
+        const offset = (y * shot.width + x) * shot.channels;
+        const r = shot.data[offset];
+        const g = shot.data[offset + 1];
+        const b = shot.data[offset + 2];
+        if (r > 60 && r > g + 18 && r > b + 18) red += 1;
+      }
     }
+    expect(red / (shot.width * shot.height)).toBeGreaterThan(0.45);
+
+    await page.screenshot({
+      path: testInfo.outputPath("reading-head-ribbon.png"),
+      clip: {
+        x: spineBox.x - 8,
+        y: spineBox.y - 2,
+        width: spineBox.width + 16,
+        height: 52,
+      },
+    });
   }
-  expect(red / (shot.width * shot.height)).toBeGreaterThan(0.35);
-  await page.screenshot({
-    path: testInfo.outputPath("reading-drape.png"),
-    clip: {
-      x: reading.bookRight - 14,
-      y: reading.bookBottom - 8,
-      width: 16,
-      height: reading.boardBottom - reading.bookBottom + 12,
-    },
-  });
 });
 
 /* ------------------------------------------------ 27px title containment */

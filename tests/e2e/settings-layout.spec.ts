@@ -279,6 +279,6 @@ test("Spine Retry enqueues the book and Copy logs still works", async ({
   const copied = await page.evaluate(
     () => (window as unknown as { __copied?: string }).__copied,
   );
-  expect(copied).toContain("PocketLibrary v0.1.19");
+  expect(copied).toContain("PocketLibrary v0.1.20");
   expect(copied).toContain("===== spine.log =====");
 });

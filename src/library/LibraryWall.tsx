@@ -448,21 +448,9 @@ export function LibraryWall({
           }
         },
       );
-      // Reading drapes live in the case's cue layer, outside the spine, so the
-      // same sweep must dim them or a filtered shelf keeps bright tails.
-      wall
-        .querySelectorAll<HTMLElement>('.spine-drape[data-book-id]')
-        .forEach((element) => {
-          const dimmed =
-            active && !matching.has(Number(element.dataset.bookId));
-          if (dimmed) {
-            if (element.dataset.dimmed !== "true") {
-              element.dataset.dimmed = "true";
-            }
-          } else if (element.dataset.dimmed !== undefined) {
-            delete element.dataset.dimmed;
-          }
-        });
+      // The status ribbons live inside the spine, so the spine sweep above
+      // dims them with their book; there is nothing left to paint at case
+      // level.
       try {
         performance.measure("pocketlibrary:filter", {
           start: startedAt,
@@ -753,7 +741,6 @@ export function LibraryWall({
               book={lift.book}
               spineStyle={spineStyleName(lift.book)}
               generatedSpine={generatedSpines[lift.book.id]}
-              floating
             />
           </div>
         </div>

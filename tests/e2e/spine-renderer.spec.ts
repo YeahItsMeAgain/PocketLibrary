@@ -3,14 +3,14 @@ import { expect, test } from "@playwright/test";
 import type { RenderBook } from "../../src/library/spineRenderer";
 import {
   ART_FOOT_TOP,
-  ART_HEAD_RESERVE,
-  ART_HEAD_RESERVE_FINISHED,
+  ART_HEAD_RESERVE_RIBBON,
+  ART_HEAD_RESERVE_UNREAD,
   ART_SCRIM,
   artCropRect,
   contrast,
   fallbackCrop,
   GOLD_RIBBON,
-  READING_DRAPE,
+  READING_RIBBON,
   readableInk,
   SPINE_H,
   textDirection,
@@ -75,8 +75,8 @@ test("S1 smoked leather uses the lab's scrim, foot and head geometry", () => {
   expect(SPINE_H).toBe(236);
   expect(ART_FOOT_TOP).toBeCloseTo(236 * 0.7, 5);
   expect(ART_SCRIM).toEqual({ head: 0.64, mid: 0.72, tail: 0.84 });
-  expect(ART_HEAD_RESERVE).toBe(10);
-  expect(ART_HEAD_RESERVE_FINISHED).toBe(28);
+  expect(ART_HEAD_RESERVE_UNREAD).toBe(10);
+  expect(ART_HEAD_RESERVE_RIBBON).toBe(28);
 });
 
 test("the finished ribbon is 8x26 at right 3 with a notched tail", () => {
@@ -94,10 +94,19 @@ test("the finished ribbon is 8x26 at right 3 with a notched tail", () => {
   expect(GOLD_RIBBON.edge).toBe("#3a280f");
 });
 
-test("the reading drape is 8px wide and hangs over the lip and board", () => {
-  expect(READING_DRAPE.width).toBe(8);
-  expect(READING_DRAPE.spineOverlap).toBe(4);
-  expect(READING_DRAPE.overLipAndBoard).toBe(27);
+test("the reading head ribbon shares the gold ribbon's box", () => {
+  expect(READING_RIBBON.width).toBe(GOLD_RIBBON.width);
+  expect(READING_RIBBON.height).toBe(GOLD_RIBBON.height);
+  expect(READING_RIBBON.right).toBe(GOLD_RIBBON.right);
+  expect(READING_RIBBON.stops[0]).toEqual([0, "#4c0a0f"]);
+  expect(READING_RIBBON.stops[1]).toEqual([0.3, "#8e1b22"]);
+  expect(READING_RIBBON.stops[2]).toEqual([0.5, "#c3353d"]);
+  expect(READING_RIBBON.stops[3]).toEqual([0.72, "#8e1b22"]);
+  expect(READING_RIBBON.stops[READING_RIBBON.stops.length - 1]).toEqual([
+    1,
+    "#4c0a0f",
+  ]);
+  expect(READING_RIBBON.sheen).toBe("rgba(255,205,180,.25)");
 });
 
 test("label chips are 4-5 letter codes", () => {

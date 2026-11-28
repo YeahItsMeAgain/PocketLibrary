@@ -27,15 +27,21 @@ export const ART_SCRIM = {
   tail: 0.84,
 } as const;
 
-/** The title box starts under the status mark that reserves the head. */
-export const ART_HEAD_RESERVE = 10;
-export const ART_HEAD_RESERVE_FINISHED = 28;
+/** The title box starts under the status ribbon; unread has no ribbon. */
+export const ART_HEAD_RESERVE_UNREAD = 10;
+/** Reading and finished both wear an 8x26 ribbon in the head band. */
+export const ART_HEAD_RESERVE_RIBBON = 28;
 
-/** Finished: an 8x26 brass ribbon at the head, right 3px, notched tail. */
-export const GOLD_RIBBON = {
+/** The head-ribbon box: 8 x 26 at the top, 3px in from the right edge. */
+const HEAD_RIBBON = {
   width: 8,
   height: 26,
   right: 3,
+} as const;
+
+/** Finished: a brass ribbon in the head band, notched swallowtail. */
+export const GOLD_RIBBON = {
+  ...HEAD_RIBBON,
   stops: [
     [0, "#8a6a2e"],
     [0.14, "#b08d4a"],
@@ -48,22 +54,17 @@ export const GOLD_RIBBON = {
   edge: "#3a280f",
 } as const;
 
-/**
- * Reading: the oxblood drape over the lip and board. The canvas is only
- * 52 x 236, so it paints the 4px that overlap the spine and reports the rest
- * of the geometry for the shelf's case-level layer.
- */
-export const READING_DRAPE = {
-  width: 8,
-  spineOverlap: 4,
-  overLipAndBoard: 27,
+/** Reading: the oxblood ribbon in the same box as the finished one. */
+export const READING_RIBBON = {
+  ...HEAD_RIBBON,
   stops: [
     [0, "#4c0a0f"],
-    [0.26, "#8e1b22"],
-    [0.48, "#c3353d"],
-    [0.74, "#8e1b22"],
+    [0.3, "#8e1b22"],
+    [0.5, "#c3353d"],
+    [0.72, "#8e1b22"],
     [1, "#4c0a0f"],
   ] as ReadonlyArray<readonly [number, string]>,
+  sheen: "rgba(255,205,180,.25)",
 } as const;
 
 export interface Palette {

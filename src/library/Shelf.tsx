@@ -338,13 +338,10 @@ export function SpineFace({
   book,
   spineStyle = "art",
   generatedSpine,
-  floating = false,
 }: {
   book: Book;
   spineStyle?: SpineStyleName;
   generatedSpine?: string;
-  /** The drag ghost hangs below the shelf lip, so it carries its own drape. */
-  floating?: boolean;
 }) {
   const bands = book.labels.slice(0, 2);
   const hiddenLabels = book.labels.length - bands.length;
@@ -513,13 +510,19 @@ export function SpineFace({
         <span
           className="gold-ribbon"
           data-testid="spine-gold-ribbon"
+          data-book-id={book.id}
+          aria-hidden="true"
+        />
+      ) : null}
+      {book.readingStatus === "reading" ? (
+        <span
+          className="reading-ribbon"
+          data-testid="spine-reading-ribbon"
+          data-book-id={book.id}
           aria-hidden="true"
         />
       ) : null}
       {!isArt ? labelBands : null}
-      {floating && book.readingStatus === "reading" ? (
-        <span className="spine-drape is-inline" aria-hidden="true" />
-      ) : null}
     </>
   );
 }
@@ -621,100 +624,6 @@ function areSpineEqual(prev: SpineProps, next: SpineProps): boolean {
   );
 }
 
-/**
- * Reading cue B lives over the shelf lip and board, so it cannot sit inside
- * `.v4-cavity` (which clips). This layer is a sibling of the cavity inside the
- * case: it measures each reading book and hangs an oxblood drape from the
- * book's foot to the bottom of the board. Positions are remeasured when the
- * shelf resizes, scrolls into view, or a book starts dragging or is dimmed.
- */
-function ShelfCues({ books }: { books: Book[] }) {
-  const layerRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const layer = layerRef.current;
-    const caseEl = layer?.parentElement;
-    if (!layer || !caseEl) return;
-    const list = caseEl.querySelector<HTMLElement>(".v4-books");
-    const board = caseEl.querySelector<HTMLElement>(".v4-board");
-    let frame = 0;
-
-    const place = () => {
-      frame = 0;
-      const caseRect = caseEl.getBoundingClientRect();
-      const boardRect = board?.getBoundingClientRect() ?? caseRect;
-      layer.textContent = "";
-      for (const spine of caseEl.querySelectorAll<HTMLElement>(
-        '.spine[data-status="reading"]',
-      )) {
-        if (spine.dataset.dragging === "true") continue;
-        const rect = spine.getBoundingClientRect();
-        if (!rect.width || !rect.height) continue;
-        const top = rect.bottom - caseRect.top - 4;
-        const drape = document.createElement("span");
-        drape.className = "spine-drape";
-        drape.dataset.testid = "spine-drape";
-        drape.dataset.bookId = spine.dataset.bookId ?? "";
-        drape.style.left = `${rect.right - caseRect.left - 10}px`;
-        drape.style.top = `${top}px`;
-        drape.style.height = `${Math.max(24, boardRect.bottom - caseRect.top - top)}px`;
-        if (spine.dataset.dimmed === "true") drape.dataset.dimmed = "true";
-        layer.appendChild(drape);
-      }
-    };
-    const schedule = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(place);
-    };
-
-    place();
-    const observer =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
-    observer?.observe(caseEl);
-    if (list) observer?.observe(list);
-    const mutations =
-      typeof MutationObserver === "undefined"
-        ? null
-        : new MutationObserver(schedule);
-    if (list) {
-      // Filtering dims the drapes directly (a data-attribute sweep); only a
-      // drag changes the drape set, so the cue layer must not rebuild on the
-      // dim flag or a filter would mutate DOM it has no reason to touch.
-      mutations?.observe(list, {
-        attributes: true,
-        attributeFilter: ["data-dragging"],
-        subtree: true,
-      });
-    }
-    const intersection =
-      typeof IntersectionObserver === "undefined"
-        ? null
-        : new IntersectionObserver((entries) => {
-            if (entries.some((entry) => entry.isIntersecting)) schedule();
-          });
-    intersection?.observe(caseEl);
-    window.addEventListener("resize", schedule);
-    document.fonts?.ready.then(schedule);
-
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      observer?.disconnect();
-      mutations?.disconnect();
-      intersection?.disconnect();
-      window.removeEventListener("resize", schedule);
-    };
-  }, [books]);
-
-  return (
-    <div
-      className="v4-cues"
-      data-testid="spine-cue-layer"
-      ref={layerRef}
-      aria-hidden="true"
-    />
-  );
-}
-
 export const ShelfCase = memo(function ShelfCase({
   shelf,
   books,
@@ -780,7 +689,6 @@ export const ShelfCase = memo(function ShelfCase({
           ) : null}
         </div>
         <div className="v4-plinth" aria-hidden="true" />
-        {!empty ? <ShelfCues books={books} /> : null}
       </div>
     </section>
   );
