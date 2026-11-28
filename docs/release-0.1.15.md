@@ -9,29 +9,34 @@ confusing copy. Signing is unchanged, so this installs over 0.1.x.
 
 ## Shelf presentation
 
-- **Wrap** paints the generated art inset under a cream board edge, with a
-  smoked, framed title window. Ink is contrast-derived from the scrim.
-- **Full-bleed** paints the art edge to edge with a soft centred scrim. The type
-  is centred on the spine, not in the old 20 px side rail.
+- **Art** is the one art style: the cover crop is clipped between a top brass
+  mark band and a bottom author/label band. The title runs down the remaining
+  art with adaptive ink and a hairline halo. No dark rail or scrim.
 - **Cloth** no longer borrows art: it draws a woven board with foil rules and
   centred foil serif type.
+- **Typography** is the original pre-engine spine: a flat, untextured two-tone
+  title-hash board, cream and gold serif type, seal and rules, no art and no
+  weave. It is a separate style from Cloth, not a fallback.
 - Long titles wrap into up to two vertical columns and shrink to fit; the
   title never ellipses mid-word and the author never overlaps it.
-- Measured worst-case ink contrast over white art: Wrap 8.8:1, Full-bleed
-  10.9:1, Cloth foil 5.99:1. Type centre within ±2 px of the spine centre.
+- Adaptive ink reports measured contrast from the actual art behind the type
+  (≥4.5:1 on both light and dark art); Cloth foil stays 5.99:1. Only Art
+  paints art. Type centre within ±2 px of the spine centre.
 
-The Edit preview uses the same treatment: full-bleed type moved from `cx=40`
-to `cx=26`, and cloth uses the sampled art palette.
+The Edit preview uses the same treatment: the art spine shows the top and
+bottom bands, and cloth uses the sampled art palette.
 
 ## Picker and style persistence
 
 - The fixed undo toast was swallowing taps on the bottom style row. The toast
   now passes pointer events through; only its Undo button is interactive.
-- `EditBook` kept a duplicate `spineStyle` state, so the picker could show
-  Full-bleed while the preview or wall used a stale copy. The detail is now the
+- `EditBook` kept a duplicate `spineStyle` state, so the picker could show a
+  stale style while the preview or wall used another. The detail is now the
   single record.
 - Choosing a style and closing immediately persists; Undo restores the style in
   the picker, stored detail and wall; a reload keeps it.
+- Existing `wrap` and `full-bleed` rows migrate to `art` (shown as **Art**);
+  neither old value exists in the enum, database CHECK, picker or renderer.
 - The mock now projects styles through `list_books` / `get_book_detail` and
   persists them, so tests can catch this class of bug.
 
