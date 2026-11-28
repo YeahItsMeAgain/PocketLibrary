@@ -1,0 +1,2045 @@
+<!doctype html>
+<html lang="en" data-v="s1" data-cue="a" data-seal="d">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Spine Lab — PocketLibrary</title>
+<!--
+  THROWAWAY PROTOTYPE. Not production code.
+  Question: how should an Art spine carry a legible title, author and labels,
+  plus reading/finished status, at 27–36 px wide?
+  Open directly (file://) or from a static server. ?v=v0|s1|s2|s3|s4&cue=a|b|c&seal=a|b|c|d|e|f
+-->
+<style>
+/* ------------------------------------------------------------------ base */
+*, *::before, *::after { box-sizing: border-box; }
+:root {
+  --display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, "Hoefler Text", Georgia, "Noto Serif", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --brass: #c9a86a;
+  --brass-hi: #ecd6a6;
+  --brass-sh: #8f7333;
+  --cream: #f4e6c4;
+  --cream-dim: #dfcda8;
+  --oxblood: #731d21;
+  --gold-ribbon: #d2ac62;
+  --gold-ribbon-hi: #f0dcae;
+  --gold-ribbon-sh: #8a6a2e;
+  --gold-ribbon-edge: #3a280f;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+html, body { margin: 0; padding: 0; }
+html { background: #09050b; }
+body {
+  min-height: 100%;
+  padding-bottom: 132px;
+  color: var(--cream);
+  font-family: var(--display);
+  -webkit-text-size-adjust: 100%;
+  background:
+    radial-gradient(120% 62% at 50% -6%, rgba(92, 54, 104, .30), transparent 64%),
+    radial-gradient(90% 60% at 50% 106%, rgba(40, 20, 46, .42), transparent 70%),
+    linear-gradient(180deg, #17101a 0%, #0f0912 46%, #09050b 100%);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(45deg, rgba(201, 168, 106, .026) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(-45deg, rgba(201, 168, 106, .02) 0 1px, transparent 1px 34px);
+}
+button { font: inherit; color: inherit; }
+
+/* --------------------------------------------------------------- masthead */
+.mast { padding: 24px 20px 10px; text-align: center; }
+.mast .kicker {
+  margin: 0; color: #a58a58; font-size: 7.5px;
+  letter-spacing: .38em; text-transform: uppercase;
+}
+.mast h1 {
+  margin: 7px 0 6px; color: #ecd6a6; font-weight: 400;
+  font-size: 27px; letter-spacing: .14em; text-transform: uppercase;
+  text-shadow: 0 1px 0 #2a1a2e, 0 0 26px rgba(201, 168, 106, .18);
+}
+.mast .rule {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--brass);
+}
+.mast .rule::before, .mast .rule::after {
+  content: ""; width: 68px; height: 4px;
+  border-top: 1px solid rgba(201, 168, 106, .55);
+  border-bottom: 1px solid rgba(201, 168, 106, .22);
+}
+.mast .rule span { font-size: 9px; }
+.mast .meta {
+  margin: 7px 0 0; color: #9c8863; font-size: 7px;
+  letter-spacing: .28em; text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------ variant brief */
+.brief {
+  margin: 12px 12px 2px;
+  padding: 9px 11px 10px;
+  border: 1px solid rgba(201, 168, 106, .22);
+  background:
+    linear-gradient(180deg, rgba(201, 168, 106, .06), transparent 34%),
+    linear-gradient(180deg, #1c1220, #120b17);
+  box-shadow: inset 0 1px 0 rgba(236, 214, 166, .10), 0 8px 18px rgba(0, 0, 0, .45);
+}
+.brief-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding-bottom: 6px; margin-bottom: 7px;
+  border-bottom: 1px solid rgba(201, 168, 106, .18);
+}
+.brief-name {
+  color: #ecd6a6; font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase;
+}
+.brief-tag {
+  color: #1a0f18; background: linear-gradient(180deg, #e2c98c, #b08c46);
+  border: 1px solid #ecd6a6; padding: 1px 6px;
+  font-family: var(--sans); font-size: 7px; font-weight: 700; letter-spacing: .12em;
+}
+.brief dl { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; margin: 0; }
+.brief dl > div { min-width: 0; }
+.brief dt {
+  color: #9c8863; font-family: var(--sans); font-size: 6px;
+  font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+}
+.brief dd {
+  margin: 1px 0 0; color: #d9c8a7; font-size: 8px; line-height: 1.35;
+}
+.brief .cue-line {
+  margin: 8px 0 0; padding-top: 6px;
+  border-top: 1px solid rgba(201, 168, 106, .14);
+  color: #cbb892; font-size: 7.5px; line-height: 1.4;
+}
+.brief .cue-line b { color: #ecd6a6; font-weight: 400; letter-spacing: .04em; }
+
+/* ------------------------------------------------------------------ wall */
+.wall { position: relative; z-index: 1; padding: 2px 12px 10px; }
+.row-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 26px 2px 0; gap: 10px;
+}
+.row-head h2 {
+  margin: 0; color: #e2caa0; font-weight: 400;
+  font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+}
+.row-head p {
+  margin: 0; color: #9c8863; font-family: var(--sans);
+  font-size: 7px; letter-spacing: .06em;
+}
+
+/* ------------------------------------------------------- case furniture
+   Ported from src/styles/wall.css. Values are copied, not invented. The only
+   omissions are the SVG turbulence noise and filter: drop-shadow, because this
+   lab forbids filters and blend modes. */
+.v4-shelf { position: relative; margin: 18px 0 0; }
+.v4-case { position: relative; }
+.v4-crown {
+  position: relative; height: 27px; margin: 0 3px;
+  border-radius: 3px 3px 0 0;
+  background:
+    linear-gradient(180deg, rgba(230, 207, 160, .24), transparent 22%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 1px, transparent 1px 9px),
+    linear-gradient(180deg, #3a2540 0%, #271731 38%, #190f20 66%, #100812 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 220, 180, .24),
+    inset 0 -4px 6px rgba(0, 0, 0, .62),
+    0 4px 8px rgba(0, 0, 0, .6);
+}
+.v4-crown::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 7px; height: 4px;
+  background: linear-gradient(180deg, rgba(230, 207, 160, .32), rgba(0, 0, 0, .45) 48%, rgba(230, 207, 160, .10));
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .5);
+}
+.v4-crown::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 4px; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(230, 207, 160, .32) 18%, rgba(230, 207, 160, .08) 50%, rgba(230, 207, 160, .30) 82%, transparent);
+}
+.v4-crest {
+  position: absolute; left: 50%; top: 8px; width: 62px; height: 17px;
+  transform: translateX(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='18' viewBox='0 0 64 18' fill='none'%3E%3Cpath d='M2 15h18M44 15h18' stroke='%23c9a86a' opacity='.5'/%3E%3Cpath d='M32 2c-3 4-6.5 6-11 6 4 1.8 6.8 4.6 8.2 8 1.1-2.4 2-2.8 2.8-4.2.8 1.4 1.7 1.8 2.8 4.2C36.2 12.6 39 9.8 43 8c-4.5 0-8-2-11-6z' fill='%23c9a86a' opacity='.9'/%3E%3Ccircle cx='32' cy='16' r='1.1' fill='%23c9a86a'/%3E%3C/svg%3E") center / 62px 17px no-repeat;
+}
+.v4-case::before, .v4-case::after {
+  content: ""; position: absolute; bottom: 3px; z-index: 0; width: 30px; height: 30px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34' fill='none'%3E%3Cpath d='M3 3c0 16 7 25 27 28' stroke='%239a8058' stroke-width='1.2'/%3E%3Cpath d='M8 4c.5 12 5.5 19 20 22' stroke='%239a8058' stroke-width='1' opacity='.55'/%3E%3Cpath d='M13 5c.6 8 3.6 13 12 15' stroke='%239a8058' stroke-width='1' opacity='.4'/%3E%3Ccircle cx='5' cy='5' r='2' fill='%239a8058' opacity='.7'/%3E%3C/svg%3E") center / 30px 30px no-repeat;
+  opacity: .75; pointer-events: none;
+}
+.v4-case::before { left: -8px; }
+.v4-case::after { right: -8px; transform: scaleX(-1); }
+.v4-cavity {
+  position: relative; height: 264px; overflow: hidden;
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(120, 76, 120, .30), transparent 62%),
+    repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(201, 168, 106, .075) calc(25% - 1px) 25%),
+    repeating-linear-gradient(0deg, transparent 0 calc(50% - 1px), rgba(201, 168, 106, .045) calc(50% - 1px) 50%),
+    linear-gradient(180deg, #1a1020 0%, #120a16 64%, #0b060e 100%);
+  box-shadow:
+    inset 0 24px 36px rgba(0, 0, 0, .88),
+    inset 0 0 0 1px rgba(201, 168, 106, .14),
+    inset 16px 0 26px -18px #000,
+    inset -16px 0 26px -18px #000;
+}
+.v4-cavity::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(255, 215, 160, .025) 0 1px, transparent 1px 5px, rgba(0, 0, 0, .1) 5px 6px, transparent 6px 19px);
+  opacity: .38;
+}
+.v4-back {
+  position: absolute; inset: 9px 26px 0; z-index: 0; pointer-events: none;
+  border: 1px solid rgba(201, 168, 106, .12);
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, .7), inset 0 2px 0 rgba(201, 168, 106, .05);
+}
+.v4-pil {
+  position: absolute; z-index: 1; top: 0; bottom: 0; width: 13px; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .7), rgba(232, 214, 176, .10) 30%, rgba(0, 0, 0, .22) 55%, rgba(232, 214, 176, .08) 74%, rgba(0, 0, 0, .75)),
+    repeating-linear-gradient(90deg, #33203a 0 2px, #1d1224 2px 4px, #402b46 4px 5px);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .45), 0 0 10px rgba(0, 0, 0, .6);
+}
+.v4-pil-l { left: 0; }
+.v4-pil-r { right: 0; }
+.v4-pil::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 9px;
+  background: linear-gradient(180deg, #4a3152, #251730);
+  box-shadow: inset 0 1px 0 rgba(230, 207, 160, .3), 0 1px 3px rgba(0, 0, 0, .6);
+}
+.v4-lamp {
+  position: absolute; z-index: 1; top: -34px; left: 50%; width: 86%; height: 176px;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(ellipse at 50% 18%, rgba(216, 186, 130, .22), rgba(140, 100, 150, .06) 44%, transparent 72%);
+}
+.v4-books {
+  position: absolute; z-index: 2; left: 7px; right: 7px; top: 0; bottom: 0;
+  display: flex; align-items: flex-end; justify-content: center; gap: 1px;
+  margin: 0; padding: 0; list-style: none;
+}
+.v4-lip {
+  position: relative; height: 9px; margin: 0 -1px;
+  background:
+    linear-gradient(180deg, rgba(230, 207, 160, .30), transparent 26%),
+    linear-gradient(180deg, #4a3052 0%, #2f1d39 48%, #1b1022 100%);
+  box-shadow: inset 0 1px 0 rgba(240, 220, 180, .26), 0 2px 3px rgba(0, 0, 0, .6);
+}
+.v4-lip::after {
+  content: ""; position: absolute; left: 8px; right: 8px; top: 3px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(230, 207, 160, .45), transparent);
+}
+.v4-board {
+  position: relative; height: 18px; margin: 0 1px;
+  background:
+    linear-gradient(180deg, rgba(230, 207, 160, .18), transparent 20%),
+    linear-gradient(180deg, #3d2846 0%, #2a1832 46%, #180d20 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 222, 184, .22),
+    0 14px 22px rgba(0, 0, 0, .72),
+    0 3px 0 #0b060e;
+}
+.v4-board::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(230, 207, 160, .45) 16%, rgba(230, 207, 160, .16) 50%, rgba(230, 207, 160, .42) 84%, transparent);
+}
+.v4-plinth {
+  height: 10px; margin: 0 7px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(180deg, #1c1024, #0b060e 70%, #060309);
+  box-shadow: inset 0 1px 0 rgba(230, 207, 160, .10), 0 6px 12px rgba(0, 0, 0, .55);
+}
+.v4-plate, .v4-full {
+  position: absolute; top: 3px; z-index: 3;
+  padding: 1px 7px;
+  border: 1px solid rgba(201, 168, 106, .55);
+  background: linear-gradient(180deg, #1e1326, #0f0914);
+  box-shadow: inset 0 1px 0 rgba(230, 207, 160, .18), 0 1px 2px rgba(0, 0, 0, .6);
+  color: #e2caa0; font-size: 6.2px; letter-spacing: .2em; text-transform: uppercase;
+}
+.v4-plate { left: 13px; }
+.v4-full { right: 13px; color: #efd9a6; }
+
+/* ------------------------------------------------------------ spine base
+   Ported from src/styles/spines.css. */
+.spine {
+  position: relative;
+  display: block;
+  flex: 0 0 var(--w);
+  width: var(--w);
+  height: var(--h);
+  border-radius: 2px 2px 1px 1px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .62) 0%, rgba(0, 0, 0, .16) 9%, rgba(255, 255, 255, .14) 27%, rgba(255, 255, 255, .02) 45%, rgba(0, 0, 0, .14) 72%, rgba(0, 0, 0, .58) 96%, rgba(0, 0, 0, .75) 100%),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 190, .22),
+    inset 0 -1px 0 rgba(0, 0, 0, .6),
+    0 7px 9px -3px rgba(0, 0, 0, .55);
+  color: var(--cream);
+  cursor: pointer;
+  -webkit-user-select: none; user-select: none;
+  --foot: 30%;
+  --head: 10px;
+}
+html[data-v="s2"] .spine { --foot: 34%; }
+/* A status mark only reserves the head space it actually uses. */
+html[data-cue="a"] .spine.is-reading { --head: 28px; }
+html[data-cue="c"] .spine.is-reading { --head: 24px; }
+html[data-seal="c"] .spine.is-finished { --head: 24px; }
+html[data-seal="d"] .spine.is-finished { --head: 28px; }
+html[data-seal="f"] .spine.is-finished { --head: 16px; }
+html[data-v="s3"] .spine,
+html[data-v="s3"] .spine.is-reading,
+html[data-v="s4"] .spine,
+html[data-v="s4"] .spine.is-reading { --head: 28px; }
+html[data-v="v0"] .spine,
+html[data-v="v0"] .spine.is-reading,
+html[data-v="v0"] .spine.is-finished { --foot: 27%; --head: 3px; }
+html[data-v="v0"][data-cue="c"] .spine.is-reading { --head: 24px; }
+html[data-v="v0"][data-seal="c"] .spine.is-finished { --head: 24px; }
+html[data-v="v0"][data-seal="d"] .spine.is-finished { --head: 28px; }
+html[data-v="v0"][data-seal="f"] .spine.is-finished { --head: 16px; }
+.spine::after {
+  content: ""; position: absolute; inset: 0; z-index: 2;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .05), transparent 8%, transparent 88%, rgba(0, 0, 0, .38));
+  pointer-events: none;
+}
+html[data-v="v0"] .spine::after {
+  background:
+    linear-gradient(180deg, transparent 0 11px, rgba(216, 185, 118, .9) 11px 12px, transparent 12px calc(100% - 16px), rgba(216, 185, 118, .75) calc(100% - 16px) calc(100% - 15px), transparent calc(100% - 15px)),
+    linear-gradient(180deg, rgba(255, 255, 255, .05), transparent 8%, transparent 88%, rgba(0, 0, 0, .38));
+}
+.spine.is-leaning { transform: rotate(var(--lean, 0deg)); transform-origin: 50% 100%; }
+
+/* Art layers */
+.spine-art, .s2-window img {
+  position: absolute; z-index: 0; display: block;
+  width: 100%; height: 100%; object-fit: fill;
+  border-radius: 0;
+}
+html[data-v="v0"] .spine-art {
+  top: 0; left: 0; height: calc(100% - var(--foot));
+}
+html[data-v="s2"] .spine-art { display: none; }
+html[data-v="s4"] .spine-art { display: none; }
+
+.s1-scrim, .s2-head, .s2-window, .s2-foot, .s3-plate { display: none; }
+html[data-v="s1"] .s1-scrim { display: block; }
+html[data-v="s2"] .s2-head,
+html[data-v="s2"] .s2-window,
+html[data-v="s2"] .s2-foot { display: block; }
+html[data-v="s3"] .s3-plate { display: block; }
+
+.s1-scrim {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(22, 13, 8, .64) 0%, rgba(20, 12, 7, .72) 45%, rgba(14, 8, 4, .84) 100%);
+}
+html[data-v="s1"] .spine::after {
+  background:
+    linear-gradient(180deg, transparent 0 7px, rgba(236, 215, 164, .72) 7px 8px, transparent 8px calc(100% - 4px), rgba(236, 215, 164, .55) calc(100% - 4px) calc(100% - 3px), transparent calc(100% - 3px)),
+    linear-gradient(90deg, rgba(0, 0, 0, .56) 0, transparent 8%, transparent 88%, rgba(0, 0, 0, .55) 100%);
+}
+
+.s2-head {
+  position: absolute; top: 0; left: 0; right: 0; height: 42%; z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .06), transparent 12%),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 235, 190, .18), inset 0 -6px 10px rgba(0, 0, 0, .34);
+}
+.s2-window {
+  position: absolute; top: 42%; bottom: 34%; left: 3px; right: 3px; z-index: 1;
+  overflow: hidden;
+  background: #0a0605;
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 168, 106, .8),
+    inset 0 0 0 3px #0a0605,
+    inset 0 0 0 4px rgba(201, 168, 106, .32),
+    0 1px 3px rgba(0, 0, 0, .6);
+}
+.s2-window img { top: 4px; left: 4px; width: calc(100% - 8px); height: calc(100% - 8px); }
+.s2-foot {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 34%; z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .05), transparent 12%),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+  border-top: 1px solid rgba(236, 215, 164, .62);
+  box-shadow: inset 0 2px 0 rgba(236, 215, 164, .18);
+}
+.s3-plate {
+  position: absolute; top: 24px; bottom: calc(var(--foot) + 3px); left: 1px; right: 1px; z-index: 2;
+  background: linear-gradient(180deg, #17100c 0%, #221610 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 168, 106, .78),
+    inset 0 0 0 2px #1a120e,
+    inset 0 0 0 3px rgba(201, 168, 106, .46),
+    0 1px 3px rgba(0, 0, 0, .65);
+}
+html[data-v="s3"] .spine::after {
+  background:
+    linear-gradient(180deg, transparent 0 7px, rgba(236, 215, 164, .38) 7px 8px, transparent 8px),
+    linear-gradient(90deg, rgba(0, 0, 0, .5) 0, transparent 9%, transparent 87%, rgba(0, 0, 0, .5) 100%);
+}
+html[data-v="s4"] .spine {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .045) 0 1px, rgba(0, 0, 0, .06) 1px 2px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%);
+}
+html[data-v="s4"] .spine::after {
+  background:
+    linear-gradient(180deg, transparent 0 19px, rgba(236, 215, 164, .5) 19px 19.7px, transparent 19.7px calc(100% - 24px), rgba(236, 215, 164, .42) calc(100% - 24px) calc(100% - 23.3px), transparent calc(100% - 23.3px)),
+    linear-gradient(90deg, rgba(0, 0, 0, .34) 0, transparent 14%, transparent 86%, rgba(0, 0, 0, .36) 100%);
+}
+
+/* No art: the documented typographic fallback, whatever the binding. */
+.spine.no-art { background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .045) 0 1px, rgba(0, 0, 0, .06) 1px 2px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 100%); }
+.spine.no-art .spine-art, .spine.no-art .s1-scrim,
+.spine.no-art .s2-head, .spine.no-art .s2-window, .spine.no-art .s2-foot,
+.spine.no-art .s3-plate { display: none !important; }
+
+/* -------------------------------------------------------------- title box */
+.spine-text {
+  position: absolute; z-index: 4;
+  top: var(--head); left: 1px; right: 1px; bottom: calc(var(--foot) + 3px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0; overflow: hidden; pointer-events: none;
+}
+html[data-v="s1"] .spine-text,
+html[data-v="s3"] .spine-text { top: var(--head); left: 2px; right: 2px; bottom: calc(var(--foot) + 4px); }
+html[data-v="s3"] .spine-text { top: 28px; left: 3px; right: 3px; }
+html[data-v="s2"] .spine-text { top: var(--head); left: 3px; right: 3px; bottom: calc(58% + 5px); }
+html[data-v="s4"] .spine-text { top: 28px; left: 2px; right: 2px; bottom: calc(var(--foot) + 4px); }
+
+.st {
+  flex: 1 1 auto; min-height: 0; max-width: 100%;
+  overflow: hidden; overflow-wrap: anywhere;
+  writing-mode: vertical-rl; text-orientation: mixed; text-align: center;
+  font-family: var(--display); font-weight: 600;
+  font-size: var(--fs, 10px); line-height: .94; letter-spacing: .012em;
+  color: var(--spine-ink, #f4e6c4);
+  white-space: normal; text-overflow: clip;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .85);
+}
+.st .st-col { display: block; max-height: 100%; white-space: nowrap; }
+.st.is-adaptive {
+  -webkit-text-stroke: 1px var(--spine-halo, #160d09);
+  paint-order: stroke fill;
+  text-shadow: 0 1px 1px var(--spine-halo-shadow, rgba(8, 4, 2, .72));
+}
+html[data-v="s1"] .st { color: #f4e6c4; text-shadow: 0 1px 1px rgba(0, 0, 0, .9); }
+html[data-v="s2"] .st { color: #f4e6c4; text-shadow: 0 1px 1px rgba(0, 0, 0, .8); }
+html[data-v="s3"] .st { color: #f4e6c4; text-shadow: 0 1px 1px rgba(0, 0, 0, .9); }
+html[data-v="s4"] .st {
+  color: #ecd7a4; font-weight: 400; letter-spacing: .015em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .6);
+}
+
+/* ------------------------------------------------------------------- foot */
+.foot {
+  position: absolute; z-index: 5; left: 0; right: 0; bottom: 0;
+  height: var(--foot);
+  display: flex; flex-direction: column; justify-content: center; align-items: stretch;
+  gap: 2px; padding: 4px 1px 6px;
+  overflow: hidden;
+}
+.foot > * { flex: 0 0 auto; }
+html[data-v="v0"] .foot {
+  gap: 9px; padding: 4px 1px 6px;
+  background: linear-gradient(180deg, #1b140e 0%, #090604 100%);
+  border-top: 1px solid rgba(216, 185, 118, .78);
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, .65), inset 0 1px 0 rgba(255, 244, 214, .05);
+}
+html[data-v="s1"] .foot { background: transparent; padding: 4px 1px 7px; }
+html[data-v="s2"] .foot { background: transparent; padding: 5px 1px 7px; }
+html[data-v="s3"] .foot {
+  background: linear-gradient(180deg, var(--foot1, #241a15) 0%, var(--foot2, #140c09) 100%);
+  border-top: 1px solid rgba(236, 215, 164, .55);
+  box-shadow: inset 0 1px 0 rgba(236, 215, 164, .22);
+  padding: 4px 1px 7px;
+}
+html[data-v="s4"] .foot { background: transparent; padding: 4px 1px 7px; }
+
+.author-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 2px; width: 100%; min-width: 0;
+}
+.sa {
+  display: block; flex: 1 1 auto; min-width: 0;
+  color: #e8d4a6; font-family: var(--display);
+  font-size: 6.2px; font-variant-caps: small-caps; font-weight: 500;
+  letter-spacing: .02em; line-height: 1.02; text-align: center;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .9);
+}
+.sa span { display: block; white-space: nowrap; }
+html[data-v="v0"] .sa { font-size: 6.8px; }
+html[data-v="s4"] .sa {
+  color: #cbb78c; font-size: 6px; letter-spacing: .08em;
+  text-transform: uppercase; font-variant-caps: normal;
+}
+.bands {
+  display: flex; flex-direction: column; gap: 1px; width: 100%;
+}
+.lb {
+  position: relative; display: block; height: 9px; padding: 0;
+  overflow: hidden; border: 1px solid rgba(18, 8, 20, .6); border-radius: 1px;
+  background: var(--lc); color: #f8edd6;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 214, .16),
+    0 0 0 1px rgba(201, 168, 106, .32),
+    0 1px 2px rgba(0, 0, 0, .55);
+  font-family: var(--sans); font-size: 5px; font-weight: 700;
+  letter-spacing: -.02em; line-height: 7px; text-align: center;
+  text-transform: uppercase; white-space: nowrap;
+}
+html[data-v="v0"] .lb { height: 10px; font-size: 4px; line-height: 8px; letter-spacing: -.04em; }
+.spine.many-labels .lb { height: 8px; line-height: 6px; font-size: 4.6px; }
+.lb .lb-name {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lb .lb-short { display: none; }
+html:not([data-v="v0"]) .lb .lb-name { display: none; }
+html:not([data-v="v0"]) .lb .lb-short { display: block; }
+
+/* ----------------------------------------------------------- status marks */
+.mark { display: none; }
+.spine.is-reading .mark-v0-ribbon { display: none; }
+.spine.is-finished .mark-v0-seal { display: none; }
+
+/* V0 A/A is today's face: the 8x38 ribbon and the 15 px seal above the band. */
+html[data-v="v0"][data-cue="a"] .spine.is-reading .mark-v0-ribbon { display: block; }
+html[data-v="v0"][data-seal="a"] .spine.is-finished .mark-v0-seal { display: block; }
+.mark-v0-ribbon {
+  position: absolute; top: 0; right: 3px; z-index: 6; width: 8px; height: 38px;
+  background: linear-gradient(90deg, #5a0e14 0%, #a8232b 38%, #d4484f 52%, #8e1b22 78%, #4c0a0f 100%);
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, .6);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+}
+.mark-v0-ribbon::after {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: rgba(255, 205, 180, .28);
+}
+.mark-v0-seal {
+  position: absolute; z-index: 6; bottom: calc(var(--foot) + 8px); left: 50%;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #f6e3a8, #d8b25e 38%, #9c7024 76%, #5f3f0e);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 190, .8),
+    inset 0 -2px 3px rgba(90, 55, 10, .55),
+    0 1px 2px rgba(0, 0, 0, .6);
+  color: #5a3a12; font-family: var(--display); font-size: 7px;
+  line-height: 15px; text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 244, 198, .65);
+  transform: translateX(-50%);
+}
+
+/* Cue A — oxblood ribbon in the reserved 30 px head band. */
+html[data-cue="a"]:not([data-v="v0"]) .spine.is-reading .mark-reading-a { display: block; }
+.mark-reading-a {
+  position: absolute; top: 0; right: 3px; z-index: 6; width: 8px; height: 26px;
+  background: linear-gradient(90deg, #4c0a0f 0%, #8e1b22 30%, #c3353d 50%, #8e1b22 72%, #4c0a0f 100%);
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, .55);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+.mark-reading-a::after {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: rgba(255, 205, 180, .25);
+}
+
+/* Cue B — ribbon tail over the lip and board. Positioned by JS. */
+.cue-layer { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+.cue-drape { display: none; position: absolute; width: 9px; }
+html[data-cue="b"] .cue-drape.reading { display: block; }
+.cue-drape::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, #4c0a0f 0%, #8e1b22 26%, #c3353d 48%, #8e1b22 74%, #4c0a0f 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+  box-shadow: 1px 2px 3px rgba(0, 0, 0, .55);
+}
+.cue-drape::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: rgba(236, 215, 164, .55);
+}
+
+/* Cue C — slim oxblood/gilt head rule, no ribbon. */
+html[data-cue="c"] .spine.is-reading .mark-reading-c { display: block; }
+.mark-reading-c {
+  position: absolute; top: 11px; left: 3px; right: 3px; z-index: 6; height: 2px;
+  background: linear-gradient(90deg, #8f7333 0%, #a8232b 16%, #a8232b 84%, #8f7333 100%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .55);
+}
+
+/* Seal A — 11 px brass medallion in the foot, centred above the author. */
+html[data-seal="a"]:not([data-v="v0"]) .spine.is-finished .mark-finished-a { display: block; }
+.mark-finished-a {
+  width: 11px; height: 11px; margin: 0 auto 1px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #f6e3a8, #d8b25e 40%, #9c7024 78%, #5f3f0e);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 190, .8),
+    inset 0 -2px 3px rgba(90, 55, 10, .5),
+    0 1px 2px rgba(0, 0, 0, .55);
+  color: #4d2f0c; font-size: 6px; line-height: 11px; text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 244, 198, .6);
+}
+
+/* Seal B — medallion beside the author on the same row. */
+html[data-seal="b"] .spine.is-finished .mark-finished-b { display: block; }
+.mark-finished-b {
+  flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #f6e3a8, #d8b25e 40%, #9c7024 78%, #5f3f0e);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 190, .8),
+    0 1px 2px rgba(0, 0, 0, .5);
+  color: #4d2f0c; font-size: 5px; line-height: 10px; text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 244, 198, .6);
+}
+html[data-seal="b"] .spine.is-finished .author-row::after {
+  content: ""; flex: 0 0 auto; width: 6px; height: 1px;
+  background: linear-gradient(90deg, rgba(236, 215, 164, .7), transparent);
+}
+
+/* Seal C — embossed gilt roundel + rule at the head. */
+html[data-seal="c"] .spine.is-finished .mark-finished-c { display: block; }
+.mark-finished-c {
+  position: absolute; top: 4px; left: 50%; z-index: 6;
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 1px solid rgba(236, 215, 164, .78);
+  background: radial-gradient(circle at 38% 30%, rgba(216, 178, 94, .16), rgba(0, 0, 0, .28));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 244, 198, .35),
+    inset 0 -1px 2px rgba(0, 0, 0, .55),
+    0 1px 2px rgba(0, 0, 0, .5);
+  color: #e3c482; font-size: 7px; line-height: 14px; text-align: center;
+  transform: translateX(-50%);
+}
+.mark-finished-c::after {
+  content: ""; position: absolute; left: 50%; top: 18px; width: 19px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(236, 215, 164, .7), transparent);
+  transform: translateX(-50%);
+}
+
+/* Finished as a gold ribbon — same ribbon language as the reading cue. */
+html[data-seal="d"] .spine.is-finished .mark-finished-d { display: block; }
+.mark-finished-d {
+  position: absolute; top: 0; right: 3px; z-index: 6; width: 8px; height: 26px;
+  background: linear-gradient(90deg,
+    var(--gold-ribbon-sh) 0%, #b08d4a 14%, var(--gold-ribbon) 34%,
+    var(--gold-ribbon-hi) 48%, var(--gold-ribbon) 64%, #b08d4a 84%, var(--gold-ribbon-sh) 100%);
+  box-shadow:
+    inset 0 0 0 1px var(--gold-ribbon-edge),
+    inset 0 1px 0 rgba(255, 246, 218, .5),
+    inset 0 -1px 0 rgba(56, 38, 12, .55);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+}
+.mark-finished-d::after {
+  content: ""; position: absolute; left: 1px; top: 2px; bottom: 3px; width: 2px;
+  background: linear-gradient(180deg, rgba(255, 248, 224, .6), rgba(255, 248, 224, .08) 55%, transparent);
+  border-radius: 1px;
+}
+
+html[data-seal="f"] .spine.is-finished .mark-finished-f { display: block; }
+.mark-finished-f {
+  position: absolute; top: 0; right: 3px; z-index: 6; width: 8px; height: 14px;
+  background: linear-gradient(90deg,
+    var(--gold-ribbon-sh) 0%, #b08d4a 16%, var(--gold-ribbon) 38%,
+    var(--gold-ribbon-hi) 52%, var(--gold-ribbon) 68%, #b08d4a 86%, var(--gold-ribbon-sh) 100%);
+  box-shadow:
+    inset 0 0 0 1px var(--gold-ribbon-edge),
+    inset 0 1px 0 rgba(255, 246, 218, .48),
+    inset 0 -2px 0 rgba(56, 38, 12, .5);
+}
+.mark-finished-f::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 1px;
+  background: rgba(46, 30, 8, .72);
+}
+
+/* Gold tail — the cushioned end of a bookmark over the shelf board. */
+.cue-drape.gold { width: 8px; }
+html[data-seal="e"] .cue-drape.gold { display: block; }
+.cue-drape.gold::before {
+  background: linear-gradient(90deg,
+    var(--gold-ribbon-sh) 0%, #b08d4a 16%, var(--gold-ribbon) 38%,
+    var(--gold-ribbon-hi) 52%, var(--gold-ribbon) 68%, #b08d4a 86%, var(--gold-ribbon-sh) 100%);
+  box-shadow:
+    inset 0 0 0 1px var(--gold-ribbon-edge),
+    inset 0 1px 0 rgba(255, 246, 218, .52),
+    inset 0 -1px 0 rgba(56, 38, 12, .5);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+}
+.cue-drape.gold::after {
+  background: linear-gradient(180deg, rgba(255, 248, 224, .55), rgba(255, 248, 224, .06));
+}
+
+/* ------------------------------------------- finished gold close-up (2×) */
+.closeup {
+  position: relative; z-index: 1;
+  margin: 24px 12px 0; padding: 12px 0 11px;
+  border: 1px solid rgba(201, 168, 106, .24);
+  background:
+    linear-gradient(180deg, rgba(201, 168, 106, .07), transparent 30%),
+    linear-gradient(180deg, #171019, #0e0812);
+  box-shadow: inset 0 1px 0 rgba(236, 214, 166, .08);
+}
+html:not([data-v="s1"]) .closeup { display: none; }
+.closeup[hidden] { display: none; }
+.closeup-head { padding: 0 12px 10px; border-bottom: 1px solid rgba(201, 168, 106, .16); }
+.closeup-head h2 {
+  margin: 0; color: #ecd6a6; font-weight: 400;
+  font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+}
+.closeup-head p {
+  margin: 5px 0 0; color: #9c8863; font-family: var(--sans);
+  font-size: 6.4px; line-height: 1.4;
+}
+.closeup-scroll { overflow-x: auto; overflow-y: hidden; padding: 10px 12px 2px; }
+.closeup-track { display: flex; gap: 10px; width: max-content; align-items: flex-start; }
+.closeup-group { width: 138px; flex: 0 0 auto; }
+.closeup-scale { position: relative; width: 138px; height: 530px; }
+.closeup-pair {
+  position: absolute; top: 0; left: 0; width: 69px; height: 238px;
+  display: flex; align-items: flex-end; gap: 1px;
+  transform: scale(2); transform-origin: top left;
+}
+.closeup-pair::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 27px; z-index: 0;
+  background: linear-gradient(180deg, #4a3052 0 9px, #3d2846 9px 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 220, 180, .3),
+    0 3px 0 #0b060e,
+    0 10px 16px rgba(0, 0, 0, .6);
+}
+.closeup-pair .spine { z-index: 1; }
+.closeup-label {
+  margin-top: 7px; padding: 3px 4px;
+  border: 1px solid rgba(201, 168, 106, .22);
+  color: #cbb892; font-family: var(--sans);
+  font-size: 6.4px; font-weight: 700; letter-spacing: .08em;
+  text-align: center; text-transform: uppercase;
+}
+.closeup-label b { color: #d2ac62; }
+.closeup-group.is-current .closeup-label {
+  border-color: rgba(240, 220, 174, .7);
+  background: rgba(210, 172, 98, .12);
+  color: #f0dcae;
+}
+.closeup-group.is-current .closeup-label b { color: #f0dcae; }
+.closeup-note {
+  margin: 8px 12px 0; color: #8f7a56; font-family: var(--sans);
+  font-size: 5.8px; line-height: 1.45;
+}
+/* the close-up clips every global mark and opts its own seal back in */
+.closeup-spine .mark { display: none !important; }
+.closeup-group[data-closeup-seal="d"] .closeup-spine .mark-finished-d { display: block !important; }
+.closeup-group[data-closeup-seal="f"] .closeup-spine .mark-finished-f { display: block !important; }
+.closeup-tail {
+  position: absolute; right: 2px; top: calc(100% - 2px); z-index: 9;
+  width: 8px; height: 16px;
+  background: linear-gradient(90deg,
+    var(--gold-ribbon-sh) 0%, #b08d4a 16%, var(--gold-ribbon) 38%,
+    var(--gold-ribbon-hi) 52%, var(--gold-ribbon) 68%, #b08d4a 86%, var(--gold-ribbon-sh) 100%);
+  box-shadow: inset 0 0 0 1px var(--gold-ribbon-edge), inset 0 1px 0 rgba(255, 246, 218, .52);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+}
+
+/* ------------------------------------------------------------ measurements */
+.measure {
+  position: relative; z-index: 1;
+  margin: 24px 12px 0; padding: 12px 11px 14px;
+  border: 1px solid rgba(201, 168, 106, .22);
+  background:
+    linear-gradient(180deg, rgba(201, 168, 106, .05), transparent 30%),
+    linear-gradient(180deg, #171019, #0e0812);
+  box-shadow: inset 0 1px 0 rgba(236, 214, 166, .08);
+}
+.measure[hidden] { display: none; }
+.measure-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  margin-bottom: 7px; padding-bottom: 6px;
+  border-bottom: 1px solid rgba(201, 168, 106, .18);
+}
+.measure-head h2 {
+  margin: 0; color: #ecd6a6; font-weight: 400;
+  font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+}
+.measure-head span { color: #9c8863; font-family: var(--sans); font-size: 6.5px; }
+.measure .summary {
+  margin: 0 0 8px; color: #d9c8a7; font-size: 8px; line-height: 1.5;
+}
+.measure .summary b { color: #ecd6a6; font-weight: 400; }
+.measure .summary .bad { color: #e3a09a; }
+.measure .summary .good { color: #c8d8a6; }
+.gold-line {
+  margin: 0 0 8px; padding: 5px 7px 5px 8px;
+  border-left: 2px solid rgba(210, 172, 98, .75);
+  background: rgba(210, 172, 98, .055);
+  color: #d8c49a; font-family: var(--sans); font-size: 6.4px; line-height: 1.5;
+}
+.gold-line b { color: #f0dcae; font-weight: 700; }
+.gold-line .bad { color: #e08f88; }
+.gold-line .ok { color: #c8d8a6; }
+.table-wrap { width: 100%; overflow-x: auto; }
+table.measure-table {
+  width: 100%; border-collapse: collapse; table-layout: fixed;
+  font-family: var(--sans); font-size: 6.4px; line-height: 1.35;
+  color: #cbb892;
+  font-variant-numeric: tabular-nums;
+}
+.measure-table col.c-spine { width: 26%; }
+.measure-table col.c-w { width: 7%; }
+.measure-table col.c-font { width: 7.5%; }
+.measure-table col.c-contrast { width: 14%; }
+.measure-table col.c-box { width: 23.5%; }
+.measure-table col.c-foot { width: 12%; }
+.measure-table col.c-gap { width: 10%; }
+.measure-table th {
+  padding: 3px 2px; text-align: left; vertical-align: bottom;
+  color: #8f7a56; font-size: 5.6px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(201, 168, 106, .22);
+}
+.measure-table td {
+  padding: 3px 2px; vertical-align: top;
+  border-bottom: 1px solid rgba(255, 255, 255, .045);
+}
+.measure-table tr.group th {
+  padding-top: 9px; color: #e2caa0; font-size: 6px;
+  border-bottom: 0;
+}
+.measure-table td.spine-name { color: #e2caa0; font-family: var(--display); font-size: 7px; line-height: 1.2; }
+.measure-table td.spine-name em {
+  display: block; color: #8f7a56; font-family: var(--sans); font-style: normal;
+  font-size: 5.4px; letter-spacing: .04em;
+}
+.measure-table .ok { color: #b9cc95; }
+.measure-table .warn { color: #d8b976; }
+.measure-table .bad { color: #e08f88; }
+.measure-table .sub { display: block; color: #8f7a56; font-size: 5.6px; }
+.measure-table .num { font-size: 7px; color: #e7dcc6; }
+.measure-table .fail-row td { background: rgba(115, 29, 33, .13); }
+.legend {
+  margin: 9px 0 0; color: #8f7a56; font-family: var(--sans);
+  font-size: 5.8px; line-height: 1.5;
+}
+.legend b { color: #b39a70; font-weight: 700; }
+
+/* ---------------------------------------------------------------- switcher */
+.switcher {
+  position: fixed; z-index: 50; left: 50%; bottom: 8px;
+  width: min(560px, calc(100% - 16px));
+  transform: translateX(-50%);
+  padding: 7px 8px 6px;
+  border: 1px solid rgba(201, 168, 106, .4);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(201, 168, 106, .12), transparent 28%),
+    linear-gradient(180deg, #211525 0%, #150e19 58%, #0d0711 100%);
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, .72),
+    inset 0 1px 0 rgba(236, 214, 166, .18);
+}
+.sw-row { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+.sw-row:first-child { margin-top: 0; }
+.sw-label {
+  flex: 0 0 auto; width: 44px; color: #9c8863;
+  font-family: var(--sans); font-size: 5.8px; font-weight: 700;
+  letter-spacing: .13em; text-transform: uppercase;
+}
+.sw-group { display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: 3px; min-width: 0; }
+#sw-seal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+#sw-seal .sw-btn { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sw-btn {
+  appearance: none; -webkit-appearance: none;
+  min-height: 24px; padding: 3px 6px;
+  border: 1px solid rgba(201, 168, 106, .3);
+  border-radius: 2px;
+  background: rgba(18, 10, 20, .7);
+  color: #d9c8a7; font-family: var(--sans); font-size: 6.4px;
+  font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  line-height: 1.1; cursor: pointer;
+  transition: transform .1s ease, background-color .12s ease, color .12s ease;
+}
+.sw-btn:active { transform: translateY(1px); }
+.sw-btn[aria-pressed="true"] {
+  color: #1a0f18;
+  background: linear-gradient(180deg, #e2c98c, #b08c46);
+  border-color: #ecd6a6;
+  box-shadow: inset 0 1px 0 rgba(255, 240, 214, .55), 0 0 0 2px rgba(201, 168, 106, .12);
+}
+.sw-btn:focus-visible { outline: 2px solid #f2dda0; outline-offset: 1px; }
+.sw-note {
+  margin: 4px 0 0; color: #8f7a56;
+  font-family: var(--sans); font-size: 5.6px; line-height: 1.35;
+}
+.sw-note b { color: #b39a70; }
+
+@media (max-width: 374px) {
+  .sw-label { width: 38px; }
+  .sw-btn { min-height: 22px; padding: 2px 5px; font-size: 6px; }
+  .brief dl { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .sw-btn:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="mast">
+  <p class="kicker">Spine Lab · Art at 27–36 px</p>
+  <h1>Pocket Library</h1>
+  <div class="rule" aria-hidden="true"><span>❦</span></div>
+  <p class="meta">Seven volumes · Shelf II · one shelf, one question</p>
+</div>
+
+<section class="brief" aria-live="polite">
+  <div class="brief-head">
+    <span class="brief-name" id="brief-name">Baseline · 0.1.17 Art</span>
+    <span class="brief-tag" id="brief-tag">V0</span>
+  </div>
+  <dl>
+    <div><dt>Title box</dt><dd id="brief-title">—</dd></div>
+    <div><dt>Foot band</dt><dd id="brief-foot">—</dd></div>
+    <div><dt>Author / labels</dt><dd id="brief-lower">—</dd></div>
+    <div><dt>Art treatment</dt><dd id="brief-art">—</dd></div>
+  </dl>
+  <p class="cue-line" id="brief-cue">—</p>
+</section>
+
+<main class="wall">
+  <section class="v4-shelf" data-shelf="main" aria-label="Shelf II, seven volumes">
+    <div class="v4-case">
+      <div class="v4-crown" aria-hidden="true"><span class="v4-crest"></span></div>
+      <div class="v4-cavity">
+        <div class="v4-back" aria-hidden="true"></div>
+        <div class="v4-pil v4-pil-l" aria-hidden="true"></div>
+        <div class="v4-pil v4-pil-r" aria-hidden="true"></div>
+        <div class="v4-lamp" aria-hidden="true"></div>
+        <ul class="v4-books" id="main-books"></ul>
+      </div>
+      <div class="v4-lip" aria-hidden="true"></div>
+      <div class="v4-board">
+        <span class="v4-plate">Shelf II</span>
+        <span class="v4-full">7 volumes</span>
+      </div>
+      <div class="v4-plinth" aria-hidden="true"></div>
+      <div class="cue-layer" id="cue-main" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <div class="row-head">
+    <h2>Stress row · 27 px</h2>
+    <p>40-char title · 18-char word · RTL · no author · no labels · no art</p>
+  </div>
+
+  <section class="v4-shelf" data-shelf="stress" aria-label="Stress row, six 27-pixel spines">
+    <div class="v4-case">
+      <div class="v4-crown" aria-hidden="true"><span class="v4-crest"></span></div>
+      <div class="v4-cavity">
+        <div class="v4-back" aria-hidden="true"></div>
+        <div class="v4-pil v4-pil-l" aria-hidden="true"></div>
+        <div class="v4-pil v4-pil-r" aria-hidden="true"></div>
+        <div class="v4-lamp" aria-hidden="true"></div>
+        <ul class="v4-books" id="stress-books"></ul>
+      </div>
+      <div class="v4-lip" aria-hidden="true"></div>
+      <div class="v4-board">
+        <span class="v4-plate">Shelf III</span>
+        <span class="v4-full">Stress · 6</span>
+      </div>
+      <div class="v4-plinth" aria-hidden="true"></div>
+      <div class="cue-layer" id="cue-stress" aria-hidden="true"></div>
+    </div>
+  </section>
+</main>
+
+<section class="closeup" id="closeup" aria-label="Finished gold ribbon close-up">
+  <div class="closeup-head">
+    <h2>Finished as a gold ribbon · 2×</h2>
+    <p>Whisper Man on dark art · The Collector on pale art · D head · E tail · F tuck</p>
+  </div>
+  <div class="closeup-scroll">
+    <div class="closeup-track" id="closeup-track" aria-hidden="true"></div>
+  </div>
+  <p class="closeup-note">2× scale, S1 face. The pair is shown for all three seals; the live shelf still follows the Finished row. At 390 the strip scrolls sideways; the close-up capture is taken at 520.</p>
+</section>
+
+<section class="measure" id="measurements">
+  <div class="measure-head">
+    <h2>Measurements</h2>
+    <span id="m-variant">V0</span>
+  </div>
+  <p class="summary" id="m-summary"></p>
+  <p class="gold-line" id="m-gold"></p>
+  <div class="table-wrap">
+    <table class="measure-table">
+      <colgroup>
+        <col class="c-spine" /><col class="c-w" /><col class="c-font" />
+        <col class="c-contrast" /><col class="c-box" /><col class="c-foot" />
+        <col class="c-gap" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Spine</th><th>W</th><th>Font</th><th>Contrast</th>
+          <th>Title bbox</th><th>Foot</th><th>Gap</th>
+        </tr>
+      </thead>
+      <tbody id="m-body"></tbody>
+    </table>
+  </div>
+  <p class="legend">
+    <b>Contrast</b> = title ink against its real backing: composited scrim for S1,
+    the plate for S3, solid cloth for S2/S4, raw art for V0 (median / worst band).
+    <b>Title bbox</b> = glyph run width × height against the spine size printed under each title; ticks are box⊂spine, run⊂box, mark-clear.
+    <b>Foot</b> = band height and material; <b>Gap</b> = distance to the neighbour's
+    foot and vertical step. Measured after the same fit the app uses.
+  </p>
+</section>
+
+<div class="switcher" role="region" aria-label="Prototype switcher">
+  <div class="sw-row">
+    <span class="sw-label">Binding</span>
+    <div class="sw-group" id="sw-bindings" role="group" aria-label="Binding">
+      <button class="sw-btn" data-v="v0" type="button">V0 Art</button>
+      <button class="sw-btn" data-v="s1" type="button">S1 Smoked</button>
+      <button class="sw-btn" data-v="s2" type="button">S2 Half</button>
+      <button class="sw-btn" data-v="s3" type="button">S3 Plate</button>
+      <button class="sw-btn" data-v="s4" type="button">S4 Cloth</button>
+    </div>
+  </div>
+  <div class="sw-row">
+    <span class="sw-label">Reading</span>
+    <div class="sw-group" id="sw-cue" role="group" aria-label="Reading cue">
+      <button class="sw-btn" data-cue="a" type="button">A Ribbon</button>
+      <button class="sw-btn" data-cue="b" type="button">B Drape</button>
+      <button class="sw-btn" data-cue="c" type="button">C Rule</button>
+    </div>
+  </div>
+  <div class="sw-row">
+    <span class="sw-label">Finished</span>
+    <div class="sw-group" id="sw-seal" role="group" aria-label="Finished seal">
+      <button class="sw-btn" data-seal="a" type="button">A Medallion</button>
+      <button class="sw-btn" data-seal="b" type="button">B Beside</button>
+      <button class="sw-btn" data-seal="c" type="button">C Roundel</button>
+      <button class="sw-btn" data-seal="d" type="button">D Gold Ribbon</button>
+      <button class="sw-btn" data-seal="e" type="button">E Gold Drape</button>
+      <button class="sw-btn" data-seal="f" type="button">F Gold Tuck</button>
+    </div>
+  </div>
+  <p class="sw-note" id="sw-note">V0 A/A is today's app face: 8×38 ribbon, 15 px seal above the band.</p>
+</div>
+
+<script>
+/* ===================================================================== data */
+const ART = {
+  "whisper-man": {
+    inkMedian: 0.103,
+    bands: ["5d2915","342118","291b0f","82705e","928473","7d7364","696051","5c5246","564f47","645c50","615748","5b5348","584e42","53493d","4f483d","4e4437","44392c","443a30","44392e","45382a","685243","6a4635","270c05","190504","190504","180404","190404","270704","3a0e03","310d04","170403","210504","320903","330a04","330a03","370a03","3b0b04","3b0b03","3c0d04","400e04","3d0b04","3d0b04","3d0d04","431505","74502e","845e43","253f2c","1e3a2b","1b2719","240f08","29130b","2d190d","261009","240d07","291609","23140d","281a0e","1c130a","180d07","110706","090404","0b0703","1e1008","2b1b10"],
+  },
+  "ready-player-one": {
+    inkMedian: 0.777,
+    bands: ["c8c5c4","d7d5d4","e4e2d8","ab4901","733501","e6e1d9","eae7da","e4d4ba","e0cfac","dcc5a1","d8bc87","b88c0c","cdc4b5","c1bebd","b9b6b5","c5c1bb","db8b07","e76704","e76f06","e16f05","dab55c","d7b40d","d4cbb7","c5c3c1","cccbc9","d4d2d1","d8d6d3","ccc5be","d9d6d1","cecccb","cac8c7","bdbab9","cccbca","d1d0ce","d6c378","f09a02","fc9c00","fec100","fbb001","fc8500","f7b405","e0d5cb","dad8d8","dcdbdb","ddd5d3","d9cbc6","dad0cd","ded6d4","e1dcd7","dad8d7","dad8d8","dbd9da","dbdada","e9d45e","f57100","f9b902","f8c604","f76a00","f19d03","e5ddd3","e5d2c9","e0d2c8","e3e1df","e3e2e2"],
+  },
+  hound: {
+    inkMedian: 0.555,
+    bands: ["f0e8de","f0e7de","f0e7de","f0e7de","f0e7de","f0e7de","f0e7de","efe6dc","eee5db","ebe2d6","e9d7c7","e9d7c6","ead9c7","eadac8","ebdbc8","e8d8c5","c6af9f","c1a797","bea38e","b19689","a08a81","998780","9c8882","a48f89","ab9891","b6a499","bcab9f","c2b1a3","c6b6a8","c9bbaf","c9beb3","cdc3b8","d5ccbf","d4cabe","826e65","7e6e64","78655c","66544d","69574c","6a584b","6c5b4e","706053","766356","7a695e","76665e","6c5346","6c5245","6d5444","6c5243","6e5345","705345","694f42","61493d","664d3f","664d40","664c3f","6a5041","6b5141","6c5242","6c5342","5d4b3d","6b5747","685647","211c19"],
+  },
+  family: {
+    inkMedian: 0.685,
+    bands: ["897c8c","bbb6a9","c8c3ce","cbc6d1","c4becd","c2b6c5","95aa9c","8ea89f","97b399","a6b89c","adbc9c","a5af83","a79067","bcc8cd","b0c3cd","b6bac1","a3b4bd","a2b9c1","9cb7c5","9abbc8","9ac1cb","9cbdc4","7b8791","cf7381","da6e7c","faf8f1","e4cd92","958e8a","b8c5d9","becae1","becddb","bbb466","d2b761","59757a","587a94","5d7f98","628498","618092","5b798a","597787","709bad","d1c9b1","ddccad","ddcdac","dbc6ac","d0b5ab","ceb5ac","d7cdb4","d1d3ae","ccd5a7","bdd194","bdd385","abc27e","9cb18b","829187","808c85","887b88","7a778d","5f7989","5b7584","596d81","516a7d","496d80","476e82"],
+  },
+  alice: {
+    inkMedian: 0.37,
+    bands: ["53412e","584531","554430","5d4c31","615135","514532","4f4331","584b35","645337","56432e","614a31","7b613a","6a5535","716a4c","685a3d","6c6140","76704c","716d48","655e3d","b17c4a","c39753","c9a766","cebd8b","afa179","7c7656","595d42","51523a","806e4e","c3a375","bf7f5d","b96e48","a8593c","9d6346","976149","9f5d3f","956040","8a684a","755e46","745f4c","6e6048","483e36","4c4135","554237","4c3b34","503c34","684e3c","70553a","82633f","5c493d","584436","503a33","594435","634d39","684f3c","69513c","624839","624638","654e3e","644f3e","614e3e","5f4b3e","574335","231c17","16100d"],
+  },
+  "needful-things": {
+    inkMedian: 0.135,
+    bands: ["242021","242021","242021","242021","242021","242021","242021","99822c","cf932c","d39632","2d211e","252020","252021","242021","242021","252021","412724","b77326","b87a2a","b77b29","b87b28","b37527","b17328","995e24","8a5022","9e6126","643217","2d2122","282123","322325","a78827","614525","292121","282021","c19c39","eebc38","e9bc38","252021","252021","242022","252527","616265","363638","232021","242021","242021","242021","242021","242021","242021","242021","242021","242021","242021","242021","242021","242023","252325","3b393b","403f42","2b2a2d","2a2a2c","454647"],
+  },
+  dorian: {
+    inkMedian: 0.321,
+    bands: ["b47943","ad9051","b09459","ae8f4b","876738","403d27","424136","3f3d35","41413a","3f3e32","3b3a30","35342e","3b382f","413f32","45443b","48483e","434033","433e2f","494432","464332","454233","484332","4e4833","504a34","504a35","554e37","565037","5d593c","615a3b","625738","75633c","615434","635a3b","846f43","9a805c","938059","b58953","c28250","d1aa77","c99b68","a97d4a","8d7546","7f6a3d","8d6f3a","997b45","a4774c","a16f48","b27c54","a1734f","9f7a52","b28663","ccaa87","cbac8d","c09d77","9a6e50","8a613b","765432","75492e","844f2d","875335","885c32","8a6840","2f2318","1a130c"],
+  },
+  cover: {
+    inkMedian: 0.37,
+    bands: ["53412e","584530","544330","5e4d32","605035","524532","4f4331","594b35","645337","56422d","604932","7a6038","6a5434","72694d","685b3d","6b603f","74704c","716d49","655e3d","ac7c4e","c29655","c6a765","cebc8b","afa27a","7a7557","585c43","515139","7f6e4d","c2a173","bd805a","b77249","a8583d","9c6249","976149","9d5d40","936042","896649","745c47","70614f","6d6149","483d37","4f4135","574437","4d3b33","503c33","674d3a","6f5439","83623e","5c4a3d","584235","513b32","584335","634c39","674f3a","6a503b","624838","614738","664e3d","634f3e","604e3e","5f4b3d","574235","241c15","16100c"],
+  },
+};
+
+const BOOKS = [
+  { id: "whisper-man", title: "The Whisper Man", author: "Alex North", status: "finished", art: "whisper-man", w: 33, h: 232, c1: "#4c1b18", c2: "#200908", foot1: "#2d1310", foot2: "#170807",
+    labels: [["Crime", "#6e2630"], ["Gothic", "#4a2a45"]] },
+  { id: "ready-player-one", title: "Ready Player One", author: "Ernest Cline", status: "reading", art: "ready-player-one", w: 29, h: 214, c1: "#18273a", c2: "#080f19", foot1: "#16181f", foot2: "#090b10",
+    labels: [["Sci-Fi", "#26384f"], ["Quest", "#6b4d18"]] },
+  { id: "hound", title: "The Shadow Friend", author: "Alex North", status: "reading", art: "hound", w: 27, h: 205, c1: "#3f2c1d", c2: "#190f08", foot1: "#271a12", foot2: "#130b07",
+    labels: [["Crime", "#6e2630"], ["Gothic", "#4a2a45"]] },
+  { id: "family", title: "Everyone in My Family Has Killed Someone", author: "Benjamin Stevenson", status: "reading", art: "family", w: 31, h: 226, c1: "#321d2b", c2: "#120a11", foot1: "#221418", foot2: "#0f090c",
+    labels: [["Crime", "#6e2630"], ["Humour", "#57402d"], ["Family", "#214d4c"]] },
+  { id: "alice", title: "The Collector", author: "John Fowles", status: "finished", art: "alice", w: 35, h: 238, c1: "#5a311e", c2: "#241008", foot1: "#341d12", foot2: "#190c07",
+    labels: [["Classics", "#333336"], ["Gothic", "#4a2a45"]] },
+  { id: "needful-things", title: "Needful Things", author: "Stephen King", status: "unread", art: "needful-things", w: 28, h: 208, c1: "#2b313a", c2: "#101318", foot1: "#1e1d1f", foot2: "#0e0e0f",
+    labels: [["Horror", "#333336"], ["Vintage", "#57402d"]] },
+  { id: "dorian", title: "The Picture of Dorian Gray", author: "Oscar Wilde", status: "unread", art: "dorian", w: 30, h: 219, c1: "#4c202e", c2: "#1d0b12", foot1: "#2d151a", foot2: "#15090c",
+    labels: [["Classics", "#333336"], ["Gothic", "#4a2a45"], ["Decadent", "#4a2a45"]] },
+];
+
+const STRESS = [
+  { id: "st-long", title: "Forty Characters Make A Long Spine Title", author: "Ada Lovelace", status: "finished", art: "cover", w: 27, h: 232,
+    c1: "#4c1b18", c2: "#200908", foot1: "#2d1310", foot2: "#170807",
+    labels: [["Crime", "#6e2630"], ["Gothic", "#4a2a45"]] },
+  { id: "st-word", title: "Characteristically", author: "Iain Banks", status: "reading", art: "needful-things", w: 27, h: 210,
+    c1: "#18273a", c2: "#080f19", foot1: "#16181f", foot2: "#090b10",
+    labels: [["Sci-Fi", "#26384f"]] },
+  { id: "st-rtl", title: "השם של הוורד", author: "אומברטו אקו", status: "reading", art: "dorian", w: 27, h: 222, dir: "rtl",
+    c1: "#3f2c1d", c2: "#190f08", foot1: "#271a12", foot2: "#130b07",
+    labels: [["Gothic", "#4a2a45"], ["Classics", "#333336"]] },
+  { id: "st-noauthor", title: "The Book With No Author", author: "", status: "unread", art: "family", w: 27, h: 200,
+    c1: "#321d2b", c2: "#120a11", foot1: "#221418", foot2: "#0f090c",
+    labels: [["Humour", "#57402d"]] },
+  { id: "st-nolabels", title: "The Book With No Labels", author: "Ursula Le Guin", status: "finished", art: "alice", w: 27, h: 214,
+    c1: "#5a311e", c2: "#241008", foot1: "#341d12", foot2: "#190c07",
+    labels: [] },
+  { id: "st-noart", title: "The Book Without Any Art", author: "George Eliot", status: "reading", art: "", w: 27, h: 206,
+    c1: "#2b313a", c2: "#101318", foot1: "#1e1d1f", foot2: "#0e0e0f",
+    labels: [["Vintage", "#57402d"], ["Classics", "#333336"]] },
+];
+
+const BRIEFS = {
+  v0: {
+    name: "Baseline · 0.1.17 Art", tag: "V0",
+    title: "1 px inset, 3 px to foot+3 px: 73% of the spine.",
+    foot: "27% near-black #1b140e→#090604 with a gold hairline.",
+    lower: "Full author over two balanced lines (shrink to 4.2 px); up to 2 full-name chips at 4 px.",
+    art: "Full art to the head; adaptive cream/dark ink with a 1 px halo.",
+  },
+  s1: {
+    name: "S1 · Smoked leather", tag: "S1",
+    title: "Head reserve by mark: 10 px (foot cues), 16 px (gold tuck), 24 px (head rule/roundel) or 28 px (ribbon), then to 70%.",
+    foot: "No band. The scrim deepens to 84% over the bottom 30% and holds the author and chips.",
+    lower: "Full author on two lines; 4–5 letter label codes at 5 px; chips sit on the deep scrim.",
+    art: "Art full height under a 64→84% warm near-black scrim. Gold hairlines at head and tail.",
+  },
+  s2: {
+    name: "S2 · Half-bound", tag: "S2",
+    title: "Head reserve by mark: 10 px (foot cues), 24 px (head rule/roundel) or 28 px (ribbon), then to 42% − 5 px inside the leather head.",
+    foot: "34% solid palette foot with a gilt top rule.",
+    lower: "Full author on two lines; 4–5 letter label codes at 5 px on solid ground; no type over art.",
+    art: "Art is confined to a 42–66% window with a 3 px reveal and a 1 px inset gilt rule.",
+  },
+  s3: {
+    name: "S3 · Gilt label plate", tag: "S3",
+    title: "Fixed 28 px to 70%, inside a full-width dark plate with a double gilt rule.",
+    foot: "30% foot tinted with the book's own palette, not one shared black.",
+    lower: "Full author on two lines; 4–5 letter label codes at 5 px on the tinted foot; the plate carries only the title.",
+    art: "Art full height, visible above the plate, in 2 px side gutters and through the tinted foot.",
+  },
+  s4: {
+    name: "S4 · Publisher's binding", tag: "S4",
+    title: "28 px to 70% on solid woven cloth.",
+    foot: "No band; a gilt rule at 70% separates the author zone.",
+    lower: "Full author in tracked small caps; 4–5 letter label codes at 5 px on the cloth.",
+    art: "No art on the shelf. The cover belongs to the detail view.",
+  },
+};
+
+const CUES = {
+  a: {
+    reading: "Head ribbon · 8×26 oxblood in a 28 px reserved head band; it costs 18 px of title run against cue B.",
+    finished: "Foot medallion · 11 px brass, centred in the foot above the author.",
+  },
+  b: {
+    reading: "Shelf drape · the ribbon tail emerges at the foot, over the lip and board. No head reserve: S1/S2/S3 titles start at 10 px.",
+    finished: "Beside author · 10 px brass medallion on the author row; it costs the author width and hits the 4.2 px floor on 27–35 px spines.",
+  },
+  c: {
+    reading: "Head rule · a 2 px oxblood line with gilt tips; costs a 24 px head reserve, 4 px less than cue A.",
+    finished: "Head roundel · a 15 px embossed gilt ring and hairline at the head.",
+  },
+  d: {
+    finished: "Head gold ribbon · 8×26 brass ribbon in a 28 px reserved head band, notched swallowtail and a 1 px dark edge.",
+  },
+  e: {
+    finished: "Tail gold ribbon · 8×16 visible, emerging at the foot and hanging over the lip/board; no head mark, 10 px reserve.",
+  },
+  f: {
+    finished: "Head gold tuck · an 8×14 brass tab tucked under the head edge; 16 px reserve, the cheapest finished mark.",
+  },
+};
+
+const RECOMMENDED = "s1";
+const MIN_READABLE = 6.4;
+const SCRIM_RGB = [22, 13, 8];
+const GOLD = { base: "#d2ac62", hi: "#f0dcae", sh: "#8a6a2e", edge: "#3a280f" };
+const CREAM_RGB = [244, 230, 196];
+
+/* ================================================================ helpers */
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function relLum(rgb) {
+  const [r, g, b] = rgb.map((v) => {
+    v /= 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrast(a, b) {
+  const la = relLum(a);
+  const lb = relLum(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function median(values) {
+  const copy = values.slice().sort((a, b) => a - b);
+  return copy[Math.floor(copy.length / 2)];
+}
+function authorLines(author) {
+  const words = author.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return [author.trim()];
+  const mid = Math.ceil(words.length / 2);
+  return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+}
+function toRgba(hex, alpha) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[ch]));
+}
+function round(value, places = 1) {
+  const p = 10 ** places;
+  return Math.round(value * p) / p;
+}
+function unionRects(rects) {
+  const left = Math.min(...rects.map((r) => r.left));
+  const top = Math.min(...rects.map((r) => r.top));
+  const right = Math.max(...rects.map((r) => r.right));
+  const bottom = Math.max(...rects.map((r) => r.bottom));
+  return { left, top, right, bottom, width: right - left, height: bottom - top };
+}
+function rangeRect(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  return range.getBoundingClientRect();
+}
+function runRect(st) {
+  const cols = st.querySelectorAll(".st-col");
+  if (cols.length) return unionRects([...cols].map(rangeRect));
+  return rangeRect(st);
+}
+function overlap(a, b) {
+  const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  return w > 0 && h > 0 ? { w, h } : null;
+}
+
+/* ================================================================ fitting */
+const probe = document.createElement("span");
+probe.setAttribute("aria-hidden", "true");
+probe.style.cssText =
+  "position:absolute;top:0;left:-9999px;visibility:hidden;pointer-events:none;" +
+  "writing-mode:vertical-rl;text-orientation:mixed;white-space:nowrap;letter-spacing:0;";
+document.body.appendChild(probe);
+
+function titleChars(title) {
+  return Math.max(1, Array.from(title.replace(/\s+/g, " ").trim()).length);
+}
+function splitBalanced(title, measure) {
+  const words = title.trim().split(/\s+/);
+  if (words.length < 2) return null;
+  let best = null;
+  for (let index = 1; index < words.length; index += 1) {
+    const left = words.slice(0, index).join(" ");
+    const right = words.slice(index).join(" ");
+    const difference = Math.abs(measure(left) - measure(right));
+    if (!best || difference < best.difference) {
+      best = { left, right, difference };
+    }
+  }
+  return best;
+}
+
+function fitTitle(st, title) {
+  const spine = st.closest(".spine");
+  const text = st.closest(".spine-text");
+  if (!spine || !text) return null;
+  const available = text.clientHeight;
+  if (available < 18) return null;
+  const width = spine.clientWidth || 30;
+  const maxFont = Math.min(11.8, Math.max(7, width * 0.34));
+  const target = available * 0.92;
+  const columnTarget = available * 0.94;
+  const chars = titleChars(title);
+  const style = getComputedStyle(st);
+  const isRtl = style.direction === "rtl";
+  probe.style.fontFamily = style.fontFamily;
+  probe.style.fontWeight = style.fontWeight;
+  probe.style.fontStyle = style.fontStyle;
+  probe.style.lineHeight = style.lineHeight;
+  probe.style.direction = isRtl ? "rtl" : "ltr";
+  probe.style.unicodeBidi = "isolate";
+
+  const measure = (value, size) => {
+    probe.style.fontSize = `${size}px`;
+    probe.textContent = value;
+    return rangeRect(probe).height;
+  };
+
+  const layout = (size, tracking, columns) => {
+    st.style.letterSpacing = "0px";
+    st.classList.toggle("has-columns", Boolean(columns));
+    st.textContent = "";
+    if (columns) {
+      for (const column of columns) {
+        const span = document.createElement("span");
+        span.className = "st-col";
+        span.style.letterSpacing = `${round(column.tracking, 2)}px`;
+        span.textContent = column.text;
+        st.appendChild(span);
+      }
+    } else {
+      st.textContent = title;
+      st.style.letterSpacing = `${round(tracking, 2)}px`;
+    }
+    st.style.fontSize = `${round(size, 2)}px`;
+    return { size, tracking, columns };
+  };
+
+  const naturalMax = measure(title, maxFont);
+  if (naturalMax <= target) {
+    return layout(maxFont, (target - naturalMax) / chars, null);
+  }
+
+  const needed = maxFont * (target / naturalMax);
+  if (needed >= MIN_READABLE) {
+    let size = Math.min(maxFont, needed);
+    let natural = measure(title, size);
+    for (let attempt = 0; attempt < 3 && natural > target; attempt += 1) {
+      size *= target / natural;
+      natural = measure(title, size);
+    }
+    return layout(size, Math.max(0, (target - natural) / chars), null);
+  }
+
+  let size = maxFont;
+  let natural = naturalMax;
+  const twoColumnLimit = columnTarget * 2;
+  for (let attempt = 0; attempt < 4 && natural > twoColumnLimit; attempt += 1) {
+    size = Math.max(2.8, size * (twoColumnLimit / natural) * 0.98);
+    natural = measure(title, size);
+  }
+  let parts = splitBalanced(title, (value) => measure(value, size));
+  if (!parts) {
+    // A single long word cannot become two columns: shrink one column until it
+    // fits rather than returning a run that overflows (the app's edge case).
+    let single = size;
+    while (single > 2.8 && measure(title, single) > target) single *= 0.97;
+    return layout(single, Math.max(0, (target - measure(title, single)) / chars), null);
+  }
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const longest = Math.max(measure(parts.left, size), measure(parts.right, size));
+    if (longest <= target) break;
+    size = Math.max(2.8, size * (target / longest) * 0.99);
+    const next = splitBalanced(title, (value) => measure(value, size));
+    if (!next) break;
+    parts = next;
+  }
+  const leftLength = measure(`${parts.left} `, size);
+  const rightLength = measure(parts.right, size);
+  return layout(size, 0, [
+    {
+      text: `${parts.left} `,
+      tracking: Math.min(size * 0.12, Math.max(0, (columnTarget - leftLength) / titleChars(`${parts.left} `))),
+    },
+    {
+      text: parts.right,
+      tracking: Math.min(size * 0.12, Math.max(0, (columnTarget - rightLength) / titleChars(parts.right))),
+    },
+  ]);
+}
+
+function fitAuthor(spine) {
+  const sa = spine.querySelector(".sa");
+  const foot = spine.querySelector(".foot");
+  if (!sa || !foot) return;
+  const base = state.v === "v0" ? 6.8 : 6.2;
+  let size = base;
+  sa.style.fontSize = `${size}px`;
+  for (let attempt = 0; attempt < 28; attempt += 1) {
+    const overHeight = foot.scrollHeight > foot.clientHeight + 0.5;
+    const overWidth = sa.scrollWidth > sa.clientWidth + 0.5;
+    if (!overHeight && !overWidth) break;
+    size = Math.max(4.2, size - 0.15);
+    sa.style.fontSize = `${round(size, 2)}px`;
+    if (size <= 4.2) break;
+  }
+}
+
+/* ================================================================= render */
+const LABEL_ABBR = {
+  Crime: "CRIME", Gothic: "GOTH", "Sci-Fi": "SCIF", Quest: "QUEST",
+  Humour: "HUM", Family: "FAM", Classics: "CLAS", Horror: "HORR",
+  Vintage: "VINT", Decadent: "DECA",
+};
+
+function spineMarkup(book) {
+  const labels = book.labels.slice(0, 2);
+  const hidden = book.labels.length - labels.length;
+  const chips = labels.map(([name, colour]) =>
+    `<span class="lb" style="--lc:${colour}" title="${esc(name)}"><span class="lb-name">${esc(name)}</span><span class="lb-short">${esc(LABEL_ABBR[name] || name.slice(0, 4))}</span></span>`
+  ).join("");
+  const more = hidden > 0
+    ? `<span class="lb more" style="--lc:linear-gradient(180deg,#ddc48e,#b89554);color:#241420"><span class="lb-name">+${hidden}</span><span class="lb-short">+${hidden}</span></span>`
+    : "";
+  const author = book.author
+    ? `<div class="author-row"><span class="mark mark-finished-b" aria-hidden="true">✦</span>` +
+      `<span class="sa">${authorLines(book.author).map((line, index, lines) => `<span>${esc(index < lines.length - 1 ? `${line} ` : line)}</span>`).join("")}</span></div>`
+    : "";
+  const art = book.art
+    ? `<img class="spine-art" src="spine-lab-art/${book.art}.jpg" alt="" draggable="false" />`
+    : "";
+  const windowArt = book.art
+    ? `<span class="s2-window"><img src="spine-lab-art/${book.art}.jpg" alt="" draggable="false" /></span>`
+    : "";
+  const classes = [
+    "spine",
+    book.status === "reading" ? "is-reading" : "",
+    book.status === "finished" ? "is-finished" : "",
+    book.labels.length > 2 ? "many-labels" : "",
+    book.art ? "" : "no-art",
+    book.lean ? "is-leaning" : "",
+  ].filter(Boolean).join(" ");
+  const style = [
+    `--w:${book.w}px`, `--h:${book.h}px`, `--c1:${book.c1}`, `--c2:${book.c2}`,
+    `--foot1:${toRgba(book.foot1, 0.92)}`, `--foot2:${toRgba(book.foot2, 0.96)}`,
+    book.lean ? `--lean:${book.lean}deg` : "",
+  ].filter(Boolean).join(";");
+  const aria = `${book.title}${book.author ? `, ${book.author}` : ", no author"}, ${book.status}${book.art ? "" : ", no art, typographic fallback"}`;
+  return `<li class="${classes}" data-book="${book.id}" data-art="${book.art}" data-title="${esc(book.title)}"${book.dir ? ` dir="${book.dir}"` : ""} aria-label="${esc(aria)}" style="${style}">
+    ${art}
+    <span class="s1-scrim" aria-hidden="true"></span>
+    <span class="s2-head" aria-hidden="true"></span>
+    ${windowArt}
+    <span class="s2-foot" aria-hidden="true"></span>
+    <span class="s3-plate" aria-hidden="true"></span>
+    <span class="spine-text"><span class="st" data-title="${esc(book.title)}">${esc(book.title)}</span></span>
+    <span class="foot"><span class="mark mark-finished-a" aria-hidden="true">✦</span>${author}<span class="bands">${chips}${more}</span></span>
+    <span class="mark mark-reading-a" aria-hidden="true"></span>
+    <span class="mark mark-reading-c" aria-hidden="true"></span>
+    <span class="mark mark-finished-c" aria-hidden="true">✦</span>
+    <span class="mark mark-finished-d" aria-hidden="true"></span>
+    <span class="mark mark-finished-f" aria-hidden="true"></span>
+    <span class="mark mark-v0-ribbon" aria-hidden="true"></span>
+    <span class="mark mark-v0-seal" aria-hidden="true">✦</span>
+  </li>`;
+}
+
+const mainList = document.getElementById("main-books");
+const stressList = document.getElementById("stress-books");
+mainList.innerHTML = BOOKS.map(spineMarkup).join("");
+stressList.innerHTML = STRESS.map(spineMarkup).join("");
+
+function labelState() {
+  const params = new URLSearchParams(location.search);
+  const v = params.get("v");
+  const cue = params.get("cue");
+  const seal = params.get("seal");
+  return {
+    v: ["v0", "s1", "s2", "s3", "s4"].includes(v) ? v : "s1",
+    cue: ["a", "b", "c"].includes(cue) ? cue : "a",
+    seal: ["a", "b", "c", "d", "e", "f"].includes(seal) ? seal : "d",
+  };
+}
+let state = labelState();
+
+/* ============================================================== drape cues */
+function buildDrapes() {
+  document.querySelectorAll(".cue-layer").forEach((layer) => { layer.innerHTML = ""; });
+  document.querySelectorAll(".v4-shelf").forEach((shelf) => {
+    const caseEl = shelf.querySelector(".v4-case");
+    const layer = shelf.querySelector(".cue-layer");
+    const caseRect = caseEl.getBoundingClientRect();
+    for (const spine of shelf.querySelectorAll(".spine.is-reading")) {
+      const rect = spine.getBoundingClientRect();
+      const drape = document.createElement("span");
+      drape.className = "cue-drape reading";
+      drape.dataset.book = spine.dataset.book;
+      drape.style.left = `${round(rect.right - caseRect.left - 9 - 2, 2)}px`;
+      drape.style.top = `${round(rect.bottom - caseRect.top - 4, 2)}px`;
+      drape.style.height = "31px";
+      layer.appendChild(drape);
+    }
+    for (const spine of shelf.querySelectorAll(".spine.is-finished")) {
+      const rect = spine.getBoundingClientRect();
+      const drape = document.createElement("span");
+      drape.className = "cue-drape gold";
+      drape.dataset.book = spine.dataset.book;
+      drape.style.left = `${round(rect.right - caseRect.left - 8 - 2, 2)}px`;
+      drape.style.top = `${round(rect.bottom - caseRect.top - 2, 2)}px`;
+      drape.style.height = "16px";
+      layer.appendChild(drape);
+    }
+  });
+}
+
+/* ------------------------------------------------- finished gold close-up */
+function buildCloseup() {
+  const section = document.getElementById("closeup");
+  const track = document.getElementById("closeup-track");
+  if (!section || !track) return;
+  track.innerHTML = "";
+  if (state.v !== "s1") {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  const sources = ["whisper-man", "alice"]
+    .map((id) => document.querySelector(`#main-books .spine[data-book="${id}"]`))
+    .filter(Boolean);
+  if (!sources.length) return;
+  for (const seal of ["d", "e", "f"]) {
+    const group = document.createElement("div");
+    group.className = "closeup-group";
+    group.dataset.closeupSeal = seal;
+    if (seal === state.seal) group.classList.add("is-current");
+    const scale = document.createElement("div");
+    scale.className = "closeup-scale";
+    const pair = document.createElement("div");
+    pair.className = "closeup-pair";
+    scale.appendChild(pair);
+    group.appendChild(scale);
+    const label = document.createElement("div");
+    label.className = "closeup-label";
+    label.innerHTML = `<b>${seal.toUpperCase()}</b> ${seal === "d" ? "HEAD RIBBON" : seal === "e" ? "TAIL RIBBON" : "HEAD TUCK"}`;
+    group.appendChild(label);
+    track.appendChild(group);
+    for (const source of sources) {
+      const clone = source.cloneNode(true);
+      clone.classList.add("closeup-spine");
+      clone.style.setProperty("--head", `${seal === "d" ? 28 : seal === "f" ? 16 : 10}px`);
+      if (seal === "e") {
+        const tail = document.createElement("span");
+        tail.className = "closeup-tail";
+        tail.setAttribute("aria-hidden", "true");
+        clone.appendChild(tail);
+      }
+      pair.appendChild(clone);
+      const titleEl = clone.querySelector(".st");
+      if (titleEl) fitTitle(titleEl, clone.dataset.title || "");
+      fitAuthor(clone);
+    }
+  }
+}
+
+/* ================================================================ measuring */
+function buildArtContrast(spine, run, inkRgb) {
+  const artKey = spine.dataset.art;
+  const data = ART[artKey];
+  if (!data) return null;
+  const spineRect = spine.getBoundingClientRect();
+  const h = spineRect.height;
+  const isV0 = state.v === "v0";
+  const artHeight = isV0 ? h * 0.73 : h;
+  const f0 = Math.max(0, (run.top - spineRect.top) / artHeight);
+  const f1 = Math.min(1, (run.bottom - spineRect.top) / artHeight);
+  if (!(f1 > f0)) return null;
+  const ratios = [];
+  for (let index = 0; index < data.bands.length; index += 1) {
+    const center = (index + 0.5) / data.bands.length;
+    if (center < f0 || center > f1) continue;
+    let rgb = hexToRgb(data.bands[index]);
+    if (state.v === "s1") {
+      // Linear gradient 64% at the head to 84% at the foot.
+      const alpha = 0.64 + 0.20 * center;
+      rgb = rgb.map((value, channel) => Math.round(value * (1 - alpha) + SCRIM_RGB[channel] * alpha));
+    }
+    ratios.push(contrast(inkRgb, rgb));
+  }
+  if (!ratios.length) return null;
+  return { median: median(ratios), worst: Math.min(...ratios) };
+}
+
+function measureSpine(spine, index, group, groupSpines) {
+  const rect = spine.getBoundingClientRect();
+  const text = spine.querySelector(".spine-text");
+  const st = spine.querySelector(".st");
+  const foot = spine.querySelector(".foot");
+  const textRect = text.getBoundingClientRect();
+  const glyphRect = runRect(st);
+  const font = parseFloat(getComputedStyle(st).fontSize);
+  const book = [...BOOKS, ...STRESS].find((item) => item.id === spine.dataset.book);
+  const isV0 = state.v === "v0";
+
+  const boxInside =
+    textRect.top >= rect.top - 0.75 &&
+    textRect.bottom <= rect.bottom + 0.75 &&
+    textRect.left >= rect.left - 0.75 &&
+    textRect.right <= rect.right + 0.75;
+  const runInside =
+    glyphRect.top >= textRect.top - 0.9 &&
+    glyphRect.bottom <= textRect.bottom + 0.9 &&
+    glyphRect.left >= textRect.left - 0.9 &&
+    glyphRect.right <= textRect.right + 0.9;
+  const clipped = st.scrollHeight > st.clientHeight + 1 || st.scrollWidth > st.clientWidth + 1;
+
+  let ink = "#f4e6c4";
+  let inkRgb = hexToRgb(ink);
+  let backing = "solid";
+  let contrastPair = null;
+
+  if (isV0) {
+    const artKey = spine.dataset.art;
+    const sample = ART[artKey];
+    const dark = sample && sample.inkMedian > 0.22;
+    ink = dark ? "#2a1a10" : "#f4e6c4";
+    inkRgb = hexToRgb(ink);
+    backing = dark ? "raw art / dark ink" : "raw art / cream ink";
+    contrastPair = sample ? buildArtContrast(spine, glyphRect, inkRgb) : null;
+    st.style.setProperty("--spine-ink", ink);
+    sp(spine, dark);
+  } else if (state.v === "s1") {
+    backing = "composited scrim";
+    contrastPair = buildArtContrast(spine, glyphRect, inkRgb);
+  } else if (state.v === "s2") {
+    const c1 = getComputedStyle(spine).getPropertyValue("--c1").trim() || "#333";
+    inkRgb = hexToRgb("#f4e6c4");
+    contrastPair = { median: contrast(inkRgb, hexToRgb(c1)), worst: contrast(inkRgb, hexToRgb(c1)) };
+    backing = "solid leather head";
+  } else if (state.v === "s3") {
+    const plate = "#221610";
+    inkRgb = hexToRgb("#f4e6c4");
+    contrastPair = { median: contrast(inkRgb, hexToRgb(plate)), worst: contrast(inkRgb, hexToRgb(plate)) };
+    backing = "gilt label plate";
+  } else if (state.v === "s4") {
+    const c1 = getComputedStyle(spine).getPropertyValue("--c1").trim() || "#333";
+    inkRgb = hexToRgb("#ecd7a4");
+    contrastPair = { median: contrast(inkRgb, hexToRgb(c1)), worst: contrast(inkRgb, hexToRgb(c1)) };
+    backing = "solid cloth";
+  }
+  if (spine.classList.contains("no-art")) {
+    const c1 = getComputedStyle(spine).getPropertyValue("--c1").trim() || "#333";
+    inkRgb = hexToRgb("#f4e6c4");
+    contrastPair = { median: contrast(inkRgb, hexToRgb(c1)), worst: contrast(inkRgb, hexToRgb(c1)) };
+    ink = "#f4e6c4";
+    backing = "cloth fallback";
+  }
+  if (!isV0 || spine.classList.contains("no-art")) {
+    st.classList.remove("is-adaptive");
+    st.style.removeProperty("--spine-ink");
+    st.style.removeProperty("--spine-halo");
+    st.style.removeProperty("--spine-halo-shadow");
+  }
+
+  // Status marks: do they enter the title box or the glyph run?
+  const marks = [...spine.querySelectorAll(".mark")].filter((mark) => {
+    const display = getComputedStyle(mark).display;
+    if (display === "none") return false;
+    const r = mark.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  });
+  let markBox = 0;
+  let markRun = 0;
+  for (const mark of marks) {
+    const r = mark.getBoundingClientRect();
+    const boxHit = overlap(r, textRect);
+    const runHit = overlap(r, glyphRect);
+    if (boxHit) markBox = Math.max(markBox, Math.max(boxHit.w, boxHit.h));
+    if (runHit) markRun = Math.max(markRun, Math.max(runHit.w, runHit.h));
+  }
+
+  // The gold ribbon is a finished mark. D/F live inside the spine; E hangs
+  // from the foot over the shelf board, so it is measured from the cue layer.
+  let gold = null;
+  if (["d", "e", "f"].includes(state.seal)) {
+    const goldEl = state.seal === "e"
+      ? document.querySelector(`.cue-layer .cue-drape.gold[data-book="${spine.dataset.book}"]`)
+      : spine.querySelector(`.mark-finished-${state.seal}`);
+    if (goldEl && getComputedStyle(goldEl).display !== "none") {
+      const gr = goldEl.getBoundingClientRect();
+      if (gr.width > 0 && gr.height > 0) {
+        const boxHit = overlap(gr, textRect);
+        const runHit = overlap(gr, glyphRect);
+        if (boxHit) markBox = Math.max(markBox, Math.max(boxHit.w, boxHit.h));
+        if (runHit) markRun = Math.max(markRun, Math.max(runHit.w, runHit.h));
+        let backing = "composited scrim";
+        let baseContrast = null;
+        let hiContrast = null;
+        if (state.seal === "e") {
+          const board = hexToRgb("#3d2846");
+          const lip = hexToRgb("#4a3052");
+          backing = "lip/board";
+          baseContrast = {
+            median: contrast(hexToRgb(GOLD.base), board),
+            worst: Math.min(contrast(hexToRgb(GOLD.base), lip), contrast(hexToRgb(GOLD.base), board)),
+          };
+          hiContrast = {
+            median: contrast(hexToRgb(GOLD.hi), board),
+            worst: Math.min(contrast(hexToRgb(GOLD.hi), lip), contrast(hexToRgb(GOLD.hi), board)),
+          };
+        } else if (state.v === "s1" || state.v === "v0" || state.v === "s3") {
+          backing = state.v === "s1" ? "composited scrim" : state.v === "s3" ? "raw art above plate" : "raw art";
+          baseContrast = buildArtContrast(spine, gr, hexToRgb(GOLD.base));
+          hiContrast = buildArtContrast(spine, gr, hexToRgb(GOLD.hi));
+        } else {
+          const c1 = hexToRgb(getComputedStyle(spine).getPropertyValue("--c1").trim() || "#333");
+          backing = state.v === "s3" ? "plate/head" : "solid head";
+          baseContrast = { median: contrast(hexToRgb(GOLD.base), c1), worst: contrast(hexToRgb(GOLD.base), c1) };
+          hiContrast = { median: contrast(hexToRgb(GOLD.hi), c1), worst: contrast(hexToRgb(GOLD.hi), c1) };
+        }
+        const gap = state.seal === "e" ? gr.top - textRect.bottom : textRect.top - gr.bottom;
+        gold = {
+          seal: state.seal,
+          w: round(gr.width, 1),
+          h: round(gr.height, 1),
+          titleGap: round(gap, 1),
+          boxHit: boxHit ? round(Math.max(boxHit.w, boxHit.h), 1) : 0,
+          runHit: runHit ? round(Math.max(runHit.w, runHit.h), 1) : 0,
+          backing,
+          base: baseContrast ? { median: round(baseContrast.median, 2), worst: round(baseContrast.worst, 2) } : null,
+          hi: hiContrast ? { median: round(hiContrast.median, 2), worst: round(hiContrast.worst, 2) } : null,
+          baseL: round(relLum(hexToRgb(GOLD.base)), 3),
+          hiL: round(relLum(hexToRgb(GOLD.hi)), 3),
+          creamL: round(relLum(CREAM_RGB), 3),
+        };
+      }
+    }
+  }
+
+  const labelTrunc = [...spine.querySelectorAll(".lb-name, .lb-short")]
+    .filter((name) => getComputedStyle(name).display !== "none")
+    .filter((name) => name.scrollWidth > name.clientWidth + 1).length;
+  const footOverflow = foot.scrollHeight > foot.clientHeight + 1;
+  const authorEl = spine.querySelector(".sa");
+  const authorFont = authorEl ? round(parseFloat(getComputedStyle(authorEl).fontSize), 1) : null;
+  const authorClip = Boolean(authorEl) && authorEl.scrollWidth > authorEl.clientWidth + 1;
+  const footRect = foot.getBoundingClientRect();
+  const footH = footRect.height;
+  const footFrac = footH / rect.height;
+  const footMaterial = isV0 ? "band" : state.v === "s1" ? "scrim" : state.v === "s2" ? "band" : state.v === "s3" ? "tint" : "cloth";
+
+  return {
+    id: spine.dataset.book,
+    group,
+    index,
+    title: book ? book.title : spine.dataset.title,
+    status: book ? book.status : "",
+    width: rect.width,
+    height: rect.height,
+    font,
+    readable: font >= MIN_READABLE,
+    contrast: contrastPair ? { median: round(contrastPair.median, 2), worst: round(contrastPair.worst, 2) } : null,
+    backing,
+    boxW: round(glyphRect.width, 1),
+    boxH: round(glyphRect.height, 1),
+    boxInside,
+    runInside,
+    clipped,
+    markBox: round(markBox, 1),
+    markRun: round(markRun, 1),
+    footH: round(footH, 1),
+    footFrac: round(footFrac * 100, 1),
+    footMaterial,
+    labelTrunc,
+    footOverflow,
+    authorFont,
+    authorClip,
+    gold,
+    footTop: footRect.top,
+    footLeft: footRect.left,
+    footRight: footRect.right,
+    titleTop: textRect.top,
+    titleBottom: textRect.bottom,
+  };
+}
+
+function sp(spine, dark) {
+  const st = spine.querySelector(".st");
+  const halo = dark ? "#fffaf0" : "#160d09";
+  const shadow = dark ? "rgba(255, 250, 238, 0.7)" : "rgba(8, 4, 2, 0.72)";
+  st.classList.add("is-adaptive");
+  st.style.setProperty("--spine-halo", halo);
+  st.style.setProperty("--spine-halo-shadow", shadow);
+  st.style.setProperty("--spine-ink", dark ? "#2a1a10" : "#f4e6c4");
+}
+
+function measureAll() {
+  const rows = [];
+  const shelves = [
+    ["Main shelf", "main", [...document.querySelectorAll('#main-books .spine')]],
+    ["Stress row", "stress", [...document.querySelectorAll('#stress-books .spine')]],
+  ];
+  for (const [label, key, spines] of shelves) {
+    spines.forEach((spine, index) => {
+      const row = measureSpine(spine, index, key, spines);
+      const next = spines[index + 1];
+      if (next) {
+        const nextFoot = next.querySelector(".foot").getBoundingClientRect();
+        row.gap = round(nextFoot.left - row.footRight, 2);
+        row.step = round(nextFoot.top - row.footTop, 2);
+      } else {
+        row.gap = null;
+        row.step = null;
+      }
+      rows.push(row);
+    });
+  }
+  const main = rows.filter((row) => row.group === "main");
+  const stress = rows.filter((row) => row.group === "stress");
+  const summarize = (set, label) => {
+    const inside = set.filter((row) => row.boxInside && row.runInside && !row.clipped).length;
+    const pass = set.filter((row) => row.contrast && row.contrast.worst >= 4.5).length;
+    const collided = set.filter((row) => row.markBox > 0).length;
+    const glyphHit = set.filter((row) => row.markRun > 0).length;
+    const medianPass = set.filter((row) => row.contrast && row.contrast.median >= 4.5).length;
+    const small = set.filter((row) => !row.readable).length;
+    const labels = set.reduce((sum, row) => sum + row.labelTrunc, 0);
+    return { label: `${label}`, inside, pass, medianPass, collided, glyphHit, small, labels, total: set.length };
+  };
+  const summary = {
+    main: summarize(main, "Main shelf"),
+    stress: summarize(stress, "Stress row"),
+    variant: state.v,
+    cue: state.cue,
+    seal: state.seal,
+    recommended: RECOMMENDED,
+  };
+  window.__lab = { rows, summary, state };
+  renderTable(rows, summary);
+}
+
+function renderTable(rows, summary) {
+  const body = document.getElementById("m-body");
+  const rowsHTML = [];
+  for (const [key, label] of [["main", "Main shelf"], ["stress", "Stress row"]]) {
+    rowsHTML.push(`<tr class="group"><th colspan="7">${label}</th></tr>`);
+    for (const row of rows.filter((item) => item.group === key)) {
+      const inside = row.boxInside && row.runInside && !row.clipped;
+      const contrast = row.contrast;
+      const contrastText = contrast
+        ? `${contrast.median.toFixed(1)}<span class="sub">worst ${contrast.worst.toFixed(1)}</span>`
+        : "—";
+      const contrastClass = !contrast ? "bad" : contrast.worst >= 4.5 ? "ok" : "bad";
+      const boxClass = inside ? "ok" : "bad";
+      const markClass = row.markBox > 0 ? (state.v === "v0" ? "warn" : "bad") : "ok";
+      const readable = row.readable ? "ok" : "warn";
+      const gapText = row.gap === null
+        ? "—"
+        : `${row.gap.toFixed(1)}<span class="sub">Δ ${row.step.toFixed(1)}</span>`;
+      const name = `<td class="spine-name">${esc(row.title.length > 34 ? `${row.title.slice(0, 33)}…` : row.title)}<em>${row.width.toFixed(0)}×${row.height.toFixed(0)} · ${row.status}</em></td>`;
+      rowsHTML.push(`<tr class="${inside && (!contrast || contrast.worst >= 4.5) && (state.v === "v0" || row.markBox === 0) ? "" : "fail-row"}">
+        ${name}
+        <td class="num">${row.width.toFixed(0)}</td>
+        <td class="num ${readable}">${row.font.toFixed(1)}</td>
+        <td class="${contrastClass}">${contrastText}</td>
+        <td class="${boxClass}">${row.boxW.toFixed(0)}×${row.boxH.toFixed(0)}<span class="sub">${row.boxInside ? "✓" : "✗"} box · ${row.runInside && !row.clipped ? "✓" : "✗"} run · <span class="${markClass}">${row.markBox > 0 ? `✗ ${row.markBox.toFixed(0)}` : "✓"}${row.markRun > 0 ? `/${row.markRun.toFixed(0)}` : ""}</span> mark</span></td>
+        <td class="num ${row.footOverflow || row.authorClip ? "bad" : ""}">${row.footH.toFixed(0)}<span class="sub">${row.authorClip ? `✗ ${row.authorFont} author` : row.footOverflow ? "✗ overflow" : row.footMaterial}</span></td>
+        <td class="num">${gapText}</td>
+      </tr>`);
+    }
+  }
+  body.innerHTML = rowsHTML.join("");
+
+  const m = summary.main;
+  const s = summary.stress;
+  const bad = m.total - m.pass;
+  const collisions = m.collided;
+  const mainRows = rows.filter((row) => row.group === "main" && row.gap !== null);
+  const gaps = mainRows.map((row) => row.gap);
+  const steps = mainRows.map((row) => Math.abs(row.step));
+  const gapText = gaps.length
+    ? `${Math.min(...gaps).toFixed(1) === Math.max(...gaps).toFixed(1) ? Math.min(...gaps).toFixed(1) : `${Math.min(...gaps).toFixed(1)}–${Math.max(...gaps).toFixed(1)}`} px gaps, max Δy ${Math.max(...steps).toFixed(1)} px`
+    : "no neighbours";
+  const barText = state.v === "v0"
+    ? `Foot bands: ${gapText}; they do not touch but share one near-black, so they read as a shelf-wide bar.`
+    : state.v === "s1"
+      ? "Foot: no band (scrim over art); there is no shelf-wide bar to form."
+      : state.v === "s2"
+        ? `Foot bands: ${gapText}; each band is the book's own palette, so they read as separate bindings.`
+        : state.v === "s3"
+          ? `Foot bands: ${gapText}; each band is a per-book tint, so they read as separate bindings.`
+          : "Foot: the whole spine is cloth; no band and no bar.";
+  const v0Note = state.v === "v0"
+    ? "V0 marks deliberately overlap the title box: the ribbon starts at the top edge and the seal floats 8 px above the 27% band."
+    : "";
+  const bodyText =
+    `<b>${state.v.toUpperCase()}</b> · cue ${state.cue.toUpperCase()} · seal ${state.seal.toUpperCase()} — ` +
+    `main ${m.inside}/${m.total} titles inside, ${m.pass}/${m.total} at ≥4.5:1 on the worst band (${m.medianPass}/${m.total} on the median), ` +
+    `<span class="${collisions ? "bad" : "good"}">${collisions} mark collision${collisions === 1 ? "" : "s"} in the box (${m.glyphHit} on glyphs)</span>, ` +
+    `${m.small} below ${MIN_READABLE} px, ${m.labels} truncated label${m.labels === 1 ? "" : "s"}, ` +
+    `${rows.filter((row) => row.authorClip).length} author column${rows.filter((row) => row.authorClip).length === 1 ? "" : "s"} clipped. ` +
+    `Stress ${s.inside}/${s.total} inside, ${s.pass}/${s.total} on the worst band. ${barText} ${v0Note}`;
+  document.getElementById("m-summary").innerHTML = bodyText;
+
+  const goldRows = rows.filter((row) => row.group === "main" && row.gold);
+  const goldEl = document.getElementById("m-gold");
+  if (goldRows.length) {
+    const sample = goldRows[0].gold;
+    const parts = goldRows.map((row) => {
+      const short = row.title.length > 26 ? `${row.title.slice(0, 25)}…` : row.title;
+      return `<b>${esc(short)}</b> ${row.gold.w}×${row.gold.h}px, title gap ${row.gold.titleGap.toFixed(1)}px ` +
+        `<span class="${row.gold.boxHit ? "bad" : "ok"}">${row.gold.boxHit ? `✗ ${row.gold.boxHit}px in box` : "✓ clear"}</span>, ` +
+        `backing ${row.gold.backing} <span class="${row.gold.base.worst >= 4.5 ? "ok" : "bad"}">${row.gold.base.worst.toFixed(1)}:1 base</span> / ${row.gold.hi.worst.toFixed(1)}:1 sheen`;
+    }).join(" · ");
+    const hairline = state.seal === "e"
+      ? "The tail sits below the board's lip, so it never competes with a head hairline."
+      : state.seal === "d"
+        ? "The 1px gold hairline crosses the head at 7–8px; the ribbon is 8×26 with a 1px #3a280f edge and a notch, so the silhouette separates at 27px even where it sits on the line."
+        : "The 8×14 tuck is the smallest mark: still 8× the 1px hairline, with a dark edge and a fold shadow; readable at 27px, the least separated of the three.";
+    const goldPass = goldRows.every((row) => row.gold.base.worst >= 4.5);
+    goldEl.innerHTML = `<b>Gold ribbon ${state.seal.toUpperCase()}</b> — ${parts}. ${hairline} ` +
+      `Gold vs cream: base L ${sample.baseL.toFixed(2)}, sheen L ${sample.hiL.toFixed(2)}, title cream L ${sample.creamL.toFixed(2)}; the base and the 1px dark edge own the 8px width, so at 27px it reads brass, not cream (the 2px sheen is the only cream-adjacent value).` +
+      (goldPass ? "" : ` <span class="bad">Gold does not clear 4.5:1 on this binding's unscrimmed art; the ribbon is an S1 mark unless the gold sits on a scrim or solid ground.</span>`);
+    goldEl.hidden = false;
+  } else {
+    goldEl.hidden = true;
+  }
+
+  document.getElementById("m-variant").textContent =
+    `${BRIEFS[state.v].tag} · ${state.cue.toUpperCase()}/${state.seal.toUpperCase()}`;
+}
+
+/* ============================================================== brief + UI */
+function updateBrief() {
+  const brief = BRIEFS[state.v];
+  document.getElementById("brief-name").textContent = brief.name;
+  document.getElementById("brief-tag").textContent = brief.tag;
+  document.getElementById("brief-title").textContent = brief.title;
+  document.getElementById("brief-foot").textContent = brief.foot;
+  document.getElementById("brief-lower").textContent = brief.lower;
+  document.getElementById("brief-art").textContent = brief.art;
+  const cue = CUES[state.cue];
+  const seal = CUES[state.seal];
+  document.getElementById("brief-cue").innerHTML =
+    `<b>Reading · cue ${state.cue.toUpperCase()}</b> ${cue.reading} <b>Finished · seal ${state.seal.toUpperCase()}</b> ${seal.finished}`;
+  document.getElementById("m-variant").textContent = `${brief.tag} · ${state.cue.toUpperCase()}/${state.seal.toUpperCase()}`;
+}
+
+function updateSwitch() {
+  document.querySelectorAll("#sw-bindings .sw-btn").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.v === state.v));
+  });
+  document.querySelectorAll("#sw-cue .sw-btn").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.cue === state.cue));
+  });
+  document.querySelectorAll("#sw-seal .sw-btn").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.seal === state.seal));
+  });
+  const note = document.getElementById("sw-note");
+  if (state.v === "v0") {
+    note.innerHTML = "V0 A/A is today's app face: 8×38 ribbon, 15 px seal above the band. Cue B keeps the V0 title box; cue C adds a 24 px head reserve.";
+  } else if (state.v === "s1" && state.seal === "d") {
+    note.innerHTML = "Default: <b>S1 · cue A · seal D</b> — the gold head ribbon. The 2× close-up below compares D / E / F.";
+  } else if (state.v === "s1" && (state.seal === "e" || state.seal === "f")) {
+    note.innerHTML = `<b>Gold ${state.seal.toUpperCase()}</b> selected. The 2× close-up below compares all three finished ribbons.`;
+  } else {
+    note.innerHTML = `Recommended: <b>${BRIEFS[RECOMMENDED].name}</b>. Finished D / E / F are the gold ribbons; the 2× close-up shows them side by side.`;
+  }
+  requestAnimationFrame(setSwitcherPadding);
+}
+
+function setSwitcherPadding() {
+  const switcher = document.querySelector(".switcher");
+  if (!switcher) return;
+  document.body.style.paddingBottom = `${Math.ceil(switcher.getBoundingClientRect().height) + 18}px`;
+}
+
+function syncURL() {
+  try {
+    const params = new URLSearchParams(location.search);
+    params.set("v", state.v);
+    params.set("cue", state.cue);
+    params.set("seal", state.seal);
+    history.replaceState(null, "", `${location.pathname}?${params.toString()}${location.hash}`);
+  } catch {
+    /* file:// may refuse replaceState; the in-page switcher still works. */
+  }
+}
+
+function applyState(next, push = true) {
+  state = { ...state, ...next };
+  const html = document.documentElement;
+  html.dataset.v = state.v;
+  html.dataset.cue = state.cue;
+  html.dataset.seal = state.seal;
+  if (push) syncURL();
+  updateBrief();
+  updateSwitch();
+  requestAnimationFrame(() => {
+    refitAll();
+    requestAnimationFrame(() => {
+      buildDrapes();
+      buildCloseup();
+      measureAll();
+    });
+  });
+}
+
+function refitAll() {
+  document.querySelectorAll("#main-books .spine, #stress-books .spine").forEach((spine) => {
+    const st = spine.querySelector(".st");
+    if (!st) return;
+    spine.querySelectorAll(".st .st-col").forEach((node) => node.remove());
+    fitTitle(st, st.dataset.title || spine.dataset.title || "");
+    fitAuthor(spine);
+  });
+}
+
+/* ============================================================ interactions */
+document.querySelectorAll("#sw-bindings .sw-btn").forEach((button) => {
+  button.addEventListener("click", () => applyState({ v: button.dataset.v }));
+});
+document.querySelectorAll("#sw-cue .sw-btn").forEach((button) => {
+  button.addEventListener("click", () => applyState({ cue: button.dataset.cue }));
+});
+document.querySelectorAll("#sw-seal .sw-btn").forEach((button) => {
+  button.addEventListener("click", () => applyState({ seal: button.dataset.seal }));
+});
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    refitAll();
+    buildDrapes();
+    buildCloseup();
+    measureAll();
+  }, 120);
+});
+
+/* Initial paint: fonts first, then fit, then measure. */
+const html = document.documentElement;
+html.dataset.v = state.v;
+html.dataset.cue = state.cue;
+html.dataset.seal = state.seal;
+updateBrief();
+updateSwitch();
+syncURL();
+const start = () => {
+  refitAll();
+  requestAnimationFrame(() => {
+    buildDrapes();
+    buildCloseup();
+    measureAll();
+  });
+};
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(start);
+} else {
+  start();
+}
+window.addEventListener("load", () => {
+  start();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,3867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Reader controls — throwaway prototype</title>
+<!--
+  THROWAWAY PROTOTYPE — do not ship.
+  Question: how should a reader reach type / theme / contents settings
+  without chrome hiding the text?
+
+  Open by double-clicking this file, or serve the worktree and visit
+  /prototype/design/reader-controls.html?v=r1&flow=reflow
+
+  Positional prototype chrome (the bench at the bottom and the Check
+  report) is deliberately outside the reader: it is not part of any design.
+  The reader itself never scrolls the document horizontally.
+-->
+<style>
+  /* ---------------------------------------------------------------- base */
+  :root {
+    --display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino,
+      "Hoefler Text", Georgia, "Noto Serif", serif;
+    --body: "Iowan Old Style", Palatino, "Book Antiqua", Georgia, "Noto Serif",
+      serif;
+    --serif-garamond: "EB Garamond", "Iowan Old Style", "Palatino Linotype",
+      Palatino, "Book Antiqua", Georgia, "Noto Serif", serif;
+    --serif-literata: "Literata", "Charter", "Iowan Old Style",
+      "Palatino Linotype", Georgia, "Noto Serif", serif;
+    --serif-source: "Source Serif 4", "Source Serif Pro", "Noto Serif",
+      "Nimbus Roman", Georgia, serif;
+    --bench-h: 64px;
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #17110b;
+    color: #e8dcc4;
+    font-family: var(--body);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  button:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--accent, #7a5b2c);
+    outline-offset: 2px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    border: 0;
+    white-space: nowrap;
+  }
+
+  /* ------------------------------------------------------------- reader */
+  #app {
+    position: fixed;
+    inset: 0 0 var(--bench-h) 0;
+    overflow: hidden;
+  }
+
+  .reader {
+    --paper: #f5eedc;
+    --ink: #2c2418;
+    --accent: #7a5b2c;
+    --rule: rgba(70, 50, 24, 0.22);
+    --dock-h: 44px;
+    --sheet-h: 48dvh;
+    --stage-top: 0px;
+    --stage-bottom: 44px;
+    --dock-bottom: 0px;
+    --clip-bottom: 0px;
+    --pad-l: 26px;
+    --pad-r: 26px;
+    --gutter: 0px;
+    --pdf-paper: #fffdf7;
+    --pdf-ink: #2b261d;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    color: var(--ink);
+    background: var(--paper);
+    font-family: var(--body);
+  }
+
+  .reader[data-theme="sepia"] {
+    --paper: #e8d7b4;
+    --ink: #3b2b17;
+    --accent: #76512a;
+    --rule: rgba(74, 48, 20, 0.25);
+    --pdf-paper: #f6e9ca;
+    --pdf-ink: #382a18;
+  }
+
+  .reader[data-theme="night"] {
+    --paper: #12100e;
+    --ink: #d6c7aa;
+    --accent: #c9a86a;
+    --rule: rgba(214, 199, 170, 0.2);
+    --pdf-paper: #1c1914;
+    --pdf-ink: #d6c7aa;
+  }
+
+  .reader[data-v="v0"] { --dock-h: 0px; --stage-bottom: 0px; }
+  .reader[data-v="r1"] { --dock-h: 44px; }
+  .reader[data-v="r2"] { --dock-h: 44px; --gutter: 52px; --pad-r: 26px; }
+  .reader[data-v="r3"] { --dock-h: 44px; }
+
+  /* Only the current direction's chrome exists. The others are kept in the
+     DOM for switching, but they must not paint, hit-test or measure. */
+  .reader:not([data-v="v0"]) .v0-top,
+  .reader:not([data-v="v0"]) .v0-bottom,
+  .reader:not([data-v="v0"]) .v0-pill,
+  .reader:not([data-v="v0"]) .v0-track,
+  .reader:not([data-v="r1"]) .r1-dock,
+  .reader:not([data-v="r2"]) .r2-rail,
+  .reader:not([data-v="r2"]) .r2-foot,
+  .reader:not([data-v="r3"]) .r3-top,
+  .reader:not([data-v="r3"]) .r3-bottom,
+  .reader:not([data-v="r3"]) .r3-foot,
+  .reader:not([data-v="r3"]) .r3-menu-row {
+    display: none !important;
+  }
+
+  .reader[data-mode="scrolled"] .page-clip {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* The stage is the only region text is allowed to live in. Every band of
+     chrome is either outside it (bars, dock) or the stage is clipped to the
+     visible page area (overlay sheet). */
+  .stage {
+    position: absolute;
+    top: var(--stage-top);
+    right: 0;
+    bottom: var(--stage-bottom);
+    left: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .viewport {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  /* Paginated columns overflow to the right; clipping at the content box
+     (not the viewport's padding box) keeps the next column out of the R2
+     margin and out of the chrome. */
+  .page-clip {
+    position: absolute;
+    top: 18px;
+    right: calc(var(--pad-r) + var(--gutter));
+    bottom: 16px;
+    left: var(--pad-l);
+    overflow: hidden;
+  }
+
+  /* ----------------------------------------- the book page (EPUB-ish) */
+  .prose {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--serif-garamond);
+    font-size: 19px;
+    line-height: 1.6;
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures;
+    hyphens: manual;
+    -webkit-hyphens: manual;
+    overflow-wrap: break-word;
+    text-align: left;
+  }
+
+  .chapter {
+    margin: 0;
+  }
+
+  .chapter + .chapter {
+    /* In columns this space becomes part of the flow; avoid a forced break
+       so a short chapter can end mid-column like a real book. */
+    padding-top: 0.4em;
+  }
+
+  .chapter h2 {
+    margin: 0.1em 0 0.9em;
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 1.45em;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: 0.015em;
+    text-align: left;
+    break-after: avoid;
+  }
+
+  .chapter h2 .ordinal {
+    display: block;
+    margin-bottom: 0.28em;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 0.42em;
+    font-variant: small-caps;
+    letter-spacing: 0.22em;
+    text-transform: lowercase;
+  }
+
+  .chapter .fleuron {
+    margin: 0 0 1em;
+    color: var(--accent);
+    font-size: 0.72em;
+    letter-spacing: 0.5em;
+    text-align: center;
+    opacity: 0.8;
+  }
+
+  .chapter p {
+    margin: 0 0 0.72em;
+    orphans: 2;
+    widows: 2;
+  }
+
+  .chapter p + p { text-indent: 1.35em; }
+  .chapter h2 + p { text-indent: 0; }
+  .chapter p:last-child { margin-bottom: 1.1em; }
+
+  /* ------------------------------------------------ R1: reading desk */
+  /* The dock is a band below the stage, never a layer over a line. It is the
+     library's brass drawer pull at centre and the reading percentage at the
+     right: the only two ways into the desk. */
+  .r1-dock {
+    position: absolute;
+    z-index: 7;
+    right: 0;
+    bottom: var(--dock-bottom);
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--dock-h);
+    border-top: 0;
+    background: var(--paper);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+
+  .r1-pull {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 44px;
+    border-radius: 4px;
+  }
+
+  /* Same plate as the library's drawer pull: brass, a dark slot, two screws,
+     a top highlight and a soft drop shadow. The plate is 56 x 20; the target
+     stays 76 x 44. */
+  .pull-plate {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 20px;
+    border: 1px solid color-mix(in srgb, #3a240f 72%, var(--ink));
+    border-radius: 10px / 9px;
+    background:
+      linear-gradient(180deg, rgba(255, 244, 214, 0.55), transparent 34%),
+      linear-gradient(180deg, #e2c98c 0%, #b8924d 44%, #8a6a32 74%, #6f5124 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 248, 224, 0.72),
+      inset 0 -2px 3px rgba(0, 0, 0, 0.35),
+      0 2px 4px rgba(0, 0, 0, 0.26),
+      0 0 12px rgba(201, 168, 106, 0.16);
+    transition: transform 0.12s ease;
+  }
+
+  .pull-plate::before,
+  .pull-plate::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 3px;
+    height: 3px;
+    margin-top: -1.5px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff0c4, #a47e3c 62%, #4a3210);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  .pull-plate::before { left: 7px; }
+  .pull-plate::after { right: 7px; }
+
+  .pull-slot {
+    display: block;
+    width: 18px;
+    height: 3px;
+    margin-top: 2px;
+    border-radius: 2px;
+    background: #2d1c0d;
+    box-shadow:
+      inset 0 1px 1px rgba(0, 0, 0, 0.8),
+      0 1px 0 rgba(255, 240, 200, 0.35);
+  }
+
+  .r1-pull:active .pull-plate,
+  .r1-pull[aria-expanded="true"] .pull-plate { transform: translateY(1px); }
+
+  .r1-pct {
+    position: absolute;
+    top: 0;
+    right: max(2px, env(safe-area-inset-right));
+    bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 44px;
+    padding: 0 8px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 10px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.09em;
+    white-space: nowrap;
+  }
+
+  .r2-foot {
+    position: absolute;
+    z-index: 7;
+    right: 0;
+    bottom: var(--dock-bottom);
+    left: 0;
+    height: var(--dock-h);
+    background: var(--paper);
+  }
+
+  .r2-foot .r2-pct {
+    position: absolute;
+    right: 9px;
+    bottom: 8px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .r2-foot .r2-hint {
+    position: absolute;
+    left: 12px;
+    bottom: 9px;
+    color: color-mix(in srgb, var(--ink) 54%, transparent);
+    font-family: var(--display);
+    font-size: 7px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .progress-track {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+
+  .progress-fill {
+    display: block;
+    height: 3px;
+    width: 0%;
+    background: #b58a34;
+    box-shadow: 0 0 6px rgba(181, 138, 52, 0.55);
+  }
+
+  .reader[data-theme="night"] .progress-fill {
+    background: #c9a86a;
+    box-shadow: 0 0 6px rgba(201, 168, 106, 0.45);
+  }
+
+  /* -------------------------------------------------- R2: margin tab */
+  .r2-rail {
+    position: absolute;
+    z-index: 8;
+    top: 0;
+    right: 0;
+    bottom: var(--dock-h);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: var(--gutter);
+    pointer-events: none;
+  }
+
+  .r2-tab {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 44px;
+    height: 56px;
+    min-width: 44px;
+    margin-right: 4px;
+    color: var(--accent);
+    pointer-events: auto;
+  }
+
+  /* The visible tab is 32 x 56; the button keeps a 44 px-wide target. */
+  .r2-tab::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 6px;
+    right: 6px;
+    border: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--paper) 90%, var(--ink) 6%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  }
+
+  .r2-tab .tab-aa,
+  .r2-tab .tab-word { position: relative; z-index: 1; }
+
+  .r2-tab .tab-aa {
+    font-family: var(--display);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .r2-tab .tab-word {
+    font-family: var(--display);
+    font-size: 6px;
+    letter-spacing: 0.14em;
+    opacity: 0.72;
+  }
+
+  .r2-tray {
+    position: absolute;
+    z-index: 8;
+    right: 4px;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    width: 48px;
+    padding: 1px;
+    border: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
+    background: color-mix(in srgb, var(--paper) 94%, var(--ink) 6%);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+  }
+
+  .reader[data-tray="open"] .r2-tray { display: flex; }
+  .reader[data-tray="open"] .r2-tab { visibility: hidden; }
+  .reader[data-sheet="open"] .r2-rail { visibility: hidden; }
+
+  .r2-tray button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--ink);
+    border: 1px solid transparent;
+  }
+
+  .r2-tray button:hover,
+  .r2-tray button:focus-visible {
+    border-color: var(--rule);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .r2-tray button .tglyph {
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 14px;
+    line-height: 1.1;
+  }
+
+  .r2-tray button .tcap {
+    max-width: 44px;
+    overflow: hidden;
+    color: color-mix(in srgb, var(--ink) 74%, transparent);
+    font-family: var(--display);
+    font-size: 6px;
+    letter-spacing: 0.06em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .r2-tray .tray-close .tglyph { font-size: 17px; }
+
+  /* ------------------------------------------------ R3: refined bars */
+  .r3-top,
+  .r3-bottom {
+    position: absolute;
+    z-index: 9;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--paper);
+    box-shadow: 0 8px 18px -16px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s var(--ease), visibility 0.2s;
+  }
+
+  .r3-top {
+    top: 0;
+    height: 56px;
+    padding: 4px max(8px, env(safe-area-inset-right)) 4px
+      max(8px, env(safe-area-inset-left));
+    border-bottom: 1px solid var(--rule);
+    transform: translateY(-8px);
+  }
+
+  .r3-bottom {
+    bottom: 0;
+    height: 64px;
+    padding: 6px max(8px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+    border-top: 1px solid var(--rule);
+    transform: translateY(8px);
+  }
+
+  .reader[data-bars="on"] .r3-top,
+  .reader[data-bars="on"] .r3-bottom {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .r3-top .bar-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 4px;
+    font-family: var(--display);
+    font-size: 11.5px;
+    font-style: italic;
+    letter-spacing: 0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .r3-btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 2px 4px;
+    color: var(--ink);
+    border: 1px solid transparent;
+    border-radius: 2px;
+    font-family: var(--display);
+  }
+
+  .r3-btn .bicon {
+    color: var(--accent);
+    font-family: var(--body);
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .r3-btn .bcap {
+    color: currentColor;
+    font-size: 7px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0.78;
+  }
+
+  .r3-btn[aria-pressed="true"] .bicon,
+  .r3-btn[aria-pressed="true"] .bcap { color: var(--accent); }
+
+  .r3-pct {
+    flex: none;
+    min-width: 30px;
+    padding: 0 2px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .r3-menu-row {
+    display: none;
+    position: absolute;
+    z-index: 9;
+    top: 56px;
+    right: 0;
+    left: 0;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+  }
+
+  .reader[data-menu="open"] .r3-menu-row { display: flex; }
+  .reader[data-menu="open"] .r3-top { height: 100px; }
+
+  .r3-menu-row button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .r3-menu-row button span:first-child { color: var(--accent); font-size: 15px; }
+
+  .r3-foot {
+    position: absolute;
+    z-index: 7;
+    right: 0;
+    bottom: var(--dock-bottom);
+    left: 0;
+    display: flex;
+    align-items: center;
+    height: var(--dock-h);
+    background: var(--paper);
+  }
+
+  .reader[data-bars="on"] .r3-foot { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .r3-coach {
+    flex: 1 1 auto;
+    padding-left: 12px;
+    overflow: hidden;
+    color: color-mix(in srgb, var(--ink) 68%, transparent);
+    font-family: var(--display);
+    font-size: 8px;
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .r3-coach.is-off,
+  .reader[data-sheet="open"] .r3-coach { opacity: 0; }
+
+  .r3-aa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    margin-left: auto;
+    color: var(--accent);
+    border: 0;
+    font-family: var(--display);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+  }
+
+  .r3-aa .tiny-word {
+    margin-left: 2px;
+    font-size: 6px;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+
+  .r3-pct-foot {
+    flex: none;
+    padding: 0 9px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  /* ------------------------------------------------------- V0 baseline */
+  .v0-top,
+  .v0-bottom {
+    position: absolute;
+    z-index: 10;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  }
+
+  .v0-top {
+    top: 0;
+    min-height: 48px;
+    padding: max(6px, env(safe-area-inset-top)) 12px 6px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--paper) 94%, transparent),
+      color-mix(in srgb, var(--paper) 76%, transparent) 70%,
+      transparent
+    );
+    transform: translateY(-6px);
+  }
+
+  .v0-bottom {
+    bottom: 0;
+    justify-content: space-around;
+    min-height: 56px;
+    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+    background: linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--paper) 96%, transparent),
+      color-mix(in srgb, var(--paper) 80%, transparent) 72%,
+      transparent
+    );
+    transform: translateY(6px);
+  }
+
+  .reader[data-v0bars="on"] .v0-top,
+  .reader[data-v0bars="on"] .v0-bottom {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .v0-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 5px 9px;
+    color: var(--ink);
+    border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--paper) 82%, transparent);
+    font-family: var(--display);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .v0-top .v0-action:last-of-type { margin-left: auto; }
+  .v0-top .v0-pct-inline { color: var(--accent); font-family: var(--display); font-size: 10px; }
+
+  .v0-bottom .v0-action {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 1px;
+    min-height: 44px;
+    border-color: transparent;
+    background: transparent;
+    font-size: 8px;
+  }
+
+  .v0-bottom .v0-action .v0-glyph {
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .v0-pill {
+    position: absolute;
+    z-index: 6;
+    right: 9px;
+    bottom: 7px;
+    padding: 2px 7px;
+    color: #b58a34;
+    border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--paper) 76%, transparent);
+    font-family: var(--display);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    opacity: 0.86;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+
+  .reader[data-v0bars="on"] .v0-pill { opacity: 0; }
+
+  .v0-track {
+    position: absolute;
+    z-index: 6;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: color-mix(in srgb, var(--ink) 12%, transparent);
+    pointer-events: none;
+  }
+
+  /* ------------------------------------------------------------- sheet */
+  .sheet-layer {
+    position: absolute;
+    z-index: 30;
+    inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .sheet-layer.is-open {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(4, 2, 6, 0.42);
+    opacity: 0;
+    transition: opacity 0.24s ease;
+  }
+
+  .sheet-layer.is-open .scrim { opacity: 1; }
+
+  .sheet {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(640px, 100%);
+    height: var(--sheet-h);
+    margin: 0 auto;
+    overflow: hidden;
+    color: var(--ink);
+    border-top: 1px solid var(--accent);
+    background: var(--paper);
+    box-shadow:
+      0 -18px 50px rgba(0, 0, 0, 0.26),
+      inset 0 1px 0 color-mix(in srgb, #fff 14%, transparent);
+    transform: translateY(102%);
+    opacity: 0.96;
+    transition: transform 0.24s var(--ease), opacity 0.24s ease;
+  }
+
+  .sheet-layer.is-open .sheet {
+    transform: translateY(var(--drag, 0px));
+    opacity: 1;
+  }
+
+  /* A finger on the sheet follows the drag with no transition; letting go
+     hands the sheet back to the 0.24s spring. Transform and opacity only. */
+  .sheet-layer.is-dragging .sheet { transition: none; }
+  .sheet-layer.is-dragging .scrim { transition: none; }
+
+  .sheet-grip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    height: 18px;
+    padding: 0 12px;
+    touch-action: none;
+  }
+
+  .grip-bar {
+    display: block;
+    width: 46px;
+    height: 4px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #7d6030, #e2c98c 50%, #7d6030);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 246, 222, 0.65),
+      0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+
+  .grip-hint {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: opacity 0.4s ease;
+  }
+
+  .grip-hint.is-gone { opacity: 0; }
+
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    min-height: 48px;
+    padding: 2px 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+    touch-action: none;
+  }
+
+  .sheet-head .head-text {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .sheet-head .head-title {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--display);
+    font-size: 13.5px;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: 0.005em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sheet-head .head-meta {
+    flex: none;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  .head-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 4px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .head-btn .hglyph {
+    color: var(--accent);
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .head-btn.shelf .htxt { margin-top: 1px; }
+
+  .sheet-close {
+    min-width: 44px;
+    min-height: 44px;
+    color: color-mix(in srgb, var(--ink) 76%, transparent);
+    font-family: var(--body);
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .sheet-tabs {
+    position: relative;
+    display: flex;
+    flex: none;
+    padding: 0 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .sheet-tabs [role="tab"] {
+    position: relative;
+    z-index: 2;
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    color: color-mix(in srgb, var(--ink) 62%, transparent);
+    font-family: var(--display);
+    font-size: 8.5px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .sheet-tabs [role="tab"][aria-selected="true"] { color: var(--accent); }
+
+  /* The active tab keeps a small oxblood ribbon, the one splash of colour in
+     the library, rather than a generic tab bar. */
+  .sheet-tabs [role="tab"][aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    width: 9px;
+    height: 11px;
+    background: #8c3036;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.26);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .sheet-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px 10px 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-panel[hidden] { display: none; }
+
+  .desk-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .desk-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .desk-row > .desk-block { flex: 1 1 0; }
+
+  .desk-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .desk-cap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-height: 9px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .desk-cap .cap-value {
+    margin-left: auto;
+    overflow: hidden;
+    color: color-mix(in srgb, var(--ink) 58%, transparent);
+    letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Reading mode: one brass two-state toggle, not two boxes. */
+  .mode-switch {
+    position: relative;
+    display: flex;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+  }
+
+  .mode-switch::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: calc(50% - 2px);
+    border-radius: 2px;
+    background:
+      linear-gradient(180deg, rgba(255, 244, 214, 0.5), transparent 46%),
+      linear-gradient(180deg, #d8ba7a, #b58a34 66%, #9a7128);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 248, 224, 0.6),
+      0 1px 2px rgba(0, 0, 0, 0.25);
+    transform: translateX(0);
+    transition: transform 0.22s var(--ease);
+  }
+
+  .mode-switch[data-mode="scrolled"]::before { transform: translateX(100%); }
+
+  .mode-switch button {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    color: color-mix(in srgb, var(--ink) 70%, transparent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .mode-switch button[aria-pressed="true"] { color: #2c2418; }
+
+  /* Size: a stepper with a live specimen at the chosen size. */
+  .size-stepper {
+    display: flex;
+    align-items: stretch;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+
+  .step-btn {
+    flex: 0 0 44px;
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--accent);
+    font-family: var(--body);
+    font-size: 19px;
+    line-height: 1;
+  }
+
+  .step-btn:disabled { opacity: 0.3; }
+
+  .size-specimen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    border-right: 1px solid var(--rule);
+    border-left: 1px solid var(--rule);
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 19px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* Theme: three paper swatches with the name printed on the paper. */
+  .theme-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .theme-swatch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+    padding: 0 4px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--sw-ink, #2c2418) 28%, transparent);
+    border-radius: 3px;
+    background: var(--sw-paper, #f5eedc);
+    color: var(--sw-ink, #2c2418);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.12em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .theme-swatch[aria-pressed="true"] {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  /* Spacing: previews show the line pitch itself. */
+  .density-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .density-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 3px;
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 3px 6px;
+    color: color-mix(in srgb, var(--ink) 62%, transparent);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: transparent;
+  }
+
+  .density-btn[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    color: var(--accent);
+  }
+
+  .density-lines {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--pitch, 8px);
+    height: 25px;
+    overflow: hidden;
+  }
+
+  .density-lines i {
+    display: block;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.55;
+  }
+
+  .density-lines i:nth-child(1) { width: 100%; }
+  .density-lines i:nth-child(2) { width: 88%; }
+  .density-lines i:nth-child(3) { width: 95%; }
+
+  .density-cap,
+  .margin-cap {
+    font-family: var(--display);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  /* Margins: a miniature page shows the actual column width. */
+  .margin-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .margin-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 3px 4px;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: transparent;
+  }
+
+  .margin-btn[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+  }
+
+  .margin-page {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 52px;
+    height: 24px;
+    border: 1px solid color-mix(in srgb, var(--ink) 32%, transparent);
+    background: color-mix(in srgb, var(--paper) 88%, var(--ink) 4%);
+  }
+
+  .margin-page .margin-text {
+    position: absolute;
+    top: 3px;
+    right: var(--m-in, 10%);
+    bottom: 3px;
+    left: var(--m-in, 10%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .margin-page .margin-text i {
+    display: block;
+    height: 1px;
+    background: color-mix(in srgb, var(--ink) 46%, transparent);
+  }
+
+  .margin-btn[aria-pressed="true"] .margin-page { border-color: color-mix(in srgb, var(--accent) 62%, transparent); }
+  .margin-btn[aria-pressed="true"] .margin-cap { color: var(--accent); }
+
+  /* Typeface: rows of the book's first line in the actual face. */
+  .face-list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid color-mix(in srgb, var(--rule) 72%, transparent);
+  }
+
+  .face-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 44px;
+    padding: 2px;
+    color: var(--ink);
+    border-bottom: 1px solid color-mix(in srgb, var(--rule) 72%, transparent);
+    text-align: left;
+  }
+
+  .face-spec {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 14.5px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .face-name {
+    flex: none;
+    color: color-mix(in srgb, var(--ink) 56%, transparent);
+    font-family: var(--display);
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .face-row[aria-pressed="true"] {
+    color: var(--accent);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .face-row[aria-pressed="true"] .face-name { color: var(--accent); }
+
+  /* A quiet ledger line, not explanatory prose. */
+  .sheet-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-height: calc(26px + env(safe-area-inset-bottom));
+    padding: 0 12px max(2px, env(safe-area-inset-bottom));
+    overflow: hidden;
+    color: color-mix(in srgb, var(--ink) 58%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.15em;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .toc-list,
+  .marks-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .toc-item,
+  .mark-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    color: var(--ink);
+    border-bottom: 1px solid color-mix(in srgb, var(--rule) 64%, transparent);
+    font-size: 12px;
+    text-align: left;
+  }
+
+  .toc-item .ttitle {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--display);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .toc-item .tnum {
+    flex: 0 0 18px;
+    color: color-mix(in srgb, var(--ink) 46%, transparent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.1em;
+  }
+
+  .toc-item[aria-current="location"] {
+    color: var(--accent);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .toc-item[aria-current="location"] .tnum,
+  .toc-item[aria-current="location"] .tpage { color: var(--accent); }
+
+  .toc-item .tpage,
+  .mark-item .mpage {
+    flex: none;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 9px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.06em;
+  }
+
+  .mark-item {
+    position: relative;
+    align-items: flex-start;
+    padding: 8px 10px 8px 34px;
+    font-size: 11px;
+    line-height: 1.35;
+    box-shadow: inset 2px 0 0 color-mix(in srgb, #8c3036 62%, transparent);
+  }
+
+  .mark-item .mquote {
+    display: block;
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+
+  .mark-item .mmeta {
+    display: block;
+    margin-top: 3px;
+    color: color-mix(in srgb, var(--ink) 58%, transparent);
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .mark-item .mmark {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    color: #8c3036;
+    font-size: 14px;
+  }
+
+  .pdf-zoom-row {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+
+  .pdf-zoom-row button {
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--ink);
+    font-family: var(--display);
+    font-size: 9px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pdf-zoom-row button + button { border-left: 1px solid var(--rule); }
+
+  .pdf-zoom-row button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+
+  .outline-btn {
+    width: 100%;
+    min-height: 44px;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+    border-radius: 3px;
+    font-family: var(--display);
+    font-size: 8px;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* --------------------------------------------------------------- PDF */
+  .pdf-scroll {
+    position: absolute;
+    inset: 0;
+    padding: 16px calc(16px + var(--gutter)) 18px 16px;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .reader[data-pdf="0"] .pdf-scroll { display: none; }
+  .reader[data-pdf="1"] .viewport { display: none; }
+
+  .pdf-page {
+    width: 300px;
+    margin: 0 auto 30px;
+    padding: 2.36em 2.18em 2em;
+    color: var(--pdf-ink);
+    border: 1px solid color-mix(in srgb, var(--pdf-ink) 18%, transparent);
+    background: var(--pdf-paper);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+    aspect-ratio: 1 / 1.414;
+    font-family: var(--serif-source);
+    font-size: calc(11px * var(--pdf-zoom, 1));
+    line-height: 1.5;
+  }
+
+  .pdf-page .pdf-kicker {
+    margin: 0 0 0.27em;
+    font-family: var(--display);
+    font-size: 0.64em;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .pdf-page h2 {
+    margin: 0 0 0.35em;
+    font-family: var(--display);
+    font-size: 1.55em;
+    font-weight: 500;
+    line-height: 1.15;
+  }
+
+  .pdf-page .pdf-rule {
+    height: 1px;
+    margin: 0 0 0.9em;
+    background: color-mix(in srgb, var(--pdf-ink) 30%, transparent);
+  }
+
+  .pdf-page p {
+    margin: 0 0 0.72em;
+    font-size: 0.91em;
+    line-height: 1.5;
+    text-align: justify;
+  }
+
+  .pdf-line {
+    height: 0.45em;
+    margin: 0 0 0.55em;
+    background: color-mix(in srgb, var(--pdf-ink) 17%, transparent);
+  }
+
+  .pdf-page .pdf-foot {
+    position: absolute;
+    right: 2.18em;
+    bottom: 1.64em;
+    left: 2.18em;
+    display: flex;
+    justify-content: space-between;
+    color: color-mix(in srgb, var(--pdf-ink) 66%, transparent);
+    font-family: var(--display);
+    font-size: 0.64em;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .pdf-page { position: relative; }
+
+  /* ------------------------------------------------------------- bench */
+  .bench {
+    position: fixed;
+    z-index: 200;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    height: var(--bench-h);
+    color: #e8dcc4;
+    border-top: 1px solid #5b4526;
+    background: #17110b;
+    font-family: var(--display);
+  }
+
+  .bench-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    height: 44px;
+    padding: 0 8px;
+  }
+
+  .bench button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 8px;
+    color: #f1e5cd;
+    border: 1px solid #5b4526;
+    border-radius: 2px;
+    background: #21180f;
+    font-family: var(--display);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .bench button:hover,
+  .bench button:focus-visible { border-color: #c9a86a; color: #f6ecd8; }
+  .bench #cycle { min-width: 62px; color: #e4c78e; font-weight: 600; }
+  .bench #flow { min-width: 84px; }
+  .bench #flow[data-flow="overlay"] { color: #e4c78e; border-color: #8f7446; }
+  .bench #pdf-toggle { min-width: 44px; }
+  .bench #check { min-width: 52px; color: #e4c78e; }
+  .bench button[aria-pressed="true"] { border-color: #e4c78e; background: #3a2917; }
+
+  .bench-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-height: 20px;
+    padding: 0 10px 2px;
+    overflow: hidden;
+    color: #b9a789;
+    font-family: "SFMono-Regular", "DejaVu Sans Mono", "Noto Sans Mono", monospace;
+    font-size: 7.5px;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .bench-state .live-dot {
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #c9a86a;
+  }
+
+  .bench-state span { overflow: hidden; text-overflow: ellipsis; }
+
+  /* ------------------------------------------------------------ report */
+  .report-layer {
+    position: fixed;
+    z-index: 400;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(5, 3, 2, 0.72);
+  }
+
+  .report-layer[hidden] { display: none; }
+
+  .report {
+    display: flex;
+    flex-direction: column;
+    width: min(560px, 100%);
+    max-height: min(78dvh, 680px);
+    overflow: hidden;
+    color: #2c2418;
+    border: 1px solid #8f7446;
+    background: #f5eedc;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  }
+
+  .report-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+    min-height: 52px;
+    padding: 4px 6px 4px 14px;
+    border-bottom: 1px solid rgba(70, 50, 24, 0.22);
+  }
+
+  .report-head h2 {
+    flex: 1 1 auto;
+    margin: 0;
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .report-head button {
+    min-width: 44px;
+    min-height: 44px;
+    color: #2c2418;
+    font-size: 20px;
+  }
+
+  .report-body {
+    flex: 1 1 auto;
+    padding: 12px 16px 18px;
+    overflow-y: auto;
+    font-family: "SFMono-Regular", "DejaVu Sans Mono", "Noto Sans Mono", monospace;
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .report-body h3 {
+    margin: 12px 0 4px;
+    color: #7a5b2c;
+    font-family: var(--display);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .report-body .ok { color: #2f5c35; font-weight: 700; }
+  .report-body .bad { color: #8a2222; font-weight: 700; }
+  .report-body .row { display: flex; justify-content: space-between; gap: 12px; }
+  .report-body .row > span:first-child { flex: 1 1 auto; }
+  .report-body .row > span:last-child { flex: 0 0 auto; text-align: right; white-space: nowrap; }
+  .report-body ul { margin: 3px 0 0; padding-left: 16px; }
+  .report-body .verdict {
+    margin-top: 12px;
+    padding: 8px 10px;
+    border-left: 3px solid #7a5b2c;
+    background: rgba(122, 91, 44, 0.08);
+    font-family: var(--body);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 380px) {
+    .report-head h2 { font-size: 11.5px; letter-spacing: 0.06em; }
+    .report-body .row { display: block; margin-bottom: 5px; }
+    .report-body .row > span { display: block; }
+    .report-body .row > span:first-child {
+      color: #7a5b2c;
+      font-family: var(--display);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .report-body .row > span:last-child {
+      color: #2c2418;
+      text-align: left;
+      white-space: normal;
+    }
+    .report-body .verdict { font-size: 11px; }
+  }
+
+  @media (max-width: 359px) {
+    .bench-row { gap: 4px; padding: 0 6px; }
+    .bench #cycle { min-width: 50px; padding: 0 5px; }
+    .bench #flow { min-width: 74px; }
+    .bench #check { min-width: 48px; }
+    .bench-state { font-size: 7px; }
+    .sheet-body { padding-right: 8px; padding-left: 8px; }
+    .head-btn.shelf { width: 44px; padding: 0; }
+    .head-btn.shelf .htxt { display: none; }
+    .sheet-head .head-text { gap: 5px; }
+    .sheet-head .head-title { font-size: 13px; }
+    .sheet-head .head-meta { font-size: 8px; letter-spacing: 0.08em; }
+    .desk-row { gap: 6px; }
+    .desk-row--secondary { flex-direction: column; }
+    .desk-row--secondary .desk-block { flex: none; }
+    .density-btn { padding-right: 4px; padding-left: 4px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <main id="reader" class="reader" data-v="r1" data-flow="reflow" data-theme="paper"
+        data-mode="paginated" data-sheet="closed" data-pdf="0" data-tray="closed"
+        data-bars="off" data-v0bars="off" data-menu="closed"
+        aria-label="Reading The Lamplighter's Ledger">
+
+    <!-- ================================================= V0 baseline chrome -->
+    <header class="v0-top chrome-surface" id="v0-top" aria-hidden="true">
+      <button class="v0-action" type="button" data-v0="shelf">← Shelf</button>
+      <button class="v0-action" type="button" data-v0="contents">Contents</button>
+      <span class="v0-pct-inline" id="v0-top-pct">0%</span>
+      <button class="v0-action" type="button" data-v0="external">Open in another app</button>
+    </header>
+    <footer class="v0-bottom chrome-surface" id="v0-bottom" aria-hidden="true">
+      <button class="v0-action" type="button" data-v0="type"><span class="v0-glyph">Aa</span><span>Type</span></button>
+      <button class="v0-action" type="button" data-v0="theme"><span class="v0-glyph">◐</span><span id="v0-theme-label">Paper</span></button>
+      <button class="v0-action" type="button" data-v0="bookmark"><span class="v0-glyph">▽</span><span id="v0-bm-label">Bookmark</span></button>
+    </footer>
+    <div class="v0-pill chrome-surface" id="v0-pill">0%</div>
+    <div class="v0-track progress-track" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="progress-fill" id="v0-fill"></span></div>
+
+    <!-- ================================================ R3 refined bar chrome -->
+    <div class="r3-top chrome-surface" id="r3-top" aria-hidden="true">
+      <button class="r3-btn" type="button" id="r3-shelf" aria-label="Back to shelf">
+        <span class="bicon" aria-hidden="true">←</span><span class="bcap">Shelf</span>
+      </button>
+      <span class="bar-title" id="r3-title">The Lamplighter's Ledger</span>
+      <span class="r3-pct" id="r3-top-pct">0%</span>
+      <button class="r3-btn" type="button" id="r3-contents" aria-label="Contents">
+        <span class="bicon" aria-hidden="true">☰</span><span class="bcap">Contents</span>
+      </button>
+      <button class="r3-btn" type="button" id="r3-more" aria-label="More" aria-expanded="false" aria-controls="r3-menu-row">
+        <span class="bicon" aria-hidden="true">⋯</span><span class="bcap">More</span>
+      </button>
+    </div>
+    <div class="r3-menu-row chrome-surface" id="r3-menu-row">
+      <button type="button" id="r3-external"><span aria-hidden="true">↗</span> Open in another app</button>
+    </div>
+    <footer class="r3-bottom chrome-surface" id="r3-bottom" aria-hidden="true">
+      <button class="r3-btn" type="button" id="r3-type" aria-label="Type and theme">
+        <span class="bicon" aria-hidden="true" style="font-family:var(--display);font-size:15px">Aa</span><span class="bcap">Type</span>
+      </button>
+      <button class="r3-btn" type="button" id="r3-theme" aria-label="Theme">
+        <span class="bicon" aria-hidden="true">◐</span><span class="bcap" id="r3-theme-label">Paper</span>
+      </button>
+      <button class="r3-btn" type="button" id="r3-bookmark" aria-label="Bookmark" aria-pressed="false">
+        <span class="bicon" aria-hidden="true">▽</span><span class="bcap" id="r3-bm-label">Bookmark</span>
+      </button>
+    </footer>
+
+    <!-- ============================================================ stage -->
+    <section class="stage" id="stage" aria-label="Reading area">
+      <div class="viewport" id="viewport">
+        <div class="page-clip" id="page-clip">
+          <article class="prose" id="epub"></article>
+        </div>
+      </div>
+      <div class="pdf-scroll" id="pdf-scroll">
+        <article class="pdf-page" id="pdf-page" aria-label="PDF page">
+          <p class="pdf-kicker">PocketLibrary · sample folio</p>
+          <h2 id="pdf-title">On the Keeping of Lamps</h2>
+          <div class="pdf-rule"></div>
+          <div id="pdf-body"></div>
+          <div class="pdf-foot"><span id="pdf-foot-left">A. Marchmont</span><span id="pdf-foot-right">1 / 24</span></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================================================== persistent chrome -->
+    <div class="r1-dock chrome-surface" id="r1-dock">
+      <button class="r1-pull" type="button" id="r1-pull" aria-label="Open the reading desk" aria-expanded="false" aria-controls="sheet-layer">
+        <span class="pull-plate" aria-hidden="true"><span class="pull-slot"></span></span>
+      </button>
+      <button class="r1-pct" type="button" id="r1-pct" aria-label="Open the reading desk, 0 percent" aria-expanded="false" aria-controls="sheet-layer">0%</button>
+      <div class="progress-track" id="r1-track" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="progress-fill" id="r1-fill"></span></div>
+    </div>
+
+    <div class="r2-rail" id="r2-rail">
+      <button class="r2-tab chrome-surface" type="button" id="r2-tab" aria-label="Open type tray" aria-expanded="false" aria-controls="r2-tray">
+        <span class="tab-aa" aria-hidden="true">Aa</span>
+        <span class="tab-word" aria-hidden="true">Type</span>
+      </button>
+      <div class="r2-tray chrome-surface" id="r2-tray" role="toolbar" aria-label="Type tray">
+        <button type="button" class="tray-close" data-r2="close" aria-label="Close type tray"><span class="tglyph" aria-hidden="true">×</span><span class="tcap">Close</span></button>
+        <button type="button" data-r2="size-down" aria-label="Smaller text"><span class="tglyph" aria-hidden="true">A−</span><span class="tcap" id="r2-size">19</span></button>
+        <button type="button" data-r2="size-up" aria-label="Larger text"><span class="tglyph" aria-hidden="true">A+</span><span class="tcap" id="r2-size2">19</span></button>
+        <button type="button" data-r2="spacing" aria-label="Line spacing"><span class="tglyph" aria-hidden="true">¶</span><span class="tcap" id="r2-spacing">1.6</span></button>
+        <button type="button" data-r2="margin" aria-label="Margins"><span class="tglyph" aria-hidden="true">↔</span><span class="tcap" id="r2-margin">26</span></button>
+        <button type="button" data-r2="font" aria-label="Typeface"><span class="tglyph" aria-hidden="true">Ff</span><span class="tcap" id="r2-font">Garamond</span></button>
+        <button type="button" data-r2="theme" aria-label="Theme"><span class="tglyph" aria-hidden="true">◐</span><span class="tcap" id="r2-theme">Paper</span></button>
+        <button type="button" data-r2="mode" aria-label="Reading mode"><span class="tglyph" aria-hidden="true">▥</span><span class="tcap" id="r2-mode">Pag.</span></button>
+        <button type="button" data-r2="contents" aria-label="Contents and marks"><span class="tglyph" aria-hidden="true">☰</span><span class="tcap">Contents</span></button>
+      </div>
+    </div>
+
+    <div class="r2-foot chrome-surface" id="r2-foot">
+      <span class="r2-hint" aria-hidden="true">Margin · Aa</span>
+      <span class="r2-pct" id="r2-pct">0%</span>
+      <div class="progress-track" id="r2-track" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="progress-fill" id="r2-fill"></span></div>
+    </div>
+
+    <div class="r3-foot chrome-surface" id="r3-foot">
+      <span class="r3-coach" id="r3-coach">Tap the page for controls</span>
+      <button class="r3-aa" type="button" id="r3-aa" aria-label="Type and theme">
+        <span aria-hidden="true">Aa</span><span class="tiny-word" aria-hidden="true">Type</span>
+      </button>
+      <span class="r3-pct-foot" id="r3-pct-foot">0%</span>
+      <div class="progress-track" id="r3-track" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="progress-fill" id="r3-fill"></span></div>
+    </div>
+
+    <!-- ============================================================= sheet -->
+    <div class="sheet-layer" id="sheet-layer" aria-hidden="true">
+      <button class="scrim" type="button" id="sheet-scrim" aria-label="Close reading controls" tabindex="-1"></button>
+      <section class="sheet chrome-surface" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <div class="sheet-grip" id="sheet-grip">
+          <span class="grip-bar" aria-hidden="true"></span>
+          <span class="grip-hint" id="sheet-hint">Swipe down to close</span>
+        </div>
+        <header class="sheet-head" id="sheet-head">
+          <button class="head-btn shelf" type="button" id="sheet-shelf" aria-label="Back to shelf">
+            <span class="hglyph" aria-hidden="true">←</span><span class="htxt" aria-hidden="true">Shelf</span>
+          </button>
+          <div class="head-text">
+            <h2 class="head-title" id="sheet-title">The Lamplighter's Ledger</h2>
+            <span class="head-meta" id="sheet-meta">0% · Page 1 of 7</span>
+          </div>
+          <button class="sheet-close" type="button" id="sheet-close" aria-label="Close reading controls">×</button>
+        </header>
+        <div class="sheet-tabs" role="tablist" aria-label="Reading controls">
+          <button type="button" role="tab" id="tab-type" aria-controls="panel-type" aria-selected="true" data-tab="type">Type</button>
+          <button type="button" role="tab" id="tab-contents" aria-controls="panel-contents" aria-selected="false" data-tab="contents">Contents</button>
+          <button type="button" role="tab" id="tab-marks" aria-controls="panel-marks" aria-selected="false" data-tab="marks">Marks</button>
+          <button type="button" role="tab" id="tab-page" aria-controls="panel-page" aria-selected="false" data-tab="page">Page</button>
+        </div>
+        <div class="sheet-body" id="sheet-body">
+          <div class="tab-panel desk-panel" id="panel-type" role="tabpanel" aria-labelledby="tab-type">
+            <div class="desk-row">
+              <div class="desk-block">
+                <span class="desk-cap">Reading</span>
+                <div class="mode-switch" id="type-mode" data-mode="paginated" role="group" aria-label="Reading mode"></div>
+              </div>
+              <div class="desk-block">
+                <span class="desk-cap">Size <span class="cap-value" id="size-px">19 px</span></span>
+                <div class="size-stepper">
+                  <button class="step-btn" type="button" id="size-down" aria-label="Smaller text">−</button>
+                  <span class="size-specimen" id="size-specimen" aria-hidden="true">Aa</span>
+                  <button class="step-btn" type="button" id="size-up" aria-label="Larger text">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="desk-block">
+              <span class="desk-cap">Theme</span>
+              <div class="theme-row" id="type-theme" role="group" aria-label="Theme"></div>
+            </div>
+            <div class="desk-row desk-row--secondary">
+              <div class="desk-block">
+                <span class="desk-cap">Spacing</span>
+                <div class="density-row" id="type-spacing" role="group" aria-label="Line spacing"></div>
+              </div>
+              <div class="desk-block">
+                <span class="desk-cap">Margins</span>
+                <div class="margin-row" id="type-margin" role="group" aria-label="Margins"></div>
+              </div>
+            </div>
+            <div class="desk-block">
+              <span class="desk-cap">Typeface</span>
+              <div class="face-list" id="type-font" role="group" aria-label="Typeface"></div>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="panel-contents" role="tabpanel" aria-labelledby="tab-contents" hidden>
+            <ol class="toc-list" id="toc-list"></ol>
+          </div>
+
+          <div class="tab-panel" id="panel-marks" role="tabpanel" aria-labelledby="tab-marks" hidden>
+            <ul class="marks-list" id="marks-list"></ul>
+          </div>
+
+          <div class="tab-panel desk-panel" id="panel-page" role="tabpanel" aria-labelledby="tab-page" hidden>
+            <div class="desk-block">
+              <span class="desk-cap">Zoom <span class="cap-value" id="pdf-zoom-value">100%</span></span>
+              <div class="pdf-zoom-row">
+                <button type="button" id="pdf-zoom-out" aria-label="Zoom out">−</button>
+                <button type="button" id="pdf-fit" aria-pressed="true">Fit width</button>
+                <button type="button" id="pdf-zoom-in" aria-label="Zoom in">+</button>
+              </div>
+            </div>
+            <div class="desk-block">
+              <span class="desk-cap">Page</span>
+              <div class="pdf-zoom-row">
+                <button type="button" id="pdf-prev" aria-label="Previous page">‹</button>
+                <button type="button" id="pdf-page-btn" aria-label="Page number"><span id="pdf-page-label">1 / 24</span></button>
+                <button type="button" id="pdf-next" aria-label="Next page">›</button>
+              </div>
+            </div>
+            <div class="desk-block">
+              <span class="desk-cap">Theme</span>
+              <div class="theme-row" id="pdf-theme" role="group" aria-label="Theme"></div>
+            </div>
+            <button class="outline-btn" type="button" id="pdf-outline">Outline · 6 entries</button>
+          </div>
+        </div>
+        <footer class="sheet-summary">
+          <span id="summary-line">19px · Normal · Narrow · Garamond · Paper</span>
+        </footer>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ===================================================== prototype bench -->
+<div class="bench" role="group" aria-label="Prototype controls, not part of the design">
+  <div class="bench-row">
+    <button type="button" id="cycle" aria-label="Next direction">R1 ›</button>
+    <button type="button" id="flow" aria-label="Toggle page reflow or overlay">FLOW REFLOW</button>
+    <button type="button" id="pdf-toggle" aria-label="Toggle EPUB or PDF" aria-pressed="false">PDF</button>
+    <button type="button" id="check" aria-label="Run accessibility and overlap check">Check</button>
+  </div>
+  <div class="bench-state" aria-live="polite">
+    <span class="live-dot" aria-hidden="true"></span>
+    <span id="state-line">R1 · reflow · paper · 19px · 1.6 · 26 · paginated · 0%</span>
+  </div>
+</div>
+
+<!-- ==================================================== check report -->
+<div class="report-layer" id="report-layer" hidden>
+  <section class="report" role="dialog" aria-modal="true" aria-labelledby="report-title">
+    <header class="report-head">
+      <h2 id="report-title">Reader controls · check</h2>
+      <button type="button" id="report-close" aria-label="Close check report">×</button>
+    </header>
+    <div class="report-body" id="report-body"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------ data */
+  var THEMES = {
+    paper: { name: "Paper", paper: "#f5eedc", ink: "#2c2418", accent: "#7a5b2c", rule: "rgba(70, 50, 24, 0.22)" },
+    sepia: { name: "Sepia", paper: "#e8d7b4", ink: "#3b2b17", accent: "#76512a", rule: "rgba(74, 48, 20, 0.25)" },
+    night: { name: "Night", paper: "#12100e", ink: "#d6c7aa", accent: "#c9a86a", rule: "rgba(214, 199, 170, 0.2)" }
+  };
+  var THEME_ORDER = ["paper", "sepia", "night"];
+  var SIZES = [
+    { name: "Small", px: 15 },
+    { name: "Medium", px: 17 },
+    { name: "Regular", px: 19 },
+    { name: "Large", px: 22 },
+    { name: "Largest", px: 26 }
+  ];
+  var SPACINGS = [
+    { name: "Tight", value: 1.35 },
+    { name: "Normal", value: 1.6 },
+    { name: "Loose", value: 1.95 }
+  ];
+  var MARGINS = [
+    { name: "Narrow", px: 26 },
+    { name: "Wide", px: 54 }
+  ];
+  var FONTS = [
+    { id: "garamond", name: "Garamond", full: "EB Garamond", stack: "\"EB Garamond\", \"Iowan Old Style\", \"Palatino Linotype\", Palatino, \"Book Antiqua\", Georgia, \"Noto Serif\", serif" },
+    { id: "literata", name: "Literata", full: "Literata", stack: "\"Literata\", \"Charter\", \"Iowan Old Style\", \"Palatino Linotype\", Georgia, \"Noto Serif\", serif" },
+    { id: "source-serif", name: "Source", full: "Source Serif", stack: "\"Source Serif 4\", \"Source Serif Pro\", \"Noto Serif\", \"Nimbus Roman\", Georgia, serif" }
+  ];
+  var VARIANTS = [
+    { id: "v0", short: "V0", name: "Today" },
+    { id: "r1", short: "R1", name: "Reading desk" },
+    { id: "r2", short: "R2", name: "Margin tab" },
+    { id: "r3", short: "R3", name: "Refined bars" }
+  ];
+  var CHAPTERS = [
+    { title: "Chapter One", page: 1 },
+    { title: "Chapter Two", page: 2 },
+    { title: "Chapter Three", page: 3 },
+    { title: "Chapter Four", page: 4 },
+    { title: "Chapter Five", page: 5 },
+    { title: "Chapter Six", page: 6 }
+  ];
+  var PARAGRAPHS = [
+    "The lamp was lit before the rain began. It stood at the corner of the desk, throwing a small yellow circle over the papers, and beyond that circle the room kept its own counsel.",
+    "A book lay open where the reader had left it, one page lifted a little by the draught. There were pencil marks in the margin, faint as breath, and a ribbon gone dark at the fold.",
+    "Outside, the street shone and emptied. Somewhere below, a door closed, and the house settled into the particular silence of a place that has been read in for many years.",
+    "This file exists only to test PocketLibrary's storage access. It is public domain sample text and contains no DRM."
+  ];
+  var ORDINALS = ["one", "two", "three", "four", "five", "six"];
+  var PDF_PAGES = 24;
+  var PDF_OUTLINE = [
+    { title: "Frontispiece", page: 1 },
+    { title: "On the Keeping of Lamps", page: 3 },
+    { title: "The Rain at the Window", page: 7 },
+    { title: "Pencil in the Margin", page: 11 },
+    { title: "A Ribbon at the Fold", page: 16 },
+    { title: "Notes on the Text", page: 21 }
+  ];
+  var MARKS = [
+    { quote: "The lamp was lit before the rain began.", chapter: "Chapter One", pct: 12 },
+    { quote: "A ribbon gone dark at the fold.", chapter: "Chapter Three", pct: 47 },
+    { quote: "The house settled into the particular silence.", chapter: "Chapter Five", pct: 81 }
+  ];
+
+  /* ------------------------------------------------------------ state */
+  var state = {
+    v: "r1",
+    flow: "reflow",
+    theme: "paper",
+    size: 2,
+    spacing: 1,
+    margin: 0,
+    font: "garamond",
+    mode: "paginated",
+    pdf: false,
+    page: 0,
+    pdfPage: 3,
+    pdfZoom: 1,
+    tab: "type",
+    sheet: false,
+    tray: false,
+    bars: false,
+    v0bars: false,
+    menu: false,
+    bookmark: false,
+    coach: true,
+    forceBars: false,
+    start: 1,
+    startPct: -1
+  };
+
+  var pages = 1;
+  var errors = [];
+  var layerStack = [];
+  var historyOK = true;
+  var suppressPop = 0;
+  var barTimer = 0;
+  var coachTimer = 0;
+  var savedFocus = null;
+  var sheetTimer = 0;
+  var hintSeen = false;
+  var drag = null;
+  var touchDrag = null;
+  var dismissing = false;
+  var suppressClick = false;
+  var suppressTimer = 0;
+
+  /* ------------------------------------------------------------- dom */
+  function $(id) { return document.getElementById(id); }
+  var reader = $("reader");
+  var stage = $("stage");
+  var viewport = $("viewport");
+  var pageClip = $("page-clip");
+  var epub = $("epub");
+  var pdfScroll = $("pdf-scroll");
+  var pdfPageEl = $("pdf-page");
+  var pdfBody = $("pdf-body");
+  var pdfTitle = $("pdf-title");
+  var pdfFootRight = $("pdf-foot-right");
+  var r1Dock = $("r1-dock");
+  var r1Pct = $("r1-pct");
+  var sheetLayer = $("sheet-layer");
+  var sheet = $("sheet");
+  var sheetBody = $("sheet-body");
+  var sheetHint = $("sheet-hint");
+  var scrimEl = $("sheet-scrim");
+  var sheetTitle = $("sheet-title");
+  var sheetMeta = $("sheet-meta");
+  var sheetClose = $("sheet-close");
+  var tocList = $("toc-list");
+  var marksList = $("marks-list");
+  var stateLine = $("state-line");
+  var reportLayer = $("report-layer");
+  var reportBody = $("report-body");
+  var reportClose = $("report-close");
+
+  /* -------------------------------------------------------- utilities */
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function raf() { return new Promise(function (r) { requestAnimationFrame(function () { r(); }); }); }
+
+  function theme() { return THEMES[state.theme]; }
+  function sizePx() { return SIZES[state.size].px; }
+  function spacingValue() { return SPACINGS[state.spacing].value; }
+  function marginPx() { return MARGINS[state.margin].px; }
+  function font() {
+    for (var i = 0; i < FONTS.length; i++) if (FONTS[i].id === state.font) return FONTS[i];
+    return FONTS[0];
+  }
+  function variant() {
+    for (var i = 0; i < VARIANTS.length; i++) if (VARIANTS[i].id === state.v) return VARIANTS[i];
+    return VARIANTS[1];
+  }
+  function percent() {
+    if (state.pdf) {
+      return Math.round(((state.pdfPage - 1) / (PDF_PAGES - 1)) * 100);
+    }
+    if (state.mode === "scrolled") {
+      var max = pageClip.scrollHeight - pageClip.clientHeight;
+      return max > 0 ? Math.round((pageClip.scrollTop / max) * 100) : 0;
+    }
+    return pages > 1 ? Math.round((state.page / (pages - 1)) * 100) : 0;
+  }
+  function totalPages() {
+    if (state.pdf) return PDF_PAGES;
+    if (state.mode === "scrolled") return pages;
+    return pages;
+  }
+  function pageLabel() {
+    if (state.pdf) return state.pdfPage + " / " + PDF_PAGES;
+    if (state.mode === "scrolled") return "scroll";
+    return (state.page + 1) + " / " + pages;
+  }
+  function progressText() {
+    var pct = percent();
+    return state.pdf ? pct + "% · " + state.pdfPage + "/" + PDF_PAGES : pct + "%";
+  }
+
+  /* --------------------------------------------------- build the book */
+  function buildBook() {
+    var html = "";
+    for (var c = 0; c < CHAPTERS.length; c++) {
+      html += '<section class="chapter" data-chapter="' + c + '">';
+      html += '<h2><span class="ordinal">Chapter</span>' + ORDINALS[c].charAt(0).toUpperCase() + ORDINALS[c].slice(1) + '</h2>';
+      html += '<p class="fleuron" aria-hidden="true">❦</p>';
+      for (var p = 0; p < PARAGRAPHS.length; p++) {
+        html += "<p>" + PARAGRAPHS[p] + "</p>";
+      }
+      html += "</section>";
+    }
+    epub.innerHTML = html;
+  }
+
+  function buildPdf() {
+    updatePdfPage();
+  }
+
+  function updatePdfPage() {
+    var n = state.pdfPage;
+    var title = "On the Keeping of Lamps";
+    for (var i = 0; i < PDF_OUTLINE.length; i++) {
+      if (PDF_OUTLINE[i].page <= n) title = PDF_OUTLINE[i].title;
+    }
+    pdfTitle.textContent = title;
+    pdfFootRight.textContent = n + " / " + PDF_PAGES;
+    var paras = [
+      "The folio is reproduced at its own proportion. The reader may magnify the page, but the lines of type keep their original measure and do not reflow.",
+      "A pocket edition would have set this passage in a smaller house style; here the page is shown as a facsimile, with the margins and running head intact.",
+      "Use the zoom controls in the Page sheet. Fit width returns the page to the reading stage; the page number and outline remain available."
+    ];
+    var body = '<p class="pdf-kicker">Plate ' + Math.ceil(n / 4) + " · Page " + n + "</p>";
+    body += "<p>" + paras[0] + "</p>";
+    body += '<div class="pdf-line" style="width:96%"></div>';
+    body += '<div class="pdf-line" style="width:88%"></div>';
+    body += '<div class="pdf-line" style="width:94%"></div>';
+    body += "<p>" + paras[1] + "</p>";
+    body += '<div class="pdf-line" style="width:92%"></div>';
+    body += '<div class="pdf-line" style="width:97%"></div>';
+    body += '<div class="pdf-line" style="width:84%"></div>';
+    body += '<div class="pdf-line" style="width:90%"></div>';
+    body += "<p>" + paras[2] + "</p>";
+    body += '<div class="pdf-line" style="width:95%"></div>';
+    body += '<div class="pdf-line" style="width:86%"></div>';
+    pdfBody.innerHTML = body;
+    $("pdf-page-label").textContent = n + " / " + PDF_PAGES;
+    $("pdf-foot-left").textContent = "A. Marchmont";
+  }
+
+  /* ----------------------------------------------------------- chrome */
+  function showSheet(tab, silent) {
+    if (state.sheet) { setTab(tab); return; }
+    savedFocus = document.activeElement;
+    dismissing = false;
+    resetDragStyles();
+    state.sheet = true;
+    state.tab = tab || (state.pdf ? "page" : "type");
+    state.tray = false;
+    state.menu = false;
+    state.bars = false;
+    state.v0bars = false;
+    sheetBody.scrollTop = 0;
+    sheetHint.classList.toggle("is-gone", hintSeen);
+    applyChrome();
+    layoutSoon();
+    if (!silent) {
+      openLayer(function () { closeSheetDirect(); });
+    }
+    setTimeout(function () {
+      if (state.sheet) {
+        sheetClose.focus({ preventScroll: true });
+        sheetBody.scrollTop = 0;
+      }
+    }, 30);
+  }
+
+  function closeSheetDirect() {
+    if (!state.sheet) return;
+    state.sheet = false;
+    dismissing = false;
+    resetDragStyles();
+    applyChrome();
+    layoutSoon();
+    if (savedFocus && savedFocus.focus) {
+      try { savedFocus.focus({ preventScroll: true }); } catch (e) {}
+    }
+    savedFocus = null;
+  }
+
+  /* ------------------------------------------------------ swipe to close */
+  function resetDragStyles() {
+    sheetLayer.classList.remove("is-dragging");
+    sheet.style.removeProperty("--drag");
+    if (scrimEl) scrimEl.style.removeProperty("opacity");
+    reader.removeAttribute("data-dragging");
+  }
+
+  function sheetCanDrag(target) {
+    if (!state.sheet || dismissing) return false;
+    if (!target || !sheet.contains(target)) return false;
+    if (target.closest("input, select, textarea")) return false;
+    if (sheetBody.contains(target) && sheetBody.scrollTop > 0) return false;
+    return true;
+  }
+
+  function applyDrag(dy) {
+    var h = Math.max(1, sheet.offsetHeight);
+    var d = Math.min(Math.max(0, dy * 0.85), h);
+    sheetLayer.classList.add("is-dragging");
+    sheet.style.setProperty("--drag", Math.round(d) + "px");
+    if (scrimEl) scrimEl.style.opacity = String(Math.max(0.08, 1 - d / (h * 0.9)));
+    reader.dataset.dragging = "1";
+  }
+
+  function springBack() {
+    sheetLayer.classList.remove("is-dragging");
+    sheet.style.setProperty("--drag", "0px");
+    if (scrimEl) scrimEl.style.opacity = "1";
+    reader.removeAttribute("data-dragging");
+    clearTimeout(sheetTimer);
+    sheetTimer = setTimeout(function () {
+      if (!state.sheet) return;
+      if (sheetLayer.classList.contains("is-dragging")) return;
+      sheet.style.removeProperty("--drag");
+      if (scrimEl) scrimEl.style.removeProperty("opacity");
+    }, 280);
+  }
+
+  function dismissSheetByDrag() {
+    dismissing = true;
+    hintSeen = true;
+    sheetHint.classList.add("is-gone");
+    sheetLayer.classList.remove("is-dragging");
+    sheet.style.setProperty("--drag", "102%");
+    if (scrimEl) scrimEl.style.opacity = "0";
+    reader.removeAttribute("data-dragging");
+    clearTimeout(sheetTimer);
+    sheetTimer = setTimeout(function () {
+      if (state.sheet) requestCloseSheet();
+      else resetDragStyles();
+    }, 250);
+  }
+
+  function dragVelocity(samples) {
+    if (!samples.length) return 0;
+    var now = performance.now();
+    var first = samples[0];
+    for (var i = samples.length - 1; i >= 0; i--) {
+      if (samples[i].t >= now - 150) { first = samples[i]; break; }
+    }
+    var last = samples[samples.length - 1];
+    var dt = last.t - first.t;
+    return dt > 10 ? (last.y - first.y) / dt : 0;
+  }
+
+  function dragShouldDismiss(dy, velocity) {
+    return dy >= 64 || (dy > 16 && velocity >= 0.35);
+  }
+
+  function requestCloseSheet() {
+    if (!state.sheet) return;
+    if (historyOK && history.state && history.state.pl) {
+      history.back();
+    } else {
+      closeSheetDirect();
+    }
+  }
+
+  function setTab(tab) {
+    if (state.pdf && tab === "type") tab = "page";
+    if (!state.pdf && tab === "page") tab = "type";
+    state.tab = tab;
+    applySheet();
+  }
+
+  function applySheet() {
+    var tabs = ["type", "contents", "marks", "page"];
+    for (var i = 0; i < tabs.length; i++) {
+      var t = tabs[i];
+      var btn = $("tab-" + t);
+      var panel = $("panel-" + t);
+      var show = state.tab === t;
+      if (btn) {
+        btn.hidden = (t === "page" && !state.pdf) || (t === "type" && state.pdf);
+        btn.setAttribute("aria-selected", show ? "true" : "false");
+        btn.tabIndex = show ? 0 : -1;
+      }
+      if (panel) panel.hidden = !show;
+    }
+    updateSummary();
+  }
+
+  function applyChrome() {
+    reader.style.setProperty("--pdf-zoom", String(state.pdfZoom));
+    reader.dataset.sheet = state.sheet ? "open" : "closed";
+    reader.dataset.tray = state.tray ? "open" : "closed";
+    reader.dataset.bars = state.bars ? "on" : "off";
+    reader.dataset.v0bars = state.v0bars ? "on" : "off";
+    reader.dataset.menu = state.menu ? "open" : "closed";
+    reader.dataset.pdf = state.pdf ? "1" : "0";
+    reader.dataset.theme = state.theme;
+    reader.dataset.mode = state.mode;
+    reader.dataset.v = state.v;
+    reader.dataset.flow = state.flow;
+    reader.dataset.variant = state.v;
+    var t = theme();
+    reader.style.setProperty("--paper", t.paper);
+    reader.style.setProperty("--ink", t.ink);
+    reader.style.setProperty("--accent", t.accent);
+    reader.style.setProperty("--rule", t.rule);
+    var pad = marginPx();
+    reader.style.setProperty("--pad-l", pad + "px");
+    reader.style.setProperty("--pad-r", pad + "px");
+    reader.style.setProperty("--gutter", state.v === "r2" ? "52px" : "0px");
+    var prose = $("epub");
+    prose.style.fontFamily = font().stack;
+    prose.style.fontSize = sizePx() + "px";
+    prose.style.lineHeight = String(spacingValue());
+    // Stage bands. See the comment in the CSS: every band is outside the
+    // text stage, and overlay clips the stage above the dock.
+    var stageTop = 0;
+    var stageBottom = 0;
+    var dockBottom = 0;
+    var clipBottom = 0;
+    var dockH = state.v === "v0" ? 0 : 44;
+    if (!state.sheet) {
+      if (state.v === "v0") {
+        stageTop = 0; stageBottom = 0; dockBottom = 0;
+      } else if (state.v === "r3") {
+        stageTop = state.bars ? (state.menu ? 100 : 56) : 0;
+        stageBottom = state.bars ? 64 : 44;
+        dockBottom = 0;
+      } else {
+        stageTop = 0; stageBottom = 44; dockBottom = 0;
+      }
+    } else {
+      stageTop = 0;
+      if (state.flow === "reflow") {
+        stageBottom = "calc(48dvh + " + dockH + "px)";
+        dockBottom = "48dvh";
+      } else {
+        stageBottom = state.v === "v0" ? 0 : 44;
+        dockBottom = "48dvh";
+        clipBottom = "calc(48dvh + " + dockH + "px)";
+      }
+    }
+    reader.style.setProperty("--stage-top", typeof stageTop === "number" ? stageTop + "px" : stageTop);
+    reader.style.setProperty("--stage-bottom", typeof stageBottom === "number" ? stageBottom + "px" : stageBottom);
+    reader.style.setProperty("--dock-bottom", typeof dockBottom === "number" ? dockBottom + "px" : dockBottom);
+    reader.style.setProperty("--clip-bottom", typeof clipBottom === "number" ? clipBottom + "px" : clipBottom);
+    if (state.sheet && state.flow === "overlay") {
+      stage.style.clipPath = "inset(0 0 " + (typeof clipBottom === "number" ? clipBottom + "px" : clipBottom) + " 0)";
+    } else {
+      stage.style.clipPath = "none";
+    }
+    // ARIA for the bars.
+    $("v0-top").setAttribute("aria-hidden", state.v0bars ? "false" : "true");
+    $("v0-bottom").setAttribute("aria-hidden", state.v0bars ? "false" : "true");
+    $("r3-top").setAttribute("aria-hidden", state.bars ? "false" : "true");
+    $("r3-bottom").setAttribute("aria-hidden", state.bars ? "false" : "true");
+    $("r1-pull").setAttribute("aria-expanded", state.sheet ? "true" : "false");
+    r1Pct.setAttribute("aria-expanded", state.sheet ? "true" : "false");
+    $("r2-tab").setAttribute("aria-expanded", state.tray ? "true" : "false");
+    $("sheet-layer").classList.toggle("is-open", state.sheet);
+    $("sheet-layer").setAttribute("aria-hidden", state.sheet ? "false" : "true");
+    if (state.sheet) applySheet();
+    updateUI();
+  }
+
+  function toggleBars() {
+    if (state.v !== "r3") return;
+    state.bars = !state.bars;
+    if (!state.bars) state.menu = false;
+    state.coach = false;
+    applyChrome();
+    layoutSoon();
+    resetBarTimer();
+    if (state.bars) {
+      var first = $("r3-shelf");
+      if (first) first.focus({ preventScroll: true });
+    }
+  }
+
+  function showBars() {
+    if (state.v !== "r3" || state.sheet) return;
+    if (!state.bars) {
+      state.bars = true;
+      applyChrome();
+      layoutSoon();
+    }
+    resetBarTimer();
+  }
+
+  function hideBars() {
+    if (state.v !== "r3") return;
+    state.bars = false;
+    state.menu = false;
+    applyChrome();
+    layoutSoon();
+  }
+
+  function resetBarTimer() {
+    clearTimeout(barTimer);
+    if (state.forceBars || !state.bars || state.sheet) return;
+    barTimer = setTimeout(function () {
+      if (state.bars && !state.sheet && !state.menu) hideBars();
+    }, 5000);
+  }
+
+  function openTray() {
+    if (state.v !== "r2" || state.sheet) return;
+    state.tray = true;
+    applyChrome();
+    setTimeout(function () {
+      var first = document.querySelector("#r2-tray button");
+      if (first) first.focus({ preventScroll: true });
+    }, 20);
+  }
+
+  function closeTray() {
+    if (!state.tray) return;
+    state.tray = false;
+    applyChrome();
+    $("r2-tab").focus({ preventScroll: true });
+  }
+
+  function toggleTheme() {
+    var i = THEME_ORDER.indexOf(state.theme);
+    state.theme = THEME_ORDER[(i + 1) % THEME_ORDER.length];
+    applyChrome();
+    updateTypeUI();
+    updateUI();
+    syncURL();
+  }
+
+  function toggleBookmark() {
+    state.bookmark = !state.bookmark;
+    updateUI();
+  }
+
+  /* ------------------------------------------------------ history stack */
+  function openLayer(closeFn) {
+    layerStack.push(closeFn);
+    if (historyOK) {
+      try {
+        history.pushState({ pl: layerStack.length }, "");
+      } catch (e) {
+        historyOK = false;
+      }
+    }
+  }
+
+  function popLayerDirect() {
+    var fn = layerStack.pop();
+    if (fn) fn();
+  }
+
+  function closeLayerProgrammatic() {
+    if (!layerStack.length) return;
+    popLayerDirect();
+    if (historyOK && history.state && history.state.pl) {
+      suppressPop += 1;
+      try { history.back(); } catch (e) { historyOK = false; }
+    }
+  }
+
+  function closeAllLayers() {
+    while (layerStack.length) closeLayerProgrammatic();
+  }
+
+  window.addEventListener("popstate", function () {
+    if (suppressPop > 0) { suppressPop -= 1; return; }
+    if (layerStack.length) popLayerDirect();
+    else if (state.sheet) closeSheetDirect();
+    else if (state.tray) closeTray();
+    else if (state.v0bars) { state.v0bars = false; applyChrome(); }
+    else if (state.bars) hideBars();
+  });
+
+  /* ----------------------------------------------------------- layout */
+  var layoutRaf = 0;
+  function layoutSoon() {
+    if (layoutRaf) cancelAnimationFrame(layoutRaf);
+    layoutRaf = requestAnimationFrame(function () {
+      layoutRaf = 0;
+      layout();
+    });
+  }
+
+  /* Layout always keeps the reading percentage, not the page index. A
+     sheet that shortens the stage repaginates the book; without this a
+     reader at 62% would jump back to 21% when the sheet opened. */
+  function positionAt(pct) {
+    if (state.pdf) return;
+    if (state.mode === "paginated") {
+      state.page = clamp(Math.round(pct / 100 * Math.max(0, pages - 1)), 0, pages - 1);
+      var w = Math.max(80, pageClip.clientWidth);
+      epub.style.transform = "translate3d(" + (-state.page * (w + 44)) + "px,0,0)";
+    } else {
+      var max = pageClip.scrollHeight - pageClip.clientHeight;
+      pageClip.scrollTop = pct / 100 * Math.max(0, max);
+      pages = Math.max(1, Math.ceil(epub.scrollHeight / Math.max(1, pageClip.clientHeight)));
+      state.page = max > 0 ? Math.round(pageClip.scrollTop / max * Math.max(0, pages - 1)) : 0;
+    }
+  }
+
+  function layout(pctOverride) {
+    var pct = typeof pctOverride === "number" ? pctOverride : percent();
+    if (state.pdf) {
+      layoutPdf();
+    } else if (state.mode === "scrolled") {
+      layoutScrolled();
+      positionAt(pct);
+    } else {
+      layoutPaginated();
+      positionAt(pct);
+    }
+    updateUI();
+  }
+
+  function layoutPaginated() {
+    var w = Math.max(80, pageClip.clientWidth);
+    var h = Math.max(80, pageClip.clientHeight);
+    var gap = 44;
+    var prose = epub;
+    prose.style.transform = "none";
+    prose.style.width = w + "px";
+    prose.style.height = h + "px";
+    prose.style.columnWidth = w + "px";
+    prose.style.columnGap = gap + "px";
+    prose.style.columnFill = "auto";
+    prose.style.webkitColumnWidth = w + "px";
+    prose.style.webkitColumnGap = gap + "px";
+    prose.style.webkitColumnFill = "auto";
+    // Force the multi-column box to be laid out before reading scrollWidth.
+    void prose.offsetWidth;
+    var sw = prose.scrollWidth;
+    var count = Math.max(1, Math.ceil((sw + gap) / (w + gap)));
+    pages = clamp(count, 1, 200);
+    if (state.page > pages - 1) state.page = pages - 1;
+    if (state.page < 0) state.page = 0;
+    prose.style.transform = "translate3d(" + (-state.page * (w + gap)) + "px,0,0)";
+    pageClip.scrollTop = 0;
+  }
+
+  function layoutScrolled() {
+    var prose = epub;
+    prose.style.transform = "none";
+    prose.style.width = "";
+    prose.style.height = "";
+    prose.style.columnWidth = "";
+    prose.style.columnGap = "";
+    prose.style.columnFill = "";
+    prose.style.webkitColumnWidth = "";
+    prose.style.webkitColumnGap = "";
+    prose.style.webkitColumnFill = "";
+    pages = Math.max(1, Math.ceil(prose.scrollHeight / Math.max(1, pageClip.clientHeight)));
+    if (state.page > pages - 1) state.page = pages - 1;
+  }
+
+  function layoutPdf() {
+    var cs = getComputedStyle(pdfScroll);
+    var pl = parseFloat(cs.paddingLeft) || 0;
+    var pr = parseFloat(cs.paddingRight) || 0;
+    var base = Math.max(160, pdfScroll.clientWidth - pl - pr);
+    pdfPageEl.style.width = Math.round(base * state.pdfZoom) + "px";
+  }
+
+  function relayoutPreserve() {
+    layout();
+  }
+
+  function goPage(n) {
+    if (state.pdf) {
+      state.pdfPage = clamp(n, 1, PDF_PAGES);
+      updatePdfPage();
+      updateUI();
+      syncURL();
+      return;
+    }
+    if (state.mode === "paginated") {
+      state.page = clamp(n, 0, pages - 1);
+      var w = Math.max(80, pageClip.clientWidth);
+      epub.style.transform = "translate3d(" + (-state.page * (w + 44)) + "px,0,0)";
+    } else {
+      var max = pageClip.scrollHeight - pageClip.clientHeight;
+      pageClip.scrollTop = clamp(n, 0, pages - 1) / Math.max(1, pages - 1) * max;
+      state.page = clamp(n, 0, pages - 1);
+    }
+    updateUI();
+  }
+
+  function pagePrev() {
+    if (state.pdf) { goPage(state.pdfPage - 1); return; }
+    if (state.mode === "paginated") { goPage(state.page - 1); return; }
+    pageClip.scrollTop -= pageClip.clientHeight * 0.85;
+    state.page = Math.round(pageClip.scrollTop / Math.max(1, pageClip.scrollHeight - pageClip.clientHeight) * (pages - 1));
+    updateUI();
+  }
+
+  function pageNext() {
+    if (state.pdf) { goPage(state.pdfPage + 1); return; }
+    if (state.mode === "paginated") { goPage(state.page + 1); return; }
+    pageClip.scrollTop += pageClip.clientHeight * 0.85;
+    state.page = Math.round(pageClip.scrollTop / Math.max(1, pageClip.scrollHeight - pageClip.clientHeight) * (pages - 1));
+    updateUI();
+  }
+
+  function jumpToChapter(index) {
+    if (state.pdf) {
+      var item = PDF_OUTLINE[clamp(index, 0, PDF_OUTLINE.length - 1)];
+      state.pdfPage = item.page;
+      updatePdfPage();
+      updateUI();
+      syncURL();
+      return;
+    }
+    var pct = CHAPTERS.length > 1 ? index / (CHAPTERS.length - 1) : 0;
+    if (state.mode === "paginated") {
+      state.page = Math.round(pct * Math.max(0, pages - 1));
+      var w = Math.max(80, pageClip.clientWidth);
+      epub.style.transform = "translate3d(" + (-state.page * (w + 44)) + "px,0,0)";
+    } else {
+      var sections = epub.querySelectorAll(".chapter");
+      var sec = sections[index];
+      if (sec) pageClip.scrollTop = sec.offsetTop - 8;
+      state.page = Math.round(pageClip.scrollTop / Math.max(1, pageClip.scrollHeight - pageClip.clientHeight) * (pages - 1));
+    }
+    updateUI();
+  }
+
+  /* ------------------------------------------------------------- UI */
+  function updateUI() {
+    var pct = percent();
+    var txt = progressText();
+    var f = theme();
+    var v = variant();
+    // progress bars
+    var tracks = document.querySelectorAll(".progress-track[role='progressbar']");
+    for (var ti = 0; ti < tracks.length; ti++) tracks[ti].setAttribute("aria-valuenow", String(pct));
+    $("v0-fill").style.width = pct + "%";
+    $("r1-fill").style.width = pct + "%";
+    $("r2-fill").style.width = pct + "%";
+    $("r3-fill").style.width = pct + "%";
+    $("v0-pill").textContent = txt;
+    $("v0-top-pct").textContent = txt;
+    r1Pct.textContent = pct + "%";
+    r1Pct.setAttribute("aria-label", "Open the reading desk · " + pct + "%, " +
+      (state.pdf ? "page " + state.pdfPage : "page " + (state.page + 1) + " of " + pages));
+    $("r2-pct").textContent = txt;
+    $("r3-top-pct").textContent = txt;
+    $("r3-pct-foot").textContent = txt;
+    $("r3-theme-label").textContent = f.name;
+    $("v0-theme-label").textContent = f.name;
+    var bm = state.bookmark;
+    $("r3-bm-label").textContent = bm ? "Marked" : "Bookmark";
+    $("r3-bookmark").setAttribute("aria-pressed", bm ? "true" : "false");
+    $("v0-bm-label").textContent = bm ? "Marked" : "Bookmark";
+    $("r3-more").setAttribute("aria-expanded", state.menu ? "true" : "false");
+    if (state.pdf) {
+      $("r3-contents").setAttribute("aria-label", "PDF outline");
+      $("r3-type").setAttribute("aria-label", "Zoom and theme");
+    } else {
+      $("r3-contents").setAttribute("aria-label", "Contents");
+      $("r3-type").setAttribute("aria-label", "Type and theme");
+    }
+    $("sheet-title").textContent = state.pdf ? "On the Keeping of Lamps" : "The Lamplighter's Ledger";
+    $("sheet-meta").textContent = state.pdf
+      ? pct + "% · Page " + state.pdfPage + " of " + PDF_PAGES
+      : pct + "% · Page " + (state.page + 1) + " of " + pages;
+    $("pdf-zoom-value").textContent = Math.round(state.pdfZoom * 100) + "%";
+    $("pdf-fit").setAttribute("aria-pressed", state.pdfZoom === 1 ? "true" : "false");
+    $("pdf-page-label").textContent = state.pdfPage + " / " + PDF_PAGES;
+    $("r2-size").textContent = sizePx();
+    $("r2-size2").textContent = sizePx();
+    $("r2-spacing").textContent = spacingValue().toFixed(2).replace(/0$/, "");
+    $("r2-margin").textContent = marginPx();
+    $("r2-font").textContent = font().name;
+    $("r2-theme").textContent = f.name;
+    $("r2-mode").textContent = state.mode === "paginated" ? "Pag." : "Scroll";
+    stateLine.textContent = v.short + " · " + state.flow + " · " + state.theme +
+      " · " + sizePx() + "px · " + spacingValue().toFixed(2) + " · " + marginPx() + " · " +
+      state.mode + " · " + txt + " · " + pageLabel();
+    $("cycle").textContent = v.short + " ›";
+    $("flow").textContent = "FLOW " + state.flow.toUpperCase();
+    $("flow").dataset.flow = state.flow;
+    $("pdf-toggle").textContent = state.pdf ? "EPUB" : "PDF";
+    $("pdf-toggle").setAttribute("aria-pressed", state.pdf ? "true" : "false");
+    reader.dataset.variant = state.v;
+    updateTocCurrent();
+    updateTypeUI();
+  }
+
+  function updateSummary() {
+    var line;
+    if (state.pdf) {
+      line = "PDF · " + (state.pdfZoom === 1 ? "Fit width" : Math.round(state.pdfZoom * 100) + "%") +
+        " · " + THEMES[state.theme].name;
+    } else {
+      line = sizePx() + "px · " + SPACINGS[state.spacing].name + " · " +
+        MARGINS[state.margin].name + " · " + font().name + " · " + THEMES[state.theme].name;
+    }
+    var el = $("summary-line");
+    if (el) el.textContent = line;
+  }
+
+  function updateTypeUI() {
+    var modeBtns = $("type-mode").children;
+    for (var i = 0; i < modeBtns.length; i++) {
+      modeBtns[i].setAttribute("aria-pressed", modeBtns[i].dataset.i === state.mode ? "true" : "false");
+    }
+    $("type-mode").dataset.mode = state.mode;
+    var spBtns = $("type-spacing").children;
+    for (var k = 0; k < spBtns.length; k++) {
+      spBtns[k].setAttribute("aria-pressed", Number(spBtns[k].dataset.i) === state.spacing ? "true" : "false");
+    }
+    var mBtns = $("type-margin").children;
+    for (var m = 0; m < mBtns.length; m++) {
+      mBtns[m].setAttribute("aria-pressed", Number(mBtns[m].dataset.i) === state.margin ? "true" : "false");
+    }
+    var fBtns = $("type-font").children;
+    for (var n = 0; n < fBtns.length; n++) {
+      fBtns[n].setAttribute("aria-pressed", fBtns[n].dataset.id === state.font ? "true" : "false");
+    }
+    var tBtns = $("type-theme").children;
+    for (var q = 0; q < tBtns.length; q++) {
+      tBtns[q].setAttribute("aria-pressed", tBtns[q].dataset.id === state.theme ? "true" : "false");
+    }
+    var pBtns = $("pdf-theme").children;
+    for (var r = 0; r < pBtns.length; r++) {
+      pBtns[r].setAttribute("aria-pressed", pBtns[r].dataset.id === state.theme ? "true" : "false");
+    }
+    $("size-px").textContent = sizePx() + " px";
+    var spec = $("size-specimen");
+    spec.style.fontSize = sizePx() + "px";
+    spec.style.fontFamily = font().stack;
+    $("size-down").disabled = state.size <= 0;
+    $("size-up").disabled = state.size >= SIZES.length - 1;
+    updateSummary();
+  }
+
+  function updateTocCurrent() {
+    var pct = percent();
+    var current = Math.min(CHAPTERS.length - 1, Math.floor(pct / 100 * CHAPTERS.length));
+    var items = tocList.querySelectorAll(".toc-item");
+    for (var i = 0; i < items.length; i++) {
+      if (i === current) items[i].setAttribute("aria-current", "location");
+      else items[i].removeAttribute("aria-current");
+    }
+    if (state.pdf) return;
+    var labels = tocList.querySelectorAll(".tpage[data-chapter]");
+    for (var j = 0; j < labels.length; j++) {
+      var idx = Number(labels[j].dataset.chapter);
+      var p = CHAPTERS.length > 1
+        ? Math.round(idx / (CHAPTERS.length - 1) * Math.max(0, pages - 1)) + 1
+        : 1;
+      labels[j].textContent = String(p);
+    }
+  }
+
+  function buildTypeControls() {
+    var mode = $("type-mode");
+    mode.innerHTML = "";
+    [["paginated", "Paged", "Paginated reading"], ["scrolled", "Scroll", "Scrolled reading"]].forEach(function (m) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.dataset.i = m[0];
+      b.textContent = m[1];
+      b.setAttribute("aria-label", m[2]);
+      b.addEventListener("click", function () {
+        var pct = percent();
+        state.mode = m[0];
+        applyChrome();
+        layout(pct);
+        syncURL();
+      });
+      mode.appendChild(b);
+    });
+
+    function stepSize(delta) {
+      var next = clamp(state.size + delta, 0, SIZES.length - 1);
+      if (next === state.size) return;
+      state.size = next;
+      applyChrome();
+      relayoutPreserve();
+      syncURL();
+    }
+    $("size-down").addEventListener("click", function () { stepSize(-1); });
+    $("size-up").addEventListener("click", function () { stepSize(1); });
+
+    var spacing = $("type-spacing");
+    spacing.innerHTML = "";
+    SPACINGS.forEach(function (s, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "density-btn";
+      b.dataset.i = String(i);
+      b.setAttribute("aria-label", s.name + " line spacing, " + s.value);
+      var pitch = Math.round(s.value * 4.85 * 10) / 10;
+      b.innerHTML = '<span class="density-lines" style="--pitch:' + pitch + 'px" aria-hidden="true">' +
+        "<i></i><i></i><i></i></span>" +
+        '<span class="density-cap">' + s.name + "</span>";
+      b.addEventListener("click", function () {
+        state.spacing = i;
+        applyChrome();
+        relayoutPreserve();
+        syncURL();
+      });
+      spacing.appendChild(b);
+    });
+
+    var margins = $("type-margin");
+    margins.innerHTML = "";
+    MARGINS.forEach(function (m, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "margin-btn";
+      b.dataset.i = String(i);
+      b.setAttribute("aria-label", m.name + " margins, " + m.px + " pixels");
+      var inset = m.px <= 26 ? "8%" : "18%";
+      b.innerHTML = '<span class="margin-page" aria-hidden="true">' +
+        '<span class="margin-text" style="--m-in:' + inset + '"><i></i><i></i><i></i></span></span>' +
+        '<span class="margin-cap">' + m.name + "</span>";
+      b.addEventListener("click", function () {
+        state.margin = i;
+        applyChrome();
+        relayoutPreserve();
+        syncURL();
+      });
+      margins.appendChild(b);
+    });
+
+    var fonts = $("type-font");
+    fonts.innerHTML = "";
+    FONTS.forEach(function (f) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "face-row";
+      b.dataset.id = f.id;
+      b.setAttribute("aria-label", f.full + " typeface");
+      b.innerHTML = '<span class="face-spec" style="font-family:' + f.stack.replace(/"/g, "&quot;") +
+        '">The lamp was lit before the rain began.</span>' +
+        '<span class="face-name">' + f.name + "</span>";
+      b.addEventListener("click", function () {
+        state.font = f.id;
+        applyChrome();
+        relayoutPreserve();
+        syncURL();
+      });
+      fonts.appendChild(b);
+    });
+
+    var themes = $("type-theme");
+    themes.innerHTML = "";
+    var pdfThemes = $("pdf-theme");
+    pdfThemes.innerHTML = "";
+    THEME_ORDER.forEach(function (id) {
+      var def = THEMES[id];
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "theme-swatch";
+      b.dataset.id = id;
+      b.setAttribute("aria-label", def.name + " theme");
+      b.style.setProperty("--sw-paper", def.paper);
+      b.style.setProperty("--sw-ink", def.ink);
+      b.textContent = def.name;
+      b.addEventListener("click", function () {
+        state.theme = id;
+        applyChrome();
+        syncURL();
+      });
+      themes.appendChild(b);
+      var pb = document.createElement("button");
+      pb.type = "button";
+      pb.className = "theme-swatch";
+      pb.dataset.id = id;
+      pb.setAttribute("aria-label", def.name + " theme");
+      pb.style.setProperty("--sw-paper", def.paper);
+      pb.style.setProperty("--sw-ink", def.ink);
+      pb.textContent = def.name;
+      pb.addEventListener("click", function () {
+        state.theme = id;
+        applyChrome();
+        syncURL();
+      });
+      pdfThemes.appendChild(pb);
+    });
+  }
+
+  function buildToc() {
+    tocList.innerHTML = "";
+    CHAPTERS.forEach(function (c, i) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "toc-item";
+      b.innerHTML = "<span class='tnum'>" + (i + 1) + "</span><span class='ttitle'>" + c.title +
+        "</span><span class='tpage' data-chapter='" + i + "'>" + (i + 1) + "</span>";
+      b.addEventListener("click", function () {
+        jumpToChapter(i);
+        requestCloseSheet();
+      });
+      li.appendChild(b);
+      tocList.appendChild(li);
+    });
+  }
+
+  function buildMarks() {
+    marksList.innerHTML = "";
+    MARKS.forEach(function (m, i) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "mark-item";
+      b.innerHTML = "<span><span class='mquote'>" + m.quote + "</span><span class='mmeta'>" + m.chapter + "</span></span><span class='mmark'>❧</span>";
+      b.addEventListener("click", function () {
+        var pct = m.pct;
+        if (state.mode === "paginated") {
+          state.page = Math.round(pct / 100 * Math.max(0, pages - 1));
+        }
+        updateUI();
+        requestCloseSheet();
+      });
+      li.appendChild(b);
+      marksList.appendChild(li);
+    });
+  }
+
+  function buildPdfOutline() {
+    var wrap = $("pdf-outline");
+    wrap.addEventListener("click", function () {
+      setTab("contents");
+    });
+  }
+
+  function refreshContentsPanel() {
+    if (!state.pdf) return;
+    tocList.innerHTML = "";
+    PDF_OUTLINE.forEach(function (item, i) {
+      var li = document.createElement("li");
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "toc-item";
+      b.innerHTML = "<span class='tnum'>" + (i + 1) + "</span><span class='ttitle'>" + item.title +
+        "</span><span class='tpage'>" + item.page + "</span>";
+      b.addEventListener("click", function () {
+        state.pdfPage = item.page;
+        updatePdfPage();
+        updateUI();
+        syncURL();
+        requestCloseSheet();
+      });
+      li.appendChild(b);
+      tocList.appendChild(li);
+    });
+  }
+
+  /* -------------------------------------------------------- URL state */
+  function syncURL() {
+    var p = new URLSearchParams();
+    p.set("v", state.v);
+    p.set("flow", state.flow);
+    p.set("theme", state.theme);
+    p.set("size", String(state.size));
+    p.set("spacing", String(state.spacing));
+    p.set("margin", String(state.margin));
+    p.set("mode", state.mode);
+    p.set("font", state.font);
+    if (state.pdf) {
+      p.set("pdf", "1");
+      p.set("page", String(state.pdfPage));
+      p.set("zoom", String(state.pdfZoom));
+    }
+    try {
+      history.replaceState(history.state, "", location.pathname.split("/").pop() + "?" + p.toString());
+    } catch (e) { /* file:// or a locked-down WebView */ }
+  }
+
+  function readURL() {
+    var p = new URLSearchParams(location.search);
+    function one(key, fallback) { return p.get(key) || fallback; }
+    var v = one("v", "r1");
+    if (["v0", "r1", "r2", "r3"].indexOf(v) < 0) v = "r1";
+    state.v = v;
+    state.flow = one("flow", "reflow") === "overlay" ? "overlay" : "reflow";
+    var th = one("theme", "paper");
+    if (THEME_ORDER.indexOf(th) < 0) th = "paper";
+    state.theme = th;
+    var size = parseInt(one("size", "2"), 10);
+    state.size = isNaN(size) ? 2 : clamp(size, 0, SIZES.length - 1);
+    var sp = parseInt(one("spacing", "1"), 10);
+    state.spacing = isNaN(sp) ? 1 : clamp(sp, 0, SPACINGS.length - 1);
+    var mg = parseInt(one("margin", "0"), 10);
+    state.margin = isNaN(mg) ? 0 : clamp(mg, 0, MARGINS.length - 1);
+    var fo = one("font", "garamond");
+    if (!FONTS.some(function (f) { return f.id === fo; })) fo = "garamond";
+    state.font = fo;
+    state.mode = one("mode", "paginated") === "scrolled" ? "scrolled" : "paginated";
+    state.pdf = one("pdf", "0") === "1";
+    state.pdfPage = clamp(parseInt(one("page", "3"), 10) || 3, 1, PDF_PAGES);
+    state.pdfZoom = clamp(parseFloat(one("zoom", "1")) || 1, 0.5, 2.5);
+    state.forceBars = one("bars", "0") === "1";
+    if (state.forceBars) {
+      state.bars = true;
+      if (v === "v0") state.v0bars = true;
+    }
+    if (one("v0bars", "0") === "1") state.v0bars = true;
+    if (one("coach", "1") === "0") state.coach = false;
+    var start = parseInt(one("start", "1"), 10);
+    state.start = isNaN(start) ? 1 : clamp(start, 1, 200);
+    var pctParam = parseFloat(one("pct", "-1"));
+    state.startPct = isNaN(pctParam) || pctParam < 0 ? -1 : clamp(pctParam, 0, 100);
+    var sheet = one("sheet", "");
+    var tab = one("tab", "");
+    if (sheet === "open" || sheet === "type" || sheet === "contents" || sheet === "marks" || sheet === "page") {
+      state.sheet = true;
+      state.tab = ["type", "contents", "marks", "page"].indexOf(tab) >= 0 ? tab : (state.pdf ? "page" : (sheet === "open" ? "type" : sheet));
+    }
+  }
+
+  /* ------------------------------------------------------------- PDF */
+  function setZoom(z) {
+    state.pdfZoom = clamp(Math.round(z * 100) / 100, 0.5, 2.5);
+    reader.style.setProperty("--pdf-zoom", String(state.pdfZoom));
+    layoutPdf();
+    updateUI();
+    syncURL();
+  }
+
+  /* ------------------------------------------------------------ check */
+  function isVisible(el) {
+    if (!el) return false;
+    var cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") return false;
+    if (parseFloat(cs.opacity || "1") < 0.02) return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0.5 && r.height > 0.5;
+  }
+
+  function stageClipRect() {
+    var sr = stage.getBoundingClientRect();
+    var bottom = sr.bottom;
+    if (state.sheet && state.flow === "overlay") {
+      var sb = sheet.getBoundingClientRect();
+      var dockH = state.v === "v0" ? 0 : 44;
+      bottom = Math.min(bottom, sb.top - dockH);
+    }
+    return { left: sr.left, right: sr.right, top: sr.top, bottom: bottom };
+  }
+
+  function textClipRect() {
+    var clip = stageClipRect();
+    var el = state.pdf ? pdfScroll : pageClip;
+    var r = el.getBoundingClientRect();
+    return {
+      left: Math.max(clip.left, r.left),
+      right: Math.min(clip.right, r.right),
+      top: Math.max(clip.top, r.top),
+      bottom: Math.min(clip.bottom, r.bottom)
+    };
+  }
+
+  function collectTextRects() {
+    var clip = textClipRect();
+    var out = [];
+    var root = state.pdf ? pdfPageEl : epub;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var node;
+    while ((node = walker.nextNode())) {
+      if (!node.nodeValue || !node.nodeValue.trim()) continue;
+      var range = document.createRange();
+      range.selectNodeContents(node);
+      var rects = range.getClientRects();
+      for (var i = 0; i < rects.length; i++) {
+        var r = rects[i];
+        var left = Math.max(r.left, clip.left);
+        var right = Math.min(r.right, clip.right);
+        var top = Math.max(r.top, clip.top);
+        var bottom = Math.min(r.bottom, clip.bottom);
+        if (right - left < 2 || bottom - top < 2) continue;
+        out.push({ left: left, right: right, top: top, bottom: bottom, text: node.nodeValue.slice(0, 24) });
+      }
+    }
+    // The fake PDF’s ruled lines are the page’s text body for this check.
+    if (state.pdf) {
+      var lines = pdfPageEl.querySelectorAll(".pdf-line");
+      for (var j = 0; j < lines.length; j++) {
+        var lr = lines[j].getBoundingClientRect();
+        var lleft = Math.max(lr.left, clip.left);
+        var lright = Math.min(lr.right, clip.right);
+        var ltop = Math.max(lr.top, clip.top);
+        var lbottom = Math.min(lr.bottom, clip.bottom);
+        if (lright - lleft < 2 || lbottom - ltop < 2) continue;
+        out.push({ left: lleft, right: lright, top: ltop, bottom: lbottom, text: "pdf rule" });
+      }
+    }
+    return out;
+  }
+
+  function chromeSurfaces() {
+    var all = reader.querySelectorAll(".chrome-surface");
+    var out = [];
+    for (var i = 0; i < all.length; i++) {
+      if (isVisible(all[i])) out.push(all[i]);
+    }
+    return out;
+  }
+
+  function overlapReport() {
+    var lines = collectTextRects();
+    var surfs = chromeSurfaces();
+    var pairs = 0;
+    var badLines = 0;
+    var examples = [];
+    for (var i = 0; i < lines.length; i++) {
+      var hit = false;
+      for (var j = 0; j < surfs.length; j++) {
+        var s = surfs[j].getBoundingClientRect();
+        var ix = Math.min(lines[i].right, s.right) - Math.max(lines[i].left, s.left);
+        var iy = Math.min(lines[i].bottom, s.bottom) - Math.max(lines[i].top, s.top);
+        if (ix > 0.5 && iy > 0.5) {
+          hit = true;
+          pairs += 1;
+          if (examples.length < 4) {
+            examples.push((surfs[j].id || surfs[j].className).split(" ")[0] + " × “" + lines[i].text.trim() + "…”");
+          }
+        }
+      }
+      if (hit) badLines += 1;
+    }
+    return { lines: lines.length, surfaces: surfs.length, pairs: pairs, badLines: badLines, examples: examples };
+  }
+
+  function tapTargets() {
+    var els = reader.querySelectorAll("button, [role=button], a[href], input, select, textarea");
+    var bad = [];
+    var minW = Infinity;
+    var minH = Infinity;
+    var checked = 0;
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (!isVisible(el)) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) continue;
+      // A scrolled-away sheet control is out of play; only visible rects count.
+      var inView = r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
+      if (!inView) continue;
+      checked += 1;
+      minW = Math.min(minW, r.width);
+      minH = Math.min(minH, r.height);
+      if (r.width < 43.5 || r.height < 43.5) {
+        bad.push((el.id || el.className || el.tagName).split(" ")[0] + " " + Math.round(r.width) + "×" + Math.round(r.height));
+      }
+    }
+    return { count: checked, minW: checked ? Math.round(minW) : 0, minH: checked ? Math.round(minH) : 0, bad: bad };
+  }
+
+  function fingerprint() {
+    var els = state.pdf ? pdfPageEl.querySelectorAll("p, .pdf-line, h2") : epub.querySelectorAll(".chapter, .chapter h2, .chapter p");
+    var out = [];
+    for (var i = 0; i < els.length; i++) {
+      var r = els[i].getBoundingClientRect();
+      out.push(Math.round(r.left) + "," + Math.round(r.top) + "," + Math.round(r.width) + "," + Math.round(r.height));
+    }
+    return out.join("|");
+  }
+
+  function measure320() {
+    var w = 320 - marginPx() * 2 - (state.v === "r2" ? 52 : 0);
+    var canvas = document.createElement("canvas");
+    var ctx = canvas.getContext("2d");
+    ctx.font = sizePx() + "px " + font().stack;
+    var sample = "abcdefghijklmnopqrstuvwxyz ";
+    var avg = ctx.measureText(sample).width / sample.length;
+    var chars = Math.floor(w / avg);
+    return { width: Math.max(0, Math.round(w)), chars: chars, px: sizePx(), spacing: spacingValue() };
+  }
+
+  async function runCheck() {
+    var report = { variant: state.v, flow: state.flow, theme: state.theme, mode: state.mode, pdf: state.pdf };
+    // Put everything down.
+    if (state.sheet) closeSheetDirect();
+    if (state.tray) { state.tray = false; }
+    state.bars = false;
+    state.v0bars = false;
+    state.menu = false;
+    applyChrome();
+    await wait(280);
+
+    report.closedFP = fingerprint();
+    report.closed = overlapReport();
+    report.closedTargets = tapTargets();
+
+    // Variant-specific intermediate state: V0's revealed bars, R2's tray.
+    report.mid = null;
+    if (state.v === "v0") {
+      state.v0bars = true;
+      applyChrome();
+      await wait(260);
+      report.mid = { label: "V0 bars revealed", overlaps: overlapReport(), targets: tapTargets() };
+      state.v0bars = false;
+      applyChrome();
+      await wait(240);
+    } else if (state.v === "r2") {
+      state.tray = true;
+      applyChrome();
+      await wait(220);
+      report.mid = { label: "R2 tray open", overlaps: overlapReport(), targets: tapTargets() };
+      state.tray = false;
+      applyChrome();
+      await wait(180);
+    } else if (state.v === "r3") {
+      state.bars = true;
+      applyChrome();
+      await wait(260);
+      report.mid = { label: "R3 bars visible", overlaps: overlapReport(), targets: tapTargets() };
+      state.bars = false;
+      applyChrome();
+      await wait(220);
+    }
+
+    // Open the settings sheet the same way a reader would reach it.
+    var tab = state.pdf ? "page" : "type";
+    showSheet(tab, true);
+    await wait(340);
+    if (state.pdf) refreshContentsPanel();
+    report.openFP = fingerprint();
+    report.open = overlapReport();
+    report.openTargets = tapTargets();
+    report.moved = report.openFP !== report.closedFP;
+
+    report.pages = state.pdf ? PDF_PAGES : pages;
+    report.measure = measure320();
+    report.overflow = document.documentElement.scrollWidth > innerWidth + 1 || document.body.scrollWidth > innerWidth + 1;
+    report.errors = errors.length;
+    report.state = {
+      v: state.v, flow: state.flow, theme: state.theme, size: sizePx(),
+      spacing: spacingValue(), margin: marginPx(), mode: state.mode,
+      font: font().full, progress: progressText()
+    };
+
+    closeSheetDirect();
+    await wait(280);
+
+    window.__lastCheck = report;
+    renderReport(report);
+    return report;
+  }
+
+  function renderReport(r) {
+    var ok = function (b) { return b ? '<span class="ok">0</span>' : '<span class="bad">FAIL</span>'; };
+    var openOverlaps = r.open.badLines;
+    var closedOverlaps = r.closed.badLines;
+    var midOverlaps = r.mid ? r.mid.overlaps.badLines : null;
+    var targetSets = [r.closedTargets, r.openTargets];
+    if (r.mid && r.mid.targets) targetSets.push(r.mid.targets);
+    targetSets = targetSets.filter(function (t) { return t.count > 0; });
+    var minTarget = 0;
+    var small = [];
+    targetSets.forEach(function (t) {
+      minTarget = minTarget === 0 ? Math.min(t.minW, t.minH) : Math.min(minTarget, t.minW, t.minH);
+      small = small.concat(t.bad);
+    });
+    small = small.filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var minTargetText = targetSets.length ? (minTarget + "×" + minTarget + " px") : "no visible controls";
+    var movedText;
+    if (r.moved) {
+      movedText = '<span class="bad">YES — text re-laid out</span>';
+    } else if (r.flow === "reflow" && (r.state.mode === "scrolled" || r.pdf)) {
+      movedText = '<span class="ok">NO — viewport shortened; text did not re-wrap</span>';
+    } else {
+      movedText = '<span class="ok">NO — layout unchanged; page clipped</span>';
+    }
+    var html = "";
+    html += "<h3>" + r.state.v.toUpperCase() + " · " + r.flow + " · " + r.state.theme + " · " + r.state.size + "px</h3>";
+    html += "<div class='row'><span>Chrome × text, closed</span><span>" + closedOverlaps + " lines / " + r.closed.pairs + " pairs " + (closedOverlaps === 0 ? "<span class='ok'>✓</span>" : "<span class='bad'>✗</span>") + "</span></div>";
+    html += "<div class='row'><span>Chrome × text, sheet open</span><span>" + openOverlaps + " lines / " + r.open.pairs + " pairs " + (openOverlaps === 0 ? "<span class='ok'>✓</span>" : "<span class='bad'>✗</span>") + "</span></div>";
+    if (r.mid) {
+      html += "<div class='row'><span>" + r.mid.label + "</span><span>" + midOverlaps + " lines / " + r.mid.overlaps.pairs + " pairs " + (midOverlaps === 0 ? "<span class='ok'>✓</span>" : "<span class='bad'>✗</span>") + "</span></div>";
+    }
+    html += "<div class='row'><span>Visible text lines checked</span><span>" + r.closed.lines + " closed / " + r.open.lines + " open</span></div>";
+    html += "<div class='row'><span>Text moved when controls opened</span><span>" + movedText + "</span></div>";
+    if (r.flow === "overlay") {
+      html += "<div class='row'><span>Overlay clip</span><span>clipped below the dock</span></div>";
+    }
+    html += "<div class='row'><span>Minimum tap target</span><span>" + minTargetText + " " + (targetSets.length === 0 ? "" : (minTarget >= 44 ? "<span class='ok'>✓</span>" : "<span class='bad'>✗</span>")) + "</span></div>";
+    html += "<div class='row'><span>Controls measured</span><span>" + r.closedTargets.count + " closed / " + r.openTargets.count + " open</span></div>";
+    if (small.length) html += "<div class='row'><span>Under 44 px</span><span class='bad'>" + small.slice(0, 6).join(" · ") + "</span></div>";
+    html += "<div class='row'><span>Text measure @ 320 px</span><span>" + r.measure.width + " px · ≈" + r.measure.chars + " chars · " + r.measure.px + "px/" + r.measure.spacing + "</span></div>";
+    html += "<div class='row'><span>Pages / progress</span><span>" + r.pages + " pages · " + r.state.progress + "</span></div>";
+    html += "<div class='row'><span>Horizontal document overflow</span><span>" + (r.overflow ? "<span class='bad'>YES</span>" : "<span class='ok'>none</span>") + "</span></div>";
+    html += "<div class='row'><span>Window errors</span><span>" + (r.errors ? "<span class='bad'>" + r.errors + "</span>" : "<span class='ok'>none</span>") + "</span></div>";
+    if (r.closed.examples.length || r.open.examples.length) {
+      html += "<h3>Examples</h3><ul>";
+      r.closed.examples.concat(r.open.examples).forEach(function (e) { html += "<li>" + e + "</li>"; });
+      html += "</ul>";
+    }
+    var verdict = "";
+    if (r.variant === "v0" && midOverlaps > 0) {
+      verdict = "This is today's baseline: the revealed gradient bars sit over " + midOverlaps + " line(s). That is the problem the three directions are answering.";
+    } else if (openOverlaps === 0 && closedOverlaps === 0 && minTarget >= 44) {
+      if (r.flow === "reflow" && (r.state.mode === "scrolled" || r.pdf)) {
+        verdict = "Pass: no visible chrome covers a line and every target is at least 44 px. Reflow only shortened the viewport here, because a scrolled/PDF page has no column to repaginate.";
+      } else if (r.moved) {
+        verdict = "Pass: no visible chrome covers a line and every target is at least 44 px. Reflow moved the text; that is the cost of keeping the page whole.";
+      } else {
+        verdict = "Pass: no visible chrome covers a line and every target is at least 44 px. Overlay left the text where it was; the sheet sits over the clipped page instead.";
+      }
+    } else {
+      verdict = "Fail: see the measurements above.";
+    }
+    html += "<div class='verdict'>" + verdict + "</div>";
+    reportBody.innerHTML = html;
+    reportLayer.hidden = false;
+    reportClose.focus({ preventScroll: true });
+  }
+
+  /* -------------------------------------------------------- interactions */
+  function bind() {
+    // Bench
+    $("cycle").addEventListener("click", function () {
+      var ids = VARIANTS.map(function (v) { return v.id; });
+      var i = ids.indexOf(state.v);
+      setVariant(ids[(i + 1) % ids.length]);
+    });
+    $("flow").addEventListener("click", function () {
+      state.flow = state.flow === "reflow" ? "overlay" : "reflow";
+      applyChrome();
+      layoutSoon();
+      syncURL();
+    });
+    $("pdf-toggle").addEventListener("click", function () {
+      state.pdf = !state.pdf;
+      if (state.pdf) {
+        state.tab = "page";
+        updatePdfPage();
+      } else {
+        state.tab = "type";
+      }
+      applyChrome();
+      layoutSoon();
+      syncURL();
+    });
+    $("check").addEventListener("click", function () { void runCheck(); });
+    reportClose.addEventListener("click", function () { reportLayer.hidden = true; });
+    reportLayer.addEventListener("click", function (e) {
+      if (e.target === reportLayer) reportLayer.hidden = true;
+    });
+
+    // V0
+    document.querySelectorAll("[data-v0]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.dataset.v0;
+        if (k === "shelf") { state.v0bars = false; applyChrome(); setStatus("Shelf (prototype)"); }
+        else if (k === "contents") { showSheet("contents"); }
+        else if (k === "type") { showSheet("type"); }
+        else if (k === "theme") { toggleTheme(); }
+        else if (k === "bookmark") { toggleBookmark(); }
+        else if (k === "external") { setStatus("Open in another app (prototype)"); }
+      });
+    });
+
+    // R1: the brass pull and the percentage are the only two ways in.
+    $("r1-pull").addEventListener("click", function () { showSheet(state.pdf ? "page" : "type"); });
+    r1Pct.addEventListener("click", function () { showSheet(state.pdf ? "page" : "type"); });
+
+    // R2
+    $("r2-tab").addEventListener("click", function () {
+      if (state.tray) closeTray(); else openTray();
+    });
+    document.querySelectorAll("[data-r2]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.dataset.r2;
+        if (k === "close") { closeTray(); return; }
+        if (k === "size-down") { state.size = clamp(state.size - 1, 0, SIZES.length - 1); }
+        else if (k === "size-up") { state.size = clamp(state.size + 1, 0, SIZES.length - 1); }
+        else if (k === "spacing") { state.spacing = (state.spacing + 1) % SPACINGS.length; }
+        else if (k === "margin") { state.margin = (state.margin + 1) % MARGINS.length; }
+        else if (k === "font") {
+          var fi = 0;
+          for (var i = 0; i < FONTS.length; i++) if (FONTS[i].id === state.font) fi = i;
+          state.font = FONTS[(fi + 1) % FONTS.length].id;
+        }
+        else if (k === "theme") { toggleTheme(); return; }
+        else if (k === "mode") {
+          var pct = percent();
+          state.mode = state.mode === "paginated" ? "scrolled" : "paginated";
+          applyChrome();
+          layout(pct);
+          syncURL();
+          return;
+        }
+        else if (k === "contents") { showSheet("contents"); return; }
+        applyChrome();
+        relayoutPreserve();
+        syncURL();
+      });
+    });
+
+    // R3
+    $("r3-shelf").addEventListener("click", function () { setStatus("Shelf (prototype)"); hideBars(); });
+    $("r3-type").addEventListener("click", function () { showSheet(state.pdf ? "page" : "type"); });
+    $("r3-aa").addEventListener("click", function () { showSheet(state.pdf ? "page" : "type"); });
+    $("r3-contents").addEventListener("click", function () { showSheet("contents"); });
+    $("r3-theme").addEventListener("click", function () { toggleTheme(); resetBarTimer(); });
+    $("r3-bookmark").addEventListener("click", function () { toggleBookmark(); resetBarTimer(); });
+    $("r3-more").addEventListener("click", function () {
+      state.menu = !state.menu;
+      applyChrome();
+      layoutSoon();
+      if (state.menu) { var ext = $("r3-external"); if (ext) ext.focus({ preventScroll: true }); }
+    });
+    $("r3-external").addEventListener("click", function () { setStatus("Open in another app (prototype)"); state.menu = false; applyChrome(); });
+    ["r3-top", "r3-bottom"].forEach(function (id) {
+      $(id).addEventListener("pointerdown", function () { resetBarTimer(); });
+    });
+
+    // Sheet
+    sheetClose.addEventListener("click", function () { requestCloseSheet(); });
+    scrimEl.addEventListener("click", function () { requestCloseSheet(); });
+    $("sheet-shelf").addEventListener("click", function () {
+      closeSheetDirect();
+      setStatus("Shelf (prototype)");
+    });
+
+    /* Drag down on the header or on the body at its top. Mouse and pen use
+       pointer events; touch uses touch events so a downward pull can take the
+       gesture away from the body's scroll and follow the sheet instead. */
+    sheet.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "touch" || e.button !== 0) return;
+      if (!sheetCanDrag(e.target)) return;
+      clearTimeout(suppressTimer);
+      suppressClick = false;
+      var onControl = !!e.target.closest("button, a, [role='tab']");
+      if (!onControl) e.preventDefault();
+      drag = {
+        y0: e.clientY,
+        active: false,
+        onControl: onControl,
+        samples: [{ t: performance.now(), y: e.clientY }]
+      };
+    });
+    window.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var dy = e.clientY - drag.y0;
+      if (!drag.active) {
+        if (dy < 6) return;
+        drag.active = true;
+        if (drag.onControl) {
+          suppressClick = true;
+          clearTimeout(suppressTimer);
+          suppressTimer = setTimeout(function () { suppressClick = false; }, 400);
+        }
+      }
+      drag.samples.push({ t: performance.now(), y: e.clientY });
+      if (drag.samples.length > 8) drag.samples.shift();
+      applyDrag(dy);
+    });
+    window.addEventListener("click", function (e) {
+      if (!suppressClick) return;
+      suppressClick = false;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+    window.addEventListener("pointerup", function (e) {
+      if (!drag) return;
+      var d = drag;
+      drag = null;
+      if (!d.active) return;
+      var dy = e.clientY - d.y0;
+      if (dragShouldDismiss(dy, dragVelocity(d.samples))) dismissSheetByDrag();
+      else springBack();
+    });
+    window.addEventListener("pointercancel", function () {
+      if (!drag) return;
+      drag = null;
+      springBack();
+    });
+
+    sheet.addEventListener("touchstart", function (e) {
+      if (e.touches.length !== 1 || !sheetCanDrag(e.target)) return;
+      var t = e.touches[0];
+      touchDrag = {
+        y0: t.clientY,
+        fromBody: sheetBody.contains(e.target),
+        active: false,
+        samples: [{ t: performance.now(), y: t.clientY }]
+      };
+    }, { passive: true });
+    sheet.addEventListener("touchmove", function (e) {
+      if (!touchDrag || e.touches.length !== 1) return;
+      var t = e.touches[0];
+      var dy = t.clientY - touchDrag.y0;
+      if (!touchDrag.active) {
+        if (dy < 8) return;
+        if (touchDrag.fromBody && sheetBody.scrollTop > 0) { touchDrag = null; return; }
+        touchDrag.active = true;
+      }
+      if (e.cancelable) e.preventDefault();
+      touchDrag.samples.push({ t: performance.now(), y: t.clientY });
+      if (touchDrag.samples.length > 8) touchDrag.samples.shift();
+      applyDrag(dy);
+    }, { passive: false });
+    sheet.addEventListener("touchend", function (e) {
+      if (!touchDrag) return;
+      var d = touchDrag;
+      touchDrag = null;
+      if (!d.active) return;
+      var t = e.changedTouches[0];
+      var dy = t.clientY - d.y0;
+      if (dragShouldDismiss(dy, dragVelocity(d.samples))) dismissSheetByDrag();
+      else springBack();
+    }, { passive: true });
+    sheet.addEventListener("touchcancel", function () {
+      if (!touchDrag) return;
+      touchDrag = null;
+      if (reader.dataset.dragging) springBack();
+    });
+
+    document.querySelectorAll(".sheet-tabs [role=tab]").forEach(function (b) {
+      b.addEventListener("click", function () { setTab(b.dataset.tab); });
+      b.addEventListener("keydown", function (e) {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        var tabs = Array.prototype.slice.call(document.querySelectorAll(".sheet-tabs [role=tab]:not([hidden])"));
+        var idx = tabs.indexOf(b);
+        var next = tabs[(idx + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+        next.focus();
+        setTab(next.dataset.tab);
+      });
+    });
+
+    // PDF
+    $("pdf-zoom-out").addEventListener("click", function () { setZoom(state.pdfZoom - 0.25); });
+    $("pdf-zoom-in").addEventListener("click", function () { setZoom(state.pdfZoom + 0.25); });
+    $("pdf-fit").addEventListener("click", function () { setZoom(1); });
+    $("pdf-prev").addEventListener("click", function () { goPage(state.pdfPage - 1); });
+    $("pdf-next").addEventListener("click", function () { goPage(state.pdfPage + 1); });
+    $("pdf-page-btn").addEventListener("click", function () { setTab("page"); });
+    $("pdf-outline").addEventListener("click", function () {
+      refreshContentsPanel();
+      setTab("contents");
+    });
+
+    // Stage taps, swipes and keyboard.
+    var gesture = null;
+    stage.addEventListener("pointerdown", function (e) {
+      if (e.target.closest("button, a, input, textarea, select")) return;
+      gesture = { x: e.clientX, y: e.clientY };
+    });
+    stage.addEventListener("pointerup", function (e) {
+      if (!gesture) return;
+      var dx = e.clientX - gesture.x;
+      var dy = e.clientY - gesture.y;
+      gesture = null;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) return;
+      if (window.getSelection && String(window.getSelection()) !== "") return;
+      var r = stage.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width;
+      if (state.pdf) {
+        if (x < 0.4) pagePrev(); else if (x > 0.6) pageNext();
+        return;
+      }
+      if (state.mode === "paginated") {
+        if (x < 0.28) pagePrev();
+        else if (x > 0.72) pageNext();
+        else if (state.v === "r3") toggleBars();
+      } else {
+        if (state.v === "r3" && x > 0.28 && x < 0.72) toggleBars();
+      }
+    });
+
+    window.addEventListener("keydown", function (e) {
+      var tag = (e.target && e.target.tagName || "").toLowerCase();
+      var typing = tag === "input" || tag === "textarea" || (e.target && e.target.isContentEditable);
+      if (e.key === "Escape") {
+        if (!reportLayer.hidden) { reportLayer.hidden = true; return; }
+        if (state.menu) { state.menu = false; applyChrome(); layoutSoon(); return; }
+        if (state.sheet) { requestCloseSheet(); return; }
+        if (state.tray) { closeTray(); return; }
+        if (state.v0bars) { state.v0bars = false; applyChrome(); return; }
+        if (state.bars) { hideBars(); return; }
+        return;
+      }
+      if (typing) return;
+      if (e.key === "ArrowLeft") {
+        if (state.sheet) return;
+        e.preventDefault();
+        pagePrev();
+      } else if (e.key === "ArrowRight") {
+        if (state.sheet) return;
+        e.preventDefault();
+        pageNext();
+      }
+    });
+
+    // Focus trap inside the sheet.
+    sheetLayer.addEventListener("keydown", function (e) {
+      if (e.key !== "Tab" || !state.sheet) return;
+      var focusables = sheet.querySelectorAll("button:not([hidden]):not(:disabled), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      var list = Array.prototype.filter.call(focusables, function (el) { return isVisible(el); });
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    // Keep the layout honest when the viewport or the stage changes.
+    var ro = new ResizeObserver(function () { layoutSoon(); });
+    ro.observe(stage);
+    ro.observe(viewport);
+    ro.observe(pageClip);
+    window.addEventListener("resize", function () { layoutSoon(); });
+    pageClip.addEventListener("scroll", function () {
+      if (state.mode !== "scrolled" || state.pdf) return;
+      var max = pageClip.scrollHeight - pageClip.clientHeight;
+      state.page = max > 0 ? Math.round(pageClip.scrollTop / max * Math.max(0, pages - 1)) : 0;
+      updateUI();
+    }, { passive: true });
+
+    window.addEventListener("error", function (e) { errors.push(e.message || "error"); });
+    window.addEventListener("unhandledrejection", function (e) { errors.push(String(e.reason || "rejection")); });
+  }
+
+  function setStatus(text) {
+    stateLine.textContent = text + " · " + state.flow + " · " + state.theme + " · " + sizePx() + "px · " + progressText();
+    setTimeout(updateUI, 1400);
+  }
+
+  function setVariant(id) {
+    if (state.sheet) closeSheetDirect();
+    if (state.tray) state.tray = false;
+    state.bars = false;
+    state.v0bars = false;
+    state.menu = false;
+    state.v = id;
+    if (id === "r3" && state.forceBars) state.bars = true;
+    applyChrome();
+    layoutSoon();
+    syncURL();
+    state.coach = true;
+    showCoach();
+  }
+
+  function showCoach() {
+    clearTimeout(coachTimer);
+    var el = $("r3-coach");
+    if (!el) return;
+    el.classList.toggle("is-off", !(state.v === "r3" && state.coach));
+    if (state.v === "r3" && state.coach) {
+      coachTimer = setTimeout(function () {
+        state.coach = false;
+        el.classList.add("is-off");
+      }, 5000);
+    }
+  }
+
+  function init() {
+    buildBook();
+    buildPdf();
+    buildTypeControls();
+    buildToc();
+    buildMarks();
+    buildPdfOutline();
+    readURL();
+    bind();
+    applyChrome();
+    applySheet();
+    layout();
+    showCoach();
+    resetBarTimer();
+    if (state.startPct >= 0 && !state.pdf) {
+      goPage(Math.round(state.startPct / 100 * Math.max(0, pages - 1)));
+    } else if (state.start > 1 && !state.pdf) {
+      goPage(state.start - 1);
+    }
+    if (state.sheet) {
+      // A deep-linked sheet is still a layer: back closes it.
+      openLayer(function () { closeSheetDirect(); });
+    }
+    $("v0-pill").textContent = progressText();
+    // Expose the check for Playwright; the report is also on the Check button.
+    window.__prototype = {
+      state: state,
+      check: runCheck,
+      overlaps: overlapReport,
+      fingerprint: fingerprint,
+      measure320: measure320,
+      tapTargets: tapTargets,
+      pages: function () { return pages; },
+      closeReport: function () { reportLayer.hidden = true; },
+      openSheet: function (tab) { showSheet(tab || (state.pdf ? "page" : "type")); },
+      isSheetOpen: function () { return !!state.sheet; },
+      setFlow: function (f) { state.flow = f; applyChrome(); layoutSoon(); syncURL(); },
+      setVariant: setVariant
+    };
+    window.__lastCheck = null;
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
