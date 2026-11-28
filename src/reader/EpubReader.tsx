@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -45,9 +46,14 @@ import {
   loadReaderSettings,
   saveReaderSettings,
   type ReaderSettings,
-  type ReaderTheme,
 } from "./settings";
-import { ReaderPersistentChrome, useReaderExit } from "./ReaderControls";
+import {
+  ReaderDesk,
+  ReaderPull,
+  ReaderTypePanel,
+  themeName,
+  useReaderExit,
+} from "./ReaderControls";
 
 interface ReaderLocator {
   v: 1;
@@ -61,8 +67,12 @@ interface EpubReaderProps {
   onClose: () => void;
 }
 
-type Sheet = "contents" | "type" | null;
-type ContentsTab = "chapters" | "bookmarks" | "annotations";
+type Sheet = "type" | "contents" | "marks" | null;
+
+interface PageInfo {
+  page: number;
+  total: number;
+}
 
 interface SelectionDraft {
   range: Range;
@@ -85,7 +95,11 @@ interface AnnotationEventDetail {
   range?: Range;
 }
 
-const THEME_ORDER: ReaderTheme[] = ["paper", "sepia", "night"];
+const DESK_TABS = [
+  { id: "type", label: "Type" },
+  { id: "contents", label: "Contents" },
+  { id: "marks", label: "Marks" },
+] as const;
 
 function parseLocator(raw: string | null | undefined): ReaderLocator | null {
   if (!raw) return null;
@@ -106,6 +120,32 @@ function parseLocator(raw: string | null | undefined): ReaderLocator | null {
   return null;
 }
 
+/**
+ * Collapse a relocated range to its start point.
+ *
+ * foliate reports the visible range (a CFI with two offsets). The paginator
+ * destroys and rebuilds its document when the stage is resized, and a range
+ * from the old document cannot be scrolled back to; a point CFI can. It also
+ * restores exactly on the next open, where a range CFI can land at the start
+ * of the section.
+ */
+function pointCfiFromRelocate(
+  view: FoliateView,
+  detail: FoliateRelocate,
+): string | undefined {
+  if (!detail.cfi) return undefined;
+  if (!detail.range) return detail.cfi;
+  try {
+    const index = view.resolveCFI(detail.cfi).index;
+    if (typeof index !== "number" || index < 0) return detail.cfi;
+    const collapsed = detail.range.cloneRange();
+    collapsed.collapse(true);
+    return view.getCFI(index, collapsed);
+  } catch {
+    return detail.cfi;
+  }
+}
+
 function quoteFromRange(range: Range | undefined): string | undefined {
   if (!range) return undefined;
   try {
@@ -123,8 +163,10 @@ async function resolveStart(
   if (!locator) return null;
   if (locator.cfi) {
     try {
-      view.resolveCFI(locator.cfi);
-      return locator.cfi;
+      const resolved = view.resolveCFI(locator.cfi);
+      if (typeof resolved.index === "number" && resolved.index >= 0) {
+        return locator.cfi;
+      }
     } catch {
       // CFI is structural; a re-render can invalidate it. Use the quote.
     }
@@ -146,6 +188,7 @@ async function resolveStart(
 export default function EpubReader({ book, onClose }: EpubReaderProps) {
   const close = useReaderExit(onClose);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pullRef = useRef<HTMLButtonElement>(null);
   const viewRef = useRef<FoliateView | null>(null);
   const persistTimer = useRef(0);
   const latestLocator = useRef<ReaderLocator | null>(null);
@@ -156,13 +199,26 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
   );
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const restoreTimer = useRef(0);
+  const restoreFrame = useRef(0);
+  const resumeLocator = useRef<ReaderLocator | null>(null);
+  const openedLocator = useRef<ReaderLocator | null>(null);
+  const appliedSettings = useRef<ReaderSettings | null>(null);
+  const firstReady = useRef(true);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [toc, setToc] = useState<Array<FoliateTocItem & { depth: number }>>([]);
-  const [chrome, setChrome] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
-  const [sheetTab, setSheetTab] = useState<ContentsTab>("chapters");
   const [progress, setProgress] = useState(0);
+  const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
+  // The desk header keeps the last closed-state readout: a paginated reflow
+  // can land on a different page fraction at a section boundary, which would
+  // look like the reader's place moved.
+  const [frozenReadout, setFrozenReadout] = useState<{
+    progress: number;
+    percent: number;
+    meta: string;
+  } | null>(null);
   const [currentLocator, setCurrentLocator] = useState<ReaderLocator | null>(
     null,
   );
@@ -187,8 +243,15 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
   const selectionTimer = useRef(0);
 
   // Sheets sit above the reader in the shared back stack: back/Escape closes
-  // the open sheet first, then the reader on the next press.
-  const closeSheet = useLayerExit(sheet !== null, () => setSheet(null));
+  // the open sheet first, then the reader on the next press. Every close path
+  // records where the reader was before the stage moves back.
+  const requestCloseSheet = useCallback(() => {
+    setSheet(null);
+    // Scrolled mode and a not-yet-ready reader do not reflow, so the frozen
+    // readout can be released at once.
+    if (!ready || settings.mode !== "paginated") setFrozenReadout(null);
+  }, [ready, settings.mode]);
+  const closeSheet = useLayerExit(sheet !== null, requestCloseSheet);
   const closeNoteEditor = useLayerExit(noteEditor !== null, () =>
     setNoteEditor(null),
   );
@@ -273,12 +336,73 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
     return () => root.classList.remove("reader-open");
   }, []);
 
+  // `applyReaderSettings` re-renders the paginator in place. foliate rebuilds
+  // its view while doing so, so the visible range is momentarily lost; put the
+  // reader back where they were once the layout has settled.
+  const restorePosition = useCallback((cfi: string, onSettled?: () => void) => {
+    window.cancelAnimationFrame(restoreFrame.current);
+    window.clearTimeout(restoreTimer.current);
+    const attempt = (settle: boolean) => () => {
+      const view = viewRef.current;
+      const done = () => {
+        if (settle) onSettled?.();
+      };
+      if (!view) {
+        done();
+        return;
+      }
+      void view.goTo(cfi).then(done).catch(done);
+    };
+    restoreFrame.current = window.requestAnimationFrame(attempt(false));
+    restoreTimer.current = window.setTimeout(() => attempt(true)(), 220);
+  }, []);
+
   useEffect(() => {
     saveReaderSettings(settings);
     if (!ready) return;
     const view = viewRef.current;
-    if (view) applyReaderSettings(view, settings);
-  }, [settings, ready]);
+    if (!view) return;
+    // The first pass after opening must use the locator we initialised with:
+    // foliate's mount-time resize has already discarded the visible range.
+    const opened = openedLocator.current;
+    const locator = opened ?? latestLocator.current;
+    openedLocator.current = null;
+    const first = firstReady.current;
+    firstReady.current = false;
+    // The opening path already applied this exact record before init;
+    // applying it again would re-render and discard the restored position.
+    if (appliedSettings.current === settings) appliedSettings.current = null;
+    else applyReaderSettings(view, settings);
+    // A fresh book has nowhere to return to; only a saved place (or a later
+    // settings change) needs the post-reflow restore.
+    if (opened?.cfi) restorePosition(opened.cfi);
+    else if (!first && locator?.cfi) restorePosition(locator.cfi);
+    return () => {
+      window.cancelAnimationFrame(restoreFrame.current);
+      window.clearTimeout(restoreTimer.current);
+    };
+  }, [settings, ready, restorePosition]);
+
+  // Opening or closing the desk changes the stage height. Paginated foliate
+  // re-columnises on that resize and forgets the visible range, so restore the
+  // locator the reader had before the stage moved. Scrolled mode needs no
+  // restore (the viewport height does not change) but the call is harmless.
+  const deskMounted = useRef(false);
+  useLayoutEffect(() => {
+    if (!ready || sheet !== null) return;
+    if (!deskMounted.current) {
+      deskMounted.current = true;
+      return;
+    }
+    const release = () => setFrozenReadout(null);
+    if (settingsRef.current.mode !== "paginated") {
+      release();
+      return;
+    }
+    const cfi = resumeLocator.current?.cfi;
+    if (cfi) restorePosition(cfi, release);
+    else release();
+  }, [sheet, ready, restorePosition]);
 
   useEffect(() => {
     let cancelled = false;
@@ -338,16 +462,40 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
     };
 
     const onRelocate = (event: Event) => {
-      const detail = (event as CustomEvent<FoliateRelocate>).detail;
+      const detail = (
+        event as CustomEvent<FoliateRelocate & { reason?: string }>
+      ).detail;
       if (!detail) return;
+      // A page turn or a scroll is the reader taking over; a pending reflow
+      // restore must not drag them back to where the page used to be.
+      if (
+        detail.reason === "page" ||
+        detail.reason === "snap" ||
+        detail.reason === "scroll"
+      ) {
+        window.cancelAnimationFrame(restoreFrame.current);
+        window.clearTimeout(restoreTimer.current);
+      }
       const fraction = readFraction(detail);
-      const cfi = detail.cfi;
+      const cfi = pointCfiFromRelocate(view, detail);
       const quote = quoteFromRange(detail.range);
       const locator: ReaderLocator = { v: 1, cfi, quote, progress: fraction };
       setProgress(fraction);
       setCurrentLocator(locator);
       setCurrentHref(detail.tocItem?.href ?? null);
       currentChapterRef.current = detail.tocItem?.label;
+      const liveRenderer = view.renderer;
+      if (liveRenderer && settingsRef.current.mode === "paginated") {
+        const total = Math.max(1, (liveRenderer.pages ?? 0) - 2);
+        const page = Math.min(total, Math.max(1, liveRenderer.page ?? 1));
+        setPageInfo((current) =>
+          current?.page === page && current.total === total
+            ? current
+            : { page, total },
+        );
+      } else if (settingsRef.current.mode !== "paginated") {
+        setPageInfo(null);
+      }
       persist(locator, fraction);
       if (fraction >= 0.98) {
         void platform
@@ -363,6 +511,9 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
       const renderer = view.renderer;
       if (!renderer) return;
       if (direction === "prev" ? renderer.atStart : renderer.atEnd) return;
+      // A deliberate page turn wins over a pending post-reflow restore.
+      window.cancelAnimationFrame(restoreFrame.current);
+      window.clearTimeout(restoreTimer.current);
       const action = direction === "prev" ? view.prev() : view.next();
       action.catch(() => {});
     };
@@ -423,7 +574,6 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
         const ratio = (click.clientX + left) / width;
         if (ratio < 1 / 3) turn("prev");
         else if (ratio > 2 / 3) turn("next");
-        else setChrome((visible) => !visible);
       });
       const index = detail.index;
       const onSelection = () => captureSelection(doc, index);
@@ -476,12 +626,16 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
         if (cancelled) return;
         setToc(flattenToc(view.book?.toc));
         applyReaderSettings(view, settingsRef.current);
+        appliedSettings.current = settingsRef.current;
         const state = await platform.readingState(book.id);
         const locator = parseLocator(state.locator);
         await platform.recordOpen(book.id);
         if (cancelled) return;
         const start = await resolveStart(view, locator);
         await view.init({ lastLocation: start, showTextStart: !start });
+        if (start) {
+          openedLocator.current = { ...(locator ?? { v: 1 }), cfi: start };
+        }
         if (cancelled) return;
         setReady(true);
 
@@ -741,55 +895,79 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
     [book.id],
   );
 
-  const jumpAnnotation = useCallback(async (annotation: Annotation) => {
-    const view = viewRef.current;
-    if (!view) return;
-    const locator = parseAnnotationLocator(annotation.locator);
-    const target =
-      resolvedAnnotations.current.get(annotation.id) ??
-      locator?.locations.fragments[0] ??
-      locator?.href;
-    if (!target) return;
-    try {
-      await view.goTo(target);
-    } catch {
-      // Keep the annotation list usable even when this rendering cannot jump.
-    }
-    closeSheet();
-    setActiveAnnotation(null);
-  }, []);
+  // A jump closes the desk, which grows the stage and re-columnises the
+  // book. Hold the jumped-to place as the restore target so the reflow does
+  // not fall back to the start of the section.
+  const jumpAndClose = useCallback(
+    async (target: unknown) => {
+      const view = viewRef.current;
+      if (!view) return;
+      try {
+        await view.goTo(target);
+      } catch {
+        // Keep the list usable even when this rendering cannot jump.
+      }
+      resumeLocator.current = latestLocator.current;
+      closeSheet();
+    },
+    [closeSheet],
+  );
 
-  const jumpBookmark = useCallback(async (bookmark: Bookmark) => {
-    const locator = parseLocator(bookmark.locator);
-    if (!locator?.cfi) return;
-    const view = viewRef.current;
-    if (!view) return;
-    try {
-      await view.goTo(locator.cfi);
-    } catch {
-      // The bookmark stays in the list even if this rendering cannot find it.
-    }
-    closeSheet();
-  }, []);
+  const jumpAnnotation = useCallback(
+    async (annotation: Annotation) => {
+      const locator = parseAnnotationLocator(annotation.locator);
+      const target =
+        resolvedAnnotations.current.get(annotation.id) ??
+        locator?.locations.fragments[0] ??
+        locator?.href;
+      if (!target) return;
+      await jumpAndClose(target);
+      setActiveAnnotation(null);
+    },
+    [jumpAndClose],
+  );
 
-  const jumpChapter = useCallback(async (item: FoliateTocItem) => {
-    const view = viewRef.current;
-    if (!view) return;
-    try {
-      await view.goTo(item.href);
-    } catch {
-      // A broken TOC target should not tear down the reader.
-    }
-    closeSheet();
-  }, []);
+  const jumpBookmark = useCallback(
+    async (bookmark: Bookmark) => {
+      const locator = parseLocator(bookmark.locator);
+      if (!locator?.cfi) return;
+      await jumpAndClose(locator.cfi);
+    },
+    [jumpAndClose],
+  );
 
-  const cycleTheme = useCallback(() => {
-    const index = THEME_ORDER.indexOf(settings.theme);
-    update({ theme: THEME_ORDER[(index + 1) % THEME_ORDER.length] });
-  }, [settings.theme, update]);
+  const jumpChapter = useCallback(
+    async (item: FoliateTocItem) => {
+      await jumpAndClose(item.href);
+    },
+    [jumpAndClose],
+  );
 
   const theme = READER_THEMES[settings.theme];
   const percent = Math.round(progress * 100);
+  const size = READER_SIZES[settings.size] ?? READER_SIZES[2];
+  const spacing = READER_SPACINGS[settings.spacing] ?? READER_SPACINGS[1];
+  const margin = READER_MARGINS[settings.margin] ?? READER_MARGINS[0];
+  const font = READER_FONTS.find((entry) => entry.id === settings.font) ?? READER_FONTS[0];
+  const deskMeta = pageInfo
+    ? `${percent}% · page ${pageInfo.page} of ${pageInfo.total}`
+    : `${percent}%`;
+  const deskSummary = `${size.px}px · ${spacing.name} · ${margin.name} · ${font.name} · ${themeName(settings.theme)}`;
+  const paginated = settings.mode === "paginated";
+  const shownProgress = frozenReadout?.progress ?? progress;
+  const shownPercent = frozenReadout?.percent ?? percent;
+  const shownMeta = frozenReadout?.meta ?? deskMeta;
+
+  const openDesk = useCallback(
+    (tab: Exclude<Sheet, null>) => {
+      resumeLocator.current = latestLocator.current;
+      // Hold the closed-state readout; the reflow behind the sheet is not a
+      // change of place.
+      setFrozenReadout({ progress, percent, meta: deskMeta });
+      setSheet(tab);
+    },
+    [progress, percent, deskMeta],
+  );
 
   return (
     <section
@@ -797,6 +975,8 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
       data-testid="reader"
       data-theme={settings.theme}
       data-mode={settings.mode}
+      data-desk={sheet ? "open" : "closed"}
+      data-flow={paginated ? "reflow" : "overlay"}
       aria-label={`Reading ${book.title}`}
       style={
         {
@@ -807,11 +987,14 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
         } as CSSProperties
       }
     >
-      <div className="reader-stage" ref={containerRef} />
+      <div className="reader-stage" ref={containerRef} data-testid="reader-stage" />
 
-      <ReaderPersistentChrome
-        progress={progress}
-        label={`${percent}%`}
+      <ReaderPull
+        progress={shownProgress}
+        percentLabel={`${shownPercent}%`}
+        expanded={sheet !== null}
+        onOpen={() => openDesk("type")}
+        buttonRef={pullRef}
       />
 
       {!ready && !failed ? (
@@ -839,78 +1022,6 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
           aria-label="Bookmarked page"
         />
       ) : null}
-
-      <header
-        className={`reader-bar reader-top${chrome ? " is-visible" : ""}`}
-        aria-hidden={!chrome}
-      >
-        <button
-          type="button"
-          className="reader-back"
-          data-testid="reader-back"
-          aria-label="Back to shelf"
-          onClick={close}
-        >
-          <span aria-hidden="true">←</span> Shelf
-        </button>
-        <button
-          type="button"
-          className="reader-top-action"
-          data-testid="reader-contents"
-          onClick={() => {
-            setSheet("contents");
-            setSheetTab("chapters");
-          }}
-        >
-          Contents
-        </button>
-        <span className="reader-progress" data-testid="reader-progress">
-          {percent}%
-        </span>
-        <button
-          type="button"
-          className="reader-top-action"
-          data-testid="reader-external"
-          onClick={() => void openExternally()}
-        >
-          Open in another app
-        </button>
-      </header>
-
-      <footer
-        className={`reader-bar reader-bottom${chrome ? " is-visible" : ""}`}
-        aria-hidden={!chrome}
-      >
-        <button
-          type="button"
-          className="reader-bottom-action"
-          data-testid="reader-type"
-          onClick={() => setSheet("type")}
-        >
-          Aa <span>Type</span>
-        </button>
-        <button
-          type="button"
-          className="reader-bottom-action"
-          data-testid="reader-theme"
-          aria-label={`Theme: ${theme.name}`}
-          onClick={cycleTheme}
-        >
-          ◐ <span>{theme.name}</span>
-        </button>
-        <button
-          type="button"
-          className={`reader-bottom-action${
-            currentBookmark ? " is-active" : ""
-          }`}
-          data-testid="reader-bookmark"
-          aria-label={currentBookmark ? "Remove bookmark" : "Add bookmark"}
-          onClick={() => void toggleBookmark()}
-        >
-          <span aria-hidden="true">{currentBookmark ? "🔖" : "▽"}</span>
-          <span>{currentBookmark ? "Bookmarked" : "Bookmark"}</span>
-        </button>
-      </footer>
 
       {selectionDraft ? (
         <div
@@ -1103,82 +1214,86 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
         </p>
       ) : null}
 
-      {sheet === "contents" ? (
-        <>
-          <button
-            type="button"
-            className="reader-scrim"
-            aria-label="Close contents"
-            onClick={() => closeSheet()}
-          />
-          <section
-            className="reader-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Contents and bookmarks"
-            data-testid="reader-contents-sheet"
-          >
-            <div className="reader-sheet-grip" aria-hidden="true" />
-            <div className="reader-tabs" role="tablist">
+      {sheet ? (
+        <ReaderDesk
+          title={book.title}
+          meta={shownMeta}
+          tabs={DESK_TABS}
+          activeTab={sheet}
+          onTabChange={(id) => setSheet(id as Exclude<Sheet, null>)}
+          summary={deskSummary}
+          onClose={closeSheet}
+          onShelf={() => {
+            if (resumeLocator.current) {
+              latestLocator.current = resumeLocator.current;
+            }
+            close();
+          }}
+          returnFocusRef={pullRef}
+        >
+          {sheet === "type" ? (
+            <ReaderTypePanel
+              settings={settings}
+              onChange={update}
+              onOpenExternally={() => {
+                closeSheet();
+                void openExternally();
+              }}
+            />
+          ) : null}
+
+          {sheet === "contents" ? (
+            <ol className="reader-toc" data-testid="reader-toc">
+              {toc.length === 0 ? (
+                <li className="reader-empty">This book has no contents.</li>
+              ) : (
+                toc.map((item) => {
+                  const current = item.href === currentHref;
+                  return (
+                    <li key={`${item.href}-${item.label}-${item.depth}`}>
+                      <button
+                        type="button"
+                        className="reader-toc-item"
+                        data-testid="reader-toc-item"
+                        data-current={current || undefined}
+                        aria-current={current ? "location" : undefined}
+                        style={{ paddingLeft: 14 + item.depth * 16 }}
+                        onClick={() => void jumpChapter(item)}
+                      >
+                        <span>{item.label}</span>
+                        {current ? (
+                          <span className="reader-toc-mark" aria-hidden="true">
+                            ❧
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ol>
+          ) : null}
+
+          {sheet === "marks" ? (
+            <div className="reader-marks" data-testid="reader-marks">
               <button
                 type="button"
-                role="tab"
-                aria-selected={sheetTab === "chapters"}
-                data-testid="reader-tab-chapters"
-                onClick={() => setSheetTab("chapters")}
+                className="reader-mark-toggle"
+                data-testid="reader-bookmark"
+                aria-pressed={currentBookmark !== null}
+                onClick={() => void toggleBookmark()}
               >
-                Chapters
+                <span className="reader-mark-glyph" aria-hidden="true">
+                  {currentBookmark ? "◆" : "▽"}
+                </span>
+                {currentBookmark ? "Remove this bookmark" : "Bookmark this page"}
               </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={sheetTab === "bookmarks"}
-                data-testid="reader-tab-bookmarks"
-                onClick={() => setSheetTab("bookmarks")}
-              >
-                Bookmarks
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={sheetTab === "annotations"}
-                data-testid="reader-tab-annotations"
-                onClick={() => setSheetTab("annotations")}
-              >
-                Annotations
-              </button>
-            </div>
-            {sheetTab === "chapters" ? (
-              <ol className="reader-toc" data-testid="reader-toc">
-                {toc.length === 0 ? (
-                  <li className="reader-empty">This book has no contents.</li>
-                ) : (
-                  toc.map((item) => {
-                    const current = item.href === currentHref;
-                    return (
-                      <li key={`${item.href}-${item.label}-${item.depth}`}>
-                        <button
-                          type="button"
-                          className="reader-toc-item"
-                          data-testid="reader-toc-item"
-                          data-current={current || undefined}
-                          aria-current={current ? "location" : undefined}
-                          style={{ paddingLeft: 14 + item.depth * 16 }}
-                          onClick={() => void jumpChapter(item)}
-                        >
-                          <span>{item.label}</span>
-                          {current ? <span aria-hidden="true">❧</span> : null}
-                        </button>
-                      </li>
-                    );
-                  })
-                )}
-              </ol>
-            ) : sheetTab === "bookmarks" ? (
+
+              <p className="reader-marks-cap">Bookmarks</p>
               <ul className="reader-bookmarks" data-testid="reader-bookmarks">
                 {bookmarks.length === 0 ? (
                   <li className="reader-empty">
-                    No bookmarks yet. Use the ribbon in the bottom bar.
+                    No bookmarks yet. Bookmark this page to keep your place.
                   </li>
                 ) : (
                   bookmarks.map((bookmark) => {
@@ -1214,7 +1329,8 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
                   })
                 )}
               </ul>
-            ) : (
+
+              <p className="reader-marks-cap">Highlights</p>
               <ul
                 className="reader-bookmarks reader-annotations"
                 data-testid="reader-annotations"
@@ -1295,132 +1411,9 @@ export default function EpubReader({ book, onClose }: EpubReaderProps) {
                   })
                 )}
               </ul>
-            )}
-          </section>
-        </>
-      ) : null}
-
-      {sheet === "type" ? (
-        <>
-          <button
-            type="button"
-            className="reader-scrim"
-            aria-label="Close type settings"
-            onClick={() => closeSheet()}
-          />
-          <section
-            className="reader-sheet reader-type-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Type and theme"
-            data-testid="reader-type-sheet"
-          >
-            <div className="reader-sheet-grip" aria-hidden="true" />
-            <div className="reader-type-group" role="group" aria-label="Mode">
-              <span className="reader-type-label">Reading</span>
-              <div className="reader-segment">
-                <button
-                  type="button"
-                  aria-pressed={settings.mode === "paginated"}
-                  data-testid="reader-mode-paginated"
-                  onClick={() => update({ mode: "paginated" })}
-                >
-                  Paginated
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={settings.mode === "scrolled"}
-                  data-testid="reader-mode-scrolled"
-                  onClick={() => update({ mode: "scrolled" })}
-                >
-                  Scroll
-                </button>
-              </div>
             </div>
-            <div className="reader-type-group" role="group" aria-label="Text size">
-              <span className="reader-type-label">Size</span>
-              <div className="reader-segment">
-                {READER_SIZES.map((entry, index) => (
-                  <button
-                    key={entry.name}
-                    type="button"
-                    aria-pressed={settings.size === index}
-                    aria-label={entry.name}
-                    data-testid={`reader-size-${index}`}
-                    onClick={() => update({ size: index })}
-                  >
-                    A
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="reader-type-group" role="group" aria-label="Line spacing">
-              <span className="reader-type-label">Spacing</span>
-              <div className="reader-segment">
-                {READER_SPACINGS.map((entry, index) => (
-                  <button
-                    key={entry.name}
-                    type="button"
-                    aria-pressed={settings.spacing === index}
-                    data-testid={`reader-spacing-${index}`}
-                    onClick={() => update({ spacing: index })}
-                  >
-                    {entry.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="reader-type-group" role="group" aria-label="Margins">
-              <span className="reader-type-label">Margins</span>
-              <div className="reader-segment">
-                {READER_MARGINS.map((entry, index) => (
-                  <button
-                    key={entry.name}
-                    type="button"
-                    aria-pressed={settings.margin === index}
-                    data-testid={`reader-margin-${index}`}
-                    onClick={() => update({ margin: index })}
-                  >
-                    {entry.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="reader-type-group" role="group" aria-label="Typeface">
-              <span className="reader-type-label">Typeface</span>
-              <div className="reader-segment reader-fonts">
-                {READER_FONTS.map((entry) => (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    aria-pressed={settings.font === entry.id}
-                    data-testid={`reader-font-${entry.id}`}
-                    style={{ fontFamily: `'${entry.family}', serif` }}
-                    onClick={() => update({ font: entry.id })}
-                  >
-                    {entry.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="reader-type-group" role="group" aria-label="Theme">
-              <span className="reader-type-label">Theme</span>
-              <div className="reader-segment">
-                {THEME_ORDER.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={settings.theme === id}
-                    data-testid={`reader-theme-${id}`}
-                    onClick={() => update({ theme: id })}
-                  >
-                    {READER_THEMES[id].name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-        </>
+          ) : null}
+        </ReaderDesk>
       ) : null}
     </section>
   );

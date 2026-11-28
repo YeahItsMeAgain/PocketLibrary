@@ -7,27 +7,33 @@ html.reader-open body {
 }
 
 .reader {
+  --reader-dock-h: calc(44px + env(safe-area-inset-bottom, 0px));
+  --reader-desk-h: 48dvh;
   position: fixed;
-  z-index: 500;
+  z-index: 700;
   inset: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   color: var(--reader-ink);
   background: var(--reader-paper);
   transition: background 0.2s ease, color 0.2s ease;
 }
 
-/* The bars are laid out as bands above and below the reading surface, not
-   floated over it. Their height (safe-area padding included) is reserved even
-   while the chrome is hidden, so text is never covered and revealing the
-   controls cannot reflow the page. */
+/* The reading stage ends above the dock band: chrome never floats over a
+   line. Opening the desk in a paginated EPUB shortens the stage (reflow);
+   scrolled EPUB and PDF keep the stage height and are overlaid. */
 .reader-stage {
-  position: relative;
-  grid-row: 2;
+  position: absolute;
+  top: env(safe-area-inset-top, 0px);
+  right: 0;
+  bottom: var(--reader-dock-h);
+  left: 0;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.reader[data-desk="open"][data-flow="reflow"] .reader-stage {
+  bottom: calc(var(--reader-dock-h) + var(--reader-desk-h));
 }
 
 .reader-book {
@@ -67,107 +73,130 @@ html.reader-open body {
   color: var(--reader-accent);
 }
 
-.reader-bar {
-  position: relative;
-  z-index: 5;
+/* ------------------------------------------------- closed-state dock */
+/* A paper band with the library's brass drawer plate at centre, the reading
+   percentage at the right and a 3px progress hairline along the floor. The
+   pull and the percentage are the only two ways into the desk. */
+
+.reader-dock {
+  position: absolute;
+  z-index: 7;
   right: 0;
+  bottom: 0;
   left: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 48px;
-  padding: max(6px, env(safe-area-inset-top)) 12px 6px;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--reader-paper) 94%, transparent),
-    color-mix(in srgb, var(--reader-paper) 76%, transparent) 70%,
-    transparent
-  );
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  justify-content: center;
+  height: var(--reader-dock-h);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--reader-paper);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--reader-ink) 8%, transparent);
+  transition: bottom 0.24s var(--ease-out);
 }
 
-.reader-top {
-  grid-row: 1;
+/* While the desk is open the dock rides on the sheet's top edge, under the
+   scrim. It is visible but not clickable, so there is no second way back in. */
+.reader[data-desk="open"] .reader-dock {
+  bottom: var(--reader-desk-h);
+}
+
+.reader-pull {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 44px;
+  border-radius: 4px;
+}
+
+/* The library's plate: 56 x 20 brass, a dark slot, two screws, a top
+   highlight and a soft drop shadow, inside a 76 x 44 target. */
+.reader-pull-plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 20px;
+  border: 1px solid color-mix(in srgb, #3a240f 72%, var(--reader-ink));
+  border-radius: 10px / 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 214, 0.55), transparent 34%),
+    linear-gradient(180deg, #e2c98c 0%, #b8924d 44%, #8a6a32 74%, #6f5124 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 224, 0.72),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.26),
+    0 0 12px rgba(201, 168, 106, 0.16);
+  transition: transform 0.12s ease;
+}
+
+.reader-pull-plate::before,
+.reader-pull-plate::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff0c4, #a47e3c 62%, #4a3210);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.reader-pull-plate::before {
+  left: 7px;
+}
+
+.reader-pull-plate::after {
+  right: 7px;
+}
+
+.reader-pull-slot {
+  display: block;
+  width: 18px;
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 2px;
+  background: #2d1c0d;
+  box-shadow:
+    inset 0 1px 1px rgba(0, 0, 0, 0.8),
+    0 1px 0 rgba(255, 240, 200, 0.35);
+}
+
+.reader-pull:active .reader-pull-plate,
+.reader-pull[aria-expanded="true"] .reader-pull-plate {
+  transform: translateY(1px);
+}
+
+.reader-percent {
+  position: absolute;
   top: 0;
-  transform: translateY(-6px);
-}
-
-.reader-bottom {
-  grid-row: 3;
-  bottom: 0;
-  justify-content: space-around;
-  min-height: 56px;
-  padding: 8px 8px max(8px, env(safe-area-inset-bottom));
-  background: linear-gradient(
-    0deg,
-    color-mix(in srgb, var(--reader-paper) 96%, transparent),
-    color-mix(in srgb, var(--reader-paper) 80%, transparent) 72%,
-    transparent
-  );
-  transform: translateY(6px);
-}
-
-.reader-bar.is-visible {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.reader-back,
-.reader-top-action,
-.reader-bottom-action {
+  right: max(2px, env(safe-area-inset-right));
+  bottom: env(safe-area-inset-bottom, 0px);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  padding: 5px 9px;
-  border: 1px solid color-mix(in srgb, var(--reader-ink) 22%, transparent);
-  border-radius: 2px;
-  color: var(--reader-ink);
-  font-family: var(--display);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: color-mix(in srgb, var(--reader-paper) 82%, transparent);
-}
-
-.reader-back {
-  gap: 5px;
-}
-
-.reader-top-action {
-  font-size: 9px;
-}
-
-.reader-top-action:last-of-type {
-  margin-left: auto;
-}
-
-.reader-progress {
-  padding: 0 4px;
+  justify-content: flex-end;
+  min-width: 44px;
+  padding: 0 8px;
   color: var(--reader-accent);
   font-family: var(--display);
   font-size: 10px;
-  letter-spacing: 0.08em;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
 }
 
-/* Persistent reader controls: visible while the chrome is hidden. */
-.reader-float-progress {
+.reader-dock-track {
   position: absolute;
-  z-index: 6;
   right: 0;
   bottom: 0;
   left: 0;
-  height: calc(3px + env(safe-area-inset-bottom));
+  height: 3px;
   background: color-mix(in srgb, var(--reader-ink) 12%, transparent);
   pointer-events: none;
 }
 
-.reader-float-fill {
+.reader-dock-fill {
   display: block;
   height: 3px;
   background: #b58a34;
@@ -175,135 +204,617 @@ html.reader-open body {
   transition: width 0.18s linear;
 }
 
-.reader-float-percent {
-  position: absolute;
-  right: 9px;
-  bottom: calc(7px + env(safe-area-inset-bottom));
-  padding: 2px 7px;
-  border: 1px solid color-mix(in srgb, var(--reader-ink) 16%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--reader-paper) 76%, transparent);
-  color: #b58a34;
-  font-family: var(--display);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  opacity: 0.86;
-  transition: opacity 0.18s ease;
+.reader[data-theme="night"] .reader-dock-fill {
+  background: #c9a86a;
+  box-shadow: 0 0 6px rgba(201, 168, 106, 0.45);
 }
 
-/* The revealed bottom bar already shows the readout. */
-.reader:has(.reader-bottom.is-visible) .reader-float-percent {
-  opacity: 0;
+.reader-pull:focus-visible,
+.reader-percent:focus-visible,
+.reader-desk button:focus-visible,
+.reader-desk input:focus-visible {
+  outline: 2px solid var(--reader-accent);
+  outline-offset: 1px;
 }
 
-.reader-bottom-action {
-  flex: 1 1 0;
-  flex-direction: column;
-  gap: 1px;
-  min-height: 44px;
-  border-color: transparent;
-  background: transparent;
-  font-size: 8px;
-}
+/* ----------------------------------------------------- reading desk */
+/* The layer covers the stage, so the scrim closes on tap. The sheet is a
+   48dvh paper desk with a brass grip, header, hanging-ribbon tabs, a
+   scrolling body and a quiet ledger footer. */
 
-.reader-bottom-action > span:first-child {
-  font-family: var(--body);
-  font-size: 15px;
-  line-height: 1;
-}
-
-.reader-bottom-action.is-active {
-  color: var(--reader-accent);
-}
-
-.reader-ribbon {
-  position: absolute;
-  z-index: 4;
-  top: 0;
-  right: 18px;
-  width: 18px;
-  height: 42px;
-  background: linear-gradient(180deg, #a23434, #6f1f24);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
-  pointer-events: none;
-}
-
-.reader-toast {
-  position: absolute;
-  z-index: 7;
-  right: 14px;
-  bottom: calc(28px + env(safe-area-inset-bottom));
-  left: 14px;
-  width: fit-content;
-  max-width: calc(100% - 28px);
-  margin: 0 auto;
-  padding: 9px 13px;
-  border: 1px solid var(--reader-rule);
-  background: var(--reader-paper);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-  color: var(--reader-ink);
-  font-size: 11px;
-  line-height: 1.4;
-  text-align: center;
-}
-
-.reader-scrim {
+.reader-desk-layer {
   position: absolute;
   z-index: 8;
   inset: 0;
-  background: rgba(4, 2, 6, 0.48);
 }
 
-.reader-sheet {
+.reader-desk-scrim {
   position: absolute;
-  z-index: 9;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(4, 2, 6, 0.42);
+  opacity: 1;
+  animation: reader-scrim-in 0.24s ease;
+}
+
+.reader-desk {
+  position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
-  width: min(560px, 100%);
-  max-height: 74dvh;
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100%);
+  height: var(--reader-desk-h);
   margin: 0 auto;
-  padding: 6px 16px calc(20px + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-top: 1px solid var(--reader-rule);
-  background: var(--reader-paper);
+  overflow: hidden;
   color: var(--reader-ink);
-  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.26);
-  animation: reader-sheet-in 0.22s var(--ease-out);
+  border-top: 1px solid var(--reader-accent);
+  background: var(--reader-paper);
+  box-shadow:
+    0 -18px 50px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 color-mix(in srgb, #fff 14%, transparent);
+  transform: translateY(var(--reader-drag, 0px));
+  animation: reader-desk-in 0.24s var(--ease-out);
+  transition: transform 0.24s var(--ease-out), opacity 0.24s ease;
 }
 
-.reader-sheet-grip {
+/* A finger on the sheet follows the drag with no transition; letting go
+   hands the sheet back to the 0.24s spring. Transform and opacity only. */
+.reader-desk-layer.is-dragging .reader-desk {
+  animation: none;
+  transition: none;
+}
+
+.reader-desk-grip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 18px;
+  padding: 0 12px;
+  touch-action: none;
+}
+
+.reader-desk-grip-bar {
+  display: block;
   width: 46px;
   height: 4px;
-  margin: 4px auto 10px;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--reader-ink) 28%, transparent);
+  background: linear-gradient(90deg, #7d6030, #e2c98c 50%, #7d6030);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 222, 0.65),
+    0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-.reader-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid var(--reader-rule);
-}
-
-.reader-tabs button {
-  flex: 1 1 0;
-  min-height: 40px;
-  border-bottom: 2px solid transparent;
-  color: var(--reader-ink);
+.reader-desk-hint {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: color-mix(in srgb, var(--reader-ink) 50%, transparent);
   font-family: var(--display);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity 0.4s ease;
+}
+
+.reader-desk-hint.is-gone {
+  opacity: 0;
+}
+
+.reader-desk-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 48px;
+  padding: 2px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--reader-accent) 38%, transparent);
+  touch-action: none;
+}
+
+.reader-desk-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.reader-desk-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--display);
+  font-size: 13.5px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.005em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-desk-meta {
+  flex: none;
+  color: var(--reader-accent);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.reader-desk-shelf,
+.reader-desk-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--reader-accent);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.reader-tabs button[aria-selected="true"] {
-  border-bottom-color: var(--reader-accent);
+.reader-desk-glyph {
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.reader-desk-shelf-text {
+  margin-top: 1px;
+}
+
+.reader-desk-close {
+  color: color-mix(in srgb, var(--reader-ink) 76%, transparent);
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.reader-desk-tabs {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: none;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--reader-rule);
+}
+
+.reader-desk-tabs [role="tab"] {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  color: color-mix(in srgb, var(--reader-ink) 62%, transparent);
+  font-family: var(--display);
+  font-size: 8.5px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.reader-desk-tabs [role="tab"][aria-selected="true"] {
   color: var(--reader-accent);
 }
+
+/* The active tab keeps a small oxblood hanging ribbon, the one splash of
+   colour in the library, rather than a generic tab underline. */
+.reader-desk-tabs [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  width: 9px;
+  height: 11px;
+  background: #8c3036;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.26);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.reader-desk-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 10px 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reader-desk-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reader-desk-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-height: calc(26px + env(safe-area-inset-bottom, 0px));
+  padding: 0 12px max(2px, env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  color: color-mix(in srgb, var(--reader-ink) 58%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--reader-accent) 34%, transparent);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.15em;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------- type panel */
+
+.reader-type-panel,
+.reader-page-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reader-desk-row {
+  display: flex;
+  gap: 8px;
+}
+
+.reader-desk-row > .reader-desk-block {
+  flex: 1 1 0;
+}
+
+.reader-desk-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.reader-desk-cap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 9px;
+  color: var(--reader-accent);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.reader-cap-value {
+  margin-left: auto;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--reader-ink) 58%, transparent);
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Reading mode: one brass two-state toggle, not two boxes. */
+.reader-mode-switch {
+  position: relative;
+  display: flex;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--reader-accent) 55%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--reader-accent) 7%, transparent);
+}
+
+.reader-mode-switch::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 214, 0.5), transparent 46%),
+    linear-gradient(180deg, #d8ba7a, #b58a34 66%, #9a7128);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 224, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateX(0);
+  transition: transform 0.22s var(--ease-out);
+}
+
+.reader-mode-switch[data-mode="scrolled"]::before {
+  transform: translateX(100%);
+}
+
+.reader-mode-switch button {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  color: color-mix(in srgb, var(--reader-ink) 70%, transparent);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.reader-mode-switch button[aria-pressed="true"] {
+  color: #2c2418;
+}
+
+/* Size: a stepper with a live specimen at the chosen size. */
+.reader-size-stepper {
+  display: flex;
+  align-items: stretch;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--reader-rule);
+  border-radius: 3px;
+}
+
+.reader-step {
+  flex: 0 0 44px;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--reader-accent);
+  font-family: var(--body);
+  font-size: 19px;
+  line-height: 1;
+}
+
+.reader-step:disabled {
+  opacity: 0.3;
+}
+
+.reader-size-specimen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--reader-rule);
+  border-left: 1px solid var(--reader-rule);
+  color: var(--reader-ink);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Theme: three paper swatches with the name printed on the paper. */
+.reader-theme-row {
+  display: flex;
+  gap: 6px;
+}
+
+.reader-theme-swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 4px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--sw-ink, #2c2418) 28%, transparent);
+  border-radius: 3px;
+  background: var(--sw-paper, #f5eedc);
+  color: var(--sw-ink, #2c2418);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.reader-theme-swatch[aria-pressed="true"] {
+  outline: 2px solid var(--reader-accent);
+  outline-offset: -2px;
+}
+
+/* Spacing: previews show the line pitch itself. */
+.reader-density-row {
+  display: flex;
+  gap: 4px;
+}
+
+.reader-density {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 3px;
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px 6px;
+  color: color-mix(in srgb, var(--reader-ink) 62%, transparent);
+  border: 1px solid var(--reader-rule);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.reader-density[aria-pressed="true"] {
+  border-color: var(--reader-accent);
+  background: color-mix(in srgb, var(--reader-accent) 9%, transparent);
+  color: var(--reader-accent);
+}
+
+.reader-density-lines {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--pitch, 8px);
+  height: 25px;
+  overflow: hidden;
+}
+
+.reader-density-lines i {
+  display: block;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.reader-density-lines i:nth-child(1) {
+  width: 100%;
+}
+
+.reader-density-lines i:nth-child(2) {
+  width: 88%;
+}
+
+.reader-density-lines i:nth-child(3) {
+  width: 95%;
+}
+
+.reader-density-cap,
+.reader-margin-cap {
+  font-family: var(--display);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Margins: a miniature page shows the actual column width. */
+.reader-margin-row {
+  display: flex;
+  gap: 4px;
+}
+
+.reader-margin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px 4px;
+  color: var(--reader-ink);
+  border: 1px solid var(--reader-rule);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.reader-margin[aria-pressed="true"] {
+  border-color: var(--reader-accent);
+  background: color-mix(in srgb, var(--reader-accent) 9%, transparent);
+}
+
+.reader-margin-page {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 52px;
+  height: 24px;
+  border: 1px solid color-mix(in srgb, var(--reader-ink) 32%, transparent);
+  background: color-mix(in srgb, var(--reader-paper) 88%, var(--reader-ink) 4%);
+}
+
+.reader-margin-text {
+  position: absolute;
+  top: 3px;
+  right: var(--m-in, 10%);
+  bottom: 3px;
+  left: var(--m-in, 10%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.reader-margin-text i {
+  display: block;
+  height: 1px;
+  background: color-mix(in srgb, var(--reader-ink) 46%, transparent);
+}
+
+.reader-margin[aria-pressed="true"] .reader-margin-page {
+  border-color: color-mix(in srgb, var(--reader-accent) 62%, transparent);
+}
+
+.reader-margin[aria-pressed="true"] .reader-margin-cap {
+  color: var(--reader-accent);
+}
+
+/* Typeface: rows of the book's first line in the actual face. */
+.reader-face-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid color-mix(in srgb, var(--reader-rule) 72%, transparent);
+}
+
+.reader-face-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 2px;
+  color: var(--reader-ink);
+  border-bottom: 1px solid color-mix(in srgb, var(--reader-rule) 72%, transparent);
+  text-align: left;
+}
+
+.reader-face-spec {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14.5px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-face-name {
+  flex: none;
+  color: color-mix(in srgb, var(--reader-ink) 56%, transparent);
+  font-family: var(--display);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.reader-face-row[aria-pressed="true"] {
+  color: var(--reader-accent);
+  box-shadow: inset 2px 0 0 var(--reader-accent);
+}
+
+.reader-face-row[aria-pressed="true"] .reader-face-name {
+  color: var(--reader-accent);
+}
+
+/* ------------------------------------------------- contents and marks */
 
 .reader-toc,
 .reader-bookmarks {
@@ -319,17 +830,79 @@ html.reader-open body {
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  min-height: 42px;
-  padding: 9px 12px;
+  min-height: 44px;
+  padding: 10px;
   border-bottom: 1px solid color-mix(in srgb, var(--reader-rule) 60%, transparent);
   color: var(--reader-ink);
+  font-family: var(--display);
   font-size: 13px;
   text-align: left;
 }
 
+.reader-toc-item > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .reader-toc-item[data-current="true"] {
   color: var(--reader-accent);
-  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--reader-accent);
+}
+
+.reader-toc-mark {
+  color: #8c3036;
+}
+
+.reader-toc-page,
+.reader-toc-item small {
+  flex: none;
+  color: var(--reader-accent);
+  font-family: var(--display);
+  font-size: 9px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.06em;
+}
+
+.reader-marks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reader-mark-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--reader-accent) 42%, transparent);
+  border-radius: 3px;
+  color: var(--reader-accent);
+  font-family: var(--display);
+  font-size: 9px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.reader-mark-glyph {
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.reader-marks-cap {
+  margin: 2px 0 0;
+  color: var(--reader-accent);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .reader-bookmarks li {
@@ -342,6 +915,13 @@ html.reader-open body {
   flex: 1 1 auto;
   min-width: 0;
   border-bottom: 0;
+}
+
+.reader-bookmark-jump > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .reader-bookmark-jump small {
@@ -372,8 +952,9 @@ html.reader-open body {
 }
 
 .reader-bookmark-delete {
-  flex: 0 0 40px;
-  min-height: 42px;
+  flex: 0 0 44px;
+  min-width: 44px;
+  min-height: 44px;
   color: var(--reader-accent);
   font-size: 19px;
 }
@@ -385,58 +966,146 @@ html.reader-open body {
   text-align: center;
 }
 
-.reader-type-sheet {
+/* ------------------------------------------------------------- PDF page */
+
+.reader-pdf-row {
   display: flex;
-  flex-direction: column;
-  gap: 11px;
+  align-items: stretch;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--reader-rule);
+  border-radius: 3px;
 }
 
-.reader-type-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.reader-type-label {
-  flex: 0 0 64px;
+.reader-pdf-row button {
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--reader-ink);
   font-family: var(--display);
   font-size: 9px;
-  letter-spacing: 0.16em;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.reader-pdf-row button + button {
+  border-left: 1px solid var(--reader-rule);
+}
+
+.reader-pdf-row button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--reader-accent) 12%, transparent);
   color: var(--reader-accent);
 }
 
-.reader-segment {
+.reader-desk .reader-page-jump {
   display: flex;
-  flex: 1 1 auto;
+  align-items: stretch;
   gap: 4px;
-  min-width: 0;
+  height: 44px;
+  margin-left: 0;
 }
 
-.reader-segment button {
-  flex: 1 1 0;
-  min-height: 36px;
-  padding: 4px 5px;
+.reader-desk .reader-page-jump input {
+  width: 58px;
+  min-height: 44px;
+  padding: 2px 4px;
   border: 1px solid var(--reader-rule);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--reader-paper) 88%, transparent);
   color: var(--reader-ink);
-  font-size: 11px;
+  font-family: var(--display);
+  font-size: 14px;
+  text-align: center;
+}
+
+.reader-desk .reader-page-jump button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--reader-rule);
+  border-radius: 2px;
+  color: var(--reader-ink);
+  font-family: var(--display);
+  font-size: 9px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reader-page-total {
+  align-self: center;
+  color: color-mix(in srgb, var(--reader-ink) 60%, transparent);
+  font-family: var(--display);
+  font-size: 10px;
   white-space: nowrap;
 }
 
-.reader-segment button[aria-pressed="true"] {
-  border-color: var(--reader-accent);
-  background: color-mix(in srgb, var(--reader-accent) 16%, transparent);
+.reader-outline-action {
+  width: 100%;
+  min-height: 44px;
   color: var(--reader-accent);
+  border: 1px solid color-mix(in srgb, var(--reader-accent) 42%, transparent);
+  border-radius: 3px;
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.reader-fonts button {
-  font-size: 12px;
+.reader-quiet-action {
+  width: 100%;
+  min-height: 44px;
+  color: color-mix(in srgb, var(--reader-accent) 82%, transparent);
+  font-family: var(--display);
+  font-size: 8px;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
 }
+
+/* --------------------------------------------------- ribbon and toasts */
+
+.reader-ribbon {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  right: 18px;
+  width: 18px;
+  height: 42px;
+  background: linear-gradient(180deg, #a23434, #6f1f24);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 76%, 0 100%);
+  pointer-events: none;
+}
+
+.reader-toast {
+  position: absolute;
+  z-index: 15;
+  right: 14px;
+  bottom: calc(var(--reader-dock-h) + 12px);
+  left: 14px;
+  width: fit-content;
+  max-width: calc(100% - 28px);
+  margin: 0 auto;
+  padding: 9px 13px;
+  border: 1px solid var(--reader-rule);
+  background: var(--reader-paper);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  color: var(--reader-ink);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ------------------------------------------- selection and annotation */
 
 .reader-selection-pop,
 .reader-annotation-pop {
   position: fixed;
-  z-index: 11;
+  z-index: 14;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -539,6 +1208,51 @@ html.reader-open body {
   font-style: italic;
 }
 
+/* ------------------------------------------------------------ note sheet */
+
+.reader-scrim {
+  position: absolute;
+  z-index: 12;
+  inset: 0;
+  background: rgba(4, 2, 6, 0.48);
+}
+
+.reader-sheet {
+  position: absolute;
+  z-index: 13;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: min(560px, 100%);
+  max-height: 74dvh;
+  margin: 0 auto;
+  padding: 6px 16px calc(20px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--reader-rule);
+  background: var(--reader-paper);
+  color: var(--reader-ink);
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.26);
+  animation: reader-sheet-in 0.22s var(--ease-out);
+}
+
+.reader-sheet-grip {
+  width: 46px;
+  height: 4px;
+  margin: 4px auto 10px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--reader-ink) 28%, transparent);
+}
+
+.reader-type-label {
+  flex: 0 0 64px;
+  color: var(--reader-accent);
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
 .reader-note-sheet {
   display: flex;
   flex-direction: column;
@@ -602,6 +1316,28 @@ html.reader-open body {
   white-space: nowrap;
 }
 
+/* --------------------------------------------------------- animations */
+
+@keyframes reader-desk-in {
+  from {
+    transform: translateY(102%);
+    opacity: 0.96;
+  }
+  to {
+    transform: translateY(var(--reader-drag, 0px));
+    opacity: 1;
+  }
+}
+
+@keyframes reader-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes reader-pop-in {
   from {
     transform: translate(-50%, calc(-100% + 6px));
@@ -613,10 +1349,59 @@ html.reader-open body {
   }
 }
 
-.reader-bottom-action:focus-visible,
-.reader-top-action:focus-visible,
-.reader-back:focus-visible {
-  outline-color: var(--reader-accent);
+@keyframes reader-sheet-in {
+  from {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------ narrow */
+
+@media (max-width: 359px) {
+  .reader-desk-body {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .reader-desk-head {
+    gap: 4px;
+  }
+
+  .reader-desk-shelf-text {
+    display: none;
+  }
+
+  .reader-desk-hint {
+    right: 8px;
+    font-size: 7px;
+    letter-spacing: 0.08em;
+  }
+
+  .reader-desk-row-secondary {
+    flex-direction: column;
+  }
+
+  .reader-desk-row-secondary .reader-desk-block {
+    flex: none;
+  }
+}
+
+/* Only transform/opacity animations; a reader who asks for less motion gets
+   the end state immediately. The swipe still dismisses. */
+@media (prefers-reduced-motion: reduce) {
+  .reader-desk,
+  .reader-desk-scrim,
+  .reader-dock,
+  .reader-mode-switch::before,
+  .reader-dock-fill {
+    animation-duration: 1e-06s;
+    transition-duration: 1e-06s;
+  }
 }
 
 .setting-choice button {
@@ -631,17 +1416,6 @@ html.reader-open body {
   border-color: #e4c78e;
   background: rgba(92, 63, 30, 0.7);
   color: #f3e2bd;
-}
-
-@keyframes reader-sheet-in {
-  from {
-    transform: translateY(22px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
 }
 
 html.reader-open .drawer-pull {
