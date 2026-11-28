@@ -73,11 +73,23 @@ test("creating a label, attaching it from the detail, and seeing the spine band"
 
   await page.getByTestId("spine").first().click();
   await page.getByTestId("detail-edit").click();
-  await page.getByTestId("edit-add-label").click();
-  await page
+  const addLabel = page.getByTestId("edit-add-label");
+  await addLabel.click();
+
+  // The Edit layer is not inside .detail; the labels UI must still be styled
+  // and tappable there, not the browser's 19px default button.
+  const menu = page.locator(".detail-label-menu");
+  await expect(menu).toBeVisible();
+  expect(
+    await menu.evaluate((element) => getComputedStyle(element).backgroundColor),
+  ).not.toBe("rgba(0, 0, 0, 0)");
+  expect((await addLabel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+  const option = page
     .getByTestId("edit-book")
-    .getByRole("menuitem", { name: "Gothic" })
-    .click();
+    .getByRole("menuitem", { name: "Gothic" });
+  expect((await option.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+  await option.click();
   await expect(
     page.getByTestId("edit-label-chip").filter({ hasText: "Gothic" }),
   ).toBeVisible();

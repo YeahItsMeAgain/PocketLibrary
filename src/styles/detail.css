@@ -341,18 +341,18 @@
   background: linear-gradient(90deg, #8d6c27, #e2c273);
 }
 
-.detail .dlabels {
+:is(.detail, .edit-book) .dlabels {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 14px;
 }
 
-.detail .dlabel {
+:is(.detail, .edit-book) .dlabel {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 31px;
+  min-height: 36px;
   height: auto;
   padding: 6px 12px;
   border: 1px solid rgba(201, 168, 106, 0.8);
@@ -372,7 +372,8 @@
   text-transform: none;
 }
 
-.detail .dlabel.none {
+:is(.detail, .edit-book) .dlabel.none {
+  min-height: 44px;
   border: 1px dashed rgba(180, 150, 140, 0.55);
   background: transparent;
   box-shadow: none;
@@ -380,13 +381,13 @@
   text-shadow: none;
 }
 
-.detail .dlabel .label-swatch {
+:is(.detail, .edit-book) .dlabel .label-swatch {
   width: 9px;
   height: 9px;
   border-radius: 50%;
 }
 
-.detail .detail-label-menu {
+:is(.detail, .edit-book) .detail-label-menu {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -399,22 +400,28 @@
   text-align: left;
 }
 
-.detail .detail-label-option {
+:is(.detail, .edit-book) .detail-label-option {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 5px 8px;
+  min-height: 44px;
+  padding: 8px 10px;
   color: #e4cfa6;
-  font-size: 11px;
+  font-size: 12.5px;
   text-align: left;
 }
 
-.detail .detail-label-empty {
+:is(.detail, .edit-book) .detail-label-option:hover,
+:is(.detail, .edit-book) .detail-label-option:focus-visible {
+  background: rgba(201, 168, 106, 0.12);
+  outline: none;
+}
+
+:is(.detail, .edit-book) .detail-label-empty {
   margin: 0;
-  padding: 8px;
+  padding: 8px 10px;
   color: #9f8864;
-  font-size: 10px;
+  font-size: 10.5px;
   line-height: 1.4;
 }
 
