@@ -1,8 +1,89 @@
 # Shelf visual design — prototype notes
 
-Throwaway prototype for ticket 06. Open `prototype/design/shelf-variants.html` directly in a browser (no server, no build). Switch variants with `?v=1|2|3`, the floating bottom bar, or ←/→. All three use the same 32 books, 10–12 per shelf, with the same labels, statuses and interactions.
+Throwaway prototype for ticket 06. Open `prototype/design/shelf-variants.html` directly in a browser to compare v1–v3, or `prototype/design/shelf-v4.html` for the refined single direction. No server, no build, no network at runtime.
+
+`prototype/design/shelf-variants.html` is kept untouched for reference. v4 is the current direction: darker palette, real Victorian case, real covers, and compositor-only motion.
+
+## V4 — Victorian night case (current direction)
+
+**File**: `prototype/design/shelf-v4.html` · covers in `prototype/design/covers/` · phone-first 390×844.
+
+### Palette
+
+All values are the literal tokens in `:root`; everything is darker than v1–v3, and there are no cream walls or saturated primaries.
+
+- Room: `#0b0908`, `#15100c`, `#211811`; page base `#080605` → `#050403`, with a deep radial vignette.
+- Furniture: `#0d0805`, `#1a110b`, `#241810`, `#332316`, `#4a3521`, `#5c4229`.
+- Brass: `#b08d57` base, `#c9a86a` highlight, `#7d6238` shadow.
+- Paper / ink: `#e7dcc6`, `#c8b99e`, `#2a2118`.
+- Labels: oxblood `#6e2b2b`, forest `#2f4a3c`, navy `#2b3a55`, mustard `#9a7b3f`, plum `#4a2f3a`, slate `#46505a`, dusty rose `#8a5a5a`.
+- Spine colours are worn, desaturated derivatives of each cover's average colour, darkened by hand; each spine adds vertical leather weave, darker endcaps, two gilt rules and a warm highlight down the left edge. Finished seals and the shelf plaques use the brass ramp.
+
+### Type
+
+System serif only: `"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, "Hoefler Text", Georgia, "Noto Serif", serif`. Display is small-caps/uppercase with generous tracking (`.13em–.36em`); body 12.5 px / 1.6; labels 4.9–6.8 px uppercase with `.18em–.3em` tracking. No sans-serif is used for display or running text.
+
+### Furniture layers
+
+The case is built as real cabinetry, not a single board:
+
+1. **Crown** — cap, carved frieze with an inline-SVG acanthus medallion, dentil course, and a moulded cornice.
+2. **Frame** — fluted pilasters on both sides with capital and base blocks plus brass hairlines.
+3. **Bays** — recessed back panels with stile/rail panelling, warm lamp pools, book rows, and brass retaining rails with finials.
+4. **Shelf** — a 9 px moulded lip (brass inlay), a 20 px heavy board, contact shadow, brass shelf plate, `Full · 12/12` plaque on shelf III, and carved SVG brackets under each board.
+5. **Plinth** — stepped top, panelled body, dark foot.
+6. **Wall** — near-black brown/black-green gradient, faint 78 px wall panelling, fixed vignette. Layers use CSS gradients, inset shadows and inline SVG; no images, no blend modes, no filters.
+
+### Detail composition
+
+V3's framed panel is kept (double gilt rules, corner brackets, top crest, kicker, ornament rule), but the real cover is the hero: `width: min(calc(73% + 23px), 270px)` of the panel, i.e. **265 px at a 390 px viewport — 72.5 % of the 366 px panel**. The cover has a spine fold, page block on two edges, soft static shadow, a halo arch behind it, and the percentage/gold sticker overlapping its lower-right corner. Body copy sits on the near-black panel in `#cdbfa4`; headings use `#e2cb96`.
+
+### Motion
+
+All animated properties are `transform` and `opacity`; no animated box-shadow, filter, background-position or layout property.
+
+- Lift: **260 ms** `cubic-bezier(0.22, 1, 0.36, 1)`.
+- Spine flight: **460 ms** same ease, with a 230 ms opacity fade delayed 170 ms.
+- Panel open: **480 ms** transform + **320 ms** opacity, same ease.
+- Close: **300 ms** `cubic-bezier(0.4, 0, 0.2, 1)` for transform, 240 ms for opacity.
+- Filter/status changes only toggle opacity (220 ms) and never move books.
+- Reduced motion collapses every duration to ~0 ms; the detail opens with no flight.
+
+Opening sequence: the tapped spine is cloned into a fixed layer, dims on the shelf, lifts 13 px and tilts, then flies toward the centre while `rotateY(-44deg)` and scaling to 2.35×, fading as the framed panel rises and turns from `rotateY(-11deg)`. The `.detail-stage` stays `overflow: visible`, `opacity: 1`, `filter: none`, `clip-path: none`, `transform-style: preserve-3d`; only the `.panel` child fades. The shelf never reflows (`SHELF SHIFT 0`).
+
+### Covers and licences
+
+36 public-domain titles, one real cover each, downloaded from **Standard Ebooks** on 2026-11-27. Standard Ebooks releases its ebook productions, including cover artwork, into the **public domain (CC0)**; the underlying paintings/designs are pre-1930 public-domain works. Files were resized to 900×1350 JPEG (quality ~85) and are referenced locally as `covers/<slug>.jpg`; there is no runtime network request. If a cover is ever missing, the prototype should fall back to a locally drawn SVG cover rather than a request.
+
+Titles used: The Moonstone, Middlemarch, Jane Eyre, The Picture of Dorian Gray, Moby-Dick, Bleak House, The Woman in White, Frankenstein, Treasure Island, The Time Machine, Pride and Prejudice, Dracula, Wuthering Heights, Great Expectations, The Hound of the Baskervilles, North and South, The Scarlet Letter, The Turn of the Screw, The Tenant of Wildfell Hall, Silas Marner, Far from the Madding Crowd, Persuasion, The Age of Innocence, The Invisible Man, The Mysteries of Udolpho, A Study in Scarlet, Dr Jekyll and Mr Hyde, The Voyage of the Beagle, The Old Curiosity Shop, David Copperfield, The Mill on the Floss, Tess of the d'Urbervilles, The Return of the Native, Mansfield Park, Northanger Abbey, Sense and Sensibility.
+
+Source pattern: `https://standardebooks.org/ebooks/<author>/<title>/downloads/cover.jpg` (Alice and Jekyll needed the image-catalogue path; all were verified as 200 and valid JPEGs).
+
+### WebView risks
+
+- 36 covers add ~6.9 MB to the prototype folder; they are only fetched on open, but a cold local read plus JPEG decode can flash a blank cover on slow storage. A future build should decode/preload the tapped cover before revealing the panel.
+- The case uses many static gradients and multi-layer shadows across four bays. There are no blend modes or filters, which keeps scrolling cheaper than v1/v3, but near-black ramps can still band on 6-bit panels; if so, bake the wall/case into one pre-rendered bitmap and keep only book shadows live.
+- `perspective` / `preserve-3d` and inline SVG `<use>` are supported in modern Chromium WebView; very old WebViews may flatten the panel turn. The fallback is a simple translate/opacity rise, which still works.
+- System serif metrics differ between desktop Chromium and Android (Iowan/Palatino missing on Android), so tracked uppercase titles and spine truncation must be re-checked on a real device. Spine truncation is character-count based, not measured.
+- `will-change` is left on the panel; on memory-constrained WebViews it should be removed after the open transition.
+- The flight clone is reparented to `<body>`; if a future app shell uses a transformed ancestor, measure in viewport coordinates (as here) and keep the clone fixed.
+- No sound. If added, keep it off by default and gate it behind a user gesture.
+
+### Verification (v4, 2026-11-27)
+
+- Chromium 390×844 @2×: 36 books, 3 stocked shelves + 1 empty, `Full · 12/12` plaque, no horizontal overflow at 320/360/390/430.
+- `.detail-stage` computed: `overflow: visible`, `opacity: 1`, `filter: none`, `clip-path: none`, `transform-style: preserve-3d`.
+- Cover at 390 px: 265 px wide / 366 px panel = 72.5 %.
+- Filtering changed opacity only; 0 book positions moved. All three shelf samples opened their correct local cover (900×1350).
+- No console/page errors; requests were only the HTML and local cover JPEGs. Reduced-motion opens instantly with no flight clone.
+- All 36 cover paths resolve locally (HTTP 200, 900×1350) and are unique.
+- The shared Cloudflare tunnel process was gone after the environment restart that interrupted this session, so `https://perth-fruit-raw-elimination.trycloudflare.com/...` still returns 000 and cannot be re-created at the same URL. The static server was restored on `:8765`; `http://127.0.0.1:8765/prototype/design/shelf-v4.html` returns 200. Screenshots: `screenshots/v4.png`, `v4-open.png`, `v4-open-finished.png`, `v4-bottom.png`.
 
 The wall has three stocked shelves plus a fourth empty shelf demonstrating the empty state; the third shelf carries a small brass "Full · 10/10" plaque. Filtering only changes opacity; book positions were verified unchanged (32/32 identical left offsets before and after).
+
+## Earlier iterations (superseded)
+
+Everything from **Shared decisions** down to **Navigation & acquisition flows** records the v1–v3 comparison and the first v4 attempts from 2026-11-24. The current `shelf-v4.html` is now a single-direction rewrite (section at the top of this file); the earlier multi-variant v4 remains recoverable from git history. `flows.html` is a separate prototype built on that earlier v4 and is untouched.
 
 ## Shared decisions (all variants)
 
